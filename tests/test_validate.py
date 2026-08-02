@@ -62,6 +62,22 @@ def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> 
         validate_resolved(files, tmp_path, ".claude/skills")
 
 
+def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> None:
+    skill_dir = tmp_path / "skills" / "demo"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "helper.py").write_text("# helper\n")
+    files = [
+        ResolvedFile(
+            "skills/demo/helper.py",
+            ".claude/skills/demo/helper.py",
+            "skill_file",
+        )
+    ]
+
+    with pytest.raises(ValidationError, match="missing SKILL.md"):
+        validate_resolved(files, tmp_path, ".claude/skills")
+
+
 def test_validate_resolved_rejects_invalid_skill_contract(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
+from typing import Never
 
 from loadout.errors import ValidationError
 from loadout.frontmatter import parse_rule, parse_skill_md
@@ -28,9 +29,12 @@ def validate_resolved(
 
         if file.kind == "rule":
             parse_rule(source_path, source_path.read_text())
-        else:
+        elif file.kind == "skill_file":
             skill_root = _skill_root(file, source_root, skills_dir)
             skill_roots[skill_root.as_posix()] = skill_root
+        else:
+            _exhaustive: Never = file.kind
+            raise AssertionError(f"Unhandled file kind: {file.kind!r}")
 
     for skill_root in skill_roots.values():
         skill_md = skill_root / "SKILL.md"
