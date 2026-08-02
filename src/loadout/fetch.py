@@ -47,7 +47,11 @@ def fetch_source(
 
 
 def _locked_sha(manifest: Manifest, lock: Lockfile | None) -> str | None:
-    if lock is not None and lock.ref == manifest.ref:
+    if (
+        lock is not None
+        and lock.source == manifest.source
+        and lock.ref == manifest.ref
+    ):
         return lock.resolved_sha
     return None
 
@@ -61,13 +65,19 @@ def _cache_root(env: Mapping[str, str]) -> Path:
 
 def _resolve_sha(manifest: Manifest) -> str:
     result = _run_git(["git", "ls-remote", manifest.source, manifest.ref])
-    line = result.stdout.strip().splitlines()
-    if not line:
-        raise FetchError(
-            f"Could not resolve ref {manifest.ref!r} from {manifest.source!r}"
-        )
-    resolved_sha = line[0].split(maxsplit=1)[0]
-    if not resolved_sha:
+    resolved_sha: str | None = None
+    for line in result.stdout.strip().splitlines():
+        fields = line.split(maxsplit=1)
+        if not fields:
+            continue
+        sha = fields[0]
+        if not sha:
+            continue
+        if resolved_sha is None:
+            resolved_sha = sha
+        if len(fields) == 2 and fields[1].endswith("^{}"):
+            return sha
+    if resolved_sha is None:
         raise FetchError(
             f"Could not resolve ref {manifest.ref!r} from {manifest.source!r}"
         )
