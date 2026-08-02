@@ -200,6 +200,29 @@ def test_loadout_extends_cycle_is_an_error(tmp_path: Path) -> None:
     assert any("cycle" in error for error in result.errors)
 
 
+
+def test_loadout_extends_missing_parent_is_an_error(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "loadouts" / "child.yaml",
+        "name: child\nextends: [missing]\ndescription: Child\n",
+    )
+
+    result = lint_repo(tmp_path)
+
+    assert not result.ok
+    assert any("Loadout not found: missing" in error for error in result.errors)
+
+
+def test_loadout_malformed_yaml_is_an_error(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(tmp_path / "loadouts" / "bad.yaml", "name: bad\nextends: [\ndescription: Bad\n")
+
+    result = lint_repo(tmp_path)
+
+    assert not result.ok
+    assert any("bad.yaml" in error and "invalid YAML" in error for error in result.errors)
+
 def test_loadout_destination_collision_is_an_error(tmp_path: Path) -> None:
     write(
         tmp_path / "rules" / "core" / "a.mdc",

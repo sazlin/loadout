@@ -167,6 +167,21 @@ def test_lint_fails_on_an_orphan_file(runner: CliRunner) -> None:
         assert "orphan" in result.output.lower()
 
 
+
+def test_lint_fails_when_loadout_extends_missing_parent(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        for name in ("rules", "skills", "loadouts"):
+            shutil.copytree(FIXTURE / name, Path(name))
+        Path("loadouts/child.yaml").write_text(
+            "name: child\nextends: [missing]\ndescription: Child\n"
+        )
+
+        result = runner.invoke(main, ["lint"])
+
+        assert result.exit_code == 2
+        assert "Loadout not found: missing" in result.output
+
+
 def test_update_rewrites_ref_syncs_and_prints_changelog_slice(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         source = Path("source")

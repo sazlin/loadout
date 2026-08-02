@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import re
+
+import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -153,6 +155,18 @@ def _has_toc(text: str) -> bool:
     return list_items >= 3
 
 
+
+def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef:
+    """Load a loadout YAML file, mapping parse failures to ValidationError."""
+    label = name or path.stem
+    try:
+        return load_loadout(path)
+    except FileNotFoundError:
+        raise ValidationError(f"Loadout not found: {label}") from None
+    except yaml.YAMLError as error:
+        raise ValidationError(f"{path.name}: invalid YAML: {error}") from None
+
+
 def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str]]:
     """Resolve every loadout and return the (rule src, skill src) sets it references."""
     loadouts_dir = repo_root / "loadouts"
@@ -166,7 +180,7 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
 
     def load(name: str) -> LoadoutDef:
         if name not in cache:
-            cache[name] = load_loadout(loadouts_dir / f"{name}.yaml")
+            cache[name] = _load_loadout_for_lint(loadouts_dir / f"{name}.yaml", name=name)
         return cache[name]
 
     def collect(name: str, chain: tuple[str, ...]) -> None:
@@ -195,8 +209,14 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
             manifest = Manifest(source="lint", ref="lint", loadouts=[name])
             resolved = resolve(manifest, repo_root)
             validate_resolved(resolved, repo_root, manifest.skills_dir)
-        except ValidationError as error:
-            result.errors.append(f"loadouts/{name}.yaml: {error}")
+        except (ValidationError, FileNotFoundError, yaml.YAMLError) as error:
+            if isinstance(error, ValidationError):
+                message = str(error)
+            elif isinstance(error, FileNotFoundError):
+                message = f"Loadout not found: {name}"
+            else:
+                message = f"loadouts/{name}.yaml: invalid YAML: {error}"
+            result.errors.append(f"loadouts/{name}.yaml: {message}")
 
     return rule_srcs, skill_srcs
 
