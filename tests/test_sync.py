@@ -23,6 +23,9 @@ RULE_A = ".cursor/rules/a.mdc"
 RULE_B = ".cursor/rules/b.mdc"
 SKILL_MD = ".claude/skills/demo/SKILL.md"
 SKILL_SCRIPT = ".claude/skills/demo/scripts/run.sh"
+SKILL_REFERENCE = ".claude/skills/demo/references/runbook.md"
+SKILL_ASSET = ".claude/skills/demo/assets/template.txt"
+SKILL_AGENT = ".claude/skills/demo/agents/reviewer.md"
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -74,19 +77,24 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
     assert (project / RULE_B).is_file()
     assert (project / SKILL_MD).is_file()
     assert (project / SKILL_SCRIPT).is_file()
-    assert result.added == 4
+    assert result.added == 7
     assert result.updated == 0
     assert result.removed == 0
 
     lock = read_lock(project)
     assert lock["lockfile_version"] == 1
     assert lock["resolved_sha"] == "local"
-    assert [entry["dest"] for entry in lock["files"]] == [
-        SKILL_MD,
-        SKILL_SCRIPT,
-        RULE_A,
-        RULE_B,
-    ]
+    assert [entry["dest"] for entry in lock["files"]] == sorted(
+        [
+            SKILL_MD,
+            SKILL_SCRIPT,
+            SKILL_ASSET,
+            SKILL_AGENT,
+            SKILL_REFERENCE,
+            RULE_A,
+            RULE_B,
+        ]
+    )
 
 
 def test_sync_injects_header_into_rules_and_skill_md(project: Path) -> None:
@@ -106,7 +114,33 @@ def test_sync_copies_bundled_skill_files_verbatim_and_skips_evals(project: Path)
     assert (project / SKILL_SCRIPT).read_bytes() == (
         FIXTURE / "skills/demo/scripts/run.sh"
     ).read_bytes()
+    assert (project / ".claude/skills/demo/references/runbook.md").read_bytes() == (
+        FIXTURE / "skills/demo/references/runbook.md"
+    ).read_bytes()
+    assert (project / ".claude/skills/demo/assets/template.txt").read_bytes() == (
+        FIXTURE / "skills/demo/assets/template.txt"
+    ).read_bytes()
+    assert (project / ".claude/skills/demo/agents/reviewer.md").read_bytes() == (
+        FIXTURE / "skills/demo/agents/reviewer.md"
+    ).read_bytes()
     assert not (project / ".claude/skills/demo/evals").exists()
+
+
+def test_sync_preserves_binary_skill_assets(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = copy_fixture(tmp_path)
+    binary_asset = source / "skills/demo/assets/icon.bin"
+    binary_asset.write_bytes(b"\x00\xff\x10\x80demo\x00")
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body())
+
+    sync(project)
+
+    assert (project / ".claude/skills/demo/assets/icon.bin").read_bytes() == (
+        binary_asset.read_bytes()
+    )
 
 
 def test_sync_preserves_executable_bit_and_records_mode(project: Path) -> None:
@@ -136,7 +170,7 @@ def test_second_sync_reports_no_changes_and_leaves_files_untouched(
     result = sync(project)
 
     assert (result.added, result.updated, result.removed) == (0, 0, 0)
-    assert result.unchanged == 4
+    assert result.unchanged == 7
     assert not result.agents_changed
     assert not result.claude_changed
     assert snapshot(project) == before
@@ -230,8 +264,8 @@ def test_skills_dir_relocation_prunes_the_old_location(project: Path) -> None:
 
     assert (project / ".agents/skills/demo/SKILL.md").is_file()
     assert not (project / ".claude/skills").exists()
-    assert result.removed == 2
-    assert result.added == 2
+    assert result.removed == 5
+    assert result.added == 5
 
 
 def test_agents_block_indexes_every_rule_with_scope_and_description(
@@ -370,7 +404,7 @@ def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) 
     sync(project)
 
     out = capsys.readouterr().out
-    assert "4 added" in out
+    assert "7 added" in out
     assert "AGENTS.md" in out
     assert "Cursor" in out
 
@@ -476,5 +510,40 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
         RULE_B,
         SKILL_MD,
         SKILL_SCRIPT,
+        SKILL_REFERENCE,
+        SKILL_ASSET,
+        SKILL_AGENT,
     }
     assert all(len(entry.sha256) == 64 for entry in lock.files)
+
+
+def test_real_feature_loadouts_scope_rules_and_terraform_skill(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = Path(__file__).parent.parent
+    monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[aws-terraform, playwright-e2e]"))
+
+    sync(project)
+
+    assert (project / "infra/.cursor/rules/aws-conventions.mdc").is_file()
+    assert (project / "infra/.claude/skills/terraform-plan-review/SKILL.md").is_file()
+    assert (project / "tests/e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert not (project / ".cursor/rules/aws-conventions.mdc").exists()
+    assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
+
+
+def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository = Path(__file__).parent.parent
+    monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[base, python-monorepo, playwright-e2e]"))
+
+    sync(project)
+
+    assert not list((project / ".cursor").rglob("*terraform*"))
+    assert not list((project / ".claude").rglob("*terraform*"))
+    assert "terraform" not in (project / "AGENTS.md").read_text().lower()

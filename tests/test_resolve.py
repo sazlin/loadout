@@ -41,6 +41,21 @@ def test_resolve_expands_extended_loadouts_and_skips_skill_root_evals():
             ".claude/skills/demo/scripts/run.sh",
             "skill_file",
         ),
+        (
+            "skills/demo/references/runbook.md",
+            ".claude/skills/demo/references/runbook.md",
+            "skill_file",
+        ),
+        (
+            "skills/demo/assets/template.txt",
+            ".claude/skills/demo/assets/template.txt",
+            "skill_file",
+        ),
+        (
+            "skills/demo/agents/reviewer.md",
+            ".claude/skills/demo/agents/reviewer.md",
+            "skill_file",
+        ),
     }
 
 
