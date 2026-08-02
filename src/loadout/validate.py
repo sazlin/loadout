@@ -16,6 +16,9 @@ def validate_resolved(
     skill_roots: dict[str, Path] = {}
 
     for file in files:
+        _require_contained(file.src, "Source", "the source tree")
+        _require_contained(file.dest, "Destination", "the project")
+
         source_path = source_root / file.src
         if not source_path.is_file():
             raise ValidationError(f"Resolved source file not found: {file.src}")
@@ -41,6 +44,13 @@ def validate_resolved(
         if not skill_md.is_file():
             raise ValidationError(f"Skill is missing SKILL.md: {skill_root}")
         parse_skill_md(skill_md, skill_md.read_text(), dir_name=skill_root.name)
+
+
+def _require_contained(value: str, label: str, container: str) -> None:
+    """Reject absolute paths and `..` segments so a loadout cannot escape its tree."""
+    path = PurePosixPath(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValidationError(f"{label} path escapes outside {container}: {value}")
 
 
 def _skill_root(file: ResolvedFile, source_root: Path, skills_dir: str) -> Path:

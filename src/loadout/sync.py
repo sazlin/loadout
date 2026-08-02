@@ -223,18 +223,17 @@ def _plan_blocks(
             render_agent_rules_block(rows),
             placement="append",
             heading=AGENTS_HEADING,
-        )
+        ),
+        # Planned even when the bridge is off, so turning it off removes a block an
+        # earlier sync wrote. `_plan_block` returns None when there is no CLAUDE.md.
+        _plan_block(
+            project_root,
+            CLAUDE_FILE,
+            CLAUDE_BLOCK,
+            render_claude_import_block() if manifest.claude_bridge else None,
+            placement="prepend",
+        ),
     ]
-    if manifest.claude_bridge:
-        planned.append(
-            _plan_block(
-                project_root,
-                CLAUDE_FILE,
-                CLAUDE_BLOCK,
-                render_claude_import_block(),
-                placement="prepend",
-            )
-        )
 
     blocks = [block for block in planned if block is not None and block.text is not None]
     removed = [block for block in planned if block is not None and block.text is None]
@@ -335,6 +334,8 @@ def _prune(project_root: Path, plan: _Plan, lock: Lockfile | None) -> int:
         if entry.dest in planned_dests:
             continue
         path = project_root / entry.dest
+        if not _is_inside(project_root, path):
+            continue
         if path.is_file():
             path.unlink()
             removed += 1
@@ -344,9 +345,27 @@ def _prune(project_root: Path, plan: _Plan, lock: Lockfile | None) -> int:
 
 def _prune_empty_parents(project_root: Path, directory: Path) -> None:
     current = directory
-    while current != project_root and current.is_dir() and not any(current.iterdir()):
+    while (
+        current != project_root
+        and _is_inside(project_root, current)
+        and current.is_dir()
+        and not any(current.iterdir())
+    ):
         current.rmdir()
         current = current.parent
+
+
+def _is_inside(project_root: Path, path: Path) -> bool:
+    """Guard against a hand-edited lockfile pointing outside the project.
+
+    Both sides are resolved first: ``relative_to`` is purely lexical, so it happily
+    accepts ``project/../elsewhere``.
+    """
+    try:
+        path.resolve().relative_to(project_root.resolve())
+    except ValueError:
+        return False
+    return True
 
 
 def _write_lockfile(lock_path: Path, plan: _Plan, lock: Lockfile | None) -> None:

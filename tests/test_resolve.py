@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,12 @@ from loadout.resolve import ResolvedFile, resolve
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_loadout"
+
+
+def copy_fixture(tmp_path: Path) -> Path:
+    source = tmp_path / "loadout_src"
+    shutil.copytree(FIXTURE_ROOT, source)
+    return source
 
 
 def manifest(
@@ -79,3 +86,58 @@ def test_resolve_rejects_unmatched_exclude():
 def test_resolve_rejects_unmatched_include():
     with pytest.raises(ValidationError, match="rules/missing.mdc"):
         resolve(manifest(include=["rules/missing.mdc"]), FIXTURE_ROOT)
+
+
+def test_resolve_rejects_a_loadout_referencing_a_missing_skill_directory(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\ndescription: Base rules and skills\nskills:\n  - src: skills/gone\n"
+    )
+
+    with pytest.raises(ValidationError, match="skills/gone"):
+        resolve(manifest(loadouts=["base"]), source)
+
+
+def test_resolve_rejects_a_skill_src_that_is_a_file(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\ndescription: Base rules and skills\n"
+        "skills:\n  - src: skills/demo/SKILL.md\n"
+    )
+
+    with pytest.raises(ValidationError, match="skills/demo/SKILL.md"):
+        resolve(manifest(loadouts=["base"]), source)
+
+
+def test_resolve_rejects_extends_cycles(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\nextends: [python]\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+    )
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+    )
+
+    with pytest.raises(ValidationError, match="cycle"):
+        resolve(manifest(loadouts=["python"]), source)
+
+
+def test_resolve_rejects_a_loadout_that_extends_itself(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\nextends: [base]\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+    )
+
+    with pytest.raises(ValidationError, match="cycle"):
+        resolve(manifest(loadouts=["base"]), source)
+
+
+def test_resolve_reports_malformed_loadout_yaml_as_a_validation_error(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text("name: base\nextends: [\n")
+
+    with pytest.raises(ValidationError, match="invalid YAML"):
+        resolve(manifest(loadouts=["base"]), source)

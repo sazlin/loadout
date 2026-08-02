@@ -400,6 +400,121 @@ def test_claude_bridge_false_skips_claude_md(project: Path) -> None:
     ]
 
 
+def test_claude_bridge_disabled_removes_a_previously_written_import_block(
+    project: Path,
+) -> None:
+    (project / "CLAUDE.md").write_text("# Claude notes\n\nKeep me.\n")
+    sync(project)
+    assert CLAUDE_IMPORT_BEGIN in (project / "CLAUDE.md").read_text()
+
+    write_manifest(project, manifest_body(extra="claude_bridge: false\n"))
+    result = sync(project)
+
+    claude = (project / "CLAUDE.md").read_text()
+    assert CLAUDE_IMPORT_BEGIN not in claude
+    assert CLAUDE_IMPORT_END not in claude
+    assert claude.endswith("# Claude notes\n\nKeep me.\n")
+    assert result.claude_changed
+    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == [
+        "AGENTS.md"
+    ]
+
+    sync(project, check=True)
+
+
+def test_disabling_claude_bridge_without_resyncing_is_drift(project: Path) -> None:
+    sync(project)
+    write_manifest(project, manifest_body(extra="claude_bridge: false\n"))
+
+    with pytest.raises(DriftError, match="CLAUDE.md"):
+        sync(project, check=True)
+
+
+def test_claude_bridge_disabled_leaves_an_untouched_claude_md_alone(
+    project: Path,
+) -> None:
+    write_manifest(project, manifest_body(extra="claude_bridge: false\n"))
+    (project / "CLAUDE.md").write_text("# Claude notes\n\nKeep me.\n")
+
+    result = sync(project)
+
+    assert (project / "CLAUDE.md").read_text() == "# Claude notes\n\nKeep me.\n"
+    assert not result.claude_changed
+
+
+def test_dest_escaping_the_project_is_a_validation_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts/base.yaml").write_text(
+        """name: base
+description: Base rules and skills
+rules:
+  - src: rules/core/a.mdc
+    dest: ../evil/a.mdc
+"""
+    )
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[base]"))
+
+    with pytest.raises(ValidationError, match="outside the project"):
+        sync(project)
+
+    assert not (tmp_path / "evil").exists()
+
+
+def test_prune_ignores_lockfile_entries_pointing_outside_the_project(
+    project: Path,
+) -> None:
+    sync(project)
+    outside = project.parent / "outside.txt"
+    outside.write_text("keep me\n")
+    lock_path = project / ".loadout.lock"
+    lock_path.write_text(lock_path.read_text().replace(RULE_A, "../outside.txt"))
+
+    result = sync(project)
+
+    assert outside.read_text() == "keep me\n"
+    assert result.removed == 0
+
+
+def test_missing_skill_directory_is_a_validation_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts/base.yaml").write_text(
+        """name: base
+description: Base rules and skills
+skills:
+  - src: skills/gone
+"""
+    )
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[base]"))
+
+    with pytest.raises(ValidationError, match="skills/gone"):
+        sync(project)
+
+    assert not (project / ".loadout.lock").exists()
+
+
+def test_malformed_manifest_is_a_validation_error(project: Path) -> None:
+    write_manifest(project, "source: https://example.com/loadout\nloadouts: [\n")
+
+    with pytest.raises(ValidationError, match="invalid YAML"):
+        sync(project)
+
+
+def test_malformed_lockfile_is_a_validation_error(project: Path) -> None:
+    sync(project)
+    (project / ".loadout.lock").write_text('{"lockfile_version": 1,\n')
+
+    with pytest.raises(ValidationError, match="invalid JSON"):
+        sync(project)
+
+
 def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) -> None:
     sync(project)
 
@@ -544,6 +659,22 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
 
     sync(project)
 
-    assert not list((project / ".cursor").rglob("*terraform*"))
-    assert not list((project / ".claude").rglob("*terraform*"))
+    paths = [path.relative_to(project).as_posix() for path in project.rglob("*")]
+    assert paths, "sync wrote nothing, so this test would pass vacuously"
+    assert not (project / "infra").exists()
+    assert not any("terraform" in path.lower() for path in paths)
+    assert not any("aws-conventions" in path for path in paths)
     assert "terraform" not in (project / "AGENTS.md").read_text().lower()
+    assert not any(
+        "terraform-plan-review" in text or "aws-conventions" in text
+        for text in _project_text(project)
+    )
+
+
+def _project_text(project: Path) -> list[str]:
+    """Every file sync produced, so vendored content is checked, not just path names."""
+    return [
+        path.read_text(errors="ignore")
+        for path in project.rglob("*")
+        if path.is_file() and path.name != ".loadout.yaml"
+    ]

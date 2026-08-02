@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import re
-
-import yaml
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -157,14 +155,12 @@ def _has_toc(text: str) -> bool:
 
 
 def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef:
-    """Load a loadout YAML file, mapping parse failures to ValidationError."""
+    """Load a loadout YAML file, reporting an absent parent as a validation error."""
     label = name or path.stem
     try:
         return load_loadout(path)
     except FileNotFoundError:
         raise ValidationError(f"Loadout not found: {label}") from None
-    except yaml.YAMLError as error:
-        raise ValidationError(f"{path.name}: invalid YAML: {error}") from None
 
 
 def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str]]:
@@ -209,14 +205,10 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
             manifest = Manifest(source="lint", ref="lint", loadouts=[name])
             resolved = resolve(manifest, repo_root)
             validate_resolved(resolved, repo_root, manifest.skills_dir)
-        except (ValidationError, FileNotFoundError, yaml.YAMLError) as error:
-            if isinstance(error, ValidationError):
-                message = str(error)
-            elif isinstance(error, FileNotFoundError):
-                message = f"Loadout not found: {name}"
-            else:
-                message = f"loadouts/{name}.yaml: invalid YAML: {error}"
-            result.errors.append(f"loadouts/{name}.yaml: {message}")
+        except ValidationError as error:
+            result.errors.append(f"loadouts/{name}.yaml: {error}")
+        except FileNotFoundError:
+            result.errors.append(f"loadouts/{name}.yaml: Loadout not found: {name}")
 
     return rule_srcs, skill_srcs
 

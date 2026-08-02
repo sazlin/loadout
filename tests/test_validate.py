@@ -44,6 +44,30 @@ def test_validate_resolved_rejects_destination_collision(tmp_path: Path) -> None
         validate_resolved(files, tmp_path, ".claude/skills")
 
 
+@pytest.mark.parametrize(
+    "dest",
+    ["../evil/a.mdc", "/etc/evil.mdc", ".cursor/rules/../../../evil.mdc"],
+)
+def test_validate_resolved_rejects_destinations_outside_the_project(
+    tmp_path: Path, dest: str
+) -> None:
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "a.mdc").write_text("---\ndescription: A rule\n---\n")
+    files = [ResolvedFile("rules/a.mdc", dest, "rule")]
+
+    with pytest.raises(ValidationError, match="outside the project"):
+        validate_resolved(files, tmp_path, ".claude/skills")
+
+
+def test_validate_resolved_rejects_sources_outside_the_source_tree(tmp_path: Path) -> None:
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "a.mdc").write_text("---\ndescription: A rule\n---\n")
+    files = [ResolvedFile("../outside/a.mdc", ".cursor/rules/a.mdc", "rule")]
+
+    with pytest.raises(ValidationError, match="outside the source"):
+        validate_resolved(files, tmp_path, ".claude/skills")
+
+
 def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)

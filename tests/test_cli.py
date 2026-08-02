@@ -51,6 +51,41 @@ def test_sync_without_manifest_exits_with_validation_error_code(runner: CliRunne
         assert "error" in result.output.lower()
 
 
+def test_sync_with_a_malformed_manifest_exits_two(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        Path(".loadout.yaml").write_text("source: https://example.com/loadout\nloadouts: [\n")
+
+        result = runner.invoke(main, ["sync"], env={"LOADOUT_PATH": str(FIXTURE)})
+
+        assert result.exit_code == 2, result.output
+        assert "invalid YAML" in result.output
+        assert ".loadout.yaml" in result.output
+
+
+def test_sync_with_a_malformed_lockfile_exits_two(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        write_manifest()
+        Path(".loadout.lock").write_text('{"lockfile_version": 1,\n')
+
+        result = runner.invoke(main, ["sync"], env={"LOADOUT_PATH": str(FIXTURE)})
+
+        assert result.exit_code == 2, result.output
+        assert "invalid JSON" in result.output
+        assert ".loadout.lock" in result.output
+
+
+def test_resolve_with_a_malformed_manifest_exits_two(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        Path(".loadout.yaml").write_text("loadouts: [base\n")
+
+        result = runner.invoke(
+            main, ["resolve", "--list"], env={"LOADOUT_PATH": str(FIXTURE)}
+        )
+
+        assert result.exit_code == 2, result.output
+        assert "invalid YAML" in result.output
+
+
 def test_sync_check_reports_drift_with_exit_code_one(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         write_manifest()

@@ -116,6 +116,19 @@ def test_skill_missing_skill_md_is_an_error(tmp_path: Path) -> None:
     assert any("skills/broken" in error and "missing SKILL.md" in error for error in result.errors)
 
 
+def test_loadout_referencing_a_missing_skill_directory_is_an_error(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "loadouts" / "python.yaml",
+        "name: python\ndescription: Python rules\nskills:\n  - src: skills/gone\n",
+    )
+
+    result = lint_repo(tmp_path)
+
+    assert not result.ok
+    assert any("skills/gone" in error for error in result.errors)
+
+
 def test_skill_name_directory_mismatch_is_an_error(tmp_path: Path) -> None:
     base_repo(tmp_path)
     write(

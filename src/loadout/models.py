@@ -117,8 +117,22 @@ def _require_str(data: dict[str, Any], key: str, context: str) -> str:
     return value
 
 
+def _parse_yaml(path: Path) -> Any:
+    try:
+        return yaml.safe_load(path.read_text())
+    except yaml.YAMLError as error:
+        raise ValidationError(f"{path.name}: invalid YAML: {error}") from error
+
+
+def _parse_json(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as error:
+        raise ValidationError(f"{path.name}: invalid JSON: {error}") from error
+
+
 def load_manifest(path: Path) -> Manifest:
-    raw = yaml.safe_load(path.read_text())
+    raw = _parse_yaml(path)
     data = _require_mapping(raw, path.name)
     _reject_unknown_keys(data, MANIFEST_KEYS, path.name)
 
@@ -151,7 +165,7 @@ def load_manifest(path: Path) -> Manifest:
 
 
 def load_loadout(path: Path) -> LoadoutDef:
-    raw = yaml.safe_load(path.read_text())
+    raw = _parse_yaml(path)
     data = _require_mapping(raw, path.name)
     _reject_unknown_keys(data, LOADOUT_KEYS, path.name)
 
@@ -206,7 +220,7 @@ def load_lockfile(path: Path) -> Lockfile | None:
     if not path.exists():
         return None
 
-    raw = json.loads(path.read_text())
+    raw = _parse_json(path)
     data = _require_mapping(raw, path.name)
 
     lockfile_version = data.get("lockfile_version")

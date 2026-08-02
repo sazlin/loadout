@@ -123,7 +123,7 @@ def _default_skill_dest(skills_dir: str, src: str) -> str:
 def _expand_skill(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:
     source = source_root / src
     if not source.is_dir():
-        return []
+        raise ValidationError(f"Skill source directory not found: {src}")
     if PurePosixPath(dest).name != PurePosixPath(src).name:
         raise ValidationError(f"Skill destination must end with {PurePosixPath(src).name}: {dest}")
 
