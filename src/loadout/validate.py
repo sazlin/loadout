@@ -51,15 +51,20 @@ def _skill_root(file: ResolvedFile, source_root: Path, skills_dir: str) -> Path:
     except (ValueError, IndexError) as error:
         raise ValidationError(f"Skill source must be under skills/: {file.src}") from error
 
-    try:
-        destination_relative = PurePosixPath(file.dest).relative_to(
-            PurePosixPath(skills_dir)
-        )
-        destination_dir_name = destination_relative.parts[0]
-    except ValueError as error:
+    destination_parts = PurePosixPath(file.dest).parts
+    skills_dir_parts = PurePosixPath(skills_dir).parts
+    destination_dir_name = next(
+        (
+            destination_parts[index + len(skills_dir_parts)]
+            for index in range(len(destination_parts) - len(skills_dir_parts))
+            if destination_parts[index : index + len(skills_dir_parts)] == skills_dir_parts
+        ),
+        None,
+    )
+    if destination_dir_name is None:
         raise ValidationError(
             f"Skill destination must be under {skills_dir}: {file.dest}"
-        ) from error
+        )
 
     if source_dir_name != destination_dir_name:
         raise ValidationError(

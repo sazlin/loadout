@@ -1,0 +1,12 @@
+---
+description: Preserve repository conventions and verify scoped changes.
+alwaysApply: true
+---
+
+# Repository conventions
+
+- Read nearby code, configuration, and tests before changing a component.
+- Prefer the repository's existing patterns over introducing a new abstraction or dependency.
+- Keep changes scoped to the requested outcome; do not perform unrelated cleanup.
+- Add or update tests when behavior changes, then run the narrowest relevant checks.
+- Never commit credentials, tokens, machine-specific paths, or generated local state.

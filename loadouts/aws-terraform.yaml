@@ -1,0 +1,10 @@
+name: aws-terraform
+description: AWS Terraform conventions and plan-review guidance.
+extends:
+  - base
+rules:
+  - src: rules/terraform/aws-conventions.mdc
+    dest: infra/.cursor/rules/aws-conventions.mdc
+skills:
+  - src: skills/terraform-plan-review
+    dest: infra/.claude/skills/terraform-plan-review

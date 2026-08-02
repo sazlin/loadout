@@ -1,0 +1,14 @@
+---
+description: Manage Python dependencies and commands with uv.
+globs:
+  - "**/*.py"
+  - "pyproject.toml"
+  - "uv.lock"
+---
+
+# uv workspace conventions
+
+- Use `uv run` for project commands so they execute in the locked environment.
+- Declare runtime dependencies in `pyproject.toml`; update `uv.lock` through uv rather than editing it manually.
+- Prefer workspace-aware dependency changes from the repository root.
+- Keep supported Python versions and tool configuration in `pyproject.toml`.

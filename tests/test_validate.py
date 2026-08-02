@@ -62,6 +62,23 @@ def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> 
         validate_resolved(files, tmp_path, ".claude/skills")
 
 
+def test_validate_resolved_accepts_nested_claude_skill_destination(tmp_path: Path) -> None:
+    skill_dir = tmp_path / "skills" / "demo"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: demo\ndescription: Demo skill\n---\n"
+    )
+    files = [
+        ResolvedFile(
+            "skills/demo/SKILL.md",
+            "infra/.claude/skills/demo/SKILL.md",
+            "skill_file",
+        )
+    ]
+
+    validate_resolved(files, tmp_path, ".claude/skills")
+
+
 def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)

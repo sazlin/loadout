@@ -1,0 +1,14 @@
+---
+description: Write reliable, focused pytest coverage for Python behavior.
+globs:
+  - "**/test_*.py"
+  - "**/*_test.py"
+  - "tests/**/*.py"
+---
+
+# pytest conventions
+
+- Name tests after the observable behavior and keep each test focused on one outcome.
+- Use fixtures for repeated setup and `tmp_path` for filesystem isolation.
+- Assert meaningful outputs, side effects, and errors rather than implementation details.
+- Run the smallest relevant test selection while iterating, then run the complete suite before handoff.

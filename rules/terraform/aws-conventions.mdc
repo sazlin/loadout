@@ -1,0 +1,15 @@
+---
+description: Apply safe, consistent AWS Terraform changes.
+globs:
+  - "**/*.tf"
+  - "**/*.tfvars"
+  - "**/*.tfvars.json"
+---
+
+# AWS Terraform conventions
+
+- Pin provider and module versions; make provider regions and account assumptions explicit.
+- Use descriptive resource names and consistent tags for ownership, environment, and cost allocation.
+- Prefer least-privilege IAM policies and avoid wildcard actions or resources unless justified.
+- Run `terraform fmt`, validate the configuration, and review the plan before applying.
+- Do not place AWS credentials, secrets, or sensitive variable values in Terraform files or state outputs.

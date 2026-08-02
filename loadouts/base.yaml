@@ -1,0 +1,7 @@
+name: base
+description: Repository-wide engineering conventions and release discipline.
+rules:
+  - src: rules/core/commit-style.mdc
+  - src: rules/core/repo-conventions.mdc
+skills:
+  - src: skills/release-checklist
