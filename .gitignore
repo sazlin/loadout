@@ -223,3 +223,9 @@ __marimo__/
 # skill-creator scratch
 *-workspace/
 .DS_Store
+
+# skills CLI staging / lockfiles (source skills live under skills/)
+.claude/
+.agents/
+skills-lock.json
+.skills.json

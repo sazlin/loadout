@@ -1,4 +1,4 @@
-# loadout
+# Loadout
 
 Centralize and synchronize Cursor rules and Claude Code skills across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
 
@@ -50,6 +50,10 @@ uv sync --all-extras
 just lint    # validate rules, skills, and loadout definitions
 just test    # run pytest
 just release 0.2.0   # requires CHANGELOG entry; tags and pushes
+
+# Import a third-party skill into skills/ (then wire it into a loadout YAML)
+just add_skill mattpocock/skills --skill grill-me
+# If Just swallows flags: just add_skill mattpocock/skills -- --skill grill-me
 ```
 
 ## After syncing
