@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: extractions/setup-just@v2
+      - run: uv sync --all-extras
+      - run: just lint && just test
+
+  resolve-loadouts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        loadout: [base, python-monorepo, aws-terraform, playwright-e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras
+      - name: Resolve ${{ matrix.loadout }}
+        env:
+          LOADOUT_PATH: ${{ github.workspace }}
+          LOADOUT_NAME: ${{ matrix.loadout }}
+        run: |
+          set -euo pipefail
+          project="$(mktemp -d)"
+          cat > "$project/.loadout.yaml" <<EOF
+          source: https://github.com/sazlin/loadout
+          ref: main
+          loadouts: [$LOADOUT_NAME]
+          EOF
+          cd "$project"
+          uv run --project "$GITHUB_WORKSPACE" loadout resolve --list
+
+  sync-clean-output:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        loadout: [base, python-monorepo, aws-terraform, playwright-e2e]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras
+      - name: Sync ${{ matrix.loadout }} with no evals or workspace artifacts
+        env:
+          LOADOUT_PATH: ${{ github.workspace }}
+          LOADOUT_NAME: ${{ matrix.loadout }}
+        run: |
+          set -euo pipefail
+          project="$(mktemp -d)"
+          cat > "$project/.loadout.yaml" <<EOF
+          source: https://github.com/sazlin/loadout
+          ref: main
+          loadouts: [$LOADOUT_NAME]
+          EOF
+          cd "$project"
+          uv run --project "$GITHUB_WORKSPACE" loadout sync
+          if find . -type d -name evals | grep -q .; then
+            echo "Found evals/ in vendored output:" >&2
+            find . -type d -name evals >&2
+            exit 1
+          fi
+          if find . -type d -name '*-workspace' | grep -q .; then
+            echo "Found *-workspace/ in vendored output:" >&2
+            find . -type d -name '*-workspace' >&2
+            exit 1
+          fi

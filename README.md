@@ -1,2 +1,77 @@
 # loadout
-Centralize and synchronize your skills and rules for Claude Code and Cursor
+
+Centralize and synchronize Cursor rules and Claude Code skills across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
+
+## Install
+
+Run from any project directory without installing globally:
+
+```bash
+uvx --from git+https://github.com/sazlin/loadout@main loadout --help
+```
+
+Pin a release tag instead of `main` once tags exist:
+
+```bash
+uvx --from git+https://github.com/sazlin/loadout@v0.1.0 loadout sync
+```
+
+## Quick start
+
+Initialize a manifest and sync:
+
+```bash
+uvx --from git+https://github.com/sazlin/loadout@main loadout init --loadouts base,python-monorepo
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+```
+
+Generated projects use the `just` recipes in [docs/consumer-contract.md](docs/consumer-contract.md) (`loadout-sync`, `loadout-check`, `loadout-update`, `loadout-list`).
+
+## Local development
+
+When working on this repo, point sync at your working copy instead of cloning from GitHub:
+
+```bash
+LOADOUT_PATH="$(pwd)" just -f /path/to/project/justfile loadout-sync
+```
+
+Or from a project directory:
+
+```bash
+LOADOUT_PATH=/path/to/loadout loadout sync
+```
+
+The lockfile records `"resolved_sha": "local"`. Use this for offline work, loadout repo development, and hermetic template tests.
+
+## Loadout repo commands
+
+```bash
+uv sync --all-extras
+just lint    # validate rules, skills, and loadout definitions
+just test    # run pytest
+just release 0.2.0   # requires CHANGELOG entry; tags and pushes
+```
+
+## After syncing
+
+Rules and skills are files on disk. Agents do not always pick up changes immediately:
+
+- **Cursor IDE:** reload the window (Command Palette → “Developer: Reload Window”) after sync so new or updated rules and skills are discovered.
+- **Claude Code:** restart the session (or start a new one in the project root) so it rescans `.claude/skills/`.
+
+## Manual smoke test (acceptance criterion 18)
+
+Before rolling loadouts out to many projects, verify once on your real toolchain that skills synced to `.claude/skills/` are discovered by both Cursor and Claude Code:
+
+1. Sync a project that includes at least one skill (e.g. `base` or `python-monorepo`).
+2. Confirm `.claude/skills/<name>/SKILL.md` exists.
+3. **Cursor:** open the project, reload the window, and confirm the skill appears in Cursor’s skills UI or responds when invoked.
+4. **Claude Code:** start a session in the project root and confirm the skill is available (e.g. via `/` or the skills picker).
+5. If you use **Cursor CLI** (`cursor-agent`), confirm separately — compatibility paths for `.claude/skills/` may differ from the IDE; set `skills_dir` in `.loadout.yaml` if needed.
+
+See spec §5.7.1 for nested scoping caveats.
+
+## Documentation
+
+- [loadout-spec.md](loadout-spec.md) — full specification
+- [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract
