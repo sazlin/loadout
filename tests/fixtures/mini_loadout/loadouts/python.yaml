@@ -1,0 +1,5 @@
+name: python
+extends: [base]
+description: Python-specific rules
+rules:
+  - src: rules/python/b.mdc

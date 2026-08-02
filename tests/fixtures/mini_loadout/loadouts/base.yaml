@@ -1,0 +1,6 @@
+name: base
+description: Base rules and skills
+rules:
+  - src: rules/core/a.mdc
+skills:
+  - src: skills/demo
