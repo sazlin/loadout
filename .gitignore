@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Git worktrees
+.worktrees/
+
+# skill-creator scratch
+*-workspace/
+.DS_Store
