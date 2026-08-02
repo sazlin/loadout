@@ -58,6 +58,7 @@ loadout/
       commit-style.mdc
       repo-conventions.mdc
     python/
+      python-code-style.mdc
       uv-workspace.mdc
       pytest.mdc
     terraform/
@@ -70,6 +71,7 @@ loadout/
     terraform-plan-review/SKILL.md
   loadouts/
     base.yaml
+    python.yaml
     python-monorepo.yaml
     aws-terraform.yaml
     playwright-e2e.yaml
