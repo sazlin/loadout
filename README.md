@@ -49,8 +49,13 @@ The lockfile records `"resolved_sha": "local"`. Use this for offline work, loado
 uv sync --all-extras
 just lint    # validate rules, skills, and loadout definitions
 just test    # run pytest
+just changelog       # add CHANGELOG.md entry for the current version if missing
 just release 0.2.0   # requires CHANGELOG entry; tags and pushes
+```
 
+When `pyproject.toml` / `src/loadout/__init__.py` version changes, CI runs `tools/update_changelog.py` and opens (or updates) a changelog PR. To also use a Cursor Automation for richer release notes, create one from [`.cursor/automations/update-changelog/AUTOMATION.md`](.cursor/automations/update-changelog/AUTOMATION.md).
+
+```bash
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me
 # If Just swallows flags: just add_skill mattpocock/skills -- --skill grill-me

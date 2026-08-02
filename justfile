@@ -9,6 +9,10 @@ lint:
 test:
     uv run pytest
 
+# Insert a CHANGELOG.md section for the current pyproject.toml version if missing.
+changelog:
+    uv run python tools/update_changelog.py
+
 release version:
     #!/usr/bin/env bash
     set -euo pipefail

@@ -1,0 +1,69 @@
+name: Changelog on version change
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "src/loadout/__init__.py"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "src/loadout/__init__.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-changelog:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate CHANGELOG entry if needed
+        id: changelog
+        run: |
+          set -euo pipefail
+          if python tools/update_changelog.py --check; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python tools/update_changelog.py | tee /tmp/changelog-update.txt
+          version="$(sed -n 's/^version=//p' /tmp/changelog-update.txt | head -n1)"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit CHANGELOG on pull request branch
+        if: github.event_name == 'pull_request' && steps.changelog.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: changelog for v${{ steps.changelog.outputs.version }}"
+          git push
+
+      - name: Open follow-up PR on main
+        if: github.event_name != 'pull_request' && steps.changelog.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: docs/changelog-v${{ steps.changelog.outputs.version }}
+          title: "docs: changelog for v${{ steps.changelog.outputs.version }}"
+          commit-message: "docs: changelog for v${{ steps.changelog.outputs.version }}"
+          body: |
+            Automatically generated changelog entry for v${{ steps.changelog.outputs.version }}.
+
+            Source: commits since the previous `pyproject.toml` version change, summarized by `tools/update_changelog.py`.
+          add-paths: |
+            CHANGELOG.md
