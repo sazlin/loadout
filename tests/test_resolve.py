@@ -59,3 +59,8 @@ def test_resolve_exclude_removes_expanded_skill_files():
 def test_resolve_rejects_unmatched_exclude():
     with pytest.raises(ValidationError, match="rules/missing.mdc"):
         resolve(manifest(exclude=["rules/missing.mdc"]), FIXTURE_ROOT)
+
+
+def test_resolve_rejects_unmatched_include():
+    with pytest.raises(ValidationError, match="rules/missing.mdc"):
+        resolve(manifest(include=["rules/missing.mdc"]), FIXTURE_ROOT)
