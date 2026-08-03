@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Add the `python` loadout, carrying the shared Python rules; `python-monorepo` now extends it
+- Add the `python` loadout, carrying the language-level Python rules; `python-monorepo` now
+  extends it and owns the uv workspace rule
 - Add `rules/python/python-code-style.mdc`, a simplicity-first Python code style rule
 
 ## 0.1.0
