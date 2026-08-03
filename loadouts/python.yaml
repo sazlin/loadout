@@ -1,0 +1,7 @@
+name: python
+description: Python authoring conventions - readable code style and testing.
+extends:
+  - base
+rules:
+  - src: rules/python/python-code-style.mdc
+  - src: rules/python/pytest.mdc
