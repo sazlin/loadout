@@ -140,9 +140,7 @@ def _build_plan(
         key=lambda planned: planned.dest,
     )
     rows = [
-        _rule_row(file, source_root)
-        for file in sorted(resolved, key=lambda file: file.dest)
-        if file.kind == "rule"
+        _rule_row(file, source_root) for file in sorted(resolved, key=lambda file: file.dest) if file.kind == "rule"
     ]
     blocks, removed_blocks = _plan_blocks(manifest, project_root, rows)
     return _Plan(
@@ -173,9 +171,7 @@ def _plan_file(file: ResolvedFile, source_root: Path, resolved_sha: str) -> _Pla
             _exhaustive: Never = file.kind
             raise AssertionError(f"Unhandled file kind: {file.kind!r}")
 
-    return _PlannedFile(
-        dest=file.dest, src=file.src, content=content, executable=executable
-    )
+    return _PlannedFile(dest=file.dest, src=file.src, content=content, executable=executable)
 
 
 def _skill_relative_parts(src: str) -> tuple[str, ...]:
@@ -257,9 +253,7 @@ def _plan_block(
 
     begin_marker, end_marker = _markers(block_name)
     current = path.read_text() if exists else heading
-    spliced = splice_block(
-        current, begin_marker, end_marker, rendered, placement=placement
-    )
+    spliced = splice_block(current, begin_marker, end_marker, rendered, placement=placement)
     return _PlannedBlock(
         file=file_name,
         block=block_name,
@@ -274,9 +268,7 @@ def _ensure_trailing_newline(text: str) -> str:
     return f"{text}\n"
 
 
-def _apply(
-    project_root: Path, lock_path: Path, plan: _Plan, lock: Lockfile | None
-) -> SyncResult:
+def _apply(project_root: Path, lock_path: Path, plan: _Plan, lock: Lockfile | None) -> SyncResult:
     removed = _prune(project_root, plan, lock)
 
     counts = {"added": 0, "updated": 0, "unchanged": 0}
@@ -302,16 +294,11 @@ def _apply(
     return result
 
 
-def _write_file(
-    path: Path, planned: _PlannedFile
-) -> Literal["added", "updated", "unchanged"]:
+def _write_file(path: Path, planned: _PlannedFile) -> Literal["added", "updated", "unchanged"]:
     if not path.exists():
         atomic_write(path, planned.content, planned.mode)
         return "added"
-    if (
-        path.read_bytes() == planned.content
-        and _is_executable(path) == planned.executable
-    ):
+    if path.read_bytes() == planned.content and _is_executable(path) == planned.executable:
         return "unchanged"
     atomic_write(path, planned.content, planned.mode)
     return "updated"
@@ -392,10 +379,7 @@ def _build_lockfile(plan: _Plan, synced_at: str) -> Lockfile:
             )
             for planned in plan.files
         ],
-        managed_blocks=[
-            ManagedBlock(file=block.file, block=block.block, sha256=block.sha256)
-            for block in plan.blocks
-        ],
+        managed_blocks=[ManagedBlock(file=block.file, block=block.block, sha256=block.sha256) for block in plan.blocks],
     )
 
 
@@ -427,19 +411,11 @@ def _print_summary(result: SyncResult) -> None:
     ):
         print(f"loadout: {file_name} block {'updated' if changed else 'unchanged'}")
     if _changed_anything(result):
-        print(
-            "loadout: reload the Cursor window and restart Claude Code to pick this up"
-        )
+        print("loadout: reload the Cursor window and restart Claude Code to pick this up")
 
 
 def _changed_anything(result: SyncResult) -> bool:
-    return bool(
-        result.added
-        or result.updated
-        or result.removed
-        or result.agents_changed
-        or result.claude_changed
-    )
+    return bool(result.added or result.updated or result.removed or result.agents_changed or result.claude_changed)
 
 
 def _check(project_root: Path, plan: _Plan, lock: Lockfile | None) -> SyncResult:
@@ -467,18 +443,11 @@ def _check(project_root: Path, plan: _Plan, lock: Lockfile | None) -> SyncResult
 def _check_lock_identity(plan: _Plan, lock: Lockfile) -> list[str]:
     problems: list[str] = []
     if lock.source != plan.manifest.source:
-        problems.append(
-            f"  source: lockfile has {lock.source}, manifest has {plan.manifest.source}"
-        )
+        problems.append(f"  source: lockfile has {lock.source}, manifest has {plan.manifest.source}")
     if lock.ref != plan.manifest.ref:
-        problems.append(
-            f"  ref: lockfile has {lock.ref}, manifest has {plan.manifest.ref}"
-        )
+        problems.append(f"  ref: lockfile has {lock.ref}, manifest has {plan.manifest.ref}")
     if lock.resolved_sha != plan.resolved_sha:
-        message = (
-            f"resolved_sha: lockfile has {lock.resolved_sha}, "
-            f"source resolved to {plan.resolved_sha}"
-        )
+        message = f"resolved_sha: lockfile has {lock.resolved_sha}, source resolved to {plan.resolved_sha}"
         if "local" in (lock.resolved_sha, plan.resolved_sha):
             print(f"loadout: warning: {message}")
         else:

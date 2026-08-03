@@ -235,9 +235,7 @@ def load_lockfile(path: Path) -> Lockfile | None:
     blocks_raw = data.get("managed_blocks", [])
     if not isinstance(blocks_raw, list):
         raise ValidationError(f"{path.name} managed_blocks must be a list")
-    managed_blocks = [
-        _managed_block_from_dict(item, index) for index, item in enumerate(blocks_raw)
-    ]
+    managed_blocks = [_managed_block_from_dict(item, index) for index, item in enumerate(blocks_raw)]
 
     return Lockfile(
         lockfile_version=lockfile_version,

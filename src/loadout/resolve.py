@@ -19,9 +19,7 @@ def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
     """Resolve manifest-selected loadouts into individual source and destination files."""
     loadouts = _load_selected_loadouts(manifest.loadouts, source_root)
     files = [
-        resolved
-        for loadout in loadouts
-        for resolved in _resolve_loadout(loadout, manifest.skills_dir, source_root)
+        resolved for loadout in loadouts for resolved in _resolve_loadout(loadout, manifest.skills_dir, source_root)
     ]
     files.extend(_resolve_includes(manifest, source_root))
     _validate_selectors(manifest.exclude, source_root)
@@ -57,9 +55,7 @@ def _load_selected_loadouts(names: list[str], source_root: Path) -> list[Loadout
     return resolved
 
 
-def _resolve_loadout(
-    loadout: LoadoutDef, skills_dir: str, source_root: Path
-) -> list[ResolvedFile]:
+def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, source_root: Path) -> list[ResolvedFile]:
     rules = [
         ResolvedFile(
             src=src,
@@ -160,9 +156,7 @@ def _validate_selectors(selectors: list[str], source_root: Path) -> None:
             raise ValidationError(f"Selector does not match a source path: {selector}")
 
 
-def _apply_excludes(
-    files: list[ResolvedFile], excludes: list[str]
-) -> list[ResolvedFile]:
+def _apply_excludes(files: list[ResolvedFile], excludes: list[str]) -> list[ResolvedFile]:
     return [
         file
         for file in files

@@ -33,12 +33,8 @@ def test_render_agent_rules_block_orders_always_rules_before_paths() -> None:
     )
 
     assert block is not None
-    assert block.index("`.cursor/rules/commit.mdc`") < block.index(
-        "`.cursor/rules/python.mdc`"
-    )
-    assert block.index("`.cursor/rules/python.mdc`") < block.index(
-        "`infra/.cursor/rules/aws.mdc`"
-    )
+    assert block.index("`.cursor/rules/commit.mdc`") < block.index("`.cursor/rules/python.mdc`")
+    assert block.index("`.cursor/rules/python.mdc`") < block.index("`infra/.cursor/rules/aws.mdc`")
     assert "| Rule | Scope | What it covers |" in block
     assert "Managed by [loadout](https://github.com/sazlin/loadout)." in block
 
@@ -60,10 +56,7 @@ def test_splice_block_replaces_only_marked_span() -> None:
 def test_splice_block_removes_existing_marked_block() -> None:
     block = f"{AGENT_RULES_BEGIN}\ngenerated\n{AGENT_RULES_END}"
 
-    assert (
-        splice_block(f"before\n{block}\nafter\n", AGENT_RULES_BEGIN, AGENT_RULES_END, None)
-        == "before\n\nafter\n"
-    )
+    assert splice_block(f"before\n{block}\nafter\n", AGENT_RULES_BEGIN, AGENT_RULES_END, None) == "before\n\nafter\n"
 
 
 @pytest.mark.parametrize(
@@ -80,10 +73,7 @@ def test_splice_block_rejects_mangled_markers(text: str, match: str) -> None:
 
 
 def test_splice_block_appends_absent_block_by_default() -> None:
-    assert (
-        splice_block("Hand-owned text.", AGENT_RULES_BEGIN, AGENT_RULES_END, "block")
-        == "Hand-owned text.\n\nblock"
-    )
+    assert splice_block("Hand-owned text.", AGENT_RULES_BEGIN, AGENT_RULES_END, "block") == "Hand-owned text.\n\nblock"
 
 
 def test_splice_block_prepends_absent_block_when_requested() -> None:
@@ -100,6 +90,9 @@ def test_splice_block_prepends_absent_block_when_requested() -> None:
 
 
 def test_render_claude_import_block_contains_markers_and_agents_import() -> None:
-    assert render_claude_import_block() == """<!-- BEGIN LOADOUT: agents-import (generated, do not edit) -->
+    assert (
+        render_claude_import_block()
+        == """<!-- BEGIN LOADOUT: agents-import (generated, do not edit) -->
 @AGENTS.md
 <!-- END LOADOUT: agents-import -->"""
+    )

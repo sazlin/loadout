@@ -14,9 +14,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "mini_loadout"
 
 
 def write_manifest(loadouts: str = "[python]", *, extra: str = "") -> None:
-    Path(".loadout.yaml").write_text(
-        f"source: https://example.com/loadout\nref: v1.0.0\nloadouts: {loadouts}\n{extra}"
-    )
+    Path(".loadout.yaml").write_text(f"source: https://example.com/loadout\nref: v1.0.0\nloadouts: {loadouts}\n{extra}")
 
 
 @pytest.fixture
@@ -78,9 +76,7 @@ def test_resolve_with_a_malformed_manifest_exits_two(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         Path(".loadout.yaml").write_text("loadouts: [base\n")
 
-        result = runner.invoke(
-            main, ["resolve", "--list"], env={"LOADOUT_PATH": str(FIXTURE)}
-        )
+        result = runner.invoke(main, ["resolve", "--list"], env={"LOADOUT_PATH": str(FIXTURE)})
 
         assert result.exit_code == 2, result.output
         assert "invalid YAML" in result.output
@@ -202,14 +198,11 @@ def test_lint_fails_on_an_orphan_file(runner: CliRunner) -> None:
         assert "orphan" in result.output.lower()
 
 
-
 def test_lint_fails_when_loadout_extends_missing_parent(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         for name in ("rules", "skills", "loadouts"):
             shutil.copytree(FIXTURE / name, Path(name))
-        Path("loadouts/child.yaml").write_text(
-            "name: child\nextends: [missing]\ndescription: Child\n"
-        )
+        Path("loadouts/child.yaml").write_text("name: child\nextends: [missing]\ndescription: Child\n")
 
         result = runner.invoke(main, ["lint"])
 
@@ -229,9 +222,7 @@ def test_update_rewrites_ref_syncs_and_prints_changelog_slice(runner: CliRunner)
         )
         write_manifest()
 
-        result = runner.invoke(
-            main, ["update", "--to", "v3.0.0"], env={"LOADOUT_PATH": str(source)}
-        )
+        result = runner.invoke(main, ["update", "--to", "v3.0.0"], env={"LOADOUT_PATH": str(source)})
 
         assert result.exit_code == 0, result.output
         manifest = yaml.safe_load(Path(".loadout.yaml").read_text())

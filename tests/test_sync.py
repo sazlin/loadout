@@ -115,9 +115,7 @@ def test_sync_injects_header_into_rules_and_skill_md(project: Path) -> None:
 def test_sync_copies_bundled_skill_files_verbatim_and_skips_evals(project: Path) -> None:
     sync(project)
 
-    assert (project / SKILL_SCRIPT).read_bytes() == (
-        FIXTURE / "skills/demo/scripts/run.sh"
-    ).read_bytes()
+    assert (project / SKILL_SCRIPT).read_bytes() == (FIXTURE / "skills/demo/scripts/run.sh").read_bytes()
     assert (project / ".claude/skills/demo/references/runbook.md").read_bytes() == (
         FIXTURE / "skills/demo/references/runbook.md"
     ).read_bytes()
@@ -130,9 +128,7 @@ def test_sync_copies_bundled_skill_files_verbatim_and_skips_evals(project: Path)
     assert not (project / ".claude/skills/demo/evals").exists()
 
 
-def test_sync_preserves_binary_skill_assets(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_sync_preserves_binary_skill_assets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
     binary_asset = source / "skills/demo/assets/icon.bin"
     binary_asset.write_bytes(b"\x00\xff\x10\x80demo\x00")
@@ -142,18 +138,14 @@ def test_sync_preserves_binary_skill_assets(
 
     sync(project)
 
-    assert (project / ".claude/skills/demo/assets/icon.bin").read_bytes() == (
-        binary_asset.read_bytes()
-    )
+    assert (project / ".claude/skills/demo/assets/icon.bin").read_bytes() == (binary_asset.read_bytes())
 
 
 def test_sync_preserves_executable_bit_and_records_mode(project: Path) -> None:
     sync(project)
 
     assert os.access(project / SKILL_SCRIPT, os.X_OK)
-    modes = {
-        entry["dest"]: entry.get("mode") for entry in read_lock(project)["files"]
-    }
+    modes = {entry["dest"]: entry.get("mode") for entry in read_lock(project)["files"]}
     assert modes[SKILL_SCRIPT] == "755"
     assert modes[RULE_A] is None
 
@@ -195,17 +187,13 @@ def test_removing_loadout_prunes_only_its_files(project: Path) -> None:
 
 
 def test_unmatched_exclude_is_a_validation_error(project: Path) -> None:
-    write_manifest(
-        project, manifest_body(extra="exclude:\n  - rules/python/gone.mdc\n")
-    )
+    write_manifest(project, manifest_body(extra="exclude:\n  - rules/python/gone.mdc\n"))
 
     with pytest.raises(ValidationError, match="gone.mdc"):
         sync(project)
 
 
-def test_destination_collision_is_a_validation_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_destination_collision_is_a_validation_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
     (source / "loadouts/base.yaml").write_text(
         """name: base
@@ -225,13 +213,9 @@ rules:
         sync(project)
 
 
-def test_skill_name_directory_mismatch_is_a_validation_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_skill_name_directory_mismatch_is_a_validation_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
-    (source / "skills/demo/SKILL.md").write_text(
-        "---\nname: not-demo\ndescription: Demo skill\n---\n\n# Demo\n"
-    )
+    (source / "skills/demo/SKILL.md").write_text("---\nname: not-demo\ndescription: Demo skill\n---\n\n# Demo\n")
     monkeypatch.setenv("LOADOUT_PATH", str(source))
     project = tmp_path / "project"
     write_manifest(project, manifest_body("[base]"))
@@ -276,9 +260,7 @@ def test_agents_block_indexes_every_rule_with_scope_and_description(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     source = copy_fixture(tmp_path)
-    (source / "rules/core/a.mdc").write_text(
-        "---\ndescription: Core test rule\nalwaysApply: true\n---\n\nCore rule.\n"
-    )
+    (source / "rules/core/a.mdc").write_text("---\ndescription: Core test rule\nalwaysApply: true\n---\n\nCore rule.\n")
     (source / "rules/python/b.mdc").write_text(
         '---\ndescription: Python test rule\nglobs: ["**/*.py"]\n---\n\nPython rule.\n'
     )
@@ -300,24 +282,18 @@ rules:
     agents = (project / "AGENTS.md").read_text()
     assert result.agents_changed
     assert "| `.cursor/rules/a.mdc` | Always | Core test rule |" in agents
-    assert (
-        "| `packages/api/.cursor/rules/b.mdc` | `**/*.py` | Python test rule |"
-        in agents
-    )
+    assert "| `packages/api/.cursor/rules/b.mdc` | `**/*.py` | Python test rule |" in agents
 
 
 def test_rule_without_globs_or_always_apply_renders_on_request(project: Path) -> None:
     sync(project)
 
-    assert "| `.cursor/rules/a.mdc` | On request | Core test rule |" in (
-        project / "AGENTS.md"
-    ).read_text()
+    assert "| `.cursor/rules/a.mdc` | On request | Core test rule |" in (project / "AGENTS.md").read_text()
 
 
 def test_hand_written_agents_content_survives_resync(project: Path) -> None:
     (project / "AGENTS.md").write_text(
-        "# House rules\n\nAbove the block.\n\n"
-        f"{AGENT_RULES_BEGIN}\nstale\n{AGENT_RULES_END}\n\nBelow the block.\n"
+        f"# House rules\n\nAbove the block.\n\n{AGENT_RULES_BEGIN}\nstale\n{AGENT_RULES_END}\n\nBelow the block.\n"
     )
 
     sync(project)
@@ -331,9 +307,7 @@ def test_hand_written_agents_content_survives_resync(project: Path) -> None:
     assert (project / "AGENTS.md").read_text() == agents
 
 
-def test_agents_block_is_removed_when_no_rules_remain(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_agents_block_is_removed_when_no_rules_remain(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
     (source / "loadouts/base.yaml").write_text(
         """name: base
@@ -345,18 +319,14 @@ skills:
     monkeypatch.setenv("LOADOUT_PATH", str(source))
     project = tmp_path / "project"
     write_manifest(project, manifest_body("[base]"))
-    (project / "AGENTS.md").write_text(
-        f"# House rules\n\n{AGENT_RULES_BEGIN}\nstale table\n{AGENT_RULES_END}\n"
-    )
+    (project / "AGENTS.md").write_text(f"# House rules\n\n{AGENT_RULES_BEGIN}\nstale table\n{AGENT_RULES_END}\n")
 
     sync(project)
 
     agents = (project / "AGENTS.md").read_text()
     assert AGENT_RULES_BEGIN not in agents
     assert "# House rules" in agents
-    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == [
-        "CLAUDE.md"
-    ]
+    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == ["CLAUDE.md"]
 
 
 def test_mangled_agents_block_aborts_without_overwriting(project: Path) -> None:
@@ -387,9 +357,7 @@ def test_claude_bridge_writes_import_block_above_existing_content(
 def test_claude_bridge_creates_missing_file(project: Path) -> None:
     sync(project)
 
-    assert (project / "CLAUDE.md").read_text() == (
-        f"{CLAUDE_IMPORT_BEGIN}\n@AGENTS.md\n{CLAUDE_IMPORT_END}\n"
-    )
+    assert (project / "CLAUDE.md").read_text() == (f"{CLAUDE_IMPORT_BEGIN}\n@AGENTS.md\n{CLAUDE_IMPORT_END}\n")
 
 
 def test_claude_bridge_false_skips_claude_md(project: Path) -> None:
@@ -399,9 +367,7 @@ def test_claude_bridge_false_skips_claude_md(project: Path) -> None:
 
     assert not (project / "CLAUDE.md").exists()
     assert not result.claude_changed
-    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == [
-        "AGENTS.md"
-    ]
+    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == ["AGENTS.md"]
 
 
 def test_claude_bridge_disabled_removes_a_previously_written_import_block(
@@ -419,9 +385,7 @@ def test_claude_bridge_disabled_removes_a_previously_written_import_block(
     assert CLAUDE_IMPORT_END not in claude
     assert claude.endswith("# Claude notes\n\nKeep me.\n")
     assert result.claude_changed
-    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == [
-        "AGENTS.md"
-    ]
+    assert [block["file"] for block in read_lock(project)["managed_blocks"]] == ["AGENTS.md"]
 
     sync(project, check=True)
 
@@ -446,9 +410,7 @@ def test_claude_bridge_disabled_leaves_an_untouched_claude_md_alone(
     assert not result.claude_changed
 
 
-def test_dest_escaping_the_project_is_a_validation_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_dest_escaping_the_project_is_a_validation_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
     (source / "loadouts/base.yaml").write_text(
         """name: base
@@ -483,9 +445,7 @@ def test_prune_ignores_lockfile_entries_pointing_outside_the_project(
     assert result.removed == 0
 
 
-def test_missing_skill_directory_is_a_validation_error(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_missing_skill_directory_is_a_validation_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = copy_fixture(tmp_path)
     (source / "loadouts/base.yaml").write_text(
         """name: base
@@ -588,9 +548,7 @@ def test_bumped_ref_without_sync_is_drift(project: Path) -> None:
 def test_stale_agents_block_is_drift(project: Path) -> None:
     sync(project)
     agents = (project / "AGENTS.md").read_text()
-    (project / "AGENTS.md").write_text(
-        agents.replace("Core test rule", "Something else entirely")
-    )
+    (project / "AGENTS.md").write_text(agents.replace("Core test rule", "Something else entirely"))
 
     with pytest.raises(DriftError, match="AGENTS.md"):
         sync(project, check=True)
@@ -609,9 +567,7 @@ def test_check_warns_instead_of_failing_on_local_sha_mismatch(
 ) -> None:
     sync(project)
     lock_path = project / ".loadout.lock"
-    lock_path.write_text(
-        lock_path.read_text().replace('"resolved_sha": "local"', '"resolved_sha": "9f2c1ab"')
-    )
+    lock_path.write_text(lock_path.read_text().replace('"resolved_sha": "local"', '"resolved_sha": "9f2c1ab"'))
     capsys.readouterr()
 
     sync(project, check=True)
@@ -636,9 +592,7 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
     assert all(len(entry.sha256) == 64 for entry in lock.files)
 
 
-def test_real_feature_loadouts_scope_rules_and_terraform_skill(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repository = Path(__file__).parent.parent
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
     project = tmp_path / "project"
@@ -669,10 +623,7 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
     assert not any("terraform" in path.lower() for path in paths)
     assert not any("aws-conventions" in path for path in paths)
     assert "terraform" not in (project / "AGENTS.md").read_text().lower()
-    assert not any(
-        "terraform-plan-review" in text or "aws-conventions" in text
-        for text in _project_text(project)
-    )
+    assert not any("terraform-plan-review" in text or "aws-conventions" in text for text in _project_text(project))
 
 
 def _project_text(project: Path) -> list[str]:

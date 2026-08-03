@@ -41,9 +41,7 @@ def sync(check: bool) -> None:
 
 @main.command()
 @click.option("--loadouts", required=True, help="Comma-separated loadout names.")
-@click.option(
-    "--source", default=DEFAULT_SOURCE, show_default=True, help="Loadout repo URL."
-)
+@click.option("--source", default=DEFAULT_SOURCE, show_default=True, help="Loadout repo URL.")
 @click.option("--ref", default=DEFAULT_REF, show_default=True, help="Git ref to pin.")
 def init(loadouts: str, source: str, ref: str) -> None:
     """Write a starter .loadout.yaml manifest."""
@@ -51,9 +49,7 @@ def init(loadouts: str, source: str, ref: str) -> None:
 
 
 @main.command()
-@click.option(
-    "--to", "to_ref", default=None, help="Ref to update to. Defaults to the latest tag."
-)
+@click.option("--to", "to_ref", default=None, help="Ref to update to. Defaults to the latest tag.")
 def update(to_ref: str | None) -> None:
     """Bump the pinned ref, re-sync, and print the CHANGELOG entries that landed."""
     _guarded(lambda: run_update(Path.cwd(), to_ref=to_ref))

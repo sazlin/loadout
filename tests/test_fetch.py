@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-import loadout.fetch as fetch
+from loadout import fetch
 from loadout.errors import FetchError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.models import Lockfile, Manifest
@@ -31,9 +31,7 @@ def test_fetch_uses_loadout_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert fetched.root == source.resolve()
 
 
-def test_fetch_rejects_missing_loadout_path(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fetch_rejects_missing_loadout_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     missing_source = tmp_path / "missing"
     monkeypatch.setenv("LOADOUT_PATH", str(missing_source))
 
@@ -41,9 +39,7 @@ def test_fetch_rejects_missing_loadout_path(
         fetch_source(make_manifest(), None)
 
 
-def test_fetch_reuses_cached_locked_source(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fetch_reuses_cached_locked_source(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     resolved_sha = "a" * 40
     cache_source = tmp_path / "loadout" / "sources" / resolved_sha
     cache_source.mkdir(parents=True)
@@ -67,9 +63,7 @@ def test_fetch_reuses_cached_locked_source(
     assert fetched.root == cache_source
 
 
-def test_fetch_uses_matching_lock_without_resolving_ref(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fetch_uses_matching_lock_without_resolving_ref(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     resolved_sha = "b" * 40
     cache_source = tmp_path / "loadout" / "sources" / resolved_sha
     cache_source.mkdir(parents=True)
@@ -125,10 +119,7 @@ def test_resolve_sha_prefers_peeled_annotated_tag(
 ) -> None:
     tag_object_sha = "e" * 40
     commit_sha = "f" * 40
-    output = (
-        f"{tag_object_sha}\trefs/tags/v1.0.0\n"
-        f"{commit_sha}\trefs/tags/v1.0.0^{{}}\n"
-    )
+    output = f"{tag_object_sha}\trefs/tags/v1.0.0\n{commit_sha}\trefs/tags/v1.0.0^{{}}\n"
     monkeypatch.setattr(
         fetch,
         "_run_git",

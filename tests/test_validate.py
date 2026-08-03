@@ -7,7 +7,6 @@ from loadout.models import Manifest
 from loadout.resolve import ResolvedFile, resolve
 from loadout.validate import validate_resolved
 
-
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_loadout"
 
 
@@ -48,9 +47,7 @@ def test_validate_resolved_rejects_destination_collision(tmp_path: Path) -> None
     "dest",
     ["../evil/a.mdc", "/etc/evil.mdc", ".cursor/rules/../../../evil.mdc"],
 )
-def test_validate_resolved_rejects_destinations_outside_the_project(
-    tmp_path: Path, dest: str
-) -> None:
+def test_validate_resolved_rejects_destinations_outside_the_project(tmp_path: Path, dest: str) -> None:
     (tmp_path / "rules").mkdir()
     (tmp_path / "rules" / "a.mdc").write_text("---\ndescription: A rule\n---\n")
     files = [ResolvedFile("rules/a.mdc", dest, "rule")]
@@ -71,9 +68,7 @@ def test_validate_resolved_rejects_sources_outside_the_source_tree(tmp_path: Pat
 def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text(
-        "---\nname: demo\ndescription: Demo skill\n---\n"
-    )
+    (skill_dir / "SKILL.md").write_text("---\nname: demo\ndescription: Demo skill\n---\n")
     files = [
         ResolvedFile(
             "skills/demo/SKILL.md",
@@ -89,9 +84,7 @@ def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> 
 def test_validate_resolved_accepts_nested_claude_skill_destination(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text(
-        "---\nname: demo\ndescription: Demo skill\n---\n"
-    )
+    (skill_dir / "SKILL.md").write_text("---\nname: demo\ndescription: Demo skill\n---\n")
     files = [
         ResolvedFile(
             "skills/demo/SKILL.md",
@@ -122,9 +115,7 @@ def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> Non
 def test_validate_resolved_rejects_invalid_skill_contract(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)
-    (skill_dir / "SKILL.md").write_text(
-        "---\nname: another-skill\ndescription: Demo skill\n---\n"
-    )
+    (skill_dir / "SKILL.md").write_text("---\nname: another-skill\ndescription: Demo skill\n---\n")
     files = [
         ResolvedFile(
             "skills/demo/SKILL.md",

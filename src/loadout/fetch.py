@@ -36,9 +36,7 @@ def fetch_source(
     cache_root = _cache_root(env)
     destination = cache_root / resolved_sha
     if destination.is_dir():
-        return FetchedSource(
-            root=destination, resolved_sha=resolved_sha, from_local=False
-        )
+        return FetchedSource(root=destination, resolved_sha=resolved_sha, from_local=False)
     if destination.exists():
         raise FetchError(f"Source cache path is not a directory: {destination}")
 
@@ -47,11 +45,7 @@ def fetch_source(
 
 
 def _locked_sha(manifest: Manifest, lock: Lockfile | None) -> str | None:
-    if (
-        lock is not None
-        and lock.source == manifest.source
-        and lock.ref == manifest.ref
-    ):
+    if lock is not None and lock.source == manifest.source and lock.ref == manifest.ref:
         return lock.resolved_sha
     return None
 
@@ -78,15 +72,11 @@ def _resolve_sha(manifest: Manifest) -> str:
         if len(fields) == 2 and fields[1].endswith("^{}"):
             return sha
     if resolved_sha is None:
-        raise FetchError(
-            f"Could not resolve ref {manifest.ref!r} from {manifest.source!r}"
-        )
+        raise FetchError(f"Could not resolve ref {manifest.ref!r} from {manifest.source!r}")
     return resolved_sha
 
 
-def _clone_to_cache(
-    source: str, resolved_sha: str, cache_root: Path, destination: Path
-) -> None:
+def _clone_to_cache(source: str, resolved_sha: str, cache_root: Path, destination: Path) -> None:
     try:
         cache_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=cache_root) as temp_dir:

@@ -12,3 +12,4 @@ globs:
 - Use fixtures for repeated setup and `tmp_path` for filesystem isolation.
 - Assert meaningful outputs, side effects, and errors rather than implementation details.
 - Run the smallest relevant test selection while iterating, then run the complete suite before handoff.
+- Mock IO aggressively to keep unit tests fast, deterministic, and to prevent side-effects in live systems.
