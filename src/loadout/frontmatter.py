@@ -9,9 +9,7 @@ import yaml
 
 from loadout.errors import ValidationError
 
-SKILL_KEYS = frozenset(
-    {"name", "description", "license", "allowed-tools", "metadata", "compatibility"}
-)
+SKILL_KEYS = frozenset({"name", "description", "license", "allowed-tools", "metadata", "compatibility"})
 SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
@@ -69,9 +67,7 @@ def _optional_string(data: dict[str, Any], key: str, context: str) -> str | None
     return value
 
 
-def _optional_string_list(
-    data: dict[str, Any], key: str, context: str
-) -> list[str] | None:
+def _optional_string_list(data: dict[str, Any], key: str, context: str) -> list[str] | None:
     value = data.get(key)
     if value is None:
         return None

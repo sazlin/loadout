@@ -13,7 +13,7 @@ uvx --from git+https://github.com/sazlin/loadout@main loadout --help
 Pin a release tag instead of `main` once tags exist:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.1.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.1.1 loadout sync
 ```
 
 ## Quick start

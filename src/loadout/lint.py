@@ -56,9 +56,7 @@ def _lint_rules(repo_root: Path, result: LintResult) -> None:
             result.errors.append(f"{relative}: {error}")
             continue
         if meta.always_apply and not relative.startswith("rules/core/"):
-            result.errors.append(
-                f"{relative}: alwaysApply: true is only allowed under rules/core/"
-            )
+            result.errors.append(f"{relative}: alwaysApply: true is only allowed under rules/core/")
 
 
 def _lint_skills(repo_root: Path, result: LintResult) -> None:
@@ -86,8 +84,7 @@ def _lint_skill(repo_root: Path, skill_root: Path, result: LintResult) -> None:
     line_count = text.count("\n") + 1
     if line_count > SKILL_MD_WARN_LINES:
         result.warnings.append(
-            f"{relative_root}/SKILL.md: {line_count} lines exceeds {SKILL_MD_WARN_LINES}; "
-            "push detail into references/"
+            f"{relative_root}/SKILL.md: {line_count} lines exceeds {SKILL_MD_WARN_LINES}; push detail into references/"
         )
 
     for stray in sorted(skill_root.rglob("SKILL.md")):
@@ -119,9 +116,7 @@ def _lint_evals(repo_root: Path, skill_root: Path, result: LintResult) -> None:
         files = entry.get("files", []) if isinstance(entry, dict) else []
         for file_path in files:
             if not (skill_root / file_path).is_file():
-                result.errors.append(
-                    f"{relative_evals}: evals[{index}].files references missing path {file_path}"
-                )
+                result.errors.append(f"{relative_evals}: evals[{index}].files references missing path {file_path}")
 
 
 def _lint_reference_lengths(repo_root: Path, skill_root: Path, result: LintResult) -> None:
@@ -137,8 +132,7 @@ def _lint_reference_lengths(repo_root: Path, skill_root: Path, result: LintResul
         if line_count > REFERENCE_WARN_LINES and not _has_toc(text):
             relative = path.relative_to(repo_root).as_posix()
             result.warnings.append(
-                f"{relative}: {line_count} lines exceeds {REFERENCE_WARN_LINES} "
-                "without a table of contents"
+                f"{relative}: {line_count} lines exceeds {REFERENCE_WARN_LINES} without a table of contents"
             )
 
 
@@ -151,7 +145,6 @@ def _has_toc(text: str) -> bool:
         if _TOC_LIST_ITEM_RE.match(line):
             list_items += 1
     return list_items >= 3
-
 
 
 def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef:
@@ -213,9 +206,7 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
     return rule_srcs, skill_srcs
 
 
-def _lint_orphans(
-    repo_root: Path, rule_srcs: set[str], skill_srcs: set[str], result: LintResult
-) -> None:
+def _lint_orphans(repo_root: Path, rule_srcs: set[str], skill_srcs: set[str], result: LintResult) -> None:
     rules_dir = repo_root / "rules"
     if rules_dir.is_dir():
         for path in sorted(rules_dir.rglob("*.mdc")):

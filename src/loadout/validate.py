@@ -8,9 +8,7 @@ from loadout.frontmatter import parse_rule, parse_skill_md
 from loadout.resolve import ResolvedFile
 
 
-def validate_resolved(
-    files: list[ResolvedFile], source_root: Path, skills_dir: str
-) -> None:
+def validate_resolved(files: list[ResolvedFile], source_root: Path, skills_dir: str) -> None:
     """Validate resolved files before writing them to a target project."""
     destinations: dict[str, str] = {}
     skill_roots: dict[str, Path] = {}
@@ -25,10 +23,7 @@ def validate_resolved(
 
         existing_source = destinations.setdefault(file.dest, file.src)
         if existing_source != file.src:
-            raise ValidationError(
-                f"Destination collision at {file.dest}: "
-                f"{existing_source} and {file.src}"
-            )
+            raise ValidationError(f"Destination collision at {file.dest}: {existing_source} and {file.src}")
 
         if file.kind == "rule":
             parse_rule(source_path, source_path.read_text())
@@ -72,14 +67,9 @@ def _skill_root(file: ResolvedFile, source_root: Path, skills_dir: str) -> Path:
         None,
     )
     if destination_dir_name is None:
-        raise ValidationError(
-            f"Skill destination must be under {skills_dir}: {file.dest}"
-        )
+        raise ValidationError(f"Skill destination must be under {skills_dir}: {file.dest}")
 
     if source_dir_name != destination_dir_name:
-        raise ValidationError(
-            "Skill destination directory must match source directory: "
-            f"{file.dest}"
-        )
+        raise ValidationError(f"Skill destination directory must match source directory: {file.dest}")
 
     return source_root.joinpath(*source_parts[: skills_index + 2])

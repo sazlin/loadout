@@ -26,9 +26,7 @@ def render_agent_rules_block(rules: list[RuleIndexRow]) -> str | None:
         return None
 
     rows = sorted(rules, key=lambda rule: (rule.scope != "Always", rule.path))
-    table_rows = "\n".join(
-        f"| `{rule.path}` | {rule.scope} | {rule.description} |" for rule in rows
-    )
+    table_rows = "\n".join(f"| `{rule.path}` | {rule.scope} | {rule.description} |" for rule in rows)
     return f"""{AGENT_RULES_BEGIN}
 ## Agent Rules
 
@@ -77,9 +75,7 @@ def splice_block(
     if begin_count == 0 and end_count == 0:
         return _insert_absent_block(text, new_block, placement)
     if begin_count != 1 or end_count != 1:
-        raise ValidationError(
-            "Managed block must contain exactly one begin and one end marker"
-        )
+        raise ValidationError("Managed block must contain exactly one begin and one end marker")
 
     begin_index = text.index(begin_marker)
     end_index = text.index(end_marker)
@@ -91,9 +87,7 @@ def splice_block(
     return text[:begin_index] + replacement + text[end_index:]
 
 
-def _insert_absent_block(
-    text: str, new_block: str | None, placement: Literal["append", "prepend"]
-) -> str:
+def _insert_absent_block(text: str, new_block: str | None, placement: Literal["append", "prepend"]) -> str:
     if new_block is None:
         return text
     if placement == "append":

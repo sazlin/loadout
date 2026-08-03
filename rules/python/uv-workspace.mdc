@@ -12,3 +12,4 @@ globs:
 - Declare runtime dependencies in `pyproject.toml`; update `uv.lock` through uv rather than editing it manually.
 - Prefer workspace-aware dependency changes from the repository root.
 - Keep supported Python versions and tool configuration in `pyproject.toml`.
+- Use `uv sync --all-packages --all-extras` from repo root whenever updating dependencies during development.

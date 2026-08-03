@@ -90,16 +90,13 @@ def test_always_apply_outside_rules_core_is_an_error(tmp_path: Path) -> None:
     )
     write(
         tmp_path / "loadouts" / "python.yaml",
-        "name: python\ndescription: Python rules\n"
-        "rules:\n  - src: rules/python/always.mdc\n",
+        "name: python\ndescription: Python rules\nrules:\n  - src: rules/python/always.mdc\n",
     )
 
     result = lint_repo(tmp_path)
 
     assert not result.ok
-    assert any(
-        "rules/python/always.mdc" in error and "alwaysApply" in error for error in result.errors
-    )
+    assert any("rules/python/always.mdc" in error and "alwaysApply" in error for error in result.errors)
 
 
 def test_skill_missing_skill_md_is_an_error(tmp_path: Path) -> None:
@@ -152,10 +149,7 @@ def test_stray_nested_skill_md_below_skill_root_is_an_error(tmp_path: Path) -> N
     result = lint_repo(tmp_path)
 
     assert not result.ok
-    assert any(
-        "skills/demo/references/nested/SKILL.md" in error and "stray" in error
-        for error in result.errors
-    )
+    assert any("skills/demo/references/nested/SKILL.md" in error and "stray" in error for error in result.errors)
 
 
 def test_eval_file_referencing_missing_path_is_an_error(tmp_path: Path) -> None:
@@ -198,20 +192,17 @@ def test_loadout_extends_cycle_is_an_error(tmp_path: Path) -> None:
     base_repo(tmp_path)
     write(
         tmp_path / "loadouts" / "base.yaml",
-        "name: base\nextends: [python]\ndescription: Base\n"
-        "rules:\n  - src: rules/core/a.mdc\n",
+        "name: base\nextends: [python]\ndescription: Base\nrules:\n  - src: rules/core/a.mdc\n",
     )
     write(
         tmp_path / "loadouts" / "python.yaml",
-        "name: python\nextends: [base]\ndescription: Python\n"
-        "skills:\n  - src: skills/demo\n",
+        "name: python\nextends: [base]\ndescription: Python\nskills:\n  - src: skills/demo\n",
     )
 
     result = lint_repo(tmp_path)
 
     assert not result.ok
     assert any("cycle" in error for error in result.errors)
-
 
 
 def test_loadout_extends_missing_parent_is_an_error(tmp_path: Path) -> None:
@@ -235,6 +226,7 @@ def test_loadout_malformed_yaml_is_an_error(tmp_path: Path) -> None:
 
     assert not result.ok
     assert any("bad.yaml" in error and "invalid YAML" in error for error in result.errors)
+
 
 def test_loadout_destination_collision_is_an_error(tmp_path: Path) -> None:
     write(

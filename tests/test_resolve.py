@@ -7,7 +7,6 @@ from loadout.errors import ValidationError
 from loadout.models import Manifest
 from loadout.resolve import ResolvedFile, resolve
 
-
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_loadout"
 
 
@@ -101,8 +100,7 @@ def test_resolve_rejects_a_loadout_referencing_a_missing_skill_directory(tmp_pat
 def test_resolve_rejects_a_skill_src_that_is_a_file(tmp_path: Path):
     source = copy_fixture(tmp_path)
     (source / "loadouts" / "base.yaml").write_text(
-        "name: base\ndescription: Base rules and skills\n"
-        "skills:\n  - src: skills/demo/SKILL.md\n"
+        "name: base\ndescription: Base rules and skills\nskills:\n  - src: skills/demo/SKILL.md\n"
     )
 
     with pytest.raises(ValidationError, match="skills/demo/SKILL.md"):
@@ -112,12 +110,10 @@ def test_resolve_rejects_a_skill_src_that_is_a_file(tmp_path: Path):
 def test_resolve_rejects_extends_cycles(tmp_path: Path):
     source = copy_fixture(tmp_path)
     (source / "loadouts" / "base.yaml").write_text(
-        "name: base\nextends: [python]\ndescription: Base\n"
-        "rules:\n  - src: rules/core/a.mdc\n"
+        "name: base\nextends: [python]\ndescription: Base\nrules:\n  - src: rules/core/a.mdc\n"
     )
     (source / "loadouts" / "python.yaml").write_text(
-        "name: python\nextends: [base]\ndescription: Python\n"
-        "rules:\n  - src: rules/python/b.mdc\n"
+        "name: python\nextends: [base]\ndescription: Python\nrules:\n  - src: rules/python/b.mdc\n"
     )
 
     with pytest.raises(ValidationError, match="cycle"):
@@ -127,8 +123,7 @@ def test_resolve_rejects_extends_cycles(tmp_path: Path):
 def test_resolve_rejects_a_loadout_that_extends_itself(tmp_path: Path):
     source = copy_fixture(tmp_path)
     (source / "loadouts" / "base.yaml").write_text(
-        "name: base\nextends: [base]\ndescription: Base\n"
-        "rules:\n  - src: rules/core/a.mdc\n"
+        "name: base\nextends: [base]\ndescription: Base\nrules:\n  - src: rules/core/a.mdc\n"
     )
 
     with pytest.raises(ValidationError, match="cycle"):
