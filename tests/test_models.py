@@ -12,6 +12,7 @@ def test_load_manifest_defaults(tmp_path: Path):
     m = load_manifest(p)
     assert m.skills_dir == ".claude/skills"
     assert m.hooks_dir == ".cursor/hooks"
+    assert m.agents_dir == ".claude/agents"
     assert m.claude_bridge is True
     assert m.include == []
     assert m.exclude == []

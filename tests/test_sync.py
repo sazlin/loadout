@@ -29,6 +29,7 @@ SKILL_AGENT = ".claude/skills/demo/agents/reviewer.md"
 HOOK_SCRIPT = ".cursor/hooks/demo/guard.sh"
 CURSOR_HOOKS = ".cursor/hooks.json"
 CLAUDE_SETTINGS = ".claude/settings.json"
+PROJECT_AGENT = ".claude/agents/demo_agent.md"
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -83,7 +84,8 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
     assert (project / HOOK_SCRIPT).is_file()
     assert (project / CURSOR_HOOKS).is_file()
     assert (project / CLAUDE_SETTINGS).is_file()
-    assert result.added == 10
+    assert (project / PROJECT_AGENT).is_file()
+    assert result.added == 11
     assert result.updated == 0
     assert result.removed == 0
 
@@ -102,6 +104,7 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
             HOOK_SCRIPT,
             CURSOR_HOOKS,
             CLAUDE_SETTINGS,
+            PROJECT_AGENT,
         ]
     )
 
@@ -175,7 +178,7 @@ def test_second_sync_reports_no_changes_and_leaves_files_untouched(
     result = sync(project)
 
     assert (result.added, result.updated, result.removed) == (0, 0, 0)
-    assert result.unchanged == 10
+    assert result.unchanged == 11
     assert not result.agents_changed
     assert not result.claude_changed
     assert snapshot(project) == before
@@ -190,9 +193,10 @@ def test_removing_loadout_prunes_only_its_files(project: Path) -> None:
     result = sync(project)
 
     assert not (project / RULE_B).exists()
+    assert not (project / PROJECT_AGENT).exists()
     assert (project / RULE_A).is_file()
     assert unrelated.read_text() == "mine\n"
-    assert result.removed == 1
+    assert result.removed == 2
 
 
 def test_unmatched_exclude_is_a_validation_error(project: Path) -> None:
@@ -492,7 +496,7 @@ def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) 
     sync(project)
 
     out = capsys.readouterr().out
-    assert "10 added" in out
+    assert "11 added" in out
     assert "AGENTS.md" in out
     assert "Cursor" in out
 
@@ -600,6 +604,7 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
         HOOK_SCRIPT,
         CURSOR_HOOKS,
         CLAUDE_SETTINGS,
+        PROJECT_AGENT,
     }
     assert all(len(entry.sha256) == 64 for entry in lock.files)
 
@@ -634,6 +639,7 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
 
     paths = [path.relative_to(project).as_posix() for path in project.rglob("*")]
     assert paths, "sync wrote nothing, so this test would pass vacuously"
+    assert (project / ".claude/agents/python_coder.md").is_file()
     assert not (project / "infra").exists()
     assert not any("terraform" in path.lower() for path in paths)
     assert not any("aws-conventions" in path for path in paths)

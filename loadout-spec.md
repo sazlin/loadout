@@ -33,7 +33,8 @@ Rejected alternatives:
 | Rule | A `.mdc` file with YAML frontmatter, loaded by Cursor from `.cursor/rules/` |
 | Skill | A directory whose root contains `SKILL.md`, optionally with bundled `scripts/`, `references/`, `assets/`, `agents/`, and `evals/` subtrees. Loaded from `.claude/skills/`, which both Cursor and Claude Code read. See sections 5.2 and 5.7 |
 | Hook | A directory under `hooks/` with `hook.yaml` plus scripts/assets. Synced once to `.cursor/hooks/<name>/`. Sync also generates `.cursor/hooks.json` (Cursor-native) and `.claude/settings.json` hooks (Claude Code) that both point at that single script copy. See section 5.9 |
-| Loadout | A named, composable selection of rules, skills, and hooks, defined in the loadout repo and selected by a project. The unit a project actually chooses |
+| Agent | A markdown file with YAML frontmatter under `agents/`. Synced once to `.claude/agents/`, which both Cursor (compatibility path) and Claude Code read. See section 5.10 |
+| Loadout | A named, composable selection of rules, skills, hooks, and agents, defined in the loadout repo and selected by a project. The unit a project actually chooses |
 | Manifest | `.loadout.yaml`, committed in each project |
 | Lockfile | `.loadout.lock`, committed in each project |
 | Sync | Resolving the manifest and writing the file set into the project |
@@ -78,6 +79,8 @@ loadout/
       deny-dangerous.sh
       dangerous-patterns.txt
       test-guard.sh
+  agents/
+    python_coder.md
   loadouts/
     base.yaml
     python.yaml
@@ -245,10 +248,11 @@ hooks:
 Rules:
 
 - `extends` is a list and resolves depth-first. Cycles are a fatal error.
-- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`, for hooks `<hooks_dir>/<dirname>` where `hooks_dir` defaults to `.cursor/hooks`.
+- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`, for hooks `<hooks_dir>/<dirname>` where `hooks_dir` defaults to `.cursor/hooks`, for agents `<agents_dir>/<basename>` where `agents_dir` defaults to `.claude/agents`.
 - Use non-default `dest` to scope content to a monorepo subtree. Cursor scopes skills found under a nested project directory to files inside that directory, which keeps Terraform guidance out of context while someone edits a Python package.
 - A skill `dest` must end in `<skills_dir>/<dirname>`. Nesting is expressed by the prefix, as in `infra/.claude/skills/terraform-plan-review`.
 - A hook `dest` must end in `<hooks_dir>/<dirname>`. Hook scripts are stored once under the Cursor-native path; harness config generation rewrites command paths to match.
+- An agent `dest` must end in `<agents_dir>/<basename>` and keep the source basename (the file stem is the agent identity alongside frontmatter `name`).
 - The same `src` appearing in two loadouts is fine and deduplicates. The same `dest` receiving two different `src` values is a fatal error.
 
 ### 5.4 Manifest (`.loadout.yaml`)
@@ -270,6 +274,7 @@ exclude:
 
 skills_dir: .claude/skills   # optional, default .claude/skills
 hooks_dir: .cursor/hooks     # optional, default .cursor/hooks
+agents_dir: .claude/agents   # optional, default .claude/agents
 claude_bridge: true          # optional, default true. Manage the CLAUDE.md import block
 ```
 
@@ -463,6 +468,21 @@ hooks/deny-dangerous/
 - Default hook dest: `.cursor/hooks/<dirname>`
 - Generated Cursor config src recorded as `__generated__/cursor/hooks.json`
 - Generated Claude config src recorded as `__generated__/claude/settings.json`
+
+### 5.10 Agents (subagents)
+
+Custom subagents are markdown files with YAML frontmatter. Discovery:
+
+| Tool | Project path | Notes |
+| --- | --- | --- |
+| Cursor | `.cursor/agents/`, `.claude/agents/`, `.codex/agents/` | `.cursor/` wins on name conflicts |
+| Claude Code | `.claude/agents/` | Its only project agents path |
+
+**One directory: `.claude/agents/`.** Same intersection logic as skills (5.7.1): Claude Code reads one location; Cursor reads it as a compatibility path. Choosing the intersection means a single copy and no drift between harnesses. Preferring Cursor's native `.cursor/agents/` would force a second copy (or omit Claude Code).
+
+Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras): `name`, `description`, `model`, `readonly`, `is_background`, `tools`, `metadata`. `name` and `description` are required; `name` must equal the file stem.
+
+Sync injects loadout provenance into `metadata` like rules and `SKILL.md`.
 
 ---
 

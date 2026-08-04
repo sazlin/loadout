@@ -19,11 +19,12 @@ MANIFEST_KEYS = frozenset(
         "exclude",
         "skills_dir",
         "hooks_dir",
+        "agents_dir",
         "claude_bridge",
     }
 )
 
-LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks"})
+LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks", "agents"})
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,7 @@ class Manifest:
     exclude: list[str] = field(default_factory=list)
     skills_dir: str = ".claude/skills"
     hooks_dir: str = ".cursor/hooks"
+    agents_dir: str = ".claude/agents"
     claude_bridge: bool = True
 
 
@@ -46,6 +48,7 @@ class LoadoutDef:
     rules: list[Mapping[str, Any]]
     skills: list[Mapping[str, Any]]
     hooks: list[Mapping[str, Any]] = field(default_factory=list)
+    agents: list[Mapping[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -156,6 +159,10 @@ def load_manifest(path: Path) -> Manifest:
     if not isinstance(hooks_dir, str) or not hooks_dir:
         raise ValidationError(f"{path.name} hooks_dir must be a non-empty string")
 
+    agents_dir = data.get("agents_dir", ".claude/agents")
+    if not isinstance(agents_dir, str) or not agents_dir:
+        raise ValidationError(f"{path.name} agents_dir must be a non-empty string")
+
     claude_bridge = data.get("claude_bridge", True)
     if not isinstance(claude_bridge, bool):
         raise ValidationError(f"{path.name} claude_bridge must be a boolean")
@@ -168,6 +175,7 @@ def load_manifest(path: Path) -> Manifest:
         exclude=_normalize_str_list(data.get("exclude"), "exclude"),
         skills_dir=skills_dir,
         hooks_dir=hooks_dir,
+        agents_dir=agents_dir,
         claude_bridge=claude_bridge,
     )
 
@@ -189,6 +197,7 @@ def load_loadout(path: Path) -> LoadoutDef:
         rules=_normalize_mapping_list(data.get("rules"), "rules"),
         skills=_normalize_mapping_list(data.get("skills"), "skills"),
         hooks=_normalize_mapping_list(data.get("hooks"), "hooks"),
+        agents=_normalize_mapping_list(data.get("agents"), "agents"),
     )
 
 
