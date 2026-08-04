@@ -5,3 +5,5 @@ rules:
   - src: rules/core/repo-conventions.mdc
 skills:
   - src: skills/release-checklist
+hooks:
+  - src: hooks/deny-dangerous

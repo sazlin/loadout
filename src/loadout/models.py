@@ -18,11 +18,12 @@ MANIFEST_KEYS = frozenset(
         "include",
         "exclude",
         "skills_dir",
+        "hooks_dir",
         "claude_bridge",
     }
 )
 
-LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills"})
+LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks"})
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class Manifest:
     include: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=list)
     skills_dir: str = ".claude/skills"
+    hooks_dir: str = ".cursor/hooks"
     claude_bridge: bool = True
 
 
@@ -43,6 +45,7 @@ class LoadoutDef:
     description: str
     rules: list[Mapping[str, Any]]
     skills: list[Mapping[str, Any]]
+    hooks: list[Mapping[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -149,6 +152,10 @@ def load_manifest(path: Path) -> Manifest:
     if not isinstance(skills_dir, str) or not skills_dir:
         raise ValidationError(f"{path.name} skills_dir must be a non-empty string")
 
+    hooks_dir = data.get("hooks_dir", ".cursor/hooks")
+    if not isinstance(hooks_dir, str) or not hooks_dir:
+        raise ValidationError(f"{path.name} hooks_dir must be a non-empty string")
+
     claude_bridge = data.get("claude_bridge", True)
     if not isinstance(claude_bridge, bool):
         raise ValidationError(f"{path.name} claude_bridge must be a boolean")
@@ -160,6 +167,7 @@ def load_manifest(path: Path) -> Manifest:
         include=_normalize_str_list(data.get("include"), "include"),
         exclude=_normalize_str_list(data.get("exclude"), "exclude"),
         skills_dir=skills_dir,
+        hooks_dir=hooks_dir,
         claude_bridge=claude_bridge,
     )
 
@@ -180,6 +188,7 @@ def load_loadout(path: Path) -> LoadoutDef:
         description=_require_str(data, "description", path.name),
         rules=_normalize_mapping_list(data.get("rules"), "rules"),
         skills=_normalize_mapping_list(data.get("skills"), "skills"),
+        hooks=_normalize_mapping_list(data.get("hooks"), "hooks"),
     )
 
 

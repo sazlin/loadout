@@ -1,0 +1,17 @@
+# Registration metadata for sync. Not vendored into projects.
+# Scripts live once under .cursor/hooks/<name>/ (Cursor-native path).
+# Sync writes .cursor/hooks.json (Cursor) and merges hooks into
+# .claude/settings.json (Claude Code). Cursor can also load Claude hooks
+# via third-party compatibility; native Cursor registration uses
+# beforeShellExecution so cloud agents always pick this up without the
+# third-party opt-in. Claude PreToolUse covers Claude Code. One script
+# copy; two thin config registrations pointing at it.
+name: deny-dangerous
+description: Block catastrophic shell commands before agents run them
+script: deny-dangerous.sh
+cursor:
+  event: beforeShellExecution
+  args: [cursor]
+claude:
+  event: PreToolUse
+  matcher: Bash

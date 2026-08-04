@@ -4,3 +4,5 @@ rules:
   - src: rules/core/a.mdc
 skills:
   - src: skills/demo
+hooks:
+  - src: hooks/demo

@@ -62,6 +62,11 @@ def test_resolve_expands_extended_loadouts_and_skips_skill_root_evals():
             ".claude/skills/demo/agents/reviewer.md",
             "skill_file",
         ),
+        (
+            "hooks/demo/guard.sh",
+            ".cursor/hooks/demo/guard.sh",
+            "hook_file",
+        ),
     }
 
 

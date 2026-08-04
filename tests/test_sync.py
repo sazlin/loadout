@@ -26,6 +26,9 @@ SKILL_SCRIPT = ".claude/skills/demo/scripts/run.sh"
 SKILL_REFERENCE = ".claude/skills/demo/references/runbook.md"
 SKILL_ASSET = ".claude/skills/demo/assets/template.txt"
 SKILL_AGENT = ".claude/skills/demo/agents/reviewer.md"
+HOOK_SCRIPT = ".cursor/hooks/demo/guard.sh"
+CURSOR_HOOKS = ".cursor/hooks.json"
+CLAUDE_SETTINGS = ".claude/settings.json"
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -77,7 +80,10 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
     assert (project / RULE_B).is_file()
     assert (project / SKILL_MD).is_file()
     assert (project / SKILL_SCRIPT).is_file()
-    assert result.added == 7
+    assert (project / HOOK_SCRIPT).is_file()
+    assert (project / CURSOR_HOOKS).is_file()
+    assert (project / CLAUDE_SETTINGS).is_file()
+    assert result.added == 10
     assert result.updated == 0
     assert result.removed == 0
 
@@ -93,6 +99,9 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
             SKILL_REFERENCE,
             RULE_A,
             RULE_B,
+            HOOK_SCRIPT,
+            CURSOR_HOOKS,
+            CLAUDE_SETTINGS,
         ]
     )
 
@@ -166,7 +175,7 @@ def test_second_sync_reports_no_changes_and_leaves_files_untouched(
     result = sync(project)
 
     assert (result.added, result.updated, result.removed) == (0, 0, 0)
-    assert result.unchanged == 7
+    assert result.unchanged == 10
     assert not result.agents_changed
     assert not result.claude_changed
     assert snapshot(project) == before
@@ -483,7 +492,7 @@ def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) 
     sync(project)
 
     out = capsys.readouterr().out
-    assert "7 added" in out
+    assert "10 added" in out
     assert "AGENTS.md" in out
     assert "Cursor" in out
 
@@ -588,6 +597,9 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
         SKILL_REFERENCE,
         SKILL_ASSET,
         SKILL_AGENT,
+        HOOK_SCRIPT,
+        CURSOR_HOOKS,
+        CLAUDE_SETTINGS,
     }
     assert all(len(entry.sha256) == 64 for entry in lock.files)
 
@@ -603,6 +615,9 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     assert (project / "infra/.cursor/rules/aws-conventions.mdc").is_file()
     assert (project / "infra/.claude/skills/terraform-plan-review/SKILL.md").is_file()
     assert (project / "tests/e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert (project / ".cursor/hooks/deny-dangerous/deny-dangerous.sh").is_file()
+    assert (project / ".cursor/hooks.json").is_file()
+    assert (project / ".claude/settings.json").is_file()
     assert not (project / ".cursor/rules/aws-conventions.mdc").exists()
     assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
 

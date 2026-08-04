@@ -32,7 +32,8 @@ Rejected alternatives:
 | Loadout repo | The `loadout` repo. The single source of truth for all rules, skills, and loadout definitions |
 | Rule | A `.mdc` file with YAML frontmatter, loaded by Cursor from `.cursor/rules/` |
 | Skill | A directory whose root contains `SKILL.md`, optionally with bundled `scripts/`, `references/`, `assets/`, `agents/`, and `evals/` subtrees. Loaded from `.claude/skills/`, which both Cursor and Claude Code read. See sections 5.2 and 5.7 |
-| Loadout | A named, composable selection of rules and skills, defined in the loadout repo and selected by a project. The unit a project actually chooses |
+| Hook | A directory under `hooks/` with `hook.yaml` plus scripts/assets. Synced once to `.cursor/hooks/<name>/`. Sync also generates `.cursor/hooks.json` (Cursor-native) and `.claude/settings.json` hooks (Claude Code) that both point at that single script copy. See section 5.9 |
+| Loadout | A named, composable selection of rules, skills, and hooks, defined in the loadout repo and selected by a project. The unit a project actually chooses |
 | Manifest | `.loadout.yaml`, committed in each project |
 | Lockfile | `.loadout.lock`, committed in each project |
 | Sync | Resolving the manifest and writing the file set into the project |
@@ -71,6 +72,12 @@ loadout/
     db-migrations/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
+  hooks/
+    deny-dangerous/
+      hook.yaml
+      deny-dangerous.sh
+      dangerous-patterns.txt
+      test-guard.sh
   loadouts/
     base.yaml
     python.yaml
@@ -230,14 +237,18 @@ rules:
 skills:
   - src: skills/terraform-plan-review
     dest: infra/.claude/skills/terraform-plan-review
+
+hooks:
+  - src: hooks/deny-dangerous
 ```
 
 Rules:
 
 - `extends` is a list and resolves depth-first. Cycles are a fatal error.
-- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`.
+- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`, for hooks `<hooks_dir>/<dirname>` where `hooks_dir` defaults to `.cursor/hooks`.
 - Use non-default `dest` to scope content to a monorepo subtree. Cursor scopes skills found under a nested project directory to files inside that directory, which keeps Terraform guidance out of context while someone edits a Python package.
 - A skill `dest` must end in `<skills_dir>/<dirname>`. Nesting is expressed by the prefix, as in `infra/.claude/skills/terraform-plan-review`.
+- A hook `dest` must end in `<hooks_dir>/<dirname>`. Hook scripts are stored once under the Cursor-native path; harness config generation rewrites command paths to match.
 - The same `src` appearing in two loadouts is fine and deduplicates. The same `dest` receiving two different `src` values is a fatal error.
 
 ### 5.4 Manifest (`.loadout.yaml`)
@@ -258,6 +269,7 @@ exclude:
   - rules/python/pytest.mdc
 
 skills_dir: .claude/skills   # optional, default .claude/skills
+hooks_dir: .cursor/hooks     # optional, default .cursor/hooks
 claude_bridge: true          # optional, default true. Manage the CLAUDE.md import block
 ```
 
@@ -411,6 +423,46 @@ Same handling rules as 5.7.2. If `CLAUDE.md` does not exist, create it containin
 The import is used rather than `ln -s AGENTS.md CLAUDE.md` because symlinks do not survive every checkout, and because the import leaves `CLAUDE.md` as a real file that can still hold Claude-only overrides below the block.
 
 Set `claude_bridge: false` in the manifest to skip this block.
+
+### 5.9 Hooks
+
+Hooks are deterministic scripts that run at agent lifecycle events. Unlike skills, Cursor and Claude Code use different config formats and discovery paths:
+
+| Tool | Config | Scripts |
+| --- | --- | --- |
+| Cursor | `.cursor/hooks.json` | conventionally `.cursor/hooks/` |
+| Claude Code | `.claude/settings.json` (`hooks` key) | any path the config points at |
+
+Cursor can also load Claude Code hooks from `.claude/settings.json` when third-party compatibility is enabled, but cloud agents look for `.cursor/hooks.json`, and Claude Code does not read Cursor's format. So sync:
+
+1. **Stores scripts once** under `.cursor/hooks/<name>/` (Cursor-native; prioritized).
+2. **Writes `.cursor/hooks.json`** registering Cursor events (for `deny-dangerous`, `beforeShellExecution`).
+3. **Writes `.claude/settings.json`** registering Claude events (for `deny-dangerous`, `PreToolUse` / `Bash`) that point at the same `.cursor/hooks/` scripts.
+
+Neither harness sees two copies of the script. Cursor with third-party Claude hooks enabled may run both registrations for a shell command; the deny guard is idempotent. Other Claude project settings belong in `.claude/settings.local.json` — loadout owns `.claude/settings.json` when hooks are selected.
+
+#### 5.9.1 Hook directory
+
+```
+hooks/deny-dangerous/
+├── hook.yaml                 # REQUIRED. Registration metadata (not vendored)
+├── deny-dangerous.sh         # Script; understands Cursor and Claude payloads
+├── dangerous-patterns.txt    # Supporting denylist
+└── test-guard.sh             # Author/verification harness (vendored)
+```
+
+`hook.yaml` contract:
+
+- Required keys: `name`, `description`, `script`, `cursor` (`event`, optional `args`), `claude` (`event`, `matcher`).
+- `name` must equal the containing directory name.
+- `script` must exist in the hook directory.
+- Sync excludes `hook.yaml` from the project copy (metadata only).
+
+#### 5.9.2 Default destinations and generated configs
+
+- Default hook dest: `.cursor/hooks/<dirname>`
+- Generated Cursor config src recorded as `__generated__/cursor/hooks.json`
+- Generated Claude config src recorded as `__generated__/claude/settings.json`
 
 ---
 
