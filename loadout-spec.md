@@ -61,6 +61,8 @@ loadout/
       python-code-style.mdc
       uv-workspace.mdc
       pytest.mdc
+    typescript/
+      typescript-code-style.mdc
     terraform/
       aws-conventions.mdc
     playwright/
@@ -73,6 +75,7 @@ loadout/
     base.yaml
     python.yaml
     python-monorepo.yaml
+    typescript.yaml
     aws-terraform.yaml
     playwright-e2e.yaml
   tests/

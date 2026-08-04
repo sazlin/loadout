@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the `typescript` loadout, carrying TypeScript authoring conventions
+- Add `rules/typescript/typescript-code-style.mdc`, a simplicity-first TypeScript code style rule
+
 ## 0.1.1
 
 - Add the `python` loadout, carrying the language-level Python rules; `python-monorepo` now
