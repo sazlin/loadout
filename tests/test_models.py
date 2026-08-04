@@ -11,6 +11,7 @@ def test_load_manifest_defaults(tmp_path: Path):
     p.write_text("source: https://github.com/sazlin/loadout\nref: v0.1.0\nloadouts:\n  - base\n")
     m = load_manifest(p)
     assert m.skills_dir == ".claude/skills"
+    assert m.hooks_dir == ".cursor/hooks"
     assert m.claude_bridge is True
     assert m.include == []
     assert m.exclude == []

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add loadout support for hooks: directories under `hooks/` sync to `.cursor/hooks/`,
+  with generated `.cursor/hooks.json` (Cursor) and `.claude/settings.json` hooks
+  (Claude Code) pointing at the same scripts so neither harness sees a duplicate copy
+- Add `hooks/deny-dangerous` (pre-tool/shell guard) and attach it to the `base` loadout
 - Add the `typescript` loadout, carrying TypeScript authoring conventions
 - Add `rules/typescript/typescript-code-style.mdc`, a simplicity-first TypeScript code style rule
 

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from loadout.errors import ValidationError
 from loadout.frontmatter import parse_rule, parse_skill_md
+from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
 from loadout.resolve import resolve
 from loadout.validate import validate_resolved
@@ -32,14 +33,15 @@ class LintResult:
 def lint_repo(repo_root: Path) -> LintResult:
     """Run every `just lint` check (spec 7.1) against a loadout repo.
 
-    Tolerates missing `rules/`, `skills/`, or `loadouts/` directories so it can run
+    Tolerates missing `rules/`, `skills/`, `hooks/`, or `loadouts/` directories so it can run
     cleanly against an empty or partially-built repo.
     """
     result = LintResult()
     _lint_rules(repo_root, result)
     _lint_skills(repo_root, result)
-    rule_srcs, skill_srcs = _lint_loadouts(repo_root, result)
-    _lint_orphans(repo_root, rule_srcs, skill_srcs, result)
+    _lint_hooks(repo_root, result)
+    rule_srcs, skill_srcs, hook_srcs = _lint_loadouts(repo_root, result)
+    _lint_orphans(repo_root, rule_srcs, skill_srcs, hook_srcs, result)
     return result
 
 
@@ -147,6 +149,23 @@ def _has_toc(text: str) -> bool:
     return list_items >= 3
 
 
+def _lint_hooks(repo_root: Path, result: LintResult) -> None:
+    hooks_dir = repo_root / "hooks"
+    if not hooks_dir.is_dir():
+        return
+
+    for hook_root in sorted(path for path in hooks_dir.iterdir() if path.is_dir()):
+        relative_root = hook_root.relative_to(repo_root).as_posix()
+        meta_path = hook_root / HOOK_META_NAME
+        if not meta_path.is_file():
+            result.errors.append(f"{relative_root}: missing {HOOK_META_NAME}")
+            continue
+        try:
+            load_hook_meta(meta_path)
+        except ValidationError as error:
+            result.errors.append(f"{relative_root}/{HOOK_META_NAME}: {error}")
+
+
 def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef:
     """Load a loadout YAML file, reporting an absent parent as a validation error."""
     label = name or path.stem
@@ -156,15 +175,16 @@ def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef
         raise ValidationError(f"Loadout not found: {label}") from None
 
 
-def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str]]:
-    """Resolve every loadout and return the (rule src, skill src) sets it references."""
+def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str], set[str]]:
+    """Resolve every loadout and return the (rule, skill, hook) src sets it references."""
     loadouts_dir = repo_root / "loadouts"
     if not loadouts_dir.is_dir():
-        return set(), set()
+        return set(), set(), set()
 
     names = sorted(path.stem for path in loadouts_dir.glob("*.yaml"))
     rule_srcs: set[str] = set()
     skill_srcs: set[str] = set()
+    hook_srcs: set[str] = set()
     cache: dict[str, LoadoutDef] = {}
 
     def load(name: str) -> LoadoutDef:
@@ -186,6 +206,10 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
             src = entry.get("src")
             if isinstance(src, str):
                 skill_srcs.add(src)
+        for entry in loadout.hooks:
+            src = entry.get("src")
+            if isinstance(src, str):
+                hook_srcs.add(src)
 
     for name in names:
         try:
@@ -197,16 +221,22 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
         try:
             manifest = Manifest(source="lint", ref="lint", loadouts=[name])
             resolved = resolve(manifest, repo_root)
-            validate_resolved(resolved, repo_root, manifest.skills_dir)
+            validate_resolved(resolved, repo_root, manifest.skills_dir, manifest.hooks_dir)
         except ValidationError as error:
             result.errors.append(f"loadouts/{name}.yaml: {error}")
         except FileNotFoundError:
             result.errors.append(f"loadouts/{name}.yaml: Loadout not found: {name}")
 
-    return rule_srcs, skill_srcs
+    return rule_srcs, skill_srcs, hook_srcs
 
 
-def _lint_orphans(repo_root: Path, rule_srcs: set[str], skill_srcs: set[str], result: LintResult) -> None:
+def _lint_orphans(
+    repo_root: Path,
+    rule_srcs: set[str],
+    skill_srcs: set[str],
+    hook_srcs: set[str],
+    result: LintResult,
+) -> None:
     rules_dir = repo_root / "rules"
     if rules_dir.is_dir():
         for path in sorted(rules_dir.rglob("*.mdc")):
@@ -220,3 +250,10 @@ def _lint_orphans(repo_root: Path, rule_srcs: set[str], skill_srcs: set[str], re
             relative = skill_root.relative_to(repo_root).as_posix()
             if relative not in skill_srcs:
                 result.errors.append(f"{relative}: orphan skill, not referenced by any loadout")
+
+    hooks_dir = repo_root / "hooks"
+    if hooks_dir.is_dir():
+        for hook_root in sorted(path for path in hooks_dir.iterdir() if path.is_dir()):
+            relative = hook_root.relative_to(repo_root).as_posix()
+            if relative not in hook_srcs:
+                result.errors.append(f"{relative}: orphan hook, not referenced by any loadout")

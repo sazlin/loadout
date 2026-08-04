@@ -5,6 +5,7 @@ from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from loadout.errors import ValidationError
+from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
 
 
@@ -12,14 +13,16 @@ from loadout.models import LoadoutDef, Manifest, load_loadout
 class ResolvedFile:
     src: str
     dest: str
-    kind: Literal["rule", "skill_file"]
+    kind: Literal["rule", "skill_file", "hook_file"]
 
 
 def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
     """Resolve manifest-selected loadouts into individual source and destination files."""
     loadouts = _load_selected_loadouts(manifest.loadouts, source_root)
     files = [
-        resolved for loadout in loadouts for resolved in _resolve_loadout(loadout, manifest.skills_dir, source_root)
+        resolved
+        for loadout in loadouts
+        for resolved in _resolve_loadout(loadout, manifest.skills_dir, manifest.hooks_dir, source_root)
     ]
     files.extend(_resolve_includes(manifest, source_root))
     _validate_selectors(manifest.exclude, source_root)
@@ -55,7 +58,7 @@ def _load_selected_loadouts(names: list[str], source_root: Path) -> list[Loadout
     return resolved
 
 
-def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, source_root: Path) -> list[ResolvedFile]:
+def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, hooks_dir: str, source_root: Path) -> list[ResolvedFile]:
     rules = [
         ResolvedFile(
             src=src,
@@ -75,7 +78,17 @@ def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, source_root: Path) ->
             _entry_dest(entry, _default_skill_dest(skills_dir, src)),
         )
     ]
-    return [*rules, *skills]
+    hooks = [
+        resolved
+        for entry in loadout.hooks
+        for src in [_entry_src(entry)]
+        for resolved in _expand_hook(
+            source_root,
+            src,
+            _entry_dest(entry, _default_hook_dest(hooks_dir, src)),
+        )
+    ]
+    return [*rules, *skills, *hooks]
 
 
 def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
@@ -85,6 +98,8 @@ def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFil
         path = source_root / src
         if path.is_file():
             files.append(ResolvedFile(src, _default_rule_dest(src), "rule"))
+        elif src.startswith("hooks/") or (path.is_dir() and (path / HOOK_META_NAME).is_file()):
+            files.extend(_expand_hook(source_root, src, _default_hook_dest(manifest.hooks_dir, src)))
         else:
             files.extend(_expand_skill(source_root, src, _default_skill_dest(manifest.skills_dir, src)))
     return files
@@ -116,6 +131,10 @@ def _default_skill_dest(skills_dir: str, src: str) -> str:
     return (PurePosixPath(skills_dir) / PurePosixPath(src).name).as_posix()
 
 
+def _default_hook_dest(hooks_dir: str, src: str) -> str:
+    return (PurePosixPath(hooks_dir) / PurePosixPath(src).name).as_posix()
+
+
 def _expand_skill(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:
     source = source_root / src
     if not source.is_dir():
@@ -138,9 +157,48 @@ def _expand_skill(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:
     return files
 
 
+def _expand_hook(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:
+    source = source_root / src
+    if not source.is_dir():
+        raise ValidationError(f"Hook source directory not found: {src}")
+    if PurePosixPath(dest).name != PurePosixPath(src).name:
+        raise ValidationError(f"Hook destination must end with {PurePosixPath(src).name}: {dest}")
+
+    meta_path = source / HOOK_META_NAME
+    if not meta_path.is_file():
+        raise ValidationError(f"Hook is missing {HOOK_META_NAME}: {src}")
+    load_hook_meta(meta_path, dest_dir=dest)
+
+    files: list[ResolvedFile] = []
+    for path in sorted(source.rglob("*")):
+        if not path.is_file() or _is_skipped_hook_file(path, source):
+            continue
+        relative = path.relative_to(source)
+        files.append(
+            ResolvedFile(
+                src=path.relative_to(source_root).as_posix(),
+                dest=(PurePosixPath(dest) / relative.as_posix()).as_posix(),
+                kind="hook_file",
+            )
+        )
+    return files
+
+
 def _is_skipped_skill_file(path: Path, skill_root: Path) -> bool:
     relative_parts = path.relative_to(skill_root).parts
     if relative_parts[0] == "evals":
+        return True
+    return (
+        "__pycache__" in relative_parts
+        or "node_modules" in relative_parts
+        or path.name.endswith(".pyc")
+        or path.name == ".DS_Store"
+    )
+
+
+def _is_skipped_hook_file(path: Path, hook_root: Path) -> bool:
+    relative_parts = path.relative_to(hook_root).parts
+    if path.name == HOOK_META_NAME and len(relative_parts) == 1:
         return True
     return (
         "__pycache__" in relative_parts

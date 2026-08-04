@@ -107,7 +107,7 @@ def _print_resolved() -> None:
     lock = load_lockfile(project_root / LOCKFILE_NAME)
     fetched = fetch_source(manifest, lock)
     files = resolve_loadouts(manifest, fetched.root)
-    validate_resolved(files, fetched.root, manifest.skills_dir)
+    validate_resolved(files, fetched.root, manifest.skills_dir, manifest.hooks_dir)
 
     for file in sorted(files, key=lambda resolved: resolved.dest):
         click.echo(f"{file.src} -> {file.dest}")

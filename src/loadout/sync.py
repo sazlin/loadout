@@ -22,6 +22,17 @@ from loadout.errors import DriftError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.frontmatter import parse_rule
 from loadout.headers import inject_header
+from loadout.hooks import (
+    CLAUDE_SETTINGS_JSON,
+    CURSOR_HOOKS_JSON,
+    GENERATED_CLAUDE_SETTINGS_SRC,
+    GENERATED_CURSOR_HOOKS_SRC,
+    HOOK_META_NAME,
+    HookMeta,
+    build_cursor_hooks_json,
+    load_hook_meta,
+    merge_claude_settings,
+)
 from loadout.io import atomic_write, sha256_bytes
 from loadout.models import (
     FileEntry,
@@ -119,7 +130,7 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
 
     fetched = fetch_source(manifest, lock)
     resolved = resolve(manifest, fetched.root)
-    validate_resolved(resolved, fetched.root, manifest.skills_dir)
+    validate_resolved(resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir)
 
     plan = _build_plan(manifest, fetched.root, fetched.resolved_sha, resolved, project_root)
 
@@ -139,6 +150,8 @@ def _build_plan(
         (_plan_file(file, source_root, resolved_sha) for file in resolved),
         key=lambda planned: planned.dest,
     )
+    files.extend(_plan_hook_configs(resolved, source_root, project_root))
+    files = sorted(files, key=lambda planned: planned.dest)
     rows = [
         _rule_row(file, source_root) for file in sorted(resolved, key=lambda file: file.dest) if file.kind == "rule"
     ]
@@ -167,11 +180,61 @@ def _plan_file(file: ResolvedFile, source_root: Path, resolved_sha: str) -> _Pla
             else:
                 content = raw
             executable = relative[0] == "scripts" or _is_executable(source_path)
+        case "hook_file":
+            content = raw
+            executable = _is_executable(source_path) or file.src.endswith(".sh")
         case _:
             _exhaustive: Never = file.kind
             raise AssertionError(f"Unhandled file kind: {file.kind!r}")
 
     return _PlannedFile(dest=file.dest, src=file.src, content=content, executable=executable)
+
+
+def _plan_hook_configs(resolved: list[ResolvedFile], source_root: Path, project_root: Path) -> list[_PlannedFile]:
+    """Generate Cursor and Claude harness configs from selected hook directories."""
+    del project_root  # configs are fully generated; no merge with on-disk settings
+    hooks = _selected_hook_metas(resolved, source_root)
+    if not hooks:
+        return []
+
+    return [
+        _PlannedFile(
+            dest=CURSOR_HOOKS_JSON,
+            src=GENERATED_CURSOR_HOOKS_SRC,
+            content=build_cursor_hooks_json(hooks),
+            executable=False,
+        ),
+        _PlannedFile(
+            dest=CLAUDE_SETTINGS_JSON,
+            src=GENERATED_CLAUDE_SETTINGS_SRC,
+            content=merge_claude_settings(None, hooks),
+            executable=False,
+        ),
+    ]
+
+
+def _selected_hook_metas(resolved: list[ResolvedFile], source_root: Path) -> list[HookMeta]:
+    roots: dict[str, tuple[Path, str]] = {}
+    for file in resolved:
+        if file.kind != "hook_file":
+            continue
+        parts = PurePosixPath(file.src).parts
+        try:
+            hooks_index = parts.index("hooks")
+            root_parts = parts[: hooks_index + 2]
+        except (ValueError, IndexError) as error:
+            raise ValidationError(f"Hook source must be under hooks/: {file.src}") from error
+        source_key = PurePosixPath(*root_parts).as_posix()
+        dest_dir = PurePosixPath(file.dest).parts
+        # dest is hooks_dir/name/relative — recover hooks_dir/name
+        relative_depth = len(parts) - (hooks_index + 2)
+        dest_hook_dir = PurePosixPath(*dest_dir[: len(dest_dir) - relative_depth]).as_posix()
+        roots[source_key] = (source_root.joinpath(*root_parts), dest_hook_dir)
+
+    return [
+        load_hook_meta(root / HOOK_META_NAME, dest_dir=dest_dir)
+        for root, dest_dir in sorted(roots.values(), key=lambda item: item[1])
+    ]
 
 
 def _skill_relative_parts(src: str) -> tuple[str, ...]:

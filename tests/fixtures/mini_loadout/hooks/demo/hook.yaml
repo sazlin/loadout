@@ -1,0 +1,9 @@
+name: demo
+description: Demo hook for tests
+script: guard.sh
+cursor:
+  event: beforeShellExecution
+  args: [cursor]
+claude:
+  event: PreToolUse
+  matcher: Bash
