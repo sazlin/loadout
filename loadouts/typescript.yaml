@@ -1,0 +1,6 @@
+name: typescript
+description: TypeScript authoring conventions - readable, typed code style.
+extends:
+  - base
+rules:
+  - src: rules/typescript/typescript-code-style.mdc
