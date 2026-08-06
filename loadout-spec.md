@@ -81,6 +81,8 @@ loadout/
       test-guard.sh
   agents/
     python_coder.md
+    davinci.md
+    e2e_test_generator.md
   loadouts/
     base.yaml
     python.yaml
@@ -108,7 +110,7 @@ my-project/
   .claude/skills/               # GENERATED, committed. Read by Cursor AND Claude Code
   infra/.cursor/rules/          # GENERATED, scoped to infra/
   infra/.claude/skills/         # GENERATED, scoped to infra/
-  tests/e2e/.cursor/rules/      # GENERATED, scoped to tests/e2e/
+  e2e/.cursor/rules/            # GENERATED, scoped to e2e/
   packages/…
 ```
 
@@ -717,7 +719,7 @@ Fails on hand-edited generated files and on a bumped ref that was not re-synced.
 7. Bumping `ref` without syncing makes `just loadout-check` exit 1.
 8. With the network unreachable, cookiecutter generation still succeeds, the project directory survives, and a warning names `just loadout-sync`.
 9. With `LOADOUT_PATH` set, sync uses the local loadout and never touches the network.
-10. Terraform rules land only under `infra/.cursor/`, and Playwright rules only under `tests/e2e/.cursor/`, for a project that selected those loadouts.
+10. Terraform rules land only under `infra/.cursor/`, and Playwright rules only under `e2e/.cursor/`, for a project that selected those loadouts.
 11. A project generated without `aws-terraform` contains no Terraform rule or skill anywhere under `.cursor/` or `.claude/`, and no Terraform row in the `AGENTS.md` block.
 12. Syncing a skill that has `scripts/`, `references/`, `assets/`, and `agents/` reproduces the full subtree, with scripts still executable and binary assets byte-identical to the loadout repo.
 13. That same sync produces no `evals/` directory in the project, and the lockfile lists a hash for every copied file in the subtree.
