@@ -130,7 +130,9 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
 
     fetched = fetch_source(manifest, lock)
     resolved = resolve(manifest, fetched.root)
-    validate_resolved(resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir)
+    validate_resolved(
+        resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir
+    )
 
     plan = _build_plan(manifest, fetched.root, fetched.resolved_sha, resolved, project_root)
 
@@ -183,6 +185,9 @@ def _plan_file(file: ResolvedFile, source_root: Path, resolved_sha: str) -> _Pla
         case "hook_file":
             content = raw
             executable = _is_executable(source_path) or file.src.endswith(".sh")
+        case "agent":
+            content = inject_header(raw.decode(), file.src, resolved_sha).encode()
+            executable = False
         case _:
             _exhaustive: Never = file.kind
             raise AssertionError(f"Unhandled file kind: {file.kind!r}")

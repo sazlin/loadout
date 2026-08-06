@@ -1,4 +1,4 @@
-"""Validate a loadout repo's rules, skills, and loadouts (`loadout lint`, spec 7.1)."""
+"""Validate a loadout repo's rules, skills, hooks, agents, and loadouts (`loadout lint`, spec 7.1)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from loadout.errors import ValidationError
-from loadout.frontmatter import parse_rule, parse_skill_md
+from loadout.frontmatter import parse_agent_md, parse_rule, parse_skill_md
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
 from loadout.resolve import resolve
@@ -33,15 +33,16 @@ class LintResult:
 def lint_repo(repo_root: Path) -> LintResult:
     """Run every `just lint` check (spec 7.1) against a loadout repo.
 
-    Tolerates missing `rules/`, `skills/`, `hooks/`, or `loadouts/` directories so it can run
+    Tolerates missing `rules/`, `skills/`, `hooks/`, `agents/`, or `loadouts/` directories so it can run
     cleanly against an empty or partially-built repo.
     """
     result = LintResult()
     _lint_rules(repo_root, result)
     _lint_skills(repo_root, result)
     _lint_hooks(repo_root, result)
-    rule_srcs, skill_srcs, hook_srcs = _lint_loadouts(repo_root, result)
-    _lint_orphans(repo_root, rule_srcs, skill_srcs, hook_srcs, result)
+    _lint_agents(repo_root, result)
+    rule_srcs, skill_srcs, hook_srcs, agent_srcs = _lint_loadouts(repo_root, result)
+    _lint_orphans(repo_root, rule_srcs, skill_srcs, hook_srcs, agent_srcs, result)
     return result
 
 
@@ -166,6 +167,19 @@ def _lint_hooks(repo_root: Path, result: LintResult) -> None:
             result.errors.append(f"{relative_root}/{HOOK_META_NAME}: {error}")
 
 
+def _lint_agents(repo_root: Path, result: LintResult) -> None:
+    agents_dir = repo_root / "agents"
+    if not agents_dir.is_dir():
+        return
+
+    for path in sorted(agents_dir.rglob("*.md")):
+        relative = path.relative_to(repo_root).as_posix()
+        try:
+            parse_agent_md(path, path.read_text(), file_stem=path.stem)
+        except ValidationError as error:
+            result.errors.append(f"{relative}: {error}")
+
+
 def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef:
     """Load a loadout YAML file, reporting an absent parent as a validation error."""
     label = name or path.stem
@@ -175,16 +189,17 @@ def _load_loadout_for_lint(path: Path, *, name: str | None = None) -> LoadoutDef
         raise ValidationError(f"Loadout not found: {label}") from None
 
 
-def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str], set[str]]:
-    """Resolve every loadout and return the (rule, skill, hook) src sets it references."""
+def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[str], set[str], set[str]]:
+    """Resolve every loadout and return the (rule, skill, hook, agent) src sets it references."""
     loadouts_dir = repo_root / "loadouts"
     if not loadouts_dir.is_dir():
-        return set(), set(), set()
+        return set(), set(), set(), set()
 
     names = sorted(path.stem for path in loadouts_dir.glob("*.yaml"))
     rule_srcs: set[str] = set()
     skill_srcs: set[str] = set()
     hook_srcs: set[str] = set()
+    agent_srcs: set[str] = set()
     cache: dict[str, LoadoutDef] = {}
 
     def load(name: str) -> LoadoutDef:
@@ -210,6 +225,10 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
             src = entry.get("src")
             if isinstance(src, str):
                 hook_srcs.add(src)
+        for entry in loadout.agents:
+            src = entry.get("src")
+            if isinstance(src, str):
+                agent_srcs.add(src)
 
     for name in names:
         try:
@@ -221,13 +240,15 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
         try:
             manifest = Manifest(source="lint", ref="lint", loadouts=[name])
             resolved = resolve(manifest, repo_root)
-            validate_resolved(resolved, repo_root, manifest.skills_dir, manifest.hooks_dir)
+            validate_resolved(
+                resolved, repo_root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir
+            )
         except ValidationError as error:
             result.errors.append(f"loadouts/{name}.yaml: {error}")
         except FileNotFoundError:
             result.errors.append(f"loadouts/{name}.yaml: Loadout not found: {name}")
 
-    return rule_srcs, skill_srcs, hook_srcs
+    return rule_srcs, skill_srcs, hook_srcs, agent_srcs
 
 
 def _lint_orphans(
@@ -235,6 +256,7 @@ def _lint_orphans(
     rule_srcs: set[str],
     skill_srcs: set[str],
     hook_srcs: set[str],
+    agent_srcs: set[str],
     result: LintResult,
 ) -> None:
     rules_dir = repo_root / "rules"
@@ -257,3 +279,10 @@ def _lint_orphans(
             relative = hook_root.relative_to(repo_root).as_posix()
             if relative not in hook_srcs:
                 result.errors.append(f"{relative}: orphan hook, not referenced by any loadout")
+
+    agents_dir = repo_root / "agents"
+    if agents_dir.is_dir():
+        for path in sorted(agents_dir.rglob("*.md")):
+            relative = path.relative_to(repo_root).as_posix()
+            if relative not in agent_srcs:
+                result.errors.append(f"{relative}: orphan agent, not referenced by any loadout")

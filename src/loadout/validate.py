@@ -4,12 +4,14 @@ from pathlib import Path, PurePosixPath
 from typing import Never
 
 from loadout.errors import ValidationError
-from loadout.frontmatter import parse_rule, parse_skill_md
+from loadout.frontmatter import parse_agent_md, parse_rule, parse_skill_md
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.resolve import ResolvedFile
 
 
-def validate_resolved(files: list[ResolvedFile], source_root: Path, skills_dir: str, hooks_dir: str) -> None:
+def validate_resolved(
+    files: list[ResolvedFile], source_root: Path, skills_dir: str, hooks_dir: str, agents_dir: str
+) -> None:
     """Validate resolved files before writing them to a target project."""
     destinations: dict[str, str] = {}
     skill_roots: dict[str, Path] = {}
@@ -36,6 +38,8 @@ def validate_resolved(files: list[ResolvedFile], source_root: Path, skills_dir: 
             case "hook_file":
                 hook_root = _hook_root(file, source_root, hooks_dir)
                 hook_roots[hook_root.as_posix()] = hook_root
+            case "agent":
+                _validate_agent(file, source_path, agents_dir)
             case _:
                 _exhaustive: Never = file.kind
                 raise AssertionError(f"Unhandled file kind: {file.kind!r}")
@@ -58,6 +62,21 @@ def _require_contained(value: str, label: str, container: str) -> None:
     path = PurePosixPath(value)
     if path.is_absolute() or ".." in path.parts:
         raise ValidationError(f"{label} path escapes outside {container}: {value}")
+
+
+def _validate_agent(file: ResolvedFile, source_path: Path, agents_dir: str) -> None:
+    source_parts = PurePosixPath(file.src).parts
+    if len(source_parts) < 2 or source_parts[0] != "agents" or not file.src.endswith(".md"):
+        raise ValidationError(f"Agent source must be a markdown file under agents/: {file.src}")
+
+    dest = PurePosixPath(file.dest)
+    agents_dir_parts = PurePosixPath(agents_dir).parts
+    if dest.parts[: len(agents_dir_parts)] != agents_dir_parts:
+        raise ValidationError(f"Agent destination must be under {agents_dir}: {file.dest}")
+    if dest.name != PurePosixPath(file.src).name:
+        raise ValidationError(f"Agent destination basename must match source basename: {file.dest}")
+
+    parse_agent_md(source_path, source_path.read_text(), file_stem=source_path.stem)
 
 
 def _skill_root(file: ResolvedFile, source_root: Path, skills_dir: str) -> Path:

@@ -13,7 +13,7 @@ from loadout.models import LoadoutDef, Manifest, load_loadout
 class ResolvedFile:
     src: str
     dest: str
-    kind: Literal["rule", "skill_file", "hook_file"]
+    kind: Literal["rule", "skill_file", "hook_file", "agent"]
 
 
 def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
@@ -22,7 +22,9 @@ def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
     files = [
         resolved
         for loadout in loadouts
-        for resolved in _resolve_loadout(loadout, manifest.skills_dir, manifest.hooks_dir, source_root)
+        for resolved in _resolve_loadout(
+            loadout, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir, source_root
+        )
     ]
     files.extend(_resolve_includes(manifest, source_root))
     _validate_selectors(manifest.exclude, source_root)
@@ -58,7 +60,9 @@ def _load_selected_loadouts(names: list[str], source_root: Path) -> list[Loadout
     return resolved
 
 
-def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, hooks_dir: str, source_root: Path) -> list[ResolvedFile]:
+def _resolve_loadout(
+    loadout: LoadoutDef, skills_dir: str, hooks_dir: str, agents_dir: str, source_root: Path
+) -> list[ResolvedFile]:
     rules = [
         ResolvedFile(
             src=src,
@@ -88,7 +92,16 @@ def _resolve_loadout(loadout: LoadoutDef, skills_dir: str, hooks_dir: str, sourc
             _entry_dest(entry, _default_hook_dest(hooks_dir, src)),
         )
     ]
-    return [*rules, *skills, *hooks]
+    agents = [
+        ResolvedFile(
+            src=src,
+            dest=_entry_dest(entry, _default_agent_dest(agents_dir, src)),
+            kind="agent",
+        )
+        for entry in loadout.agents
+        for src in [_entry_src(entry)]
+    ]
+    return [*rules, *skills, *hooks, *agents]
 
 
 def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
@@ -96,7 +109,9 @@ def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFil
     files: list[ResolvedFile] = []
     for src in manifest.include:
         path = source_root / src
-        if path.is_file():
+        if path.is_file() and src.startswith("agents/") and src.endswith(".md"):
+            files.append(ResolvedFile(src, _default_agent_dest(manifest.agents_dir, src), "agent"))
+        elif path.is_file():
             files.append(ResolvedFile(src, _default_rule_dest(src), "rule"))
         elif src.startswith("hooks/") or (path.is_dir() and (path / HOOK_META_NAME).is_file()):
             files.extend(_expand_hook(source_root, src, _default_hook_dest(manifest.hooks_dir, src)))
@@ -133,6 +148,10 @@ def _default_skill_dest(skills_dir: str, src: str) -> str:
 
 def _default_hook_dest(hooks_dir: str, src: str) -> str:
     return (PurePosixPath(hooks_dir) / PurePosixPath(src).name).as_posix()
+
+
+def _default_agent_dest(agents_dir: str, src: str) -> str:
+    return (PurePosixPath(agents_dir) / PurePosixPath(src).name).as_posix()
 
 
 def _expand_skill(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:

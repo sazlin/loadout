@@ -20,14 +20,14 @@ def test_validate_resolved_accepts_valid_rules_and_skill_files() -> None:
         FIXTURE_ROOT,
     )
 
-    validate_resolved(files, FIXTURE_ROOT, ".claude/skills", ".cursor/hooks")
+    validate_resolved(files, FIXTURE_ROOT, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_missing_source_file(tmp_path: Path) -> None:
     files = [ResolvedFile("rules/missing.mdc", ".cursor/rules/missing.mdc", "rule")]
 
     with pytest.raises(ValidationError, match="rules/missing.mdc"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_destination_collision(tmp_path: Path) -> None:
@@ -40,7 +40,7 @@ def test_validate_resolved_rejects_destination_collision(tmp_path: Path) -> None
     ]
 
     with pytest.raises(ValidationError, match="collision"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_validate_resolved_rejects_destinations_outside_the_project(tmp_path: Pa
     files = [ResolvedFile("rules/a.mdc", dest, "rule")]
 
     with pytest.raises(ValidationError, match="outside the project"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_sources_outside_the_source_tree(tmp_path: Path) -> None:
@@ -62,7 +62,7 @@ def test_validate_resolved_rejects_sources_outside_the_source_tree(tmp_path: Pat
     files = [ResolvedFile("../outside/a.mdc", ".cursor/rules/a.mdc", "rule")]
 
     with pytest.raises(ValidationError, match="outside the source"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> None:
@@ -78,7 +78,7 @@ def test_validate_resolved_rejects_renamed_skill_destination(tmp_path: Path) -> 
     ]
 
     with pytest.raises(ValidationError, match="destination"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_accepts_nested_claude_skill_destination(tmp_path: Path) -> None:
@@ -93,7 +93,7 @@ def test_validate_resolved_accepts_nested_claude_skill_destination(tmp_path: Pat
         )
     ]
 
-    validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+    validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> None:
@@ -109,7 +109,7 @@ def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> Non
     ]
 
     with pytest.raises(ValidationError, match="missing SKILL.md"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
 def test_validate_resolved_rejects_invalid_skill_contract(tmp_path: Path) -> None:
@@ -125,4 +125,4 @@ def test_validate_resolved_rejects_invalid_skill_contract(tmp_path: Path) -> Non
     ]
 
     with pytest.raises(ValidationError, match="must equal"):
-        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks")
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")

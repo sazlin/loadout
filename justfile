@@ -3,7 +3,7 @@ set shell := ["bash", "-uc"]
 default:
     @just --list
 
-# Validate every rule, skill, hook, and loadout definition in this repo
+# Validate every rule, skill, hook, agent, and loadout definition in this repo
 lint:
     uv run loadout lint
 
