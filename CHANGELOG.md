@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add `agents/davinci.md`, a code-simplification agent that detects and removes
+  common AI-generated code smells, and attach it to the `base` loadout
+- Add `agents/e2e_test_generator.md`, a Playwright e2e generator that explores UIs
+  via Playwright CLI and MCP and writes missing specs under `/e2e`, attached to
+  the `playwright-e2e` loadout
+- Point the `playwright-e2e` rule destination and globs at `e2e/` (repo root)
+  instead of `tests/e2e/`
 - Add loadout support for hooks: directories under `hooks/` sync to `.cursor/hooks/`,
   with generated `.cursor/hooks.json` (Cursor) and `.claude/settings.json` hooks
   (Claude Code) pointing at the same scripts so neither harness sees a duplicate copy

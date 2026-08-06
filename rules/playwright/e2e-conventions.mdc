@@ -1,15 +1,17 @@
 ---
-description: Keep Playwright end-to-end tests deterministic and user-focused.
+description: Keep Playwright end-to-end tests deterministic and user-focused under /e2e.
 globs:
-  - "tests/e2e/**/*.ts"
-  - "tests/e2e/**/*.tsx"
-  - "tests/e2e/**/*.js"
-  - "tests/e2e/**/*.jsx"
+  - "e2e/**/*.ts"
+  - "e2e/**/*.tsx"
+  - "e2e/**/*.js"
+  - "e2e/**/*.jsx"
 ---
 
 # Playwright E2E conventions
 
+- Keep Playwright specs under `e2e/` at the repository root.
 - Test visible user workflows through stable roles, labels, and test IDs instead of brittle CSS selectors.
-- Use Playwright's built-in assertions and auto-waiting; never add arbitrary sleep calls.
+- Prefer locator priority: `getByRole` / `getByLabel` / `getByPlaceholder`, then `getByText`, then `getByTestId`.
+- Use Playwright's built-in web-first assertions and auto-waiting; never add arbitrary sleep calls.
 - Isolate test data and clean up external state so tests can run in any order.
 - Keep each test independent and record traces, screenshots, or videos only when they aid failure diagnosis.

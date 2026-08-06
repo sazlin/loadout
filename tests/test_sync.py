@@ -619,12 +619,15 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
 
     assert (project / "infra/.cursor/rules/aws-conventions.mdc").is_file()
     assert (project / "infra/.claude/skills/terraform-plan-review/SKILL.md").is_file()
-    assert (project / "tests/e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert (project / ".claude/agents/davinci.md").is_file()
+    assert (project / ".claude/agents/e2e_test_generator.md").is_file()
     assert (project / ".cursor/hooks/deny-dangerous/deny-dangerous.sh").is_file()
     assert (project / ".cursor/hooks.json").is_file()
     assert (project / ".claude/settings.json").is_file()
     assert not (project / ".cursor/rules/aws-conventions.mdc").exists()
     assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
+    assert not (project / "tests/e2e").exists()
 
 
 def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
@@ -640,6 +643,8 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
     paths = [path.relative_to(project).as_posix() for path in project.rglob("*")]
     assert paths, "sync wrote nothing, so this test would pass vacuously"
     assert (project / ".claude/agents/python_coder.md").is_file()
+    assert (project / ".claude/agents/davinci.md").is_file()
+    assert (project / ".claude/agents/e2e_test_generator.md").is_file()
     assert not (project / "infra").exists()
     assert not any("terraform" in path.lower() for path in paths)
     assert not any("aws-conventions" in path for path in paths)
