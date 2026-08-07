@@ -27,4 +27,4 @@ targets the shortcuts above.
 | Target | Verdict |
 | --- | --- |
 | fixtures/hidden-payload | UNSAFE (HTML-comment injection + base64 curl\|sh) |
-| skills/skill-security-check | SAFE (self-audit) |
+| .claude/skills/skill-security-check | SAFE (self-audit) |

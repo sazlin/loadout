@@ -2,10 +2,9 @@
 
 ## Unreleased
 
-- Add `skills/skill-security-check`, a maintainer skill that audits a given skill
-  tree via a dedicated subagent for dangerous or nefarious behavior
-- Add the `maintainer` loadout (loadout-repo only; not for consumer projects)
-  to carry `skill-security-check` without orphaning it
+- Add `.claude/skills/skill-security-check`, a loadout-repo-local skill that
+  audits a given skill tree via a dedicated subagent for dangerous or nefarious
+  behavior (for agents working on this repo; not vendored through loadouts)
 - Add `agents/davinci.md`, a code-simplification agent that detects and removes
   common AI-generated code smells, and attach it to the `base` loadout
 - Add `agents/e2e_test_generator.md`, a Playwright e2e generator that explores UIs

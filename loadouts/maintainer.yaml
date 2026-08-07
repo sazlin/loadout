@@ -1,6 +1,0 @@
-name: maintainer
-description: >-
-  Loadout-repo maintainer tooling only. Do not select this loadout in consumer
-  projects; it is for developing and auditing the loadout repository itself.
-skills:
-  - src: skills/skill-security-check

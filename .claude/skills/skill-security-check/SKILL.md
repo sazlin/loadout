@@ -1,10 +1,11 @@
 ---
 name: skill-security-check
 description: >-
-  Use when reviewing, importing, vendoring, or approving any skill under skills/
-  (or a candidate skill path) for security risk; when running just add_skill;
-  before attaching a skill to a loadout; or when asked to security-check,
-  audit, or vet a skill for dangerous or nefarious behavior.
+  Use when working in the loadout repo and reviewing, importing, vendoring, or
+  approving any skill under skills/ (or a candidate skill path) for security
+  risk; when running just add_skill; before attaching a skill to a loadout; or
+  when asked to security-check, audit, or vet a skill for dangerous or
+  nefarious behavior.
 ---
 
 # Skill security check
