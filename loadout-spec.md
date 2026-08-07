@@ -73,6 +73,7 @@ loadout/
     db-migrations/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
+    skill-security-check/SKILL.md
   hooks/
     deny-dangerous/
       hook.yaml
@@ -90,6 +91,7 @@ loadout/
     typescript.yaml
     aws-terraform.yaml
     playwright-e2e.yaml
+    maintainer.yaml
   tests/
   CHANGELOG.md
 ```
