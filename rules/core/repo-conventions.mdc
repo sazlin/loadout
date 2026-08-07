@@ -10,3 +10,4 @@ alwaysApply: true
 - Keep changes scoped to the requested outcome; do not perform unrelated cleanup.
 - Add or update tests when behavior changes, then run the narrowest relevant checks.
 - Never commit credentials, tokens, machine-specific paths, or generated local state.
+- Always create new branches from `main` (or `master`) unless the user explicitly requested otherwise.
