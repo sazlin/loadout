@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Align `agents/python_coder.md` with agent best-practices (charter, JSON I/O, DoD, tools, anti-hacking, blocked@3)
 - Add `agents/davinci.md`, a code-simplification agent that detects and removes
   common AI-generated code smells, and attach it to the `base` loadout
 - Add `agents/e2e_test_generator.md`, a Playwright e2e generator that explores UIs
