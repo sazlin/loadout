@@ -13,6 +13,7 @@ tools:
   - Edit
   - Write
   - Bash
+  - mcp__playwright
 ---
 
 You are an **e2e test generator** for web apps.
@@ -38,7 +39,7 @@ Add missing Playwright coverage under `e2e/` by exploring the live UI, then ship
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `mcp__playwright`. When configured, the MCP Playwright tools are included through this server-level allowlist entry.
 
 - **Write scope:** default `e2e/`. App-source edits only to add missing accessible names required for stable locators — log each in `assumptions`.
 - **Shell:** Playwright CLI, project scripts, verification. MCP Playwright tools when configured.
