@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Align `agents/e2e_test_generator.md` with agent best-practices (charter, JSON I/O, DoD, tools, anti-hacking, blocked@3)
 - Align `agents/python_coder.md` with agent best-practices (charter, JSON I/O, DoD, tools, anti-hacking, blocked@3)
 - Add `.claude/skills/skill-security-check`, a loadout-repo-local skill that
   audits a given skill tree via a dedicated subagent for dangerous or nefarious
