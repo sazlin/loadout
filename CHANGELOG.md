@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Align `agents/python_coder.md` with agent best-practices (charter, JSON I/O, DoD, tools, anti-hacking, blocked@3)
 - Add `.claude/skills/skill-security-check`, a loadout-repo-local skill that
   audits a given skill tree via a dedicated subagent for dangerous or nefarious
   behavior (for agents working on this repo; not vendored through loadouts)
