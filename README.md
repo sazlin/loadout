@@ -1,6 +1,6 @@
 # Loadout
 
-Centralize and synchronize Cursor rules, Claude Code skills, shared subagents, and agent hooks across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
+Centralize and synchronize Cursor rules, Claude Code skills, agents, and agent hooks across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
 
 ## Install
 
@@ -42,6 +42,10 @@ LOADOUT_PATH=/path/to/loadout loadout sync
 ```
 
 The lockfile records `"resolved_sha": "local"`. Use this for offline work, loadout repo development, and hermetic template tests.
+
+Repo-local skills for agents working on this repository live under `.claude/skills/`
+(committed; not part of any consumer loadout). Example: `skill-security-check`
+for auditing candidate skills before they land in `skills/`.
 
 ## Loadout repo commands
 

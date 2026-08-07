@@ -73,6 +73,8 @@ loadout/
     db-migrations/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
+  .claude/skills/                 # repo-local only (not vendored via loadouts)
+    skill-security-check/SKILL.md
   hooks/
     deny-dangerous/
       hook.yaml

@@ -225,7 +225,13 @@ __marimo__/
 .DS_Store
 
 # skills CLI staging / lockfiles (source skills live under skills/)
-.claude/
+# Keep repo-local maintainer skills under .claude/skills/ committed so agents
+# working on this loadout repo discover them; ignore everything else in .claude/.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/skill-security-check/
+!.claude/skills/skill-security-check/**
 .agents/
 skills-lock.json
 .skills.json
