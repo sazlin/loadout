@@ -1,6 +1,6 @@
 # Loadout
 
-Centralize and synchronize Cursor rules, Claude Code skills, shared subagents, and agent hooks across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
+Centralize and synchronize Cursor rules, Claude Code skills, agents, and agent hooks across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
 
 ## Install
 
