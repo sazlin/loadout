@@ -27,10 +27,11 @@ satisfy this skill. **Violating the letter is violating the spirit.**
 1. **Resolve the target.** Require an explicit skill root (path or
    `skills/<name>/`). If none is given, stop and ask. Check exactly one
    skill per invocation.
-2. **Dispatch a fresh subagent** (general-purpose / explore). Do not perform
-   the security audit yourself in the parent turn. Pass the prompt template
-   below. Give the subagent read access to the skill root only for this job;
-   do not pre-label the skill as trusted.
+2. **Dispatch a fresh subagent** (general-purpose / explore / equivalent
+   Task tool). Do not perform the security audit yourself in the parent turn.
+   Pass the prompt template below. Do not pre-label the skill as trusted.
+   **If subagent tooling is available, you must use it.** Writing an
+   "isolated audit" markdown file in the parent turn is not a substitute.
 3. **Wait for the subagent report.** If the report skipped files, lacked a
    verdict, or only reviewed `SKILL.md`, re-dispatch once with explicit
    orders to finish the inventory. Do not invent a SAFE verdict to fill gaps.
@@ -106,15 +107,17 @@ Recommendation: <block | attach-ok | remediate-then-recheck>
 | "Timebox — SKILL.md only" | Incomplete review ⇒ no SAFE verdict. Say so or finish the tree. |
 | "curl\|bash is normal for bootstrap" | Normal ≠ safe. Score per verdict rules. |
 | "I'll review inline; subagents are slow" | Iron law: dedicated subagent required. |
+| "I'll write an isolated audit file myself" | Parent-authored notes ≠ subagent. Dispatch. |
 | "Softening UNSAFE unblocks release" | Softening is a false report. Keep UNSAFE. |
 | "references/ is just docs" | Docs are in the agent context. Audit them. |
 | "Vendor is trusted" | Trust is not an inventory. Still read every file. |
+| "Batch SKILL.md-only to hit the timebox" | No SAFE from incomplete inventory. |
 
 ## Red flags — stop and follow the workflow
 
 - Approving from frontmatter/description alone
 - Skipping `scripts/` or `references/`
-- No subagent dispatch
+- No subagent dispatch (including "I audited in a local note instead")
 - Rewording `UNSAFE` to ship tonight
 - Batch-skimming many skills without per-skill subagents
 
