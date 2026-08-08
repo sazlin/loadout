@@ -1,0 +1,22 @@
+name: superpowers
+description: >-
+  Opt-in Superpowers workflow skills and SessionStart bootstrap
+  (vendored from obra/superpowers@v6.2.0). Do not combine with the
+  Superpowers plugin for the same harness.
+skills:
+  - src: skills/brainstorming
+  - src: skills/dispatching-parallel-agents
+  - src: skills/executing-plans
+  - src: skills/finishing-a-development-branch
+  - src: skills/receiving-code-review
+  - src: skills/requesting-code-review
+  - src: skills/subagent-driven-development
+  - src: skills/systematic-debugging
+  - src: skills/test-driven-development
+  - src: skills/using-git-worktrees
+  - src: skills/using-superpowers
+  - src: skills/verification-before-completion
+  - src: skills/writing-plans
+  - src: skills/writing-skills
+hooks:
+  - src: hooks/session-start

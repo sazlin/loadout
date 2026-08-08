@@ -67,6 +67,26 @@ Rules and skills are files on disk. Agents do not always pick up changes immedia
 - **Cursor IDE:** reload the window (Command Palette → “Developer: Reload Window”) after sync so new or updated rules and skills are discovered.
 - **Claude Code:** restart the session (or start a new one in the project root) so it rescans `.claude/skills/`.
 
+## Notes and warnings
+
+### Superpowers loadout
+
+The `superpowers` loadout is opt-in. Add it to a project manifest when you want
+the vendored Superpowers skills and SessionStart bootstrap without installing
+the plugin:
+
+```yaml
+loadouts: [base, python-monorepo, superpowers]
+```
+
+Enable the `superpowers` loadout only on machines that do **not** have the
+Superpowers plugin installed for Cursor and/or Claude Code used on that
+project.
+
+Combining the plugin and this loadout causes double SessionStart bootstrap
+injection and duplicate skills. Loadout does not auto-dedupe against the
+plugin. Prefer plugin **or** loadout, not both for the same harness.
+
 ## Manual smoke test (acceptance criterion 18)
 
 Before rolling loadouts out to many projects, verify once on your real toolchain that skills synced to `.claude/skills/` are discovered by both Cursor and Claude Code:

@@ -1,0 +1,9 @@
+name: session-start
+description: Inject using-superpowers bootstrap at session start
+script: session-start
+cursor:
+  event: sessionStart
+  args: [cursor]
+claude:
+  event: SessionStart
+  matcher: startup|clear|compact
