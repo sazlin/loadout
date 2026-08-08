@@ -14,13 +14,60 @@ format:
 test:
     uv run pytest
 
+# Push the current release/vX.Y.Z branch and open a PR. CI tags on merge. usage: just release 1.5.0
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
-    grep -q "## {{version}}" CHANGELOG.md || { echo "no CHANGELOG entry for {{version}}"; exit 1; }
+
+    version="{{version}}"
+    expected_branch="release/v${version}"
+    current_branch="$(git branch --show-current)"
+    if [[ "${current_branch}" != "${expected_branch}" ]]; then
+      echo "error: must be on ${expected_branch} (currently on ${current_branch:-detached HEAD})" >&2
+      exit 1
+    fi
+
+    grep -q "## ${version}" CHANGELOG.md || { echo "no CHANGELOG entry for ${version}"; exit 1; }
+
+    py_version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml | head -n1)"
+    init_version="$(sed -n 's/^__version__ = "\([^"]*\)"/\1/p' src/loadout/__init__.py | head -n1)"
+    if [[ "${py_version}" != "${version}" ]]; then
+      echo "error: pyproject.toml version is ${py_version}, expected ${version}" >&2
+      exit 1
+    fi
+    if [[ "${init_version}" != "${version}" ]]; then
+      echo "error: __version__ is ${init_version}, expected ${version}" >&2
+      exit 1
+    fi
+
+    if git show-ref --verify --quiet refs/remotes/origin/main; then
+      base_branch="main"
+    elif git show-ref --verify --quiet refs/remotes/origin/master; then
+      base_branch="master"
+    else
+      echo "error: neither origin/main nor origin/master found" >&2
+      exit 1
+    fi
+
     just lint && just test
-    git tag -a "v{{version}}" -m "v{{version}}"
-    git push origin "v{{version}}"
+    git push -u origin HEAD
+
+    if pr_url="$(gh pr view --json url -q .url 2>/dev/null)"; then
+      echo "PR already exists: ${pr_url}"
+    else
+      body="$(printf '%s\n' \
+        "## Summary" \
+        "- Prepare release **v${version}** on \`${expected_branch}\`." \
+        "" \
+        "## Test plan" \
+        "- [ ] CI green on this PR" \
+        "- [ ] After merge, confirm annotated tag \`v${version}\` exists on the merge commit")"
+      gh pr create --base "${base_branch}" --head "${expected_branch}" \
+        --title "release: v${version}" \
+        --body "${body}"
+    fi
+
+    echo "Next: merge the PR; CI will create annotated tag v${version} on the merge commit."
 
 try project:
     LOADOUT_PATH="$(pwd)" just -f "{{project}}/justfile" loadout-sync

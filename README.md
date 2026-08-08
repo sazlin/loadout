@@ -53,7 +53,7 @@ for auditing candidate skills before they land in `skills/`.
 uv sync --all-extras
 just lint    # validate rules, skills, and loadout definitions
 just test    # run pytest
-just release 0.2.0   # requires CHANGELOG entry; tags and pushes
+just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me

@@ -559,14 +559,15 @@ lint:
 test:
     uv run pytest
 
-# Tag and push a release. usage: just release 1.5.0
+# Push release/vX.Y.Z and open a PR; CI tags on merge. usage: just release 1.5.0
 release version:
     #!/usr/bin/env bash
     set -euo pipefail
+    # Must already be on release/v{{version}} with CHANGELOG + version bumps committed.
     grep -q "## {{version}}" CHANGELOG.md || { echo "no CHANGELOG entry for {{version}}"; exit 1; }
     just lint && just test
-    git tag -a "v{{version}}" -m "v{{version}}"
-    git push origin "v{{version}}"
+    git push -u origin HEAD
+    gh pr create --base main --title "release: v{{version}}" --body "Prepare v{{version}}"
 
 # Sync a local project against this working copy, for loadout repo development
 try project:
