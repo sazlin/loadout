@@ -1,0 +1,63 @@
+name: Tag release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, master]
+
+permissions:
+  contents: write
+
+jobs:
+  tag-release:
+    if: >
+      github.event.pull_request.merged == true &&
+      startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Parse version, validate, and tag
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${HEAD_REF}" =~ ^release/v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "error: head ref '${HEAD_REF}' does not match release/vX.Y.Z" >&2
+            exit 1
+          fi
+          VERSION="${BASH_REMATCH[1]}"
+          TAG="v${VERSION}"
+          echo "Release version: ${VERSION}"
+
+          grep -q "## ${VERSION}" CHANGELOG.md || {
+            echo "error: CHANGELOG.md missing '## ${VERSION}'" >&2
+            exit 1
+          }
+
+          py_version="$(sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml | head -n1)"
+          init_version="$(sed -n 's/^__version__ = "\([^"]*\)"/\1/p' src/loadout/__init__.py | head -n1)"
+          if [[ "${py_version}" != "${VERSION}" ]]; then
+            echo "error: pyproject.toml version is ${py_version}, expected ${VERSION}" >&2
+            exit 1
+          fi
+          if [[ "${init_version}" != "${VERSION}" ]]; then
+            echo "error: __version__ is ${init_version}, expected ${VERSION}" >&2
+            exit 1
+          fi
+
+          if git ls-remote --tags origin "refs/tags/${TAG}" | grep -q "refs/tags/${TAG}$"; then
+            echo "Tag ${TAG} already exists; skipping."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "${TAG}" "${MERGE_SHA}"
+          git push origin "refs/tags/${TAG}"
