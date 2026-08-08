@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.1
+
 - Require releases on `release/vX.Y.Z` branches; `just release` opens a PR and CI
   annotated-tags the merge commit on `main`/`master`
 
