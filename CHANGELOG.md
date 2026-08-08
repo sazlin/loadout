@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Require releases on `release/vX.Y.Z` branches; `just release` opens a PR and CI
+  annotated-tags the merge commit on `main`/`master`
+
 ## 0.2.0
 
 - Add rule to `rules/core/repo-conventions.mdc` to always branch from `main`.
