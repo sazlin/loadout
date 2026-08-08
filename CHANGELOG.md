@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0
+
 - Add opt-in `superpowers` loadout: vendors obra/superpowers@v6.2.0 skills
   and an adapted SessionStart bootstrap hook (no `extends`; do not combine
   with the Superpowers plugin for the same harness)
