@@ -30,3 +30,8 @@ install). Compared to the upstream script:
    in the injected context and still exit 0.
 6. **Out of scope here** — no `run-hook.cmd` Windows polyglot; loadout hook
    engine unchanged.
+
+## Related skill deltas
+
+See `skills/brainstorming/SOURCE.md` — visual companion remote brand/telemetry
+image permanently disabled in the vendored copy.
