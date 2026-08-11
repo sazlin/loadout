@@ -89,13 +89,18 @@ loadout/
   mcps/
     langchain-docs/
       mcp.yaml
+    aws-knowledge/
+      mcp.yaml
+    context7/
+      mcp.yaml
   loadouts/
     base.yaml
     agents.yaml
     python.yaml
     python-monorepo.yaml
     typescript.yaml
-    aws-terraform.yaml
+    aws.yaml
+    terraform.yaml
     playwright-e2e.yaml
   tests/
   CHANGELOG.md
@@ -238,9 +243,9 @@ The loadout repo owns running these. See section 10.
 ### 5.3 Loadout (`loadouts/<name>.yaml`)
 
 ```yaml
-name: aws-terraform
+name: terraform
 extends: [base]
-description: Terraform on AWS conventions and plan review workflow
+description: Terraform conventions and plan review workflow
 
 rules:
   - src: rules/terraform/aws-conventions.mdc
@@ -276,7 +281,8 @@ ref: v1.4.0
 loadouts:
   - base
   - python-monorepo
-  - aws-terraform
+  - aws
+  - terraform
 
 include:
   - skills/db-migrations
@@ -670,7 +676,9 @@ Answers select **loadout names only**, never file lists. What a loadout contains
 LOADOUTS = ["base", "python-monorepo"]
 
 if ctx["use_terraform"] == "yes":
-    LOADOUTS.append("aws-terraform")
+    LOADOUTS.append("terraform")
+if ctx["use_aws"] == "yes":
+    LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright-e2e")
 ```
@@ -761,7 +769,7 @@ Fails on hand-edited generated files and on a bumped ref that was not re-synced.
 8. With the network unreachable, cookiecutter generation still succeeds, the project directory survives, and a warning names `just loadout-sync`.
 9. With `LOADOUT_PATH` set, sync uses the local loadout and never touches the network.
 10. Terraform rules land only under `infra/.cursor/`, and Playwright rules only under `e2e/.cursor/`, for a project that selected those loadouts.
-11. A project generated without `aws-terraform` contains no Terraform rule or skill anywhere under `.cursor/` or `.claude/`, and no Terraform row in the `AGENTS.md` block.
+11. A project generated without `terraform` contains no Terraform rule or skill anywhere under `.cursor/` or `.claude/`, and no Terraform row in the `AGENTS.md` block.
 12. Syncing a skill that has `scripts/`, `references/`, `assets/`, and `agents/` reproduces the full subtree, with scripts still executable and binary assets byte-identical to the loadout repo.
 13. That same sync produces no `evals/` directory in the project, and the lockfile lists a hash for every copied file in the subtree.
 14. Hand-editing a copied `scripts/*.py` makes `just loadout-check` exit 1.

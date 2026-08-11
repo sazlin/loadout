@@ -621,7 +621,7 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     repository = Path(__file__).parent.parent
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
     project = tmp_path / "project"
-    write_manifest(project, manifest_body("[aws-terraform, playwright-e2e]"))
+    write_manifest(project, manifest_body("[aws, terraform, playwright-e2e]"))
 
     sync(project)
 
@@ -633,6 +633,10 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     assert (project / ".cursor/hooks/deny-dangerous/deny-dangerous.sh").is_file()
     assert (project / ".cursor/hooks.json").is_file()
     assert (project / ".claude/settings.json").is_file()
+    assert (project / ".cursor/mcp.json").is_file()
+    cursor_mcp = (project / ".cursor/mcp.json").read_text()
+    assert "aws-knowledge" in cursor_mcp
+    assert "knowledge-mcp.global.api.aws" in cursor_mcp
     assert not (project / ".cursor/rules/aws-conventions.mdc").exists()
     assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
     assert not (project / "tests/e2e").exists()
