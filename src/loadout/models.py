@@ -24,7 +24,7 @@ MANIFEST_KEYS = frozenset(
     }
 )
 
-LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks", "agents"})
+LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks", "agents", "mcps"})
 
 
 @dataclass(frozen=True)
@@ -49,6 +49,7 @@ class LoadoutDef:
     skills: list[Mapping[str, Any]]
     hooks: list[Mapping[str, Any]] = field(default_factory=list)
     agents: list[Mapping[str, Any]] = field(default_factory=list)
+    mcps: list[Mapping[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,7 @@ def load_loadout(path: Path) -> LoadoutDef:
         skills=_normalize_mapping_list(data.get("skills"), "skills"),
         hooks=_normalize_mapping_list(data.get("hooks"), "hooks"),
         agents=_normalize_mapping_list(data.get("agents"), "agents"),
+        mcps=_normalize_mapping_list(data.get("mcps"), "mcps"),
     )
 
 

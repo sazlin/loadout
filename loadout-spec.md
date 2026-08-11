@@ -1,6 +1,6 @@
 # Spec: `loadout`
 
-Centralized, versioned Cursor rules and skills, composed per project and vendored into each project repo.
+Centralized, versioned Cursor rules and skills, composed per project and vendored into each project repo. Also syncs hooks, agents, and MCP server configs.
 
 Status: ready to implement
 Audience: implementing engineer or coding agent
@@ -34,7 +34,8 @@ Rejected alternatives:
 | Skill | A directory whose root contains `SKILL.md`, optionally with bundled `scripts/`, `references/`, `assets/`, `agents/`, and `evals/` subtrees. Loaded from `.claude/skills/`, which both Cursor and Claude Code read. See sections 5.2 and 5.7 |
 | Hook | A directory under `hooks/` with `hook.yaml` plus scripts/assets. Synced once to `.cursor/hooks/<name>/`. Sync also generates `.cursor/hooks.json` (Cursor-native) and `.claude/settings.json` hooks (Claude Code) that both point at that single script copy. See section 5.9 |
 | Agent | A markdown file with YAML frontmatter under `agents/`. Synced once to `.claude/agents/`, which both Cursor (compatibility path) and Claude Code read. See section 5.10 |
-| Loadout | A named, composable selection of rules, skills, hooks, and agents, defined in the loadout repo and selected by a project. The unit a project actually chooses |
+| MCP | A directory under `mcps/` with `mcp.yaml` describing a Cursor/Claude MCP server (HTTP URL or stdio command). Sync generates `.cursor/mcp.json` (Cursor) and `.mcp.json` (Claude Code). See section 5.11 |
+| Loadout | A named, composable selection of rules, skills, hooks, agents, and MCPs, defined in the loadout repo and selected by a project. The unit a project actually chooses |
 | Manifest | `.loadout.yaml`, committed in each project |
 | Lockfile | `.loadout.lock`, committed in each project |
 | Sync | Resolving the manifest and writing the file set into the project |
@@ -85,8 +86,12 @@ loadout/
     python_coder.md
     davinci.md
     e2e_test_generator.md
+  mcps/
+    langchain-docs/
+      mcp.yaml
   loadouts/
     base.yaml
+    agents.yaml
     python.yaml
     python-monorepo.yaml
     typescript.yaml
@@ -247,12 +252,15 @@ skills:
 
 hooks:
   - src: hooks/deny-dangerous
+
+mcps:
+  - src: mcps/langchain-docs
 ```
 
 Rules:
 
 - `extends` is a list and resolves depth-first. Cycles are a fatal error.
-- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`, for hooks `<hooks_dir>/<dirname>` where `hooks_dir` defaults to `.cursor/hooks`, for agents `<agents_dir>/<basename>` where `agents_dir` defaults to `.claude/agents`.
+- `dest` is optional. Default for rules is `.cursor/rules/<basename>`, for skills `<skills_dir>/<dirname>` where `skills_dir` defaults to `.claude/skills`, for hooks `<hooks_dir>/<dirname>` where `hooks_dir` defaults to `.cursor/hooks`, for agents `<agents_dir>/<basename>` where `agents_dir` defaults to `.claude/agents`. MCP entries have no `dest` — they only contribute to generated MCP configs.
 - Use non-default `dest` to scope content to a monorepo subtree. Cursor scopes skills found under a nested project directory to files inside that directory, which keeps Terraform guidance out of context while someone edits a Python package.
 - A skill `dest` must end in `<skills_dir>/<dirname>`. Nesting is expressed by the prefix, as in `infra/.claude/skills/terraform-plan-review`.
 - A hook `dest` must end in `<hooks_dir>/<dirname>`. Hook scripts are stored once under the Cursor-native path; harness config generation rewrites command paths to match.
@@ -488,6 +496,36 @@ Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras
 
 Sync injects loadout provenance into `metadata` like rules and `SKILL.md`.
 
+### 5.11 MCPs
+
+MCP servers are remote or local tools agents can call. Cursor and Claude Code use different project config paths:
+
+| Tool | Config |
+| --- | --- |
+| Cursor | `.cursor/mcp.json` |
+| Claude Code | `.mcp.json` (project root) |
+
+Sync generates both from selected `mcps/` entries. Loadout owns those files when any MCP is selected (same ownership model as hook configs). Other personal MCP servers belong in user-level config (`~/.cursor/mcp.json`, `~/.claude.json`).
+
+#### 5.11.1 MCP directory
+
+```
+mcps/langchain-docs/
+└── mcp.yaml                 # REQUIRED. Server registration (not vendored)
+```
+
+`mcp.yaml` contract:
+
+- Required keys: `name`, `description`, and exactly one of `url` (HTTP) or `command` (stdio).
+- `name` must equal the containing directory name.
+- Optional: `transport` (`http` or `stdio`; inferred from `url`/`command` when omitted), `headers` (HTTP only), `args` / `env` (with `command`).
+- Sync does not copy `mcp.yaml` into the project.
+
+#### 5.11.2 Generated configs
+
+- Cursor: `.cursor/mcp.json` with `mcpServers.<name>.url` (or `command`/`args`/`env`). Recorded src `__generated__/cursor/mcp.json`.
+- Claude Code: `.mcp.json` with the same servers; HTTP entries include `"type": "http"` (required by Claude Code). Recorded src `__generated__/claude/mcp.json`.
+
 ---
 
 ## 6. CLI behavior
@@ -581,7 +619,7 @@ try project:
 - No stray `SKILL.md` below a skill root. A supporting doc must live in `references/` under a different filename, or it will be discovered as a separate skill.
 - Every path in `evals[].files` exists.
 - Every loadout resolves, with no `extends` cycles and no `dest` collisions.
-- No orphan files: present in `rules/` or `skills/` but referenced by no loadout.
+- No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout.
 
 Warn, but do not fail, when `SKILL.md` exceeds 500 lines or a `references/` file exceeds 300 lines without a table of contents. These are budget signals, not errors.
 

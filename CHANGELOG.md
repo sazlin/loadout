@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add loadout support for MCPs: directories under `mcps/` with `mcp.yaml` generate
+  `.cursor/mcp.json` (Cursor) and `.mcp.json` (Claude Code)
+- Add `mcps/langchain-docs` pointing at https://docs.langchain.com/mcp
+- Add the `agents` loadout (extends `base`) carrying the LangChain docs MCP
+
 ## 0.3.0
 
 - Add opt-in `superpowers` loadout: vendors obra/superpowers@v6.2.0 skills

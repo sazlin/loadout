@@ -72,6 +72,11 @@ def test_resolve_expands_extended_loadouts_and_skips_skill_root_evals():
             ".claude/agents/demo_agent.md",
             "agent",
         ),
+        (
+            "mcps/demo-docs/mcp.yaml",
+            "__mcp__/demo-docs",
+            "mcp",
+        ),
     }
 
 

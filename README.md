@@ -1,6 +1,6 @@
 # Loadout
 
-Centralize and synchronize Cursor rules, Claude Code skills, agents, and agent hooks across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` with lockfile-backed drift checks.
+Centralize and synchronize Cursor rules, Claude Code skills, agents, agent hooks, and MCP servers across projects. Named loadouts compose shared and feature-specific content; sync vendors files into `.cursor/` and `.claude/` (plus project `.mcp.json`) with lockfile-backed drift checks.
 
 ## Install
 
@@ -51,7 +51,7 @@ for auditing candidate skills before they land in `skills/`.
 
 ```bash
 uv sync --all-extras
-just lint    # validate rules, skills, and loadout definitions
+just lint    # validate rules, skills, hooks, agents, mcps, and loadout definitions
 just test    # run pytest
 just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on merge
 
@@ -62,12 +62,22 @@ just add_skill mattpocock/skills --skill grill-me
 
 ## After syncing
 
-Rules and skills are files on disk. Agents do not always pick up changes immediately:
+Rules, skills, agents, hooks, and MCP configs are files on disk. Agents do not always pick up changes immediately:
 
-- **Cursor IDE:** reload the window (Command Palette → “Developer: Reload Window”) after sync so new or updated rules and skills are discovered.
-- **Claude Code:** restart the session (or start a new one in the project root) so it rescans `.claude/skills/`.
+- **Cursor IDE:** reload the window (Command Palette → “Developer: Reload Window”) after sync so new or updated rules, skills, and MCP servers are discovered. Authenticate any OAuth MCP servers from Settings → Tools & MCP if prompted.
+- **Claude Code:** restart the session (or start a new one in the project root) so it rescans `.claude/skills/` and `.mcp.json`.
 
 ## Notes and warnings
+
+### Agents loadout
+
+The `agents` loadout extends `base` and adds the LangChain docs MCP
+(`https://docs.langchain.com/mcp`) so agents can search and read live LangChain /
+LangGraph / LangSmith documentation:
+
+```yaml
+loadouts: [agents]
+```
 
 ### Superpowers loadout
 

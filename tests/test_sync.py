@@ -29,6 +29,8 @@ SKILL_AGENT = ".claude/skills/demo/agents/reviewer.md"
 HOOK_SCRIPT = ".cursor/hooks/demo/guard.sh"
 CURSOR_HOOKS = ".cursor/hooks.json"
 CLAUDE_SETTINGS = ".claude/settings.json"
+CURSOR_MCP = ".cursor/mcp.json"
+CLAUDE_MCP = ".mcp.json"
 PROJECT_AGENT = ".claude/agents/demo_agent.md"
 
 
@@ -84,8 +86,10 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
     assert (project / HOOK_SCRIPT).is_file()
     assert (project / CURSOR_HOOKS).is_file()
     assert (project / CLAUDE_SETTINGS).is_file()
+    assert (project / CURSOR_MCP).is_file()
+    assert (project / CLAUDE_MCP).is_file()
     assert (project / PROJECT_AGENT).is_file()
-    assert result.added == 11
+    assert result.added == 13
     assert result.updated == 0
     assert result.removed == 0
 
@@ -104,6 +108,8 @@ def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
             HOOK_SCRIPT,
             CURSOR_HOOKS,
             CLAUDE_SETTINGS,
+            CURSOR_MCP,
+            CLAUDE_MCP,
             PROJECT_AGENT,
         ]
     )
@@ -178,7 +184,7 @@ def test_second_sync_reports_no_changes_and_leaves_files_untouched(
     result = sync(project)
 
     assert (result.added, result.updated, result.removed) == (0, 0, 0)
-    assert result.unchanged == 11
+    assert result.unchanged == 13
     assert not result.agents_changed
     assert not result.claude_changed
     assert snapshot(project) == before
@@ -496,7 +502,7 @@ def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) 
     sync(project)
 
     out = capsys.readouterr().out
-    assert "11 added" in out
+    assert "13 added" in out
     assert "AGENTS.md" in out
     assert "Cursor" in out
 
@@ -604,6 +610,8 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
         HOOK_SCRIPT,
         CURSOR_HOOKS,
         CLAUDE_SETTINGS,
+        CURSOR_MCP,
+        CLAUDE_MCP,
         PROJECT_AGENT,
     }
     assert all(len(entry.sha256) == 64 for entry in lock.files)
@@ -650,6 +658,24 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
     assert not any("aws-conventions" in path for path in paths)
     assert "terraform" not in (project / "AGENTS.md").read_text().lower()
     assert not any("terraform-plan-review" in text or "aws-conventions" in text for text in _project_text(project))
+
+
+def test_real_agents_loadout_writes_langchain_docs_mcp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repository = Path(__file__).parent.parent
+    monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[agents]"))
+
+    sync(project)
+
+    cursor = json.loads((project / ".cursor/mcp.json").read_text())
+    assert cursor["mcpServers"]["langchain-docs"]["url"] == "https://docs.langchain.com/mcp"
+    claude = json.loads((project / ".mcp.json").read_text())
+    assert claude["mcpServers"]["langchain-docs"] == {
+        "type": "http",
+        "url": "https://docs.langchain.com/mcp",
+    }
+    assert (project / ".claude/agents/davinci.md").is_file()
 
 
 def _project_text(project: Path) -> list[str]:

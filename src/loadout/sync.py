@@ -34,6 +34,16 @@ from loadout.hooks import (
     merge_claude_settings,
 )
 from loadout.io import atomic_write, sha256_bytes
+from loadout.mcps import (
+    CLAUDE_MCP_JSON,
+    CURSOR_MCP_JSON,
+    GENERATED_CLAUDE_MCP_SRC,
+    GENERATED_CURSOR_MCP_SRC,
+    McpMeta,
+    build_claude_mcp_json,
+    build_cursor_mcp_json,
+    load_mcp_meta,
+)
 from loadout.models import (
     FileEntry,
     Lockfile,
@@ -130,9 +140,7 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
 
     fetched = fetch_source(manifest, lock)
     resolved = resolve(manifest, fetched.root)
-    validate_resolved(
-        resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir
-    )
+    validate_resolved(resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 
     plan = _build_plan(manifest, fetched.root, fetched.resolved_sha, resolved, project_root)
 
@@ -149,10 +157,11 @@ def _build_plan(
     project_root: Path,
 ) -> _Plan:
     files = sorted(
-        (_plan_file(file, source_root, resolved_sha) for file in resolved),
+        (_plan_file(file, source_root, resolved_sha) for file in resolved if file.kind != "mcp"),
         key=lambda planned: planned.dest,
     )
     files.extend(_plan_hook_configs(resolved, source_root, project_root))
+    files.extend(_plan_mcp_configs(resolved, source_root))
     files = sorted(files, key=lambda planned: planned.dest)
     rows = [
         _rule_row(file, source_root) for file in sorted(resolved, key=lambda file: file.dest) if file.kind == "rule"
@@ -188,6 +197,8 @@ def _plan_file(file: ResolvedFile, source_root: Path, resolved_sha: str) -> _Pla
         case "agent":
             content = inject_header(raw.decode(), file.src, resolved_sha).encode()
             executable = False
+        case "mcp":
+            raise AssertionError("MCP metadata is config-only and must not be planned as a file")
         case _:
             _exhaustive: Never = file.kind
             raise AssertionError(f"Unhandled file kind: {file.kind!r}")
@@ -218,6 +229,28 @@ def _plan_hook_configs(resolved: list[ResolvedFile], source_root: Path, project_
     ]
 
 
+def _plan_mcp_configs(resolved: list[ResolvedFile], source_root: Path) -> list[_PlannedFile]:
+    """Generate Cursor and Claude MCP configs from selected MCP directories."""
+    mcps = _selected_mcp_metas(resolved, source_root)
+    if not mcps:
+        return []
+
+    return [
+        _PlannedFile(
+            dest=CURSOR_MCP_JSON,
+            src=GENERATED_CURSOR_MCP_SRC,
+            content=build_cursor_mcp_json(mcps),
+            executable=False,
+        ),
+        _PlannedFile(
+            dest=CLAUDE_MCP_JSON,
+            src=GENERATED_CLAUDE_MCP_SRC,
+            content=build_claude_mcp_json(mcps),
+            executable=False,
+        ),
+    ]
+
+
 def _selected_hook_metas(resolved: list[ResolvedFile], source_root: Path) -> list[HookMeta]:
     roots: dict[str, tuple[Path, str]] = {}
     for file in resolved:
@@ -240,6 +273,19 @@ def _selected_hook_metas(resolved: list[ResolvedFile], source_root: Path) -> lis
         load_hook_meta(root / HOOK_META_NAME, dest_dir=dest_dir)
         for root, dest_dir in sorted(roots.values(), key=lambda item: item[1])
     ]
+
+
+def _selected_mcp_metas(resolved: list[ResolvedFile], source_root: Path) -> list[McpMeta]:
+    metas: dict[str, McpMeta] = {}
+    for file in resolved:
+        if file.kind != "mcp":
+            continue
+        meta = load_mcp_meta(source_root / file.src)
+        existing = metas.get(meta.name)
+        if existing is not None and existing != meta:
+            raise ValidationError(f"MCP name collision for {meta.name!r}")
+        metas[meta.name] = meta
+    return [metas[name] for name in sorted(metas)]
 
 
 def _skill_relative_parts(src: str) -> tuple[str, ...]:

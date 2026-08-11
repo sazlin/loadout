@@ -177,7 +177,7 @@ def test_resolve_without_list_flag_is_a_usage_error(runner: CliRunner) -> None:
 
 def test_lint_passes_on_a_clean_loadout_repo(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
-        for name in ("rules", "skills", "hooks", "agents", "loadouts"):
+        for name in ("rules", "skills", "hooks", "agents", "mcps", "loadouts"):
             shutil.copytree(FIXTURE / name, Path(name))
 
         result = runner.invoke(main, ["lint"])
@@ -187,7 +187,7 @@ def test_lint_passes_on_a_clean_loadout_repo(runner: CliRunner) -> None:
 
 def test_lint_fails_on_an_orphan_file(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
-        for name in ("rules", "skills", "hooks", "agents", "loadouts"):
+        for name in ("rules", "skills", "hooks", "agents", "mcps", "loadouts"):
             shutil.copytree(FIXTURE / name, Path(name))
         orphan = Path("rules/python/orphan.mdc")
         orphan.write_text("---\ndescription: Unused\n---\n\nUnused.\n")
@@ -200,7 +200,7 @@ def test_lint_fails_on_an_orphan_file(runner: CliRunner) -> None:
 
 def test_lint_fails_when_loadout_extends_missing_parent(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
-        for name in ("rules", "skills", "hooks", "agents", "loadouts"):
+        for name in ("rules", "skills", "hooks", "agents", "mcps", "loadouts"):
             shutil.copytree(FIXTURE / name, Path(name))
         Path("loadouts/child.yaml").write_text("name: child\nextends: [missing]\ndescription: Child\n")
 
