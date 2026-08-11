@@ -9,3 +9,5 @@ hooks:
   - src: hooks/deny-dangerous
 agents:
   - src: agents/davinci.md
+mcps:
+  - src: mcps/context7
