@@ -6,3 +6,5 @@ skills:
   - src: skills/demo
 hooks:
   - src: hooks/demo
+mcps:
+  - src: mcps/demo-docs

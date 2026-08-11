@@ -6,6 +6,7 @@ from typing import Literal
 
 from loadout.errors import ValidationError
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
+from loadout.mcps import MCP_META_NAME, load_mcp_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
 
 
@@ -13,7 +14,7 @@ from loadout.models import LoadoutDef, Manifest, load_loadout
 class ResolvedFile:
     src: str
     dest: str
-    kind: Literal["rule", "skill_file", "hook_file", "agent"]
+    kind: Literal["rule", "skill_file", "hook_file", "agent", "mcp"]
 
 
 def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
@@ -101,7 +102,13 @@ def _resolve_loadout(
         for entry in loadout.agents
         for src in [_entry_src(entry)]
     ]
-    return [*rules, *skills, *hooks, *agents]
+    mcps = [
+        resolved
+        for entry in loadout.mcps
+        for src in [_entry_src(entry)]
+        for resolved in [_expand_mcp(source_root, src)]
+    ]
+    return [*rules, *skills, *hooks, *agents, *mcps]
 
 
 def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
@@ -113,6 +120,8 @@ def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFil
             files.append(ResolvedFile(src, _default_agent_dest(manifest.agents_dir, src), "agent"))
         elif path.is_file():
             files.append(ResolvedFile(src, _default_rule_dest(src), "rule"))
+        elif src.startswith("mcps/") or (path.is_dir() and (path / MCP_META_NAME).is_file()):
+            files.append(_expand_mcp(source_root, src))
         elif src.startswith("hooks/") or (path.is_dir() and (path / HOOK_META_NAME).is_file()):
             files.extend(_expand_hook(source_root, src, _default_hook_dest(manifest.hooks_dir, src)))
         else:
@@ -201,6 +210,28 @@ def _expand_hook(source_root: Path, src: str, dest: str) -> list[ResolvedFile]:
             )
         )
     return files
+
+
+def _expand_mcp(source_root: Path, src: str) -> ResolvedFile:
+    """Validate an MCP directory and return a metadata-only resolved entry.
+
+    MCP servers are config-only: ``mcp.yaml`` is not vendored into the project.
+    Sync collects these markers and writes ``.cursor/mcp.json`` / ``.mcp.json``.
+    """
+    source = source_root / src
+    if not source.is_dir():
+        raise ValidationError(f"MCP source directory not found: {src}")
+
+    meta_path = source / MCP_META_NAME
+    if not meta_path.is_file():
+        raise ValidationError(f"MCP is missing {MCP_META_NAME}: {src}")
+    meta = load_mcp_meta(meta_path)
+
+    return ResolvedFile(
+        src=meta_path.relative_to(source_root).as_posix(),
+        dest=f"__mcp__/{meta.name}",
+        kind="mcp",
+    )
 
 
 def _is_skipped_skill_file(path: Path, skill_root: Path) -> bool:

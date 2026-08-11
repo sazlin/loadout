@@ -1,0 +1,6 @@
+name: agents
+extends:
+  - base
+description: Agent frameworks and tooling — LangChain docs MCP for live documentation lookup.
+mcps:
+  - src: mcps/langchain-docs

@@ -1,8 +1,9 @@
 # AGENTS.md
 
 `loadout` is a Python 3.12 CLI (`click`-based) that centralizes and syncs Cursor
-rules, Claude Code skills, agents, and hooks into consumer projects. See
-[README.md](README.md) and [loadout-spec.md](loadout-spec.md) for full details.
+rules, Claude Code skills, agents, hooks, and MCP server configs into consumer
+projects. See [README.md](README.md) and [loadout-spec.md](loadout-spec.md) for
+full details.
 
 ## Cursor Cloud specific instructions
 
@@ -12,8 +13,8 @@ rules, Claude Code skills, agents, and hooks into consumer projects. See
   update script runs `uv sync --all-extras`, which creates/updates `.venv`.
 - Standard commands (already defined in [justfile](justfile) and
   [pyproject.toml](pyproject.toml)):
-  - Lint: `just lint` (runs `uv run loadout lint` — validates rules/skills/hooks/agents/loadouts).
-  - Test: `just test` (runs `uv run pytest`, 143 tests).
+  - Lint: `just lint` (runs `uv run loadout lint` — validates rules/skills/hooks/agents/mcps/loadouts).
+  - Test: `just test` (runs `uv run pytest`).
   - Format: `just format` (`ruff check --fix` + `ruff format`).
   - Run the CLI directly: `uv run loadout --help`.
 - There is no long-running service; this is a CLI. To exercise core behavior

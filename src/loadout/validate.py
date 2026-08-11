@@ -6,6 +6,7 @@ from typing import Never
 from loadout.errors import ValidationError
 from loadout.frontmatter import parse_agent_md, parse_rule, parse_skill_md
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
+from loadout.mcps import load_mcp_meta
 from loadout.resolve import ResolvedFile
 
 
@@ -19,7 +20,8 @@ def validate_resolved(
 
     for file in files:
         _require_contained(file.src, "Source", "the source tree")
-        _require_contained(file.dest, "Destination", "the project")
+        if file.kind != "mcp":
+            _require_contained(file.dest, "Destination", "the project")
 
         source_path = source_root / file.src
         if not source_path.is_file():
@@ -40,6 +42,8 @@ def validate_resolved(
                 hook_roots[hook_root.as_posix()] = hook_root
             case "agent":
                 _validate_agent(file, source_path, agents_dir)
+            case "mcp":
+                load_mcp_meta(source_path)
             case _:
                 _exhaustive: Never = file.kind
                 raise AssertionError(f"Unhandled file kind: {file.kind!r}")

@@ -29,7 +29,7 @@ DEFAULT_REF = "main"
 @click.group()
 @click.version_option(__version__, prog_name="loadout")
 def main() -> None:
-    """Centralized, versioned Cursor rules and skills, composed per project."""
+    """Centralized, versioned Cursor rules, skills, agents, hooks, and MCPs."""
 
 
 @main.command()
@@ -71,7 +71,7 @@ def resolve(show_list: bool) -> None:
 
 @main.command()
 def lint() -> None:
-    """Validate this loadout repo's rules, skills, and loadouts (spec 7.1)."""
+    """Validate this loadout repo's rules, skills, hooks, agents, mcps, and loadouts (spec 7.1)."""
     _guarded(_run_lint)
 
 
@@ -107,12 +107,13 @@ def _print_resolved() -> None:
     lock = load_lockfile(project_root / LOCKFILE_NAME)
     fetched = fetch_source(manifest, lock)
     files = resolve_loadouts(manifest, fetched.root)
-    validate_resolved(
-        files, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir
-    )
+    validate_resolved(files, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 
     for file in sorted(files, key=lambda resolved: resolved.dest):
-        click.echo(f"{file.src} -> {file.dest}")
+        if file.kind == "mcp":
+            click.echo(f"{file.src} -> .cursor/mcp.json, .mcp.json")
+        else:
+            click.echo(f"{file.src} -> {file.dest}")
 
 
 def _run_lint() -> None:
