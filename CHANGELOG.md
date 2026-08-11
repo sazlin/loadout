@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0
+
 - Add loadout support for MCPs: directories under `mcps/` with `mcp.yaml` generate
   `.cursor/mcp.json` (Cursor) and `.mcp.json` (Claude Code)
 - Add `mcps/langchain-docs` pointing at https://docs.langchain.com/mcp
