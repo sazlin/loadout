@@ -676,7 +676,9 @@ Answers select **loadout names only**, never file lists. What a loadout contains
 LOADOUTS = ["base", "python-monorepo"]
 
 if ctx["use_terraform"] == "yes":
-    LOADOUTS.extend(["aws", "terraform"])
+    LOADOUTS.append("terraform")
+if ctx["use_aws"] == "yes":
+    LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright-e2e")
 ```
