@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.5.0
+
+- Add `mcps/context7` pointing at https://mcp.context7.com/mcp and include it
+  in the `base` loadout
+
 ## 0.4.0
 
 - Add loadout support for MCPs: directories under `mcps/` with `mcp.yaml` generate
