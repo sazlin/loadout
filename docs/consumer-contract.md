@@ -45,7 +45,7 @@ Example mapping:
 LOADOUTS = ["base", "python-monorepo"]
 
 if ctx["use_terraform"] == "yes":
-    LOADOUTS.append("aws-terraform")
+    LOADOUTS.extend(["aws", "terraform"])
 if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright-e2e")
 ```

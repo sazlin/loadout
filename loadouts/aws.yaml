@@ -1,0 +1,6 @@
+name: aws
+description: AWS documentation access via the public AWS Knowledge MCP server.
+extends:
+  - base
+mcps:
+  - src: mcps/aws-knowledge
