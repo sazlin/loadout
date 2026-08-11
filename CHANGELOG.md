@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.6.0
+
+- Split `aws-terraform` into separate `aws` and `terraform` loadouts
+- Add `mcps/aws-knowledge` pointing at https://knowledge-mcp.global.api.aws and
+  include it in the `aws` loadout
+
 ## 0.5.0
 
 - Add `mcps/context7` pointing at https://mcp.context7.com/mcp and include it
