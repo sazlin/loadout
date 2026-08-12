@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/loadout-banner.jpg" alt="Cute cartoon beaver packing a backpack from a table of developer tools" width="100%" />
+  <img src="docs/assets/loadout-banner.jpg" alt="Cute lo-fi beaver in safety goggles packing a LOADOUT toolbox in a busy workshop with clustered hand tools" width="100%" />
 </p>
 
 # Loadout
