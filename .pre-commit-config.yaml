@@ -11,3 +11,10 @@ repos:
         name: ruff-format-mdc
         files: \.mdc$
         types_or: [text]
+  - repo: local
+    hooks:
+      - id: pyrefly-check
+        name: Pyrefly (type checking)
+        entry: uv run pyrefly check
+        language: system
+        pass_filenames: false

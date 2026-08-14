@@ -15,6 +15,7 @@ full details.
   [pyproject.toml](pyproject.toml)):
   - Lint: `just lint` (runs `uv run loadout lint` — validates rules/skills/hooks/agents/mcps/loadouts).
   - Test: `just test` (runs `uv run pytest`).
+  - Typecheck: `just typecheck` (runs `uv run pyrefly check`).
   - Format: `just format` (`ruff check --fix` + `ruff format`).
   - Run the CLI directly: `uv run loadout --help`.
 - There is no long-running service; this is a CLI. To exercise core behavior
@@ -33,5 +34,5 @@ full details.
   fetches from the GitHub `source`/`ref` in the manifest, which needs network.
 - `pre-commit` is available (installed via the dev extra), but git hooks are not
   auto-installed; run `uv run pre-commit run --all-files` if you want the ruff
-  hooks. CI (`.github/workflows/ci.yml`) only runs `uv sync --all-extras` then
-  `just lint && just test`.
+  and pyrefly hooks. CI (`.github/workflows/ci.yml`) runs `uv sync --all-extras`
+  then `just lint && just test`, plus a `typecheck` job (`uv run pyrefly check`).

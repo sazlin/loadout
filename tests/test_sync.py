@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -64,7 +65,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def read_lock(project: Path) -> dict[str, object]:
+def read_lock(project: Path) -> dict[str, Any]:
     return json.loads((project / ".loadout.lock").read_text())
 
 
