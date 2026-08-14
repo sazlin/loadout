@@ -15,6 +15,15 @@ jobs:
       - run: uv sync --all-extras
       - run: just lint && just test
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --all-extras
+      - name: Pyrefly type check
+        run: uv run pyrefly check --output-format=github
+
   resolve-loadouts:
     runs-on: ubuntu-latest
     strategy:

@@ -48,7 +48,7 @@ def assert_agent_contract(path: Path) -> None:
     assert meta.name == path.stem
     assert meta.readonly is not True
     assert meta.tools is not None
-    tools = set(meta.tools) if isinstance(meta.tools, list) else {t.strip() for t in str(meta.tools).split(",")}
+    tools = set(meta.tools) if isinstance(meta.tools, list) else {t.strip() for t in meta.tools.split(",")}
     assert REQUIRED_TOOLS <= tools
     for heading in REQUIRED_HEADINGS:
         assert heading in text, f"{path.name} missing {heading}"

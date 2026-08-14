@@ -14,6 +14,10 @@ format:
 test:
     uv run pytest
 
+# Static type check with pyrefly
+typecheck:
+    uv run pyrefly check
+
 # Push the current release/vX.Y.Z branch and open a PR. CI tags on merge. usage: just release 1.5.0
 release version:
     #!/usr/bin/env bash
@@ -49,7 +53,7 @@ release version:
       exit 1
     fi
 
-    just lint && just test
+    just lint && just typecheck && just test
     git push -u origin HEAD
 
     if pr_url="$(gh pr view --json url -q .url 2>/dev/null)"; then

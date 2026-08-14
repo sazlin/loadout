@@ -740,6 +740,7 @@ Any change that could invalidate a project's `exclude` selector is major.
 ### Loadout repo
 
 - `just lint` and `just test` on every PR.
+- `pyrefly check` on every PR (GitHub Actions `typecheck` job).
 - A matrix job that resolves every loadout and asserts it produces a valid, collision-free file set.
 - A job asserting no vendored output would contain an `evals/` directory or a `*-workspace/` directory.
 - Block release tags if `CHANGELOG.md` has no entry for the version.

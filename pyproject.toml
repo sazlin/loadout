@@ -14,6 +14,8 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.16.1",
   "pre-commit>=4.0",
+  "pyrefly>=1.2.0",
+  "types-pyyaml>=6.0.12.20260724",
 ]
 
 [project.scripts]
@@ -33,6 +35,12 @@ testpaths = ["tests"]
 target-version = "py312"
 line-length = 120
 extension = { mdc = "markdown" }
+
+[tool.pyrefly]
+python-version = "3.12"
+python-interpreter-path = ".venv/bin/python"
+search-path = ["src"]
+project-includes = ["src", "tests"]
 
 [tool.basedpyright]
 venvPath = "."

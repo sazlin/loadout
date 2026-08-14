@@ -254,6 +254,7 @@ Repo commands:
 ```bash
 uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
+just typecheck  # pyrefly static type check
 just test     # pytest
 just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on merge
 

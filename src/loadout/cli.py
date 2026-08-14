@@ -75,7 +75,7 @@ def lint() -> None:
     _guarded(_run_lint)
 
 
-def _guarded(action: Callable[[], None]) -> None:
+def _guarded(action: Callable[[], object]) -> None:
     try:
         action()
     except LoadoutError as error:
