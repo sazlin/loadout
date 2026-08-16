@@ -10,33 +10,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![uv](https://img.shields.io/badge/runner-uv%20%2F%20uvx-de5fe9)](https://docs.astral.sh/uv/)
 
-**Pack Cursor rules, Claude Code skills, agents, hooks, and MCP configs into named loadouts — then sync a reviewable copy into every project.**
+**Sean's personal skills, agents, hooks, and MCP configs centralized and categorized into project-deployable "loadouts".**
 
-No global install required. One manifest (`.loadout.yaml`), one lockfile, copy-pasteable commands.
-
-```mermaid
-flowchart LR
-  A[".loadout.yaml<br/>pick loadouts + pin ref"] --> B["loadout sync"]
-  B --> C[".cursor/ + .claude/<br/>vendored files"]
-  B --> D[".loadout.lock<br/>hashes + SHA"]
-  E["loadout update"] --> A
-```
-
-## Table of contents
-
-- [Quick start](#quick-start)
-- [Change selected loadouts](#change-selected-loadouts)
-- [Pull loadout changes over time](#pull-loadout-changes-over-time)
-- [Check for drift](#check-for-drift)
-- [Available loadouts](#available-loadouts)
-- [Agents](#agents)
-- [Manifest cheatsheet](#manifest-cheatsheet)
-- [After syncing](#after-syncing)
-- [Project `just` recipes](#project-just-recipes)
-- [Notes and warnings](#notes-and-warnings)
-- [Local development](#local-development)
-- [Documentation](#documentation)
-- [License](#license)
+## The Gist
+- Everything is highly opinionated and changing constantly.
+- Everything is "Cursor-first, Claude compatible" because those are the harnesses I use at the moment (Pi coming next).
+- Loadout is a critical piece of my in-progress software metafactory, which I use to bootstrap new software factories for startups. Loadout is what my metafactory uses to equip each factory's project with the exactly the right rules, skills, agents, etc.
+- Loadouts are incomplete. I'm still generalizing and migrating project-specific skills and agents into this project. More is coming.
 
 ## Quick start
 
