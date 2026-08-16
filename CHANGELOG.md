@@ -6,6 +6,8 @@
   files under `agents/` are not agents (lint, orphan checks, and sync skip them).
 - Add `rules/agents/agent-authoring.mdc` (globs `agents/**/*.md`) so new and
   imported agents follow the template. Included in the `base` loadout.
+- Align `davinci` and `e2e_test_generator` output-schema closers with the
+  template; assert every agent file uses the template heading order.
 
 - Add four dimensional review agents (`review_correctness`,
   `review_maintainability`, `review_scale`, `review_security`) and
