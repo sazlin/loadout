@@ -200,6 +200,8 @@ Work through this list on every invocation:
 
 ## Output schema
 
+End every run with a fenced `json` block (prose above is optional):
+
 ```json
 {
   "status": "ok | blocked",
@@ -219,3 +221,5 @@ Work through this list on every invocation:
   "blocked_reason": null
 }
 ```
+
+On success, `blocked_reason` is `null`. On blocked, `blocked_reason` is a non-empty string. Always populate `assumptions`, `tried`, and `rejected` (use `[]` only when truly empty).

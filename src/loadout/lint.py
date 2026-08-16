@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from loadout.errors import ValidationError
-from loadout.frontmatter import parse_agent_md, parse_rule, parse_skill_md
+from loadout.frontmatter import is_agent_definition, parse_agent_md, parse_rule, parse_skill_md
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.mcps import MCP_META_NAME, load_mcp_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
@@ -175,6 +175,8 @@ def _lint_agents(repo_root: Path, result: LintResult) -> None:
         return
 
     for path in sorted(agents_dir.rglob("*.md")):
+        if not is_agent_definition(path):
+            continue
         relative = path.relative_to(repo_root).as_posix()
         try:
             parse_agent_md(path, path.read_text(), file_stem=path.stem)
@@ -306,6 +308,8 @@ def _lint_orphans(
     agents_dir = repo_root / "agents"
     if agents_dir.is_dir():
         for path in sorted(agents_dir.rglob("*.md")):
+            if not is_agent_definition(path):
+                continue
             relative = path.relative_to(repo_root).as_posix()
             if relative not in agent_srcs:
                 result.errors.append(f"{relative}: orphan agent, not referenced by any loadout")

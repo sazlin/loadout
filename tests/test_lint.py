@@ -46,6 +46,19 @@ def test_repo_with_no_content_directories_lints_cleanly(tmp_path: Path) -> None:
     assert result.warnings == []
 
 
+def test_underscore_prefixed_agent_markdown_is_not_linted_or_an_orphan(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "agents" / "_agent_template.md",
+        "# Template\n\nNot an agent. Missing frontmatter on purpose.\n",
+    )
+
+    result = lint_repo(tmp_path)
+
+    assert result.ok
+    assert result.errors == []
+
+
 def test_orphan_rule_not_referenced_by_any_loadout_is_an_error(tmp_path: Path) -> None:
     base_repo(tmp_path)
     write(

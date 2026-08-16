@@ -5,6 +5,7 @@ from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from loadout.errors import ValidationError
+from loadout.frontmatter import is_agent_definition
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.mcps import MCP_META_NAME, load_mcp_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
@@ -117,6 +118,8 @@ def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFil
     for src in manifest.include:
         path = source_root / src
         if path.is_file() and src.startswith("agents/") and src.endswith(".md"):
+            if not is_agent_definition(path):
+                raise ValidationError(f"Underscore-prefixed files are not agents: {src}")
             files.append(ResolvedFile(src, _default_agent_dest(manifest.agents_dir, src), "agent"))
         elif path.is_file():
             files.append(ResolvedFile(src, _default_rule_dest(src), "rule"))
