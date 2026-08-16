@@ -686,6 +686,8 @@ def test_real_agents_loadout_writes_langchain_docs_mcp(tmp_path: Path, monkeypat
     assert (project / ".claude/agents/davinci.md").is_file()
     assert (project / ".claude/agents/review_orchestrator.md").is_file()
     assert (project / ".claude/skills/refining-evals/SKILL.md").is_file()
+    assert (project / ".cursor/rules/agent-authoring.mdc").is_file()
+    assert not (project / ".claude/agents/_agent_template.md").exists()
 
 
 def _project_text(project: Path) -> list[str]:

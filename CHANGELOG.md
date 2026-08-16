@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add `agents/_agent_template.md` as the authoring skeleton. Underscore-prefixed
+  files under `agents/` are not agents (lint, orphan checks, and sync skip them).
+- Add `rules/agents/agent-authoring.mdc` (globs `agents/**/*.md`) so new and
+  imported agents follow the template. Included in the `base` loadout.
+
 - Add four dimensional review agents (`review_correctness`,
   `review_maintainability`, `review_scale`, `review_security`) and
   `review_orchestrator` to the `base` loadout. The orchestrator launches the

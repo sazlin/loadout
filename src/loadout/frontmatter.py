@@ -28,6 +28,15 @@ AGENT_KEYS = frozenset(
 AGENT_NAME_RE = re.compile(r"^[a-z0-9]+(?:[_-][a-z0-9]+)*$")
 
 
+def is_agent_definition(path: Path) -> bool:
+    """Return True for loadable agent files.
+
+    Underscore-prefixed markdown under ``agents/`` (for example
+    ``_agent_template.md``) is a template or note, not an agent.
+    """
+    return path.suffix == ".md" and not path.name.startswith("_")
+
+
 @dataclass(frozen=True)
 class RuleMeta:
     description: str

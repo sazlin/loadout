@@ -98,9 +98,10 @@ def issue_blob_safe(issue: dict[str, object]) -> str:
 
 
 def test_every_agent_file_is_classified() -> None:
-    on_disk = {path.name for path in AGENTS.glob("*.md")}
+    on_disk = {path.name for path in AGENTS.glob("*.md") if not path.name.startswith("_")}
     classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}
     assert on_disk == classified
+    assert (AGENTS / "_agent_template.md").is_file()
 
 
 def test_base_loadout_includes_dimensional_review_agents() -> None:

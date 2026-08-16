@@ -112,6 +112,22 @@ def test_validate_resolved_rejects_skill_missing_skill_md(tmp_path: Path) -> Non
         validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
+def test_validate_resolved_rejects_underscore_prefixed_agent_template(tmp_path: Path) -> None:
+    agent_dir = tmp_path / "agents"
+    agent_dir.mkdir()
+    (agent_dir / "_agent_template.md").write_text("# Template\n")
+    files = [
+        ResolvedFile(
+            "agents/_agent_template.md",
+            ".claude/agents/_agent_template.md",
+            "agent",
+        )
+    ]
+
+    with pytest.raises(ValidationError, match="not agents"):
+        validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
+
+
 def test_validate_resolved_rejects_invalid_skill_contract(tmp_path: Path) -> None:
     skill_dir = tmp_path / "skills" / "demo"
     skill_dir.mkdir(parents=True)

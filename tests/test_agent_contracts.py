@@ -68,3 +68,14 @@ def assert_agent_contract(path: Path) -> None:
 )
 def test_production_agent_best_practices_contract(filename: str) -> None:
     assert_agent_contract(AGENTS / filename)
+
+
+def test_agent_template_is_not_a_loadable_agent_and_lists_required_headings() -> None:
+    path = AGENTS / "_agent_template.md"
+    text = path.read_text()
+    assert path.name.startswith("_")
+    for heading in REQUIRED_HEADINGS:
+        assert heading in text, f"template missing {heading}"
+    for field in JSON_FIELDS:
+        assert field in text, f"template output schema missing {field}"
+    assert "your_agent_name" in text

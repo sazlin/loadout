@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 from typing import Never
 
 from loadout.errors import ValidationError
-from loadout.frontmatter import parse_agent_md, parse_rule, parse_skill_md
+from loadout.frontmatter import is_agent_definition, parse_agent_md, parse_rule, parse_skill_md
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.mcps import load_mcp_meta
 from loadout.resolve import ResolvedFile
@@ -72,6 +72,8 @@ def _validate_agent(file: ResolvedFile, source_path: Path, agents_dir: str) -> N
     source_parts = PurePosixPath(file.src).parts
     if len(source_parts) < 2 or source_parts[0] != "agents" or not file.src.endswith(".md"):
         raise ValidationError(f"Agent source must be a markdown file under agents/: {file.src}")
+    if not is_agent_definition(source_path):
+        raise ValidationError(f"Underscore-prefixed files are not agents: {file.src}")
 
     dest = PurePosixPath(file.dest)
     agents_dir_parts = PurePosixPath(agents_dir).parts
