@@ -1,0 +1,137 @@
+{
+  "suite": "dimensional-review-agents",
+  "evals": [
+    {
+      "id": "review-correctness-order-service",
+      "agent": "review_correctness",
+      "prompt": "You are review_correctness. Follow agents/review_correctness.md. Review only tests/evals/review_agents/files/correctness/order_service.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "files/correctness/order_service.py"
+      ],
+      "expected_output": "JSON issue list for correctness and data-integrity defects only",
+      "expectations": [
+        "Reports in-place pop of the caller's items list",
+        "Reports silent drop of qty <= 0 lines",
+        "Reports the history_page off-by-one slice",
+        "Reports inventory decrement that can go negative",
+        "Each issue includes how_to_fix and acceptance_criteria",
+        "Does not file the unused _tmp helper as a naming nit"
+      ],
+      "must_find": [
+        {"id": "caller-mutation", "keywords": ["pop", "caller", "items"]},
+        {"id": "zero-qty-drop", "keywords": ["qty", "zero", "drop"]},
+        {"id": "off-by-one", "keywords": ["history_page", "off-by-one"]},
+        {"id": "negative-stock", "keywords": ["inventory", "negative"]}
+      ],
+      "must_not_find": [
+        {"id": "naming-nit", "keywords": ["rename _tmp", "poor comment"]}
+      ]
+    },
+    {
+      "id": "review-maintainability-report-builder",
+      "agent": "review_maintainability",
+      "prompt": "You are review_maintainability. Follow agents/review_maintainability.md. Review only tests/evals/review_agents/files/maintainability/report_builder.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "files/maintainability/report_builder.py"
+      ],
+      "expected_output": "JSON issue list for readability and style defects only",
+      "expectations": [
+        "Reports BuildReport camelCase vs local snake_case",
+        "Reports opaque names (data, tmp, x)",
+        "Reports comments that restate the next line",
+        "Reports the mixed-concern long function",
+        "Does not file the SQL string as an injection finding"
+      ],
+      "must_find": [
+        {"id": "camel-case", "keywords": ["buildreport", "camel"]},
+        {"id": "opaque-names", "keywords": ["data", "tmp"]},
+        {"id": "restating-comments", "keywords": ["comment", "restate"]},
+        {"id": "mixed-concerns", "keywords": ["function", "concern"]}
+      ],
+      "must_not_find": [
+        {"id": "sql-injection", "keywords": ["sql injection", "parameterized query"]}
+      ]
+    },
+    {
+      "id": "review-scale-fanout-worker",
+      "agent": "review_scale",
+      "prompt": "You are review_scale. Follow agents/review_scale.md. Review only tests/evals/review_agents/files/scale/fanout_worker.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "files/scale/fanout_worker.py"
+      ],
+      "expected_output": "JSON issue list for load, dependency-failure, and update defects only",
+      "expectations": [
+        "Reports the unbounded module-level results list",
+        "Reports httpx.get with no timeout",
+        "Reports swallowed dependency exceptions",
+        "Reports shutdown that does not drain in-flight work",
+        "Does not file a rename-only style issue"
+      ],
+      "must_find": [
+        {"id": "unbounded-buffer", "keywords": ["unbounded", "results"]},
+        {"id": "missing-timeout", "keywords": ["timeout", "httpx"]},
+        {"id": "swallowed-errors", "keywords": ["except", "swallow"]},
+        {"id": "no-drain", "keywords": ["shutdown", "drain"]}
+      ],
+      "must_not_find": [
+        {"id": "rename-only", "keywords": ["rename fanout", "confusing name"]}
+      ]
+    },
+    {
+      "id": "review-security-user-api",
+      "agent": "review_security",
+      "prompt": "You are review_security. Follow agents/review_security.md. Review only tests/evals/review_agents/files/security/user_api.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "files/security/user_api.py"
+      ],
+      "expected_output": "JSON issue list for unsafe input and private-data leaks only",
+      "expectations": [
+        "Reports string-built SQL",
+        "Reports email/token/key in logs",
+        "Reports the hardcoded API key",
+        "Reports password_hash and session_token in the response",
+        "Reports unused requester_id / missing authz",
+        "Does not file processData as a naming nit"
+      ],
+      "must_find": [
+        {"id": "sql-sink", "keywords": ["sql", "user_id"]},
+        {"id": "pii-log", "keywords": ["log", "token"]},
+        {"id": "hardcoded-key", "keywords": ["api_key", "hardcoded"]},
+        {"id": "response-leak", "keywords": ["password_hash", "response"]},
+        {"id": "missing-authz", "keywords": ["requester", "authoriz"]}
+      ],
+      "must_not_find": [
+        {"id": "naming-nit", "keywords": ["rename processdata", "camelcase"]}
+      ]
+    },
+    {
+      "id": "review-orchestrator-group-findings",
+      "agent": "review_orchestrator",
+      "prompt": "You are review_orchestrator. The four reviewers already returned JSON in files/orchestrator/reviewer_findings.json. Do not re-review source. Dedupe, group 1-3 similar issues per work item, and emit the orchestrator JSON schema (paths may be planned; this eval scores the JSON).",
+      "files": [
+        "files/orchestrator/reviewer_findings.json"
+      ],
+      "expected_output": "Orchestrator JSON with deduped 1-3-issue work items",
+      "expectations": [
+        "Drops C-003 as a duplicate of SEC-001",
+        "Groups the two PII leaks together",
+        "Groups the two maintainability issues together",
+        "Groups the timeout and swallowed-error scale issues together",
+        "Never puts more than 3 issues in a work item",
+        "Every surviving issue appears in exactly one work item"
+      ],
+      "expected_dropped": [
+        {"kept": "SEC-001", "dropped": "C-003"}
+      ],
+      "expected_groups": [
+        ["SEC-001"],
+        ["SEC-002", "SEC-003"],
+        ["C-001"],
+        ["C-002"],
+        ["M-001", "M-002"],
+        ["R-001"],
+        ["R-002", "R-003"]
+      ]
+    }
+  ]
+}

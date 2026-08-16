@@ -1,0 +1,114 @@
+{
+  "status": "ok",
+  "agent": "review_security",
+  "charter": "Find defects that let an attacker influence the system or that leak private user data.",
+  "inputs": {
+    "summary": "Review user_api lookup for sinks and leaks.",
+    "paths": ["files/security/user_api.py"]
+  },
+  "issues": [
+    {
+      "id": "SEC-001",
+      "title": "SQL is interpolated from user_id",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 16,
+      "symbol": "get_user",
+      "whats_wrong": "f-string builds SELECT * FROM users WHERE id = '{user_id}'.",
+      "why_it_matters": "An attacker-controlled user_id can change the query and read other rows.",
+      "how_to_fix": [
+        "Use a parameterized query: WHERE id = %s / ? with user_id bound separately.",
+        "Do not interpolate SQL."
+      ],
+      "acceptance_criteria": [
+        "The executed SQL text does not contain the raw user_id string."
+      ],
+      "suggested_test": "test_get_user_binds_user_id_parameter",
+      "do_not_change": "Returning the settings-page fields that are safe to show."
+    },
+    {
+      "id": "SEC-002",
+      "title": "Logs email, session token, and API key",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 17,
+      "symbol": "get_user",
+      "whats_wrong": "log.info writes email, session_token, and API_KEY.",
+      "why_it_matters": "Log sinks become a leak of private user data and a credential store.",
+      "how_to_fix": [
+        "Log only user id.",
+        "Never log tokens or API_KEY."
+      ],
+      "acceptance_criteria": [
+        "A captured log record does not contain email, session_token, or API_KEY."
+      ],
+      "suggested_test": "test_get_user_log_has_no_token_or_email",
+      "do_not_change": "That a log line still exists for successful load."
+    },
+    {
+      "id": "SEC-003",
+      "title": "API_KEY is hardcoded",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 11,
+      "symbol": "API_KEY",
+      "whats_wrong": "A module-level API_KEY string is committed in source.",
+      "why_it_matters": "Anyone with the repo can call the upstream API as this service.",
+      "how_to_fix": [
+        "Read the key from the environment or the project's secret manager.",
+        "Delete the literal from source."
+      ],
+      "acceptance_criteria": [
+        "No API key literal remains in the module."
+      ],
+      "suggested_test": "test_api_key_comes_from_environment",
+      "do_not_change": "The get_user return shape once leaks are removed."
+    },
+    {
+      "id": "SEC-004",
+      "title": "Response leaks password_hash and session_token",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 18,
+      "symbol": "get_user",
+      "whats_wrong": "The returned dict includes password_hash and session_token.",
+      "why_it_matters": "The settings page (or any client) receives credentials it does not need.",
+      "how_to_fix": [
+        "Return only id and email (or the fields the page renders).",
+        "Omit password_hash and session_token."
+      ],
+      "acceptance_criteria": [
+        "The response dict has no password_hash or session_token keys."
+      ],
+      "suggested_test": "test_get_user_response_omits_secrets",
+      "do_not_change": "id and email still returned."
+    },
+    {
+      "id": "SEC-005",
+      "title": "requester_id is unused; no authorization check",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 14,
+      "symbol": "get_user",
+      "whats_wrong": "Any requester_id can load any user_id; the argument is never compared.",
+      "why_it_matters": "This is an IDOR: a logged-in user can read another user's profile.",
+      "how_to_fix": [
+        "Require requester_id == user_id or an admin role before the query.",
+        "Return 403 when the requester is not allowed."
+      ],
+      "acceptance_criteria": [
+        "A requester asking for a different user_id is denied."
+      ],
+      "suggested_test": "test_get_user_denies_other_requester",
+      "do_not_change": "A matching requester_id still loads the row."
+    }
+  ],
+  "verification": [
+    {"command": "read files/security/user_api.py", "result": "pass", "notes": "fixture"}
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

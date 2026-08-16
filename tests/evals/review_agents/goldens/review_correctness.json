@@ -1,0 +1,94 @@
+{
+  "status": "ok",
+  "agent": "review_correctness",
+  "charter": "Find defects that make the change set compute the wrong result, drop or duplicate information, or corrupt state.",
+  "inputs": {
+    "summary": "Review order_service apply and paging helpers.",
+    "paths": ["files/correctness/order_service.py"]
+  },
+  "issues": [
+    {
+      "id": "C-001",
+      "title": "apply_line_items pops the caller's items list",
+      "severity": "important",
+      "file": "files/correctness/order_service.py",
+      "line": 13,
+      "symbol": "apply_line_items",
+      "whats_wrong": "while items: item = items.pop() mutates the caller-owned cart in place.",
+      "why_it_matters": "The caller loses remaining lines after a debit and cannot retry or audit the cart.",
+      "how_to_fix": [
+        "Iterate over a copy or an index range; do not pop.",
+        "Leave the caller's items list unchanged."
+      ],
+      "acceptance_criteria": [
+        "After apply_line_items, the input items list still has its original entries."
+      ],
+      "suggested_test": "test_apply_line_items_does_not_mutate_caller_items",
+      "do_not_change": "Charging price_cents * qty for positive qty lines."
+    },
+    {
+      "id": "C-002",
+      "title": "Zero qty lines are dropped with no record",
+      "severity": "important",
+      "file": "files/correctness/order_service.py",
+      "line": 16,
+      "symbol": "apply_line_items",
+      "whats_wrong": "qty <= 0 hits continue, so the line never charges, logs, or errors.",
+      "why_it_matters": "Zero or negative qty is silent data drop; inventory and receipts disagree with the cart.",
+      "how_to_fix": [
+        "Reject qty <= 0 with a specific error, or keep the line with an explicit skip reason.",
+        "Do not continue without a defined rule."
+      ],
+      "acceptance_criteria": [
+        "A qty of 0 either raises or appears in a skipped-lines result; it is not discarded."
+      ],
+      "suggested_test": "test_apply_line_items_rejects_or_records_zero_qty",
+      "do_not_change": "Positive qty debit path."
+    },
+    {
+      "id": "C-003",
+      "title": "history_page is off-by-one",
+      "severity": "important",
+      "file": "files/correctness/order_service.py",
+      "line": 28,
+      "symbol": "history_page",
+      "whats_wrong": "end = start + size - 1 and rows[start:end] drop the last id of each page.",
+      "why_it_matters": "Users lose a history row every page; exports are incomplete.",
+      "how_to_fix": [
+        "Use end = start + size so the slice length equals size (or remaining rows)."
+      ],
+      "acceptance_criteria": [
+        "history_page(list(range(10)), 0, 3) returns three ids, including the third."
+      ],
+      "suggested_test": "test_history_page_returns_full_page_size",
+      "do_not_change": "Zero-based page index."
+    },
+    {
+      "id": "C-004",
+      "title": "Inventory decrement can go negative",
+      "severity": "critical",
+      "file": "files/correctness/order_service.py",
+      "line": 20,
+      "symbol": "apply_line_items",
+      "whats_wrong": "inventory[sku] = on_hand - qty writes a negative count when stock is short.",
+      "why_it_matters": "Stock integrity is lost; later orders see impossible on-hand values.",
+      "how_to_fix": [
+        "If on_hand < qty, raise or return a structured shortfall; do not write a negative.",
+        "Only decrement when the debit is fully covered."
+      ],
+      "acceptance_criteria": [
+        "Applying qty greater than on_hand does not store a negative inventory value."
+      ],
+      "suggested_test": "test_apply_line_items_rejects_over_sell",
+      "do_not_change": "Successful debit when on_hand >= qty."
+    }
+  ],
+  "verification": [
+    {"command": "read files/correctness/order_service.py", "result": "pass", "notes": "fixture"}
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

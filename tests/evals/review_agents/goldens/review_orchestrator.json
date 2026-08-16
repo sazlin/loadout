@@ -1,0 +1,93 @@
+{
+  "status": "ok",
+  "agent": "review_orchestrator",
+  "charter": "Dispatch four dimension reviewers in parallel, dedupe issues, group 1-3 similar issues per work item, and write markdown for a fix subagent.",
+  "inputs": {
+    "summary": "Group fixture reviewer findings; do not re-review source.",
+    "paths": ["files/orchestrator/reviewer_findings.json"],
+    "output_dir": "review-work-items"
+  },
+  "reviewers": [
+    {"agent": "review_correctness", "status": "ok", "issue_count": 3},
+    {"agent": "review_maintainability", "status": "ok", "issue_count": 2},
+    {"agent": "review_scale", "status": "ok", "issue_count": 3},
+    {"agent": "review_security", "status": "ok", "issue_count": 3}
+  ],
+  "dropped_duplicates": [
+    {
+      "kept": "SEC-001",
+      "dropped": "C-003",
+      "reason": "same SQL sink at user_api.py:16"
+    }
+  ],
+  "work_items": [
+    {
+      "id": "WI-001",
+      "title": "Parameterize user lookup SQL",
+      "path": "review-work-items/WI-001-parameterize-user-lookup.md",
+      "issue_ids": ["SEC-001"],
+      "severity_peak": "critical",
+      "rationale": "single exploitable sink after dropping C-003"
+    },
+    {
+      "id": "WI-002",
+      "title": "Stop leaking PII in logs and responses",
+      "path": "review-work-items/WI-002-redact-pii.md",
+      "issue_ids": ["SEC-002", "SEC-003"],
+      "severity_peak": "critical",
+      "rationale": "same get_user privacy leaks"
+    },
+    {
+      "id": "WI-003",
+      "title": "Record zero-qty lines instead of dropping them",
+      "path": "review-work-items/WI-003-zero-qty.md",
+      "issue_ids": ["C-001"],
+      "severity_peak": "important",
+      "rationale": "standalone data-loss fix"
+    },
+    {
+      "id": "WI-004",
+      "title": "Fix history_page off-by-one",
+      "path": "review-work-items/WI-004-history-page.md",
+      "issue_ids": ["C-002"],
+      "severity_peak": "important",
+      "rationale": "standalone paging fix"
+    },
+    {
+      "id": "WI-005",
+      "title": "Rename and uncomment report_builder",
+      "path": "review-work-items/WI-005-report-builder-names.md",
+      "issue_ids": ["M-001", "M-002"],
+      "severity_peak": "important",
+      "rationale": "same-file readability fixes"
+    },
+    {
+      "id": "WI-006",
+      "title": "Bound fanout result storage",
+      "path": "review-work-items/WI-006-bound-results.md",
+      "issue_ids": ["R-001"],
+      "severity_peak": "critical",
+      "rationale": "unbounded memory stands alone"
+    },
+    {
+      "id": "WI-007",
+      "title": "Timeout partner GETs and surface failures",
+      "path": "review-work-items/WI-007-partner-timeouts.md",
+      "issue_ids": ["R-002", "R-003"],
+      "severity_peak": "important",
+      "rationale": "same dependency-failure path"
+    }
+  ],
+  "changes": [
+    {"path": "review-work-items/INDEX.md", "action": "create", "rationale": "index"},
+    {"path": "review-work-items/WI-001-parameterize-user-lookup.md", "action": "create", "rationale": "work item"}
+  ],
+  "verification": [
+    {"command": "python -c 'print(7)'", "result": "pass", "notes": "seven work items"}
+  ],
+  "assumptions": ["Reviewers were provided as fixture JSON; no live dispatch."],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

@@ -1,0 +1,93 @@
+{
+  "status": "ok",
+  "agent": "review_scale",
+  "charter": "Find defects that make the change set slow, unbounded, or crashy under load, when a dependency fails, or during deploy/restart.",
+  "inputs": {
+    "summary": "Review fanout_worker for load and dependency failure.",
+    "paths": ["files/scale/fanout_worker.py"]
+  },
+  "issues": [
+    {
+      "id": "R-001",
+      "title": "Module-level results list is unbounded",
+      "severity": "critical",
+      "file": "files/scale/fanout_worker.py",
+      "line": 10,
+      "symbol": "_RESULTS",
+      "whats_wrong": "_RESULTS appends every partner payload and fanout returns that growing list.",
+      "why_it_matters": "Under traffic the process holds every historical body in memory until OOM.",
+      "how_to_fix": [
+        "Return a local list for this call only.",
+        "If a cache is required, bound it and evict."
+      ],
+      "acceptance_criteria": [
+        "A second fanout call does not include the first call's payloads."
+      ],
+      "suggested_test": "test_fanout_does_not_retain_prior_payloads",
+      "do_not_change": "JSON decode of a successful body."
+    },
+    {
+      "id": "R-002",
+      "title": "httpx.get has no timeout",
+      "severity": "important",
+      "file": "files/scale/fanout_worker.py",
+      "line": 16,
+      "symbol": "fanout",
+      "whats_wrong": "httpx.get(url) uses the client default, so a hung partner blocks the worker.",
+      "why_it_matters": "One silent partner stalls the whole fanout under load.",
+      "how_to_fix": [
+        "Pass a finite timeout= to get, matching other HTTP helpers in the repo."
+      ],
+      "acceptance_criteria": [
+        "Every partner GET uses an explicit timeout."
+      ],
+      "suggested_test": "test_fanout_passes_timeout_to_httpx",
+      "do_not_change": "The URL list order."
+    },
+    {
+      "id": "R-003",
+      "title": "Partner failures are swallowed",
+      "severity": "important",
+      "file": "files/scale/fanout_worker.py",
+      "line": 18,
+      "symbol": "fanout",
+      "whats_wrong": "except Exception: pass hides timeouts, 5xx, and decode errors.",
+      "why_it_matters": "A broken dependency looks like an empty success; operators cannot page.",
+      "how_to_fix": [
+        "Catch httpx.HTTPError (or equivalent) and record the failed URL.",
+        "Do not swallow with pass."
+      ],
+      "acceptance_criteria": [
+        "A failing URL is visible in the return value or a raised error; it is not silent."
+      ],
+      "suggested_test": "test_fanout_surfaces_partner_error",
+      "do_not_change": "Successful URL decoding."
+    },
+    {
+      "id": "R-004",
+      "title": "shutdown does not drain in-flight fetches",
+      "severity": "important",
+      "file": "files/scale/fanout_worker.py",
+      "line": 24,
+      "symbol": "shutdown",
+      "whats_wrong": "The process-exit hook returns immediately and leaves GETs running.",
+      "why_it_matters": "During an update, in-flight partner calls are cut off with no drain.",
+      "how_to_fix": [
+        "Track in-flight requests and wait (with a deadline) in shutdown before return."
+      ],
+      "acceptance_criteria": [
+        "shutdown waits for in-flight work or cancels it on a stated deadline."
+      ],
+      "suggested_test": "test_shutdown_drains_or_cancels_in_flight_gets",
+      "do_not_change": "fanout's success path."
+    }
+  ],
+  "verification": [
+    {"command": "read files/scale/fanout_worker.py", "result": "pass", "notes": "fixture"}
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}
