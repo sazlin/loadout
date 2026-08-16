@@ -8,6 +8,9 @@
   imported agents follow the template. Included in the `base` loadout.
 - Align `davinci` and `e2e_test_generator` output-schema closers with the
   template; assert every agent file uses the template heading order.
+- Add implementation-agent evals for `python_coder`, `davinci`, and
+  `e2e_test_generator` under `tests/evals/implementation_agents/`, with
+  frozen blank transcripts that fail `score_behavior`.
 
 - Add four dimensional review agents (`review_correctness`,
   `review_maintainability`, `review_scale`, `review_security`) and
