@@ -191,6 +191,29 @@ Work through this list on every invocation:
 - [ ] Project style rules read and followed when present
 - [ ] Narrow verification passed (or failures reported honestly)
 
+### Python-specific simplification
+
+When simplifying Python, prefer deletion and inlining over reshaping. Finish the pass — leftover thin wrappers are still smells.
+
+- **Collapse single-use layers.** One `Protocol`/`ABC` with one concrete class → use the concrete class directly (or drop the class and keep a function/dict). One-method helper classes → a function or inline logic. A backend/repository class used only by one manager with no alternate impl → fold the store into the manager (a plain `dict` attribute is fine).
+- **Kill factory/builder noise completely.** Delete `FooFactory`, `build_*()`, `create_*()` wrappers, and `**config_overrides` / `hasattr` filters that only forward to a dataclass/constructor. Update every call site — including `if __name__ == "__main__"` — to construct the object directly (`Cls(Config(...))` or `Cls(...)`). Do not leave a one-liner factory "for convenience."
+- **Trim speculative dataclasses hard.** Drop every field that is never read at runtime (`future_*`, `plugin_hooks`, audit/metrics flags, unused `retry_*`). If a dataclass then has only one remaining field that is always passed at construction, consider replacing it with a plain parameter; otherwise keep the slim dataclass.
+- **Inline single-use helpers.** Module-level `_aggregate_*` / `_format_*` / `_apply_*` used from one method → fold into that method unless readability clearly suffers. Prefer one straight-line function over a private helper zoo.
+- **Flatten control flow.** Replace nested `if`/`else` ladders with guard clauses and early returns. Prefer `dict.get` / membership checks over ceremony.
+- **Keep public validation contracts.** Do **not** delete explicit `raise ValueError(...)` / required-field guards that callers can hit, even when parameters are typed as non-optional (`str`). Typed signatures are not a runtime guarantee. Delete only pure theater: `try/except` that solely re-raises, impossible `KeyError` handlers, and broad `except Exception` around trusted in-process logic.
+- **Trust local invariants carefully.** Remove re-raise-only `try/except` and dead branches; keep user-facing validation errors.
+- **Keep verification cheap.** Run `python <file>.py` when a module has `if __name__ == "__main__"` assertions; otherwise run the narrowest `pytest` path for touched tests.
+
+### Python finish checklist (do not skip)
+
+Before emitting `ok`, confirm for every touched `.py` file:
+
+- [ ] No `build_*` / `create_*` / `FooFactory` remains unless a second real construction path exists
+- [ ] No unused dataclass fields / `field(default_factory=list)` plugin bags
+- [ ] No Protocol/ABC with a single implementation left behind
+- [ ] No narrative comments or `type: ignore` added by the slop
+- [ ] `__main__` (or tests) still construct and assert the same observable results
+
 ### Guardrails (specialty)
 
 - **Match the neighborhood.** If the file already uses a pattern for good

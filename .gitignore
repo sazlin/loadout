@@ -225,6 +225,10 @@ docs/superpowers/
 
 # skill-creator scratch
 *-workspace/
+
+# davinci agent eval scratch
+evals/davinci/workspace/
+evals/davinci/results/
 .DS_Store
 
 # skills CLI staging / lockfiles (source skills live under skills/)

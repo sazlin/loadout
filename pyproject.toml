@@ -35,7 +35,11 @@ testpaths = ["tests"]
 target-version = "py312"
 line-length = 120
 extension = { mdc = "markdown" }
-exclude = ["tests/evals"]
+# Intentionally over-engineered / eval fixtures; keep smells out of lint noise.
+exclude = ["evals/davinci/files", "tests/evals"]
+
+[tool.ruff.lint.per-file-ignores]
+"evals/davinci/files/**" = ["ALL"]
 
 [tool.pyrefly]
 python-version = "3.12"
