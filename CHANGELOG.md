@@ -11,6 +11,7 @@
 - Add implementation-agent evals for `python_coder`, `davinci`, and
   `e2e_test_generator` under `tests/evals/implementation_agents/`, with
   frozen blank transcripts that fail `score_behavior`.
+- Document how agents are organized in the README (template, loadouts, evals).
 
 - Add four dimensional review agents (`review_correctness`,
   `review_maintainability`, `review_scale`, `review_security`) and

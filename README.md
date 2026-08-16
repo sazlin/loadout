@@ -29,6 +29,7 @@ flowchart LR
 - [Pull loadout changes over time](#pull-loadout-changes-over-time)
 - [Check for drift](#check-for-drift)
 - [Available loadouts](#available-loadouts)
+- [Agents](#agents)
 - [Manifest cheatsheet](#manifest-cheatsheet)
 - [After syncing](#after-syncing)
 - [Project `just` recipes](#project-just-recipes)
@@ -168,10 +169,50 @@ Example GitHub Actions step:
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
 | `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
-| `agents` | `base` | LangChain docs MCP for live LangChain / LangGraph / LangSmith lookup + refining-evals skill |
+| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`.
+
+## Agents
+
+Custom subagents live as markdown files under `agents/`. Sync copies each
+selected file once to `.claude/agents/` (Cursor compatibility path and Claude
+Code's project agents directory). A loadout lists the agents it ships; files
+are not auto-discovered.
+
+**Authoring.** Copy [`agents/_agent_template.md`](agents/_agent_template.md) to
+`agents/<name>.md` (no leading underscore) and fill every section. The Cursor
+rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
+(globs `agents/**/*.md`, shipped on `base`) requires that template for new
+agents and for imported ones. Underscore-prefixed files are templates or notes,
+not agents: lint, orphan checks, and sync skip them.
+
+**Two families.**
+
+| Family | Files | Loadout | Role |
+| --- | --- | --- | --- |
+| Implementation | `python_coder`, `davinci`, `e2e_test_generator` | `python`, `base`, `playwright-e2e` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| Dimensional review | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, plus `review_orchestrator` | `base` | Read-only reviewers (orchestrator writes work-item markdown). Stay in one dimension; emit `issues` JSON |
+
+Every agent uses the same heading spine (Charter through Output schema) and a
+fenced JSON report. Reviewers set `readonly: true` and omit write tools.
+
+**Evals.** Review-agent fixtures and goldens live in
+[`tests/evals/review_agents/`](tests/evals/review_agents/). Implementation-agent
+evals live in
+[`tests/evals/implementation_agents/`](tests/evals/implementation_agents/).
+Both suites freeze a blank `generalPurpose` transcript that must fail
+`score_behavior` and a custom-agent golden that must pass the full scorer.
+Use the `refining-evals` skill when tightening those splits.
+
+**The `agents` loadout** is a named composition, not the `agents/` directory.
+It extends `base` (so you already get davinci and the review pack) and adds
+the LangChain docs MCP plus the vendored `refining-evals` skill:
+
+```yaml
+loadouts: [agents]
+```
 
 ## Manifest cheatsheet
 
@@ -206,21 +247,6 @@ Generated / consumer projects typically wire these into their `justfile` (see [d
 Each recipe runs `uvx` against the `source` / `ref` pinned in `.loadout.yaml`, so the CLI version matches the content version.
 
 ## Notes and warnings
-
-<details>
-<summary><strong>Agents loadout</strong> — LangChain docs MCP + refining-evals</summary>
-
-The `agents` loadout extends `base` and adds the LangChain docs MCP
-(`https://docs.langchain.com/mcp`) so agents can search live LangChain /
-LangGraph / LangSmith documentation, plus the `refining-evals` skill for
-proving a specialist eval fails a blank reviewer and still passes the
-custom agent:
-
-```yaml
-loadouts: [agents]
-```
-
-</details>
 
 <details>
 <summary><strong>Superpowers loadout</strong> — do not combine with the plugin</summary>
@@ -264,15 +290,17 @@ just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on me
 just add_skill mattpocock/skills --skill grill-me
 ```
 
-Repo-local skills for agents working *on this repository* live under
-`.claude/skills/` (committed). Examples: `skill-security-check` for auditing
-candidate skills before they land in `skills/` (not part of any consumer
-loadout); `refining-evals` for proving an agent eval fails a blank reviewer
-and still passes the custom agent (also vendored via the `agents` loadout).
+Repo-local skills for work *on this repository* live under `.claude/skills/`
+(committed). `skill-security-check` audits candidate skills before they land
+in `skills/` (not part of any consumer loadout). `refining-evals` is also
+vendored on the `agents` loadout; see [Agents](#agents).
 
 ## Documentation
 
-- [loadout-spec.md](loadout-spec.md) — full specification
+- [loadout-spec.md](loadout-spec.md) — full specification (agents: section 5.10)
+- [agents/_agent_template.md](agents/_agent_template.md) — authoring skeleton
+- [tests/evals/review_agents/](tests/evals/review_agents/) — dimensional review evals
+- [tests/evals/implementation_agents/](tests/evals/implementation_agents/) — implementation-agent evals
 - [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract
 - [CHANGELOG.md](CHANGELOG.md) — release notes
 
