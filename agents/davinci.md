@@ -223,6 +223,8 @@ Before emitting `ok`, confirm for every touched `.py` file:
 
 ## Output schema
 
+End every run with a fenced `json` block (prose above is optional):
+
 ```json
 {
   "status": "ok | blocked",
@@ -242,3 +244,5 @@ Before emitting `ok`, confirm for every touched `.py` file:
   "blocked_reason": null
 }
 ```
+
+On success, `blocked_reason` is `null`. On blocked, `blocked_reason` is a non-empty string. Always populate `assumptions`, `tried`, and `rejected` (use `[]` only when truly empty).

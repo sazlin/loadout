@@ -10,32 +10,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![uv](https://img.shields.io/badge/runner-uv%20%2F%20uvx-de5fe9)](https://docs.astral.sh/uv/)
 
-**Pack Cursor rules, Claude Code skills, agents, hooks, and MCP configs into named loadouts — then sync a reviewable copy into every project.**
+**Sean's personal skills, agents, hooks, and MCP configs centralized and categorized into project-deployable "loadouts".**
 
-No global install required. One manifest (`.loadout.yaml`), one lockfile, copy-pasteable commands.
-
-```mermaid
-flowchart LR
-  A[".loadout.yaml<br/>pick loadouts + pin ref"] --> B["loadout sync"]
-  B --> C[".cursor/ + .claude/<br/>vendored files"]
-  B --> D[".loadout.lock<br/>hashes + SHA"]
-  E["loadout update"] --> A
-```
-
-## Table of contents
-
-- [Quick start](#quick-start)
-- [Change selected loadouts](#change-selected-loadouts)
-- [Pull loadout changes over time](#pull-loadout-changes-over-time)
-- [Check for drift](#check-for-drift)
-- [Available loadouts](#available-loadouts)
-- [Manifest cheatsheet](#manifest-cheatsheet)
-- [After syncing](#after-syncing)
-- [Project `just` recipes](#project-just-recipes)
-- [Notes and warnings](#notes-and-warnings)
-- [Local development](#local-development)
-- [Documentation](#documentation)
-- [License](#license)
+## The Gist
+- Everything is highly opinionated and changing constantly.
+- Everything is "Cursor-first, Claude compatible" because those are the harnesses I use at the moment (Pi coming next).
+- Why did I make this? Loadout is a critical piece of my in-progress software metafactory, which I use to bootstrap new software factories for startups. Loadout is what my metafactory uses to equip each factory's project with exactly the right rules, skills, agents, etc.
+- Loadouts are "vendored" / copied into projects w/ metadata enabling intelligent updates at the project level. Similarly, 3rd party skills are vendored into this Loadout repo (and vetted with a skill screener). Everything is optimized for stability and security; loadouts only have skills and agents that were expicitly installed and screened, and projects only get exactly those screened versions.
+- Loadouts are incomplete. I'm still generalizing and migrating project-specific skills and agents into this project. More is coming.
 
 ## Quick start
 
@@ -161,17 +143,57 @@ Example GitHub Actions step:
 
 | Loadout | Extends | What you get |
 | --- | --- | --- |
-| `base` | — | Core conventions, release checklist skill, deny-dangerous hook, davinci agent, Context7 MCP |
+| `base` | — | Core conventions, release checklist skill, deny-dangerous hook, davinci and dimensional review agents, Context7 MCP |
 | `python` | `base` | Python code style + pytest rules, python_coder agent |
 | `python-monorepo` | `python` | UV workspace rules + db-migrations skill |
 | `typescript` | `base` | TypeScript code style rules |
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
 | `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
-| `agents` | `base` | LangChain docs MCP for live LangChain / LangGraph / LangSmith lookup |
+| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`.
+
+## Agents
+
+Custom subagents live as markdown files under `agents/`. Sync copies each
+selected file once to `.claude/agents/` (Cursor compatibility path and Claude
+Code's project agents directory). A loadout lists the agents it ships; files
+are not auto-discovered.
+
+**Authoring.** Copy [`agents/_agent_template.md`](agents/_agent_template.md) to
+`agents/<name>.md` (no leading underscore) and fill every section. The Cursor
+rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
+(globs `agents/**/*.md`, shipped on `base`) requires that template for new
+agents and for imported ones. Underscore-prefixed files are templates or notes,
+not agents: lint, orphan checks, and sync skip them.
+
+**Two families.**
+
+| Family | Files | Loadout | Role |
+| --- | --- | --- | --- |
+| Implementation | `python_coder`, `davinci`, `e2e_test_generator` | `python`, `base`, `playwright-e2e` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| Dimensional review | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, plus `review_orchestrator` | `base` | Read-only reviewers (orchestrator writes work-item markdown). Stay in one dimension; emit `issues` JSON |
+
+Every agent uses the same heading spine (Charter through Output schema) and a
+fenced JSON report. Reviewers set `readonly: true` and omit write tools.
+
+**Evals.** Review-agent fixtures and goldens live in
+[`tests/evals/review_agents/`](tests/evals/review_agents/). Implementation-agent
+evals live in
+[`tests/evals/implementation_agents/`](tests/evals/implementation_agents/).
+Both suites freeze a blank `generalPurpose` transcript that must fail
+`score_behavior` and a custom-agent golden that must pass the full scorer.
+Use the `refining-evals` skill when tightening those splits.
+
+**The `agents` loadout** is a named composition, not the `agents/` directory.
+It extends `base` (so you already get davinci and the review pack) and adds
+the LangChain docs MCP plus the vendored `refining-evals` skill:
+
+```yaml
+loadouts: [agents]
+```
 
 ## Manifest cheatsheet
 
@@ -206,19 +228,6 @@ Generated / consumer projects typically wire these into their `justfile` (see [d
 Each recipe runs `uvx` against the `source` / `ref` pinned in `.loadout.yaml`, so the CLI version matches the content version.
 
 ## Notes and warnings
-
-<details>
-<summary><strong>Agents loadout</strong> — LangChain docs MCP</summary>
-
-The `agents` loadout extends `base` and adds the LangChain docs MCP
-(`https://docs.langchain.com/mcp`) so agents can search live LangChain /
-LangGraph / LangSmith documentation:
-
-```yaml
-loadouts: [agents]
-```
-
-</details>
 
 <details>
 <summary><strong>Superpowers loadout</strong> — do not combine with the plugin</summary>
@@ -262,13 +271,17 @@ just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on me
 just add_skill mattpocock/skills --skill grill-me
 ```
 
-Repo-local skills for agents working *on this repository* live under
-`.claude/skills/` (committed; not part of any consumer loadout). Example:
-`skill-security-check` for auditing candidate skills before they land in `skills/`.
+Repo-local skills for work *on this repository* live under `.claude/skills/`
+(committed). `skill-security-check` audits candidate skills before they land
+in `skills/` (not part of any consumer loadout). `refining-evals` is also
+vendored on the `agents` loadout; see [Agents](#agents).
 
 ## Documentation
 
-- [loadout-spec.md](loadout-spec.md) — full specification
+- [loadout-spec.md](loadout-spec.md) — full specification (agents: section 5.10)
+- [agents/_agent_template.md](agents/_agent_template.md) — authoring skeleton
+- [tests/evals/review_agents/](tests/evals/review_agents/) — dimensional review evals
+- [tests/evals/implementation_agents/](tests/evals/implementation_agents/) — implementation-agent evals
 - [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract
 - [CHANGELOG.md](CHANGELOG.md) — release notes
 

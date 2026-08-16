@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+- Add `agents/_agent_template.md` as the authoring skeleton. Underscore-prefixed
+  files under `agents/` are not agents (lint, orphan checks, and sync skip them).
+- Add `rules/agents/agent-authoring.mdc` (globs `agents/**/*.md`) so new and
+  imported agents follow the template. Included in the `base` loadout.
+- Align `davinci` and `e2e_test_generator` output-schema closers with the
+  template; assert every agent file uses the template heading order.
+- Add implementation-agent evals for `python_coder`, `davinci`, and
+  `e2e_test_generator` under `tests/evals/implementation_agents/`, with
+  frozen blank transcripts that fail `score_behavior`.
+- Document how agents are organized in the README (template, loadouts, evals).
+
+- Add four dimensional review agents (`review_correctness`,
+  `review_maintainability`, `review_scale`, `review_security`) and
+  `review_orchestrator` to the `base` loadout. The orchestrator launches the
+  four reviewers in parallel, dedupes findings, and writes 1–3-issue markdown
+  work items for a later fix subagent.
+- Add eval fixtures and a scorer under `tests/evals/review_agents/` so each
+  reviewer's core checks (and the orchestrator's grouping rules) can be
+  verified without implementing the fixes.
+- Tighten review-agent evals so a blank general-purpose reviewer fails
+  `score_behavior` (out-of-dimension bait) while custom-agent goldens still
+  pass. Frozen blank transcripts live in `tests/evals/review_agents/blank_runs/`.
+- Add repo-local skill `.claude/skills/refining-evals` for proving an eval
+  fails a blank reviewer and passes the custom agent (Ralph loop, max 5).
+- Vendor `skills/refining-evals` and attach it to the `agents` loadout.
+
 ## 0.6.0
 
 - Split `aws-terraform` into separate `aws` and `terraform` loadouts

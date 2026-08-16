@@ -72,10 +72,12 @@ loadout/
       e2e-conventions.mdc
   skills/
     db-migrations/SKILL.md
+    refining-evals/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
   .claude/skills/                 # repo-local only (not vendored via loadouts)
     skill-security-check/SKILL.md
+    refining-evals/SKILL.md
   hooks/
     deny-dangerous/
       hook.yaml
@@ -86,6 +88,11 @@ loadout/
     python_coder.md
     davinci.md
     e2e_test_generator.md
+    review_correctness.md
+    review_maintainability.md
+    review_scale.md
+    review_security.md
+    review_orchestrator.md
   mcps/
     langchain-docs/
       mcp.yaml
@@ -500,6 +507,10 @@ Custom subagents are markdown files with YAML frontmatter. Discovery:
 
 Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras): `name`, `description`, `model`, `readonly`, `is_background`, `tools`, `metadata`. `name` and `description` are required; `name` must equal the file stem.
 
+Markdown files under `agents/` whose names start with `_` are templates or notes, not agents. `agents/_agent_template.md` is the authoring skeleton. Lint and orphan checks skip them. A loadout `agents:` entry or manifest `include` that points at one fails validation. They must not be synced to `.claude/agents/`.
+
+New and imported agents follow the template headings (Charter through Output schema). The `rules/agents/agent-authoring.mdc` rule (globs `agents/**/*.md`) is the reminder.
+
 Sync injects loadout provenance into `metadata` like rules and `SKILL.md`.
 
 ### 5.11 MCPs
@@ -625,7 +636,7 @@ try project:
 - No stray `SKILL.md` below a skill root. A supporting doc must live in `references/` under a different filename, or it will be discovered as a separate skill.
 - Every path in `evals[].files` exists.
 - Every loadout resolves, with no `extends` cycles and no `dest` collisions.
-- No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout.
+- No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout. Underscore-prefixed files under `agents/` are templates, not agents, and are not orphans.
 
 Warn, but do not fail, when `SKILL.md` exceeds 500 lines or a `references/` file exceeds 300 lines without a table of contents. These are budget signals, not errors.
 

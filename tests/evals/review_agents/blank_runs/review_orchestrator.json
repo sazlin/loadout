@@ -1,0 +1,50 @@
+{
+  "status": "ok",
+  "agent": "general_reviewer",
+  "work_items": [
+    {
+      "id": "WI-001",
+      "title": "Record zero-qty lines and fix history_page off-by-one",
+      "path": "review-work-items/WI-001.md",
+      "issue_ids": ["C-001", "C-002"]
+    },
+    {
+      "id": "WI-002",
+      "title": "Parameterize user lookup SQL",
+      "path": "review-work-items/WI-002.md",
+      "issue_ids": ["SEC-001"]
+    },
+    {
+      "id": "WI-003",
+      "title": "Stop logging and returning secrets from user lookup",
+      "path": "review-work-items/WI-003.md",
+      "issue_ids": ["SEC-002", "SEC-003"]
+    },
+    {
+      "id": "WI-004",
+      "title": "Rename BuildReport helpers and drop restating comments",
+      "path": "review-work-items/WI-004.md",
+      "issue_ids": ["M-001", "M-002"]
+    },
+    {
+      "id": "WI-005",
+      "title": "Stop unbounded growth of module-level results",
+      "path": "review-work-items/WI-005.md",
+      "issue_ids": ["R-001"]
+    },
+    {
+      "id": "WI-006",
+      "title": "Add partner GET timeout and surface failures",
+      "path": "review-work-items/WI-006.md",
+      "issue_ids": ["R-002", "R-003"]
+    }
+  ],
+  "dropped_duplicates": [
+    {
+      "kept": "SEC-001",
+      "dropped": "C-003",
+      "reason": "Same SQL interpolation of user_id into SELECT in user_api.py:16"
+    }
+  ],
+  "reviewers": []
+}

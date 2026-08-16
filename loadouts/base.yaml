@@ -3,11 +3,17 @@ description: Repository-wide engineering conventions and release discipline.
 rules:
   - src: rules/core/commit-style.mdc
   - src: rules/core/repo-conventions.mdc
+  - src: rules/agents/agent-authoring.mdc
 skills:
   - src: skills/release-checklist
 hooks:
   - src: hooks/deny-dangerous
 agents:
   - src: agents/davinci.md
+  - src: agents/review_correctness.md
+  - src: agents/review_maintainability.md
+  - src: agents/review_scale.md
+  - src: agents/review_security.md
+  - src: agents/review_orchestrator.md
 mcps:
   - src: mcps/context7

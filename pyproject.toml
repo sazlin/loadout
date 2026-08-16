@@ -35,8 +35,8 @@ testpaths = ["tests"]
 target-version = "py312"
 line-length = 120
 extension = { mdc = "markdown" }
-# Intentionally over-engineered fixtures used to score davinci; keep the smells.
-exclude = ["evals/davinci/files"]
+# Intentionally over-engineered / eval fixtures; keep smells out of lint noise.
+exclude = ["evals/davinci/files", "tests/evals"]
 
 [tool.ruff.lint.per-file-ignores]
 "evals/davinci/files/**" = ["ALL"]
@@ -44,8 +44,9 @@ exclude = ["evals/davinci/files"]
 [tool.pyrefly]
 python-version = "3.12"
 python-interpreter-path = ".venv/bin/python"
-search-path = ["src"]
+search-path = ["src", "tests"]
 project-includes = ["src", "tests"]
+project-excludes = ["tests/evals"]
 
 [tool.basedpyright]
 venvPath = "."

@@ -1,0 +1,95 @@
+{
+  "status": "ok",
+  "agent": "general_reviewer",
+  "charter": "general code review",
+  "inputs": {
+    "summary": "General review of user_api.py",
+    "paths": ["files/security/user_api.py"]
+  },
+  "issues": [
+    {
+      "id": "I-001",
+      "title": "User id is interpolated into raw SQL",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 15,
+      "symbol": "get_user",
+      "whats_wrong": "f-string interpolates user_id into SQL.",
+      "why_it_matters": "SQL injection.",
+      "how_to_fix": ["Use a bound parameter."],
+      "acceptance_criteria": ["user_id is not concatenated into SQL."],
+      "suggested_test": "parameterized execute",
+      "do_not_change": "profile dict return"
+    },
+    {
+      "id": "I-002",
+      "title": "API key hardcoded in source",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 10,
+      "symbol": "API_KEY",
+      "whats_wrong": "API_KEY is hardcoded in the module.",
+      "why_it_matters": "Keys leak via git.",
+      "how_to_fix": ["Read from the environment."],
+      "acceptance_criteria": ["No API key literal."],
+      "suggested_test": "no sk- assignment",
+      "do_not_change": "do not add a real key"
+    },
+    {
+      "id": "I-003",
+      "title": "Session token written to info logs",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 16,
+      "symbol": "get_user",
+      "whats_wrong": "log.info writes session token, API_KEY, and email.",
+      "why_it_matters": "Log access hijacks the session.",
+      "how_to_fix": ["Log only user id."],
+      "acceptance_criteria": ["Logs have no token or key."],
+      "suggested_test": "caplog assertion",
+      "do_not_change": "optional breadcrumb log"
+    },
+    {
+      "id": "I-004",
+      "title": "Response includes password_hash and session token",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 17,
+      "symbol": "get_user",
+      "whats_wrong": "The response includes password_hash and session_token.",
+      "why_it_matters": "Settings page leaks credentials.",
+      "how_to_fix": ["Omit password_hash and session_token."],
+      "acceptance_criteria": ["Response has no password_hash."],
+      "suggested_test": "keys assertion",
+      "do_not_change": "id and email"
+    },
+    {
+      "id": "I-005",
+      "title": "requester_id is unused so any caller can load any user",
+      "severity": "critical",
+      "file": "files/security/user_api.py",
+      "line": 13,
+      "symbol": "get_user",
+      "whats_wrong": "requester_id is never read; missing authorization.",
+      "why_it_matters": "IDOR.",
+      "how_to_fix": ["Require requester_id == user_id."],
+      "acceptance_criteria": ["Different requester is denied."],
+      "suggested_test": "authz deny",
+      "do_not_change": "keep requester_id in the signature"
+    },
+    {
+      "id": "I-008",
+      "title": "processData uses camelCase and does nothing",
+      "severity": "minor",
+      "file": "files/security/user_api.py",
+      "line": 25,
+      "symbol": "processData",
+      "whats_wrong": "processData is camelCase and an unused identity.",
+      "why_it_matters": "Dead helper noise.",
+      "how_to_fix": ["Delete processData or rename to snake_case."],
+      "acceptance_criteria": ["No processData helper."],
+      "suggested_test": "grep processData",
+      "do_not_change": "do not add another stub"
+    }
+  ]
+}

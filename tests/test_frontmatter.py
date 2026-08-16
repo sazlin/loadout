@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from loadout.errors import ValidationError
-from loadout.frontmatter import parse_rule, parse_skill_md
+from loadout.frontmatter import is_agent_definition, parse_rule, parse_skill_md
 
 
 def test_parse_skill_md_returns_validated_skill_metadata() -> None:
@@ -63,6 +63,13 @@ description: Use <dangerous> syntax.
 """,
             dir_name="example",
         )
+
+
+def test_is_agent_definition_skips_underscore_prefixed_markdown() -> None:
+    assert is_agent_definition(Path("agents/python_coder.md"))
+    assert not is_agent_definition(Path("agents/_agent_template.md"))
+    assert not is_agent_definition(Path("agents/_notes.txt"))
+    assert not is_agent_definition(Path("agents/readme.txt"))
 
 
 def test_parse_rule_rejects_missing_description() -> None:

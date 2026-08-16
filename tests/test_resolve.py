@@ -80,6 +80,14 @@ def test_resolve_expands_extended_loadouts_and_skips_skill_root_evals():
     }
 
 
+def test_resolve_rejects_include_of_underscore_prefixed_agent_template(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    (source / "agents" / "_agent_template.md").write_text("# Template\n")
+
+    with pytest.raises(ValidationError, match="not agents"):
+        resolve(manifest(loadouts=["base"], include=["agents/_agent_template.md"]), source)
+
+
 def test_resolve_include_uses_default_destination():
     files = resolve(manifest(loadouts=["base"], include=["rules/python/b.mdc"]), FIXTURE_ROOT)
 
