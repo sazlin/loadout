@@ -23,3 +23,7 @@ def fanout(urls: list[str]) -> list[Any]:
 def shutdown() -> None:
     """Process exit hook used by the unit file."""
     return
+
+
+def processUrls(value: object) -> object:
+    return value

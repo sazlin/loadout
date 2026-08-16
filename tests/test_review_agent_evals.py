@@ -16,6 +16,7 @@ if str(_TESTS) not in sys.path:
     sys.path.insert(0, str(_TESTS))
 
 from review_eval_score import (
+    BLANK_RUNS_DIR,
     EVALS_PATH,
     EVALS_ROOT,
     GOLDENS_DIR,
@@ -23,6 +24,7 @@ from review_eval_score import (
     load_evals,
     load_golden,
     parse_report,
+    score_behavior,
     score_dimension_report,
     score_orchestrator_report,
 )
@@ -173,6 +175,23 @@ def test_golden_dimension_report_passes_eval(eval_id: str) -> None:
     report = load_golden(spec["agent"])
     result = score_dimension_report(report, spec)
     assert result.ok, result.failures
+
+
+@pytest.mark.parametrize(
+    ("eval_id", "filename"),
+    [
+        ("review-correctness-order-service", "review_correctness.json"),
+        ("review-maintainability-report-builder", "review_maintainability.json"),
+        ("review-scale-fanout-worker", "review_scale.json"),
+        ("review-security-user-api", "review_security.json"),
+        ("review-orchestrator-group-findings", "review_orchestrator.json"),
+    ],
+)
+def test_blank_agent_transcript_fails_behavior_score(eval_id: str, filename: str) -> None:
+    spec = eval_by_id(eval_id)
+    report = json.loads((BLANK_RUNS_DIR / filename).read_text())
+    result = score_behavior(report, spec)
+    assert not result.ok, f"blank agent unexpectedly passed {eval_id}"
 
 
 def test_golden_orchestrator_report_matches_expected_groups() -> None:

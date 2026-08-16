@@ -11,6 +11,8 @@ and that the orchestrator dedupes and groups them. They do not implement fixes.
 | `files/<dimension>/` | Planted-bug fixtures |
 | `files/orchestrator/reviewer_findings.json` | Four reviewer reports for the grouping eval |
 | `goldens/` | Reports that already pass the scorer (regression baseline) |
+| `blank_runs/` | Frozen blank-agent transcripts; must fail `score_behavior` |
+| `ralph-loop.md` | Blank vs custom differentiation log |
 
 ## Score a live agent run
 
@@ -40,7 +42,8 @@ A dimension report passes when:
 
 - It uses that agent's JSON schema (required issue fields, severity, fix steps)
 - Every `must_find` keyword set appears in at least one issue
-- No `must_not_find` keyword set appears (keeps the agent in its dimension)
+- No `must_not_find` keyword set appears (keeps the agent in its dimension;
+  this is what a blank general reviewer typically trips)
 
 The orchestrator report passes when:
 

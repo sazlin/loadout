@@ -10,6 +10,9 @@
 - Add eval fixtures and a scorer under `tests/evals/review_agents/` so each
   reviewer's core checks (and the orchestrator's grouping rules) can be
   verified without implementing the fixes.
+- Tighten review-agent evals so a blank general-purpose reviewer fails
+  `score_behavior` (out-of-dimension bait) while custom-agent goldens still
+  pass. Frozen blank transcripts live in `tests/evals/review_agents/blank_runs/`.
 
 ## 0.6.0
 

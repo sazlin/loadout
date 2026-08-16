@@ -24,7 +24,7 @@
         {"id": "negative-stock", "keywords": ["inventory", "negative"]}
       ],
       "must_not_find": [
-        {"id": "naming-nit", "keywords": ["rename _tmp", "poor comment"]}
+        {"id": "naming-nit", "keywords": ["_tmp"]}
       ]
     },
     {
@@ -49,7 +49,7 @@
         {"id": "mixed-concerns", "keywords": ["function", "concern"]}
       ],
       "must_not_find": [
-        {"id": "sql-injection", "keywords": ["sql injection", "parameterized query"]}
+        {"id": "sql-injection", "keywords": ["sql"]}
       ]
     },
     {
@@ -74,7 +74,8 @@
         {"id": "no-drain", "keywords": ["shutdown", "drain"]}
       ],
       "must_not_find": [
-        {"id": "rename-only", "keywords": ["rename fanout", "confusing name"]}
+        {"id": "out-of-dimension-security", "keywords": ["ssrf"]},
+        {"id": "naming-nit", "keywords": ["processurls"]}
       ]
     },
     {
@@ -101,7 +102,7 @@
         {"id": "missing-authz", "keywords": ["requester", "authoriz"]}
       ],
       "must_not_find": [
-        {"id": "naming-nit", "keywords": ["rename processdata", "camelcase"]}
+        {"id": "naming-nit", "keywords": ["processdata"]}
       ]
     },
     {

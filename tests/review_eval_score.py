@@ -11,6 +11,7 @@ from typing import Any
 EVALS_ROOT = Path(__file__).resolve().parent / "evals" / "review_agents"
 EVALS_PATH = EVALS_ROOT / "evals.json"
 GOLDENS_DIR = EVALS_ROOT / "goldens"
+BLANK_RUNS_DIR = EVALS_ROOT / "blank_runs"
 
 ISSUE_FIELDS = (
     "id",
@@ -106,6 +107,30 @@ def _keyword_failures(issues: list[dict[str, Any]], spec: dict[str, Any]) -> lis
         if any(all(word in blob for word in keywords) for blob in blobs):
             failures.append(f"hit must_not_find {item['id']}: {keywords}")
     return failures
+
+
+def score_behavior(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
+    """Score only differentiating checks (keywords / groups), not agent identity."""
+    if spec.get("agent") == "review_orchestrator":
+        return _score_orchestrator_behavior(report, spec)
+    issues = report.get("issues")
+    if not isinstance(issues, list):
+        return ScoreResult(False, ("issues must be a list",))
+    failures = _keyword_failures(issues, spec)
+    return ScoreResult(not failures, tuple(failures))
+
+
+def _score_orchestrator_behavior(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
+    failures: list[str] = []
+    dropped = {(pair.get("kept"), pair.get("dropped")) for pair in report.get("dropped_duplicates", [])}
+    expected_dropped = {(pair["kept"], pair["dropped"]) for pair in spec["expected_dropped"]}
+    if not expected_dropped <= dropped:
+        failures.append(f"dropped_duplicates {dropped} missing {expected_dropped}")
+    work_items = report.get("work_items")
+    if not isinstance(work_items, list):
+        return ScoreResult(False, tuple(failures + ["work_items must be a list"]))
+    failures.extend(_orchestrator_group_failures(work_items, spec))
+    return ScoreResult(not failures, tuple(failures))
 
 
 def score_dimension_report(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
