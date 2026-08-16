@@ -263,8 +263,10 @@ just add_skill mattpocock/skills --skill grill-me
 ```
 
 Repo-local skills for agents working *on this repository* live under
-`.claude/skills/` (committed; not part of any consumer loadout). Example:
-`skill-security-check` for auditing candidate skills before they land in `skills/`.
+`.claude/skills/` (committed; not part of any consumer loadout). Examples:
+`skill-security-check` for auditing candidate skills before they land in
+`skills/`; `refining-evals` for proving an agent eval fails a blank reviewer
+and still passes the custom agent.
 
 ## Documentation
 
