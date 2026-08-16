@@ -35,6 +35,11 @@ testpaths = ["tests"]
 target-version = "py312"
 line-length = 120
 extension = { mdc = "markdown" }
+# Intentionally over-engineered fixtures used to score davinci; keep the smells.
+exclude = ["evals/davinci/files"]
+
+[tool.ruff.lint.per-file-ignores]
+"evals/davinci/files/**" = ["ALL"]
 
 [tool.pyrefly]
 python-version = "3.12"
