@@ -1,0 +1,114 @@
+{
+  "review_correctness": {
+    "status": "ok",
+    "agent": "review_correctness",
+    "issues": [
+      {
+        "id": "C-001",
+        "title": "Zero-qty lines are dropped without a record",
+        "severity": "important",
+        "file": "files/correctness/order_service.py",
+        "line": 16,
+        "whats_wrong": "qty <= 0 uses continue and never charges or logs the line."
+      },
+      {
+        "id": "C-002",
+        "title": "history_page slice drops the last row of each page",
+        "severity": "important",
+        "file": "files/correctness/order_service.py",
+        "line": 28,
+        "whats_wrong": "end = start + size - 1 makes the slice exclusive of the last intended item."
+      },
+      {
+        "id": "C-003",
+        "title": "User lookup builds SQL from user_id",
+        "severity": "critical",
+        "file": "files/security/user_api.py",
+        "line": 16,
+        "whats_wrong": "f-string interpolates user_id into SELECT."
+      }
+    ]
+  },
+  "review_maintainability": {
+    "status": "ok",
+    "agent": "review_maintainability",
+    "issues": [
+      {
+        "id": "M-001",
+        "title": "BuildReport uses camelCase and opaque names",
+        "severity": "important",
+        "file": "files/maintainability/report_builder.py",
+        "line": 8,
+        "whats_wrong": "BuildReport, data, tmp, and x hide intent."
+      },
+      {
+        "id": "M-002",
+        "title": "Comments restate the next line",
+        "severity": "minor",
+        "file": "files/maintainability/report_builder.py",
+        "line": 10,
+        "whats_wrong": "Comments say set default list / increment counter / append row."
+      }
+    ]
+  },
+  "review_scale": {
+    "status": "ok",
+    "agent": "review_scale",
+    "issues": [
+      {
+        "id": "R-001",
+        "title": "Module-level results list grows without bound",
+        "severity": "critical",
+        "file": "files/scale/fanout_worker.py",
+        "line": 10,
+        "whats_wrong": "_RESULTS appends every payload and is never cleared."
+      },
+      {
+        "id": "R-002",
+        "title": "Partner GET has no timeout",
+        "severity": "important",
+        "file": "files/scale/fanout_worker.py",
+        "line": 16,
+        "whats_wrong": "httpx.get(url) uses the default timeout."
+      },
+      {
+        "id": "R-003",
+        "title": "Dependency failures are swallowed",
+        "severity": "important",
+        "file": "files/scale/fanout_worker.py",
+        "line": 18,
+        "whats_wrong": "except Exception: pass hides partner outages."
+      }
+    ]
+  },
+  "review_security": {
+    "status": "ok",
+    "agent": "review_security",
+    "issues": [
+      {
+        "id": "SEC-001",
+        "title": "SQL is built from user_id",
+        "severity": "critical",
+        "file": "files/security/user_api.py",
+        "line": 16,
+        "whats_wrong": "f-string interpolates user_id into SELECT * FROM users."
+      },
+      {
+        "id": "SEC-002",
+        "title": "Logs email, session token, and API key",
+        "severity": "critical",
+        "file": "files/security/user_api.py",
+        "line": 17,
+        "whats_wrong": "log.info writes email, session_token, and API_KEY."
+      },
+      {
+        "id": "SEC-003",
+        "title": "Response includes password_hash and session_token",
+        "severity": "critical",
+        "file": "files/security/user_api.py",
+        "line": 18,
+        "whats_wrong": "Return dict leaks password_hash and session_token."
+      }
+    ]
+  }
+}

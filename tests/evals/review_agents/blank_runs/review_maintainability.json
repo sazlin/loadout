@@ -1,0 +1,67 @@
+{
+  "status": "ok",
+  "agent": "general_reviewer",
+  "charter": "general code review",
+  "inputs": {
+    "summary": "General review of report_builder.py",
+    "paths": ["files/maintainability/report_builder.py"]
+  },
+  "issues": [
+    {
+      "id": "I-001",
+      "title": "User data interpolated into a SQL string",
+      "severity": "critical",
+      "file": "files/maintainability/report_builder.py",
+      "line": 57,
+      "symbol": "BuildReport",
+      "whats_wrong": "f-string builds SELECT * FROM reports WHERE batch = '{data}'. This is a SQL-injection pattern.",
+      "why_it_matters": "Attacker-controlled SQL if later executed.",
+      "how_to_fix": ["Delete the unused query or use a parameterized query."],
+      "acceptance_criteria": ["No SQL f-string remains."],
+      "suggested_test": "no SELECT in module",
+      "do_not_change": "JSON shape"
+    },
+    {
+      "id": "I-007",
+      "title": "Function and locals violate PEP 8 naming",
+      "severity": "important",
+      "file": "files/maintainability/report_builder.py",
+      "line": 8,
+      "symbol": "BuildReport",
+      "whats_wrong": "BuildReport is camelCase/PascalCase. Locals data, tmp, x, i are cryptic.",
+      "why_it_matters": "Readers cannot tell what each variable holds.",
+      "how_to_fix": ["Rename to build_report and use domain names."],
+      "acceptance_criteria": ["Public function is snake_case."],
+      "suggested_test": "rename only",
+      "do_not_change": "row field meanings"
+    },
+    {
+      "id": "I-011",
+      "title": "Noisy comments restating the next line",
+      "severity": "minor",
+      "file": "files/maintainability/report_builder.py",
+      "line": 8,
+      "symbol": "BuildReport",
+      "whats_wrong": "Comments restate set default list, increment counter, append row.",
+      "why_it_matters": "The function contract is undocumented.",
+      "how_to_fix": ["Delete restating comments."],
+      "acceptance_criteria": ["No comments that only narrate the next line."],
+      "suggested_test": "none",
+      "do_not_change": "happy path"
+    },
+    {
+      "id": "I-004",
+      "title": "One function mixes mapping, mutation, and JSON",
+      "severity": "important",
+      "file": "files/maintainability/report_builder.py",
+      "line": 8,
+      "symbol": "BuildReport",
+      "whats_wrong": "A single function mixes several concerns: mapping, comps, VAT, and serialization.",
+      "why_it_matters": "Hard to change one concern without touching others.",
+      "how_to_fix": ["Extract helpers per concern."],
+      "acceptance_criteria": ["VAT/comp live in a named helper."],
+      "suggested_test": "eu vat still works",
+      "do_not_change": "EU VAT 0.2"
+    }
+  ]
+}

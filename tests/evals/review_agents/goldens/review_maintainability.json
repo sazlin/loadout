@@ -1,0 +1,94 @@
+{
+  "status": "ok",
+  "agent": "review_maintainability",
+  "charter": "Find defects that make the change set hard to read, hard to change, or inconsistent with local style.",
+  "inputs": {
+    "summary": "Review report_builder for names, comments, and structure.",
+    "paths": ["files/maintainability/report_builder.py"]
+  },
+  "issues": [
+    {
+      "id": "M-001",
+      "title": "BuildReport is camelCase in a snake_case module",
+      "severity": "important",
+      "file": "files/maintainability/report_builder.py",
+      "line": 8,
+      "symbol": "BuildReport",
+      "whats_wrong": "The public function uses Java-style camelCase instead of snake_case.",
+      "why_it_matters": "Callers and later editors will not find the helper next to apply_line_items-style names.",
+      "how_to_fix": [
+        "Rename BuildReport to build_report.",
+        "Keep the JSON shape the same."
+      ],
+      "acceptance_criteria": [
+        "The public function name is snake_case and matches neighboring modules."
+      ],
+      "suggested_test": "none — rename only; update call sites if any",
+      "do_not_change": "The returned JSON keys."
+    },
+    {
+      "id": "M-002",
+      "title": "Opaque names data, tmp, and x hide intent",
+      "severity": "important",
+      "file": "files/maintainability/report_builder.py",
+      "line": 12,
+      "symbol": "BuildReport",
+      "whats_wrong": "raw is copied to data; tmp is an accumulator; x is a row counter.",
+      "why_it_matters": "A future editor cannot tell which list is the input rows vs the scratch buffer.",
+      "how_to_fix": [
+        "Rename data to rows, tmp to scratch_rows or drop it, x to row_number."
+      ],
+      "acceptance_criteria": [
+        "No variable named data, tmp, or x remains in the function."
+      ],
+      "suggested_test": "none — rename only",
+      "do_not_change": "VAT and comp math."
+    },
+    {
+      "id": "M-003",
+      "title": "Comments restate the next line",
+      "severity": "minor",
+      "file": "files/maintainability/report_builder.py",
+      "line": 10,
+      "symbol": "BuildReport",
+      "whats_wrong": "Comments say set default list, increment counter, and append row.",
+      "why_it_matters": "Narrative comments go stale and hide the one invariant worth writing down.",
+      "how_to_fix": [
+        "Delete restating comments.",
+        "Keep a comment only if a non-obvious VAT or comp rule needs it."
+      ],
+      "acceptance_criteria": [
+        "No comment that repeats the following assignment remains."
+      ],
+      "suggested_test": "none",
+      "do_not_change": "Control flow."
+    },
+    {
+      "id": "M-004",
+      "title": "One function mixes mapping, VAT, comps, and serialization",
+      "severity": "important",
+      "file": "files/maintainability/report_builder.py",
+      "line": 8,
+      "symbol": "BuildReport",
+      "whats_wrong": "A single function maps fields, applies comps, assigns VAT, and dumps JSON.",
+      "why_it_matters": "A tax change requires editing the same 50-line concern soup as JSON wrapping.",
+      "how_to_fix": [
+        "Extract row mapping and VAT/comp rules into helpers named for those jobs.",
+        "Keep build_report as the assembler."
+      ],
+      "acceptance_criteria": [
+        "VAT/comp rules live in a helper whose name states that concern."
+      ],
+      "suggested_test": "test_build_report_applies_eu_vat — still passes after the split",
+      "do_not_change": "EU VAT 0.2 and US VAT 0.0 results."
+    }
+  ],
+  "verification": [
+    {"command": "read files/maintainability/report_builder.py", "result": "pass", "notes": "fixture"}
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

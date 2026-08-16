@@ -1,0 +1,81 @@
+{
+  "status": "ok",
+  "agent": "general_reviewer",
+  "charter": "general code review",
+  "inputs": {
+    "summary": "General review of fanout_worker.py",
+    "paths": ["files/scale/fanout_worker.py"]
+  },
+  "issues": [
+    {
+      "id": "I-001",
+      "title": "Module-level _RESULTS accumulates across calls",
+      "severity": "critical",
+      "file": "files/scale/fanout_worker.py",
+      "line": 9,
+      "symbol": "_RESULTS",
+      "whats_wrong": "fanout appends into an unbounded process-global results list.",
+      "why_it_matters": "Memory grows without bound.",
+      "how_to_fix": ["Return a local list."],
+      "acceptance_criteria": ["Second call does not include first payloads."],
+      "suggested_test": "two fanout calls",
+      "do_not_change": "fanout signature"
+    },
+    {
+      "id": "I-004",
+      "title": "All request failures are swallowed",
+      "severity": "critical",
+      "file": "files/scale/fanout_worker.py",
+      "line": 18,
+      "symbol": "fanout",
+      "whats_wrong": "except Exception: pass swallows partner errors.",
+      "why_it_matters": "Outages look like success.",
+      "how_to_fix": ["Record per-URL failure."],
+      "acceptance_criteria": ["A failing URL is visible."],
+      "suggested_test": "connect error",
+      "do_not_change": "best-effort batch"
+    },
+    {
+      "id": "I-005",
+      "title": "httpx.get has no timeout",
+      "severity": "critical",
+      "file": "files/scale/fanout_worker.py",
+      "line": 16,
+      "symbol": "httpx.get",
+      "whats_wrong": "httpx.get(url) uses no timeout.",
+      "why_it_matters": "A hung partner stalls the worker.",
+      "how_to_fix": ["Pass timeout= to httpx.get."],
+      "acceptance_criteria": ["Every GET has a finite timeout."],
+      "suggested_test": "hung peer",
+      "do_not_change": "stay on httpx"
+    },
+    {
+      "id": "I-007",
+      "title": "shutdown() does not release state or HTTP resources",
+      "severity": "important",
+      "file": "files/scale/fanout_worker.py",
+      "line": 23,
+      "symbol": "shutdown",
+      "whats_wrong": "shutdown returns immediately and does not clear _RESULTS or cancel in-flight work.",
+      "why_it_matters": "Deploy looks clean while work is still in flight.",
+      "how_to_fix": ["Drain or cancel in-flight gets in shutdown."],
+      "acceptance_criteria": ["shutdown waits or cancels in-flight work."],
+      "suggested_test": "shutdown during fanout",
+      "do_not_change": "shutdown name"
+    },
+    {
+      "id": "I-011",
+      "title": "No URL allowlist (SSRF if URLs are untrusted)",
+      "severity": "important",
+      "file": "files/scale/fanout_worker.py",
+      "line": 12,
+      "symbol": "fanout",
+      "whats_wrong": "Any string is fetched; this is SSRF into internal endpoints.",
+      "why_it_matters": "A poisoned list can hit metadata IPs.",
+      "how_to_fix": ["Allowlist hosts."],
+      "acceptance_criteria": ["localhost is rejected."],
+      "suggested_test": "127.0.0.1 rejected",
+      "do_not_change": "valid partner HTTPS URLs"
+    }
+  ]
+}

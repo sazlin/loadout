@@ -1,0 +1,81 @@
+{
+  "status": "ok",
+  "agent": "general_reviewer",
+  "charter": "general code review",
+  "inputs": {
+    "summary": "General review of order_service.py",
+    "paths": ["files/correctness/order_service.py"]
+  },
+  "issues": [
+    {
+      "id": "I-001",
+      "title": "apply_line_items empties the caller's live cart",
+      "severity": "critical",
+      "file": "files/correctness/order_service.py",
+      "line": 13,
+      "symbol": "apply_line_items",
+      "whats_wrong": "The loop uses items.pop() on the caller's live cart.",
+      "why_it_matters": "Callers lose cart contents.",
+      "how_to_fix": ["Iterate without pop."],
+      "acceptance_criteria": ["items list is unchanged."],
+      "suggested_test": "assert cart unchanged",
+      "do_not_change": "charged-cents return"
+    },
+    {
+      "id": "I-002",
+      "title": "Stock is debited with no availability check",
+      "severity": "critical",
+      "file": "files/correctness/order_service.py",
+      "line": 20,
+      "symbol": "apply_line_items",
+      "whats_wrong": "inventory[sku] = on_hand - qty can go negative.",
+      "why_it_matters": "Orders oversell.",
+      "how_to_fix": ["Require on_hand >= qty."],
+      "acceptance_criteria": ["inventory does not go negative."],
+      "suggested_test": "oversell case",
+      "do_not_change": "successful debit"
+    },
+    {
+      "id": "I-003",
+      "title": "history_page is off-by-one",
+      "severity": "critical",
+      "file": "files/correctness/order_service.py",
+      "line": 28,
+      "symbol": "history_page",
+      "whats_wrong": "end = start + size - 1 drops the last id.",
+      "why_it_matters": "Every page drops a row.",
+      "how_to_fix": ["Use end = start + size."],
+      "acceptance_criteria": ["page size 3 returns 3 ids."],
+      "suggested_test": "history_page size",
+      "do_not_change": "zero-based page"
+    },
+    {
+      "id": "I-006",
+      "title": "Non-positive qty lines are dropped from the cart",
+      "severity": "important",
+      "file": "files/correctness/order_service.py",
+      "line": 16,
+      "symbol": "apply_line_items",
+      "whats_wrong": "qty <= 0 continues after pop so zero qty is a silent drop.",
+      "why_it_matters": "Silent data loss.",
+      "how_to_fix": ["Reject qty <= 0."],
+      "acceptance_criteria": ["qty 0 is recorded or rejected."],
+      "suggested_test": "zero qty",
+      "do_not_change": "positive qty path"
+    },
+    {
+      "id": "I-009",
+      "title": "Dead unused _tmp helper with a meaningless name",
+      "severity": "minor",
+      "file": "files/correctness/order_service.py",
+      "line": 32,
+      "symbol": "_tmp",
+      "whats_wrong": "_tmp is an unused identity function.",
+      "why_it_matters": "Dead code noise.",
+      "how_to_fix": ["Delete _tmp."],
+      "acceptance_criteria": ["No unused _tmp helper."],
+      "suggested_test": "none",
+      "do_not_change": "apply_line_items"
+    }
+  ]
+}

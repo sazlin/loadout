@@ -235,6 +235,8 @@ docs/superpowers/
 .claude/skills/*
 !.claude/skills/skill-security-check/
 !.claude/skills/skill-security-check/**
+!.claude/skills/refining-evals/
+!.claude/skills/refining-evals/**
 .agents/
 skills-lock.json
 .skills.json

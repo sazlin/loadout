@@ -9,5 +9,10 @@ hooks:
   - src: hooks/deny-dangerous
 agents:
   - src: agents/davinci.md
+  - src: agents/review_correctness.md
+  - src: agents/review_maintainability.md
+  - src: agents/review_scale.md
+  - src: agents/review_security.md
+  - src: agents/review_orchestrator.md
 mcps:
   - src: mcps/context7

@@ -86,6 +86,11 @@ loadout/
     python_coder.md
     davinci.md
     e2e_test_generator.md
+    review_correctness.md
+    review_maintainability.md
+    review_scale.md
+    review_security.md
+    review_orchestrator.md
   mcps/
     langchain-docs/
       mcp.yaml
