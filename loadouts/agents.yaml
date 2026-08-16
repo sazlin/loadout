@@ -1,6 +1,10 @@
 name: agents
 extends:
   - base
-description: Agent frameworks and tooling — LangChain docs MCP for live documentation lookup.
+description: >-
+  Agent frameworks and tooling — LangChain docs MCP for live documentation
+  lookup, plus the refining-evals skill.
+skills:
+  - src: skills/refining-evals
 mcps:
   - src: mcps/langchain-docs

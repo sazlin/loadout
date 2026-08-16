@@ -168,7 +168,7 @@ Example GitHub Actions step:
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
 | `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
-| `agents` | `base` | LangChain docs MCP for live LangChain / LangGraph / LangSmith lookup |
+| `agents` | `base` | LangChain docs MCP for live LangChain / LangGraph / LangSmith lookup + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`.
@@ -208,11 +208,13 @@ Each recipe runs `uvx` against the `source` / `ref` pinned in `.loadout.yaml`, s
 ## Notes and warnings
 
 <details>
-<summary><strong>Agents loadout</strong> — LangChain docs MCP</summary>
+<summary><strong>Agents loadout</strong> — LangChain docs MCP + refining-evals</summary>
 
 The `agents` loadout extends `base` and adds the LangChain docs MCP
 (`https://docs.langchain.com/mcp`) so agents can search live LangChain /
-LangGraph / LangSmith documentation:
+LangGraph / LangSmith documentation, plus the `refining-evals` skill for
+proving a specialist eval fails a blank reviewer and still passes the
+custom agent:
 
 ```yaml
 loadouts: [agents]
@@ -263,10 +265,10 @@ just add_skill mattpocock/skills --skill grill-me
 ```
 
 Repo-local skills for agents working *on this repository* live under
-`.claude/skills/` (committed; not part of any consumer loadout). Examples:
-`skill-security-check` for auditing candidate skills before they land in
-`skills/`; `refining-evals` for proving an agent eval fails a blank reviewer
-and still passes the custom agent.
+`.claude/skills/` (committed). Examples: `skill-security-check` for auditing
+candidate skills before they land in `skills/` (not part of any consumer
+loadout); `refining-evals` for proving an agent eval fails a blank reviewer
+and still passes the custom agent (also vendored via the `agents` loadout).
 
 ## Documentation
 
