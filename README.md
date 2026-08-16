@@ -15,7 +15,8 @@
 ## The Gist
 - Everything is highly opinionated and changing constantly.
 - Everything is "Cursor-first, Claude compatible" because those are the harnesses I use at the moment (Pi coming next).
-- Loadout is a critical piece of my in-progress software metafactory, which I use to bootstrap new software factories for startups. Loadout is what my metafactory uses to equip each factory's project with the exactly the right rules, skills, agents, etc.
+- Why did I make this? Loadout is a critical piece of my in-progress software metafactory, which I use to bootstrap new software factories for startups. Loadout is what my metafactory uses to equip each factory's project with exactly the right rules, skills, agents, etc.
+- Loadouts are "vendored" / copied into projects w/ metadata enabling intelligent updates at the project level. Similarly, 3rd party skills are vendored into this Loadout repo (and vetted with a skill screener). Everything is optimized for stability and security; loadouts only have skills and agents that were expicitly installed and screened, and projects only get exactly those screened versions.
 - Loadouts are incomplete. I'm still generalizing and migrating project-specific skills and agents into this project. More is coming.
 
 ## Quick start
