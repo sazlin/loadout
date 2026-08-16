@@ -72,10 +72,12 @@ loadout/
       e2e-conventions.mdc
   skills/
     db-migrations/SKILL.md
+    refining-evals/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
   .claude/skills/                 # repo-local only (not vendored via loadouts)
     skill-security-check/SKILL.md
+    refining-evals/SKILL.md
   hooks/
     deny-dangerous/
       hook.yaml

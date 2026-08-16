@@ -13,8 +13,8 @@ description: >-
 Prove an eval **fails a blank general-purpose reviewer** and **passes the
 named custom agent** on behavior. Identity checks are not differentiation.
 
-Repo-local copy (like `skill-security-check`). Also vendored as
-`skills/refining-evals` on the `agents` loadout.
+Vendored on the `agents` loadout. Use when proving a specialist eval
+fails a blank general-purpose reviewer and still passes the named custom agent.
 
 ## Overview
 

@@ -15,6 +15,7 @@
   pass. Frozen blank transcripts live in `tests/evals/review_agents/blank_runs/`.
 - Add repo-local skill `.claude/skills/refining-evals` for proving an eval
   fails a blank reviewer and passes the custom agent (Ralph loop, max 5).
+- Vendor `skills/refining-evals` and attach it to the `agents` loadout.
 
 ## 0.6.0
 
