@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Expand `review_orchestrator` to accept a GitHub pull request as the change
+  set and post one new well-formatted PR comment per run (`gh pr comment`,
+  never `--edit-last`).
+- Expand `review_orchestrator` to accept a Linear issue ID or URL. When
+  Linear is present it is the rally point: reviewer and orchestrator
+  artifacts are attached to the ticket instead of written to the project
+  filesystem, and the run summary is posted as a Linear comment. Add
+  `mcps/linear` (`https://mcp.linear.app/mcp`) to the `base` loadout.
+
 - Nest each agent under `agents/<name>/` with definition `agents/<name>/<name>.md`
   and colocated `evals/` (keyword fixtures, goldens, blank runs, and davinci's
   live harness). Remove `tests/evals/` and top-level `evals/`. Sync still

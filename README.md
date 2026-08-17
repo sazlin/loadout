@@ -177,7 +177,7 @@ is not an agent.
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
 | Implementation | `python_coder`, `davinci`, `e2e_test_generator` | `python`, `base`, `playwright-e2e` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
-| Dimensional review | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, plus `review_orchestrator` | `base` | Read-only reviewers (orchestrator writes work-item markdown). Stay in one dimension; emit `issues` JSON |
+| Dimensional review | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, plus `review_orchestrator` | `base` | Read-only reviewers (orchestrator writes work-item markdown, or attaches it to Linear). Stay in one dimension; emit `issues` JSON. Orchestrator also accepts a GitHub PR (new summary comment per run) or Linear issue (ticket is the artifact rally point) |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.

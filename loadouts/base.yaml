@@ -17,3 +17,4 @@ agents:
   - src: agents/review_orchestrator/review_orchestrator.md
 mcps:
   - src: mcps/context7
+  - src: mcps/linear

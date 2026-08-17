@@ -1,11 +1,13 @@
 {
   "status": "ok",
   "agent": "review_orchestrator",
-  "charter": "Dispatch four dimension reviewers in parallel, dedupe issues, group 1-3 similar issues per work item, and write markdown for a fix subagent.",
+  "charter": "Dispatch four dimension reviewers in parallel, dedupe issues, group 1-3 similar issues per work item, and deliver markdown for a fix subagent.",
   "inputs": {
     "summary": "Group fixture reviewer findings; do not re-review source.",
     "paths": ["files/orchestrator/reviewer_findings.json"],
-    "output_dir": "review-work-items"
+    "output_dir": "review-work-items",
+    "github_pr": null,
+    "linear_issue": null
   },
   "reviewers": [
     {"agent": "review_correctness", "status": "ok", "issue_count": 3},
@@ -78,6 +80,12 @@
       "rationale": "same dependency-failure path"
     }
   ],
+  "delivery": {
+    "store": "filesystem",
+    "github_comment_url": null,
+    "linear_comment_url": null,
+    "linear_attachments": []
+  },
   "changes": [
     {"path": "review-work-items/INDEX.md", "action": "create", "rationale": "index"},
     {"path": "review-work-items/WI-001-parameterize-user-lookup.md", "action": "create", "rationale": "work item"}
