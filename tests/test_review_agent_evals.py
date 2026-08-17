@@ -114,6 +114,7 @@ def test_base_loadout_includes_dimensional_review_agents() -> None:
     srcs = {entry["src"] for entry in loadout.agents}
     expected = {f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}}
     assert expected <= srcs
+    assert {entry["src"] for entry in loadout.mcps} >= {"mcps/context7", "mcps/linear"}
 
 
 @pytest.mark.parametrize("filename", sorted(REVIEW_DIMENSION_AGENTS))
@@ -155,6 +156,41 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_work_items() -> None:
     assert "work_items" in text
     assert "git push" in lowered
     assert "do not implement the fixes" in lowered or "do not implement the fix" in lowered
+
+
+def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "github" in lowered and "pull request" in lowered
+    assert "gh pr comment" in lowered
+    assert "--edit-last" in lowered
+    assert "each run creates its own" in lowered
+    assert "github_comment_url" in text
+    assert "inputs.github_pr" in text or '"github_pr"' in text
+
+
+def test_orchestrator_uses_linear_as_artifact_rally_point() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "linear" in lowered
+    assert "rally point" in lowered
+    assert "prepare_attachment_upload" in text
+    assert "create_attachment_from_upload" in text
+    assert "save_comment" in text
+    assert "do not write work items into the project" in lowered
+    assert "linear_comment_url" in text
+    assert "linear_attachments" in text
+    assert '"linear_issue"' in text
+    loadout = load_loadout(REPO / "loadouts" / "base.yaml")
+    assert any(entry["src"] == "mcps/linear" for entry in loadout.mcps)
+
+
+def test_dimension_reviewers_treat_linear_as_rally_point() -> None:
+    for filename in REVIEW_DIMENSION_AGENTS:
+        text = _agent_file(filename).read_text().lower()
+        assert "linear issue" in text
+        assert "rally point" in text
+        assert "do not write files" in text
 
 
 def test_evals_json_files_exist_and_cover_each_review_agent() -> None:

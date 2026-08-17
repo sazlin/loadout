@@ -117,6 +117,8 @@ loadout/
       mcp.yaml
     context7/
       mcp.yaml
+    linear/
+      mcp.yaml
   loadouts/
     base.yaml
     agents.yaml

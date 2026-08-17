@@ -637,9 +637,10 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     assert (project / ".cursor/hooks.json").is_file()
     assert (project / ".claude/settings.json").is_file()
     assert (project / ".cursor/mcp.json").is_file()
-    cursor_mcp = (project / ".cursor/mcp.json").read_text()
-    assert "aws-knowledge" in cursor_mcp
-    assert "knowledge-mcp.global.api.aws" in cursor_mcp
+    cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
+    assert cursor_mcp["mcpServers"]["linear"]["url"] == "https://mcp.linear.app/mcp"
+    assert "aws-knowledge" in cursor_mcp["mcpServers"]
+    assert cursor_mcp["mcpServers"]["aws-knowledge"]["url"] == "https://knowledge-mcp.global.api.aws"
     assert not (project / ".cursor/rules/aws-conventions.mdc").exists()
     assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
     assert not (project / "tests/e2e").exists()
@@ -677,6 +678,7 @@ def test_real_agents_loadout_writes_langchain_docs_mcp(tmp_path: Path, monkeypat
     sync(project)
 
     cursor = json.loads((project / ".cursor/mcp.json").read_text())
+    assert cursor["mcpServers"]["linear"]["url"] == "https://mcp.linear.app/mcp"
     assert cursor["mcpServers"]["langchain-docs"]["url"] == "https://docs.langchain.com/mcp"
     claude = json.loads((project / ".mcp.json").read_text())
     assert claude["mcpServers"]["langchain-docs"] == {
