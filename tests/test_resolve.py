@@ -84,7 +84,7 @@ def test_resolve_rejects_include_of_underscore_prefixed_agent_template(tmp_path:
     source = copy_fixture(tmp_path)
     (source / "agents" / "_agent_template.md").write_text("# Template\n")
 
-    with pytest.raises(ValidationError, match="not an agent"):
+    with pytest.raises(ValidationError, match="Not an agent definition"):
         resolve(manifest(loadouts=["base"], include=["agents/_agent_template.md"]), source)
 
 
@@ -101,7 +101,7 @@ def test_resolve_rejects_include_of_agent_evals_markdown(tmp_path: Path):
     evals_md.parent.mkdir(parents=True)
     evals_md.write_text("# Ralph loop\n")
 
-    with pytest.raises(ValidationError, match="not an agent"):
+    with pytest.raises(ValidationError, match="Not an agent definition"):
         resolve(manifest(loadouts=["base"], include=["agents/demo_agent/evals/ralph-loop.md"]), source)
 
 

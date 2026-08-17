@@ -124,7 +124,7 @@ def test_validate_resolved_rejects_underscore_prefixed_agent_template(tmp_path: 
         )
     ]
 
-    with pytest.raises(ValidationError, match="not an agent"):
+    with pytest.raises(ValidationError, match="Not an agent definition"):
         validate_resolved(files, tmp_path, ".claude/skills", ".cursor/hooks", ".claude/agents")
 
 
