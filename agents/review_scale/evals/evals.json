@@ -1,0 +1,65 @@
+{
+  "agent": "review_scale",
+  "evals": [
+    {
+      "id": "review-scale-fanout-worker",
+      "agent": "review_scale",
+      "prompt": "You are review_scale. Follow agents/review_scale/review_scale.md. Review only agents/review_scale/evals/files/fanout_worker.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "evals/files/fanout_worker.py"
+      ],
+      "expected_output": "JSON issue list for load, dependency-failure, and update defects only",
+      "expectations": [
+        "Reports the unbounded module-level results list",
+        "Reports httpx.get with no timeout",
+        "Reports swallowed dependency exceptions",
+        "Reports shutdown that does not drain in-flight work",
+        "Does not file a rename-only style issue"
+      ],
+      "must_find": [
+        {
+          "id": "unbounded-buffer",
+          "keywords": [
+            "unbounded",
+            "results"
+          ]
+        },
+        {
+          "id": "missing-timeout",
+          "keywords": [
+            "timeout",
+            "httpx"
+          ]
+        },
+        {
+          "id": "swallowed-errors",
+          "keywords": [
+            "except",
+            "swallow"
+          ]
+        },
+        {
+          "id": "no-drain",
+          "keywords": [
+            "shutdown",
+            "drain"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "out-of-dimension-security",
+          "keywords": [
+            "ssrf"
+          ]
+        },
+        {
+          "id": "naming-nit",
+          "keywords": [
+            "processurls"
+          ]
+        }
+      ]
+    }
+  ]
+}

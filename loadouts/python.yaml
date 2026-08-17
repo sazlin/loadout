@@ -6,4 +6,4 @@ rules:
   - src: rules/python/python-code-style.mdc
   - src: rules/python/pytest.mdc
 agents:
-  - src: agents/python_coder.md
+  - src: agents/python_coder/python_coder.md

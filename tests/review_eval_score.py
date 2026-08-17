@@ -1,4 +1,4 @@
-"""Score dimensional review-agent outputs against evals.json specs."""
+"""Score dimensional review-agent outputs against per-agent evals.json specs."""
 
 from __future__ import annotations
 
@@ -8,10 +8,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-EVALS_ROOT = Path(__file__).resolve().parent / "evals" / "review_agents"
-EVALS_PATH = EVALS_ROOT / "evals.json"
-GOLDENS_DIR = EVALS_ROOT / "goldens"
-BLANK_RUNS_DIR = EVALS_ROOT / "blank_runs"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+AGENTS_DIR = REPO_ROOT / "agents"
+REVIEW_AGENTS = (
+    "review_correctness",
+    "review_maintainability",
+    "review_scale",
+    "review_security",
+    "review_orchestrator",
+)
 
 ISSUE_FIELDS = (
     "id",
@@ -42,9 +47,33 @@ class ScoreResult:
     failures: tuple[str, ...]
 
 
+def agent_dir(agent: str) -> Path:
+    """Return ``agents/<agent>/``."""
+    return AGENTS_DIR / agent
+
+
+def evals_root(agent: str) -> Path:
+    """Return ``agents/<agent>/evals/``."""
+    return agent_dir(agent) / "evals"
+
+
+def evals_path(agent: str) -> Path:
+    """Return ``agents/<agent>/evals/evals.json``."""
+    return evals_root(agent) / "evals.json"
+
+
 def load_evals() -> dict[str, Any]:
-    """Return the parsed eval suite document."""
-    return json.loads(EVALS_PATH.read_text())
+    """Merge keyword evals from each review agent's evals.json."""
+    evals: list[dict[str, Any]] = []
+    for agent in REVIEW_AGENTS:
+        data = json.loads(evals_path(agent).read_text())
+        for entry in data.get("evals", []):
+            if not isinstance(entry, dict):
+                continue
+            if entry.get("agent") != agent:
+                continue
+            evals.append(entry)
+    return {"suite": "dimensional-review-agents", "evals": evals}
 
 
 def eval_by_id(eval_id: str) -> dict[str, Any]:
@@ -202,4 +231,9 @@ def score_orchestrator_report(report: dict[str, Any], spec: dict[str, Any]) -> S
 
 def load_golden(agent: str) -> dict[str, Any]:
     """Load the committed golden report for one agent."""
-    return json.loads((GOLDENS_DIR / f"{agent}.json").read_text())
+    return json.loads((evals_root(agent) / "goldens" / f"{agent}.json").read_text())
+
+
+def load_blank_run(agent: str) -> dict[str, Any]:
+    """Load the frozen blank-agent transcript for one agent."""
+    return json.loads((evals_root(agent) / "blank_runs" / f"{agent}.json").read_text())

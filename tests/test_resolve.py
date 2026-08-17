@@ -68,7 +68,7 @@ def test_resolve_expands_extended_loadouts_and_skips_skill_root_evals():
             "hook_file",
         ),
         (
-            "agents/demo_agent.md",
+            "agents/demo_agent/demo_agent.md",
             ".claude/agents/demo_agent.md",
             "agent",
         ),
@@ -84,8 +84,25 @@ def test_resolve_rejects_include_of_underscore_prefixed_agent_template(tmp_path:
     source = copy_fixture(tmp_path)
     (source / "agents" / "_agent_template.md").write_text("# Template\n")
 
-    with pytest.raises(ValidationError, match="not agents"):
+    with pytest.raises(ValidationError, match="Not an agent definition"):
         resolve(manifest(loadouts=["base"], include=["agents/_agent_template.md"]), source)
+
+
+def test_resolve_rejects_include_of_an_agent_directory(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+
+    with pytest.raises(ValidationError, match="must be a markdown file"):
+        resolve(manifest(loadouts=["base"], include=["agents/demo_agent"]), source)
+
+
+def test_resolve_rejects_include_of_agent_evals_markdown(tmp_path: Path):
+    source = copy_fixture(tmp_path)
+    evals_md = source / "agents" / "demo_agent" / "evals" / "ralph-loop.md"
+    evals_md.parent.mkdir(parents=True)
+    evals_md.write_text("# Ralph loop\n")
+
+    with pytest.raises(ValidationError, match="Not an agent definition"):
+        resolve(manifest(loadouts=["base"], include=["agents/demo_agent/evals/ralph-loop.md"]), source)
 
 
 def test_resolve_include_uses_default_destination():

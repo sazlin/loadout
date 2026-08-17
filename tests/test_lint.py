@@ -201,6 +201,52 @@ def test_eval_file_referencing_existing_path_is_fine(tmp_path: Path) -> None:
     assert result.ok
 
 
+def test_agent_eval_file_referencing_missing_path_is_an_error(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "agents" / "helper" / "helper.md",
+        "---\nname: helper\ndescription: A helper agent for tests.\n---\n\n# Helper\n",
+    )
+    write(
+        tmp_path / "loadouts" / "base.yaml",
+        "name: base\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "skills:\n  - src: skills/demo\n"
+        "agents:\n  - src: agents/helper/helper.md\n",
+    )
+    write(
+        tmp_path / "agents" / "helper" / "evals" / "evals.json",
+        json.dumps({"agent": "helper", "evals": [{"id": 1, "files": ["evals/files/missing.py"]}]}),
+    )
+
+    result = lint_repo(tmp_path)
+
+    assert not result.ok
+    assert any("evals/files/missing.py" in error for error in result.errors)
+
+
+def test_evals_markdown_under_an_agent_is_not_linted_or_an_orphan(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "agents" / "helper" / "helper.md",
+        "---\nname: helper\ndescription: A helper agent for tests.\n---\n\n# Helper\n",
+    )
+    write(
+        tmp_path / "loadouts" / "base.yaml",
+        "name: base\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "skills:\n  - src: skills/demo\n"
+        "agents:\n  - src: agents/helper/helper.md\n",
+    )
+    write(tmp_path / "agents" / "helper" / "evals" / "ralph-loop.md", "# Ralph loop\n\nNot an agent.\n")
+    write(tmp_path / "agents" / "helper" / "evals" / "README.md", "# Evals\n")
+
+    result = lint_repo(tmp_path)
+
+    assert result.ok
+    assert result.errors == []
+
+
 def test_loadout_extends_cycle_is_an_error(tmp_path: Path) -> None:
     base_repo(tmp_path)
     write(

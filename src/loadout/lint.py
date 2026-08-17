@@ -183,6 +183,11 @@ def _lint_agents(repo_root: Path, result: LintResult) -> None:
         except ValidationError as error:
             result.errors.append(f"{relative}: {error}")
 
+    for agent_root in sorted(path for path in agents_dir.iterdir() if path.is_dir()):
+        if agent_root.name.startswith("_"):
+            continue
+        _lint_evals(repo_root, agent_root, result)
+
 
 def _lint_mcps(repo_root: Path, result: LintResult) -> None:
     mcps_dir = repo_root / "mcps"

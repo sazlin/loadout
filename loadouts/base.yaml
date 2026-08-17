@@ -9,11 +9,11 @@ skills:
 hooks:
   - src: hooks/deny-dangerous
 agents:
-  - src: agents/davinci.md
-  - src: agents/review_correctness.md
-  - src: agents/review_maintainability.md
-  - src: agents/review_scale.md
-  - src: agents/review_security.md
-  - src: agents/review_orchestrator.md
+  - src: agents/davinci/davinci.md
+  - src: agents/review_correctness/review_correctness.md
+  - src: agents/review_maintainability/review_maintainability.md
+  - src: agents/review_scale/review_scale.md
+  - src: agents/review_security/review_security.md
+  - src: agents/review_orchestrator/review_orchestrator.md
 mcps:
   - src: mcps/context7

@@ -31,10 +31,18 @@ AGENT_NAME_RE = re.compile(r"^[a-z0-9]+(?:[_-][a-z0-9]+)*$")
 def is_agent_definition(path: Path) -> bool:
     """Return True for loadable agent files.
 
-    Underscore-prefixed markdown under ``agents/`` (for example
-    ``_agent_template.md``) is a template or note, not an agent.
+    Agents live at ``agents/<name>/<name>.md`` (the file stem matches the
+    parent directory). Underscore-prefixed markdown (for example
+    ``_agent_template.md``) is a template or note, not an agent. Files under
+    an ``evals/`` directory are fixtures and docs, not agents.
     """
-    return path.suffix == ".md" and not path.name.startswith("_")
+    if path.suffix != ".md" or path.name.startswith("_"):
+        return False
+    if "evals" in path.parts:
+        return False
+    if path.parent.name == path.stem:
+        return True
+    return path.parent.name == "agents"
 
 
 @dataclass(frozen=True)

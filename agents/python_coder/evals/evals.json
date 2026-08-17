@@ -1,0 +1,36 @@
+{
+  "agent": "python_coder",
+  "evals": [
+    {
+      "id": "python-coder-discounted-total",
+      "agent": "python_coder",
+      "prompt": "You are python_coder. Follow agents/python_coder/python_coder.md. Implement only this change: fix discounted_total in agents/python_coder/evals/files/pricing.py so tax applies after discount as (price - discount) * (1 + tax_rate). Do not edit other functions. Do not read agents/python_coder/evals/evals.json, goldens/, blank_runs/, or ralph-loop.md. Return the JSON report.",
+      "files": [
+        "evals/files/pricing.py"
+      ],
+      "expected_output": "JSON report for a focused tax-formula fix",
+      "expectations": [
+        "Fixes discounted_total to apply tax_rate after discount",
+        "Mentions tax_rate and discount in the report",
+        "Does not clean up the unused _tmp helper"
+      ],
+      "must_find": [
+        {
+          "id": "tax-after-discount",
+          "keywords": [
+            "tax_rate",
+            "discount"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "unused-helper",
+          "keywords": [
+            "_tmp"
+          ]
+        }
+      ]
+    }
+  ]
+}

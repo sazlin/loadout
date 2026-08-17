@@ -1,0 +1,67 @@
+{
+  "agent": "review_security",
+  "evals": [
+    {
+      "id": "review-security-user-api",
+      "agent": "review_security",
+      "prompt": "You are review_security. Follow agents/review_security/review_security.md. Review only agents/review_security/evals/files/user_api.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "evals/files/user_api.py"
+      ],
+      "expected_output": "JSON issue list for unsafe input and private-data leaks only",
+      "expectations": [
+        "Reports string-built SQL",
+        "Reports email/token/key in logs",
+        "Reports the hardcoded API key",
+        "Reports password_hash and session_token in the response",
+        "Reports unused requester_id / missing authz",
+        "Does not file processData as a naming nit"
+      ],
+      "must_find": [
+        {
+          "id": "sql-sink",
+          "keywords": [
+            "sql",
+            "user_id"
+          ]
+        },
+        {
+          "id": "pii-log",
+          "keywords": [
+            "log",
+            "token"
+          ]
+        },
+        {
+          "id": "hardcoded-key",
+          "keywords": [
+            "api_key",
+            "hardcoded"
+          ]
+        },
+        {
+          "id": "response-leak",
+          "keywords": [
+            "password_hash",
+            "response"
+          ]
+        },
+        {
+          "id": "missing-authz",
+          "keywords": [
+            "requester",
+            "authoriz"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "naming-nit",
+          "keywords": [
+            "processdata"
+          ]
+        }
+      ]
+    }
+  ]
+}

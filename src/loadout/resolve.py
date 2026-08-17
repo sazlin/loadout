@@ -119,8 +119,10 @@ def _resolve_includes(manifest: Manifest, source_root: Path) -> list[ResolvedFil
         path = source_root / src
         if path.is_file() and src.startswith("agents/") and src.endswith(".md"):
             if not is_agent_definition(path):
-                raise ValidationError(f"Underscore-prefixed files are not agents: {src}")
+                raise ValidationError(f"Not an agent definition: {src}")
             files.append(ResolvedFile(src, _default_agent_dest(manifest.agents_dir, src), "agent"))
+        elif path.is_dir() and src.startswith("agents/"):
+            raise ValidationError(f"Agent source must be a markdown file under agents/: {src}")
         elif path.is_file():
             files.append(ResolvedFile(src, _default_rule_dest(src), "rule"))
         elif src.startswith("mcps/") or (path.is_dir() and (path / MCP_META_NAME).is_file()):

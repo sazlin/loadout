@@ -33,7 +33,7 @@ Rejected alternatives:
 | Rule | A `.mdc` file with YAML frontmatter, loaded by Cursor from `.cursor/rules/` |
 | Skill | A directory whose root contains `SKILL.md`, optionally with bundled `scripts/`, `references/`, `assets/`, `agents/`, and `evals/` subtrees. Loaded from `.claude/skills/`, which both Cursor and Claude Code read. See sections 5.2 and 5.7 |
 | Hook | A directory under `hooks/` with `hook.yaml` plus scripts/assets. Synced once to `.cursor/hooks/<name>/`. Sync also generates `.cursor/hooks.json` (Cursor-native) and `.claude/settings.json` hooks (Claude Code) that both point at that single script copy. See section 5.9 |
-| Agent | A markdown file with YAML frontmatter under `agents/`. Synced once to `.claude/agents/`, which both Cursor (compatibility path) and Claude Code read. See section 5.10 |
+| Agent | A markdown file with YAML frontmatter at `agents/<name>/<name>.md`, optionally with a colocated `evals/` tree. Synced once to `.claude/agents/<name>.md`, which both Cursor (compatibility path) and Claude Code read. See section 5.10 |
 | MCP | A directory under `mcps/` with `mcp.yaml` describing a Cursor/Claude MCP server (HTTP URL or stdio command). Sync generates `.cursor/mcp.json` (Cursor) and `.mcp.json` (Claude Code). See section 5.11 |
 | Loadout | A named, composable selection of rules, skills, hooks, agents, and MCPs, defined in the loadout repo and selected by a project. The unit a project actually chooses |
 | Manifest | `.loadout.yaml`, committed in each project |
@@ -85,14 +85,31 @@ loadout/
       dangerous-patterns.txt
       test-guard.sh
   agents/
-    python_coder.md
-    davinci.md
-    e2e_test_generator.md
-    review_correctness.md
-    review_maintainability.md
-    review_scale.md
-    review_security.md
-    review_orchestrator.md
+    _agent_template.md
+    python_coder/
+      python_coder.md
+      evals/
+    davinci/
+      davinci.md
+      evals/
+    e2e_test_generator/
+      e2e_test_generator.md
+      evals/
+    review_correctness/
+      review_correctness.md
+      evals/
+    review_maintainability/
+      review_maintainability.md
+      evals/
+    review_scale/
+      review_scale.md
+      evals/
+    review_security/
+      review_security.md
+      evals/
+    review_orchestrator/
+      review_orchestrator.md
+      evals/
   mcps/
     langchain-docs/
       mcp.yaml
@@ -507,9 +524,11 @@ Custom subagents are markdown files with YAML frontmatter. Discovery:
 
 Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras): `name`, `description`, `model`, `readonly`, `is_background`, `tools`, `metadata`. `name` and `description` are required; `name` must equal the file stem.
 
-Markdown files under `agents/` whose names start with `_` are templates or notes, not agents. `agents/_agent_template.md` is the authoring skeleton. Lint and orphan checks skip them. A loadout `agents:` entry or manifest `include` that points at one fails validation. They must not be synced to `.claude/agents/`.
+Each agent is a directory `agents/<name>/` containing `agents/<name>/<name>.md`. Optional `evals/` next to that file is test infrastructure for the agent author (same exclusion idea as skill evals in 5.2.4). Sync copies only the markdown definition to `.claude/agents/<name>.md`; it does not vendor `evals/`.
 
-New and imported agents follow the template headings (Charter through Output schema). The `rules/agents/agent-authoring.mdc` rule (globs `agents/**/*.md`) is the reminder.
+Markdown files under `agents/` whose names start with `_` are templates or notes, not agents. `agents/_agent_template.md` is the authoring skeleton. Markdown under `evals/` is fixtures and docs, not agents. Lint and orphan checks skip both. A loadout `agents:` entry or manifest `include` that points at a non-agent file fails validation. Templates must not be synced to `.claude/agents/`.
+
+New and imported agents follow the template headings (Charter through Output schema). The `rules/agents/agent-authoring.mdc` rule (globs `agents/*/*.md`) is the reminder.
 
 Sync injects loadout provenance into `metadata` like rules and `SKILL.md`.
 
@@ -636,7 +655,7 @@ try project:
 - No stray `SKILL.md` below a skill root. A supporting doc must live in `references/` under a different filename, or it will be discovered as a separate skill.
 - Every path in `evals[].files` exists.
 - Every loadout resolves, with no `extends` cycles and no `dest` collisions.
-- No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout. Underscore-prefixed files under `agents/` are templates, not agents, and are not orphans.
+- No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout. Underscore-prefixed files under `agents/` are templates, not agents, and are not orphans. Markdown under `agents/<name>/evals/` is eval infrastructure, not an agent.
 
 Warn, but do not fail, when `SKILL.md` exceeds 500 lines or a `references/` file exceeds 300 lines without a table of contents. These are budget signals, not errors.
 

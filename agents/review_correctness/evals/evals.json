@@ -1,0 +1,62 @@
+{
+  "agent": "review_correctness",
+  "evals": [
+    {
+      "id": "review-correctness-order-service",
+      "agent": "review_correctness",
+      "prompt": "You are review_correctness. Follow agents/review_correctness/review_correctness.md. Review only agents/review_correctness/evals/files/order_service.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "evals/files/order_service.py"
+      ],
+      "expected_output": "JSON issue list for correctness and data-integrity defects only",
+      "expectations": [
+        "Reports in-place pop of the caller's items list",
+        "Reports silent drop of qty <= 0 lines",
+        "Reports the history_page off-by-one slice",
+        "Reports inventory decrement that can go negative",
+        "Each issue includes how_to_fix and acceptance_criteria",
+        "Does not file the unused _tmp helper as a naming nit"
+      ],
+      "must_find": [
+        {
+          "id": "caller-mutation",
+          "keywords": [
+            "pop",
+            "caller",
+            "items"
+          ]
+        },
+        {
+          "id": "zero-qty-drop",
+          "keywords": [
+            "qty",
+            "zero",
+            "drop"
+          ]
+        },
+        {
+          "id": "off-by-one",
+          "keywords": [
+            "history_page",
+            "off-by-one"
+          ]
+        },
+        {
+          "id": "negative-stock",
+          "keywords": [
+            "inventory",
+            "negative"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "naming-nit",
+          "keywords": [
+            "_tmp"
+          ]
+        }
+      ]
+    }
+  ]
+}

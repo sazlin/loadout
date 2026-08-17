@@ -13,11 +13,12 @@ if str(_TESTS) not in sys.path:
     sys.path.insert(0, str(_TESTS))
 
 from impl_eval_score import (
-    BLANK_RUNS_DIR,
-    EVALS_PATH,
-    EVALS_ROOT,
-    GOLDENS_DIR,
+    AGENTS_DIR,
+    IMPLEMENTATION_AGENTS,
     eval_by_id,
+    evals_path,
+    evals_root,
+    load_blank_run,
     load_evals,
     load_golden,
     parse_report,
@@ -26,7 +27,6 @@ from impl_eval_score import (
     score_implementation_report,
 )
 
-IMPLEMENTATION_AGENTS = ("python_coder", "davinci", "e2e_test_generator")
 EVAL_IDS = (
     "python-coder-discounted-total",
     "davinci-inline-adder",
@@ -41,8 +41,9 @@ def test_evals_json_files_exist_and_cover_each_implementation_agent() -> None:
     for entry in suite["evals"]:
         assert entry["must_find"]
         assert entry["must_not_find"]
+        agent_root = AGENTS_DIR / entry["agent"]
         for relative in entry["files"]:
-            assert (EVALS_ROOT / relative).is_file(), relative
+            assert (agent_root / relative).is_file(), relative
 
 
 @pytest.mark.parametrize("eval_id", EVAL_IDS)
@@ -52,19 +53,12 @@ def test_golden_implementation_report_passes_eval(eval_id: str) -> None:
     assert result.ok, result.failures
 
 
-@pytest.mark.parametrize(
-    ("eval_id", "filename"),
-    [
-        ("python-coder-discounted-total", "python_coder.json"),
-        ("davinci-inline-adder", "davinci.json"),
-        ("e2e-checkout-spec", "e2e_test_generator.json"),
-    ],
-)
-def test_blank_agent_transcript_fails_behavior_score(eval_id: str, filename: str) -> None:
-    spec = eval_by_id(eval_id)
-    report = json.loads((BLANK_RUNS_DIR / filename).read_text())
+@pytest.mark.parametrize("agent", IMPLEMENTATION_AGENTS)
+def test_blank_agent_transcript_fails_behavior_score(agent: str) -> None:
+    spec = next(entry for entry in load_evals()["evals"] if entry["agent"] == agent)
+    report = load_blank_run(agent)
     result = score_behavior(report, spec)
-    assert not result.ok, f"blank agent unexpectedly passed {eval_id}"
+    assert not result.ok, f"blank agent unexpectedly passed {spec['id']}"
 
 
 def test_implementation_scorer_fails_when_a_must_find_is_removed() -> None:
@@ -99,11 +93,20 @@ def test_parse_report_reads_fenced_json() -> None:
 
 
 def test_evals_path_is_the_committed_suite() -> None:
-    assert EVALS_PATH.is_file()
-    raw = json.loads(EVALS_PATH.read_text())
-    assert raw["suite"] == "implementation-agents"
-    assert (GOLDENS_DIR / "python_coder.json").is_file()
+    for agent in IMPLEMENTATION_AGENTS:
+        path = evals_path(agent)
+        assert path.is_file(), path
+        raw = json.loads(path.read_text())
+        assert raw["agent"] == agent
+        assert (evals_root(agent) / "goldens" / f"{agent}.json").is_file()
+    assert load_evals()["suite"] == "implementation-agents"
 
 
 def test_report_blob_is_lowercased() -> None:
     assert "tax_rate" in report_blob({"changes": [{"rationale": "TAX_RATE after discount"}]})
+
+
+def test_old_eval_roots_are_gone() -> None:
+    repo = Path(__file__).resolve().parents[1]
+    assert not (repo / "tests" / "evals").exists()
+    assert not (repo / "evals").exists()

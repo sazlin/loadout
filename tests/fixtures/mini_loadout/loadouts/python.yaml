@@ -5,4 +5,4 @@ extends:
 rules:
   - src: rules/python/b.mdc
 agents:
-  - src: agents/demo_agent.md
+  - src: agents/demo_agent/demo_agent.md

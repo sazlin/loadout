@@ -13,8 +13,8 @@ description: >-
 Prove an eval **fails a blank general-purpose reviewer** and **passes the
 named custom agent** on behavior. Identity checks are not differentiation.
 
-Repo-local copy (like `skill-security-check`). Also vendored as
-`skills/refining-evals` on the `agents` loadout.
+Vendored on the `agents` loadout. Use when proving a specialist eval
+fails a blank general-purpose reviewer and still passes the named custom agent.
 
 ## Overview
 
@@ -35,7 +35,7 @@ full score. Identity fails do not count.
 
 ## When to use
 
-- Writing or tightening review-agent evals (`tests/evals/review_agents/`)
+- Writing or tightening agent evals (`agents/<name>/evals/`)
 - A blank `generalPurpose` subagent also **passes** `score_behavior`
 - A blank **fails** only by synonym miss (`PascalCase` vs `camel`,
   `release` vs `drain`)
@@ -50,14 +50,14 @@ full score. Identity fails do not count.
 
 ## Protocol
 
-**Custom / specialist (or golden):** named agent, follows `agents/*.md`,
+**Custom / specialist (or golden):** named agent, follows `agents/<name>/<name>.md`,
 gets the fixture. Must **pass** the full scorer.
 
 **Blank:** `generalPurpose` only. Same fixture. Generic JSON schema so
-output is scoreable. Blank must not read `agents/*.md`. **Neither**
+output is scoreable. Blank must not read `agents/<name>/<name>.md`. **Neither**
 blank nor custom eval subject may read `evals.json`, `goldens/`,
 `blank_runs/`, or `ralph-loop.md`. The custom agent **does** read its
-own `agents/<name>.md`.
+own `agents/<name>/<name>.md`.
 
 Run **all** blanks in parallel for the first baseline. Ralph **one eval
 per loop** after that — do not retune every spec from one blank's wording.
@@ -68,7 +68,7 @@ per loop** after that — do not retune every spec from one blank's wording.
 You are a general-purpose code reviewer. Review only:
 <FIXTURE_PATH>
 
-Do not read agents/, tests/evals/review_agents/evals.json, goldens/,
+Do not read agents/, agents/<name>/evals/evals.json, goldens/,
 blank_runs/, or ralph-loop.md.
 
 Return JSON with an "issues" array. Each issue: id, title, severity,
@@ -133,11 +133,11 @@ One eval per loop.
    `score_behavior`.
 5. Re-score custom / golden — must **PASS**. If the fixture or spec
    changed, **re-run the live custom agent**, not only the golden.
-6. Log the iteration in `tests/evals/review_agents/ralph-loop.md`
+6. Log the iteration in `agents/<name>/evals/ralph-loop.md`
    (what failed, what changed, keep vs throw out).
 
 After a keep: freeze the blank JSON under
-`tests/evals/review_agents/blank_runs/` and assert
+`agents/<name>/evals/blank_runs/` and assert
 `test_blank_agent_transcript_fails_behavior_score` (or equivalent)
 fails `score_behavior`.
 
