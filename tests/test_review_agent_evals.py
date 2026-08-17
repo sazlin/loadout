@@ -16,11 +16,12 @@ if str(_TESTS) not in sys.path:
     sys.path.insert(0, str(_TESTS))
 
 from review_eval_score import (
-    BLANK_RUNS_DIR,
-    EVALS_PATH,
-    EVALS_ROOT,
-    GOLDENS_DIR,
+    AGENTS_DIR,
+    REVIEW_AGENTS,
     eval_by_id,
+    evals_path,
+    evals_root,
+    load_blank_run,
     load_evals,
     load_golden,
     parse_report,
@@ -83,6 +84,10 @@ REVIEWER_NAMES = (
 )
 
 
+def _agent_file(filename: str) -> Path:
+    return AGENTS / Path(filename).stem / filename
+
+
 def _tools(meta: AgentMeta) -> set[str]:
     tools = meta.tools
     if isinstance(tools, list):
@@ -98,7 +103,7 @@ def issue_blob_safe(issue: dict[str, object]) -> str:
 
 
 def test_every_agent_file_is_classified() -> None:
-    on_disk = {path.name for path in AGENTS.glob("*.md") if not path.name.startswith("_")}
+    on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
     classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}
     assert on_disk == classified
     assert (AGENTS / "_agent_template.md").is_file()
@@ -107,13 +112,13 @@ def test_every_agent_file_is_classified() -> None:
 def test_base_loadout_includes_dimensional_review_agents() -> None:
     loadout = load_loadout(REPO / "loadouts" / "base.yaml")
     srcs = {entry["src"] for entry in loadout.agents}
-    expected = {f"agents/{name}" for name in REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}}
+    expected = {f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}}
     assert expected <= srcs
 
 
 @pytest.mark.parametrize("filename", sorted(REVIEW_DIMENSION_AGENTS))
 def test_dimension_reviewer_is_readonly_and_schema_complete(filename: str) -> None:
-    path = AGENTS / filename
+    path = _agent_file(filename)
     text = path.read_text()
     meta = parse_agent_md(path, text, file_stem=path.stem)
     assert meta.readonly is True
@@ -132,7 +137,7 @@ def test_dimension_reviewer_is_readonly_and_schema_complete(filename: str) -> No
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_work_items() -> None:
-    path = AGENTS / REVIEW_ORCHESTRATOR
+    path = _agent_file(REVIEW_ORCHESTRATOR)
     text = path.read_text()
     meta = parse_agent_md(path, text, file_stem=path.stem)
     assert meta.readonly is not True
@@ -158,8 +163,9 @@ def test_evals_json_files_exist_and_cover_each_review_agent() -> None:
     assert agents == set(REVIEWER_NAMES) | {"review_orchestrator"}
     for entry in suite["evals"]:
         assert entry["must_find"] if entry["agent"] != "review_orchestrator" else entry["expected_groups"]
+        agent_root = AGENTS_DIR / entry["agent"]
         for relative in entry["files"]:
-            assert (EVALS_ROOT / relative).is_file(), relative
+            assert (agent_root / relative).is_file(), relative
 
 
 @pytest.mark.parametrize(
@@ -178,21 +184,12 @@ def test_golden_dimension_report_passes_eval(eval_id: str) -> None:
     assert result.ok, result.failures
 
 
-@pytest.mark.parametrize(
-    ("eval_id", "filename"),
-    [
-        ("review-correctness-order-service", "review_correctness.json"),
-        ("review-maintainability-report-builder", "review_maintainability.json"),
-        ("review-scale-fanout-worker", "review_scale.json"),
-        ("review-security-user-api", "review_security.json"),
-        ("review-orchestrator-group-findings", "review_orchestrator.json"),
-    ],
-)
-def test_blank_agent_transcript_fails_behavior_score(eval_id: str, filename: str) -> None:
-    spec = eval_by_id(eval_id)
-    report = json.loads((BLANK_RUNS_DIR / filename).read_text())
+@pytest.mark.parametrize("agent", list(REVIEW_AGENTS))
+def test_blank_agent_transcript_fails_behavior_score(agent: str) -> None:
+    spec = next(entry for entry in load_evals()["evals"] if entry["agent"] == agent)
+    report = load_blank_run(agent)
     result = score_behavior(report, spec)
-    assert not result.ok, f"blank agent unexpectedly passed {eval_id}"
+    assert not result.ok, f"blank agent unexpectedly passed {spec['id']}"
 
 
 def test_golden_orchestrator_report_matches_expected_groups() -> None:
@@ -265,7 +262,10 @@ def test_parse_report_reads_fenced_json() -> None:
 
 
 def test_evals_path_is_the_committed_suite() -> None:
-    assert EVALS_PATH.is_file()
-    assert (GOLDENS_DIR / "review_orchestrator.json").is_file()
-    raw = json.loads(EVALS_PATH.read_text())
-    assert raw["suite"] == "dimensional-review-agents"
+    for agent in REVIEW_AGENTS:
+        path = evals_path(agent)
+        assert path.is_file(), path
+        raw = json.loads(path.read_text())
+        assert raw["agent"] == agent
+        assert (evals_root(agent) / "goldens" / f"{agent}.json").is_file()
+    assert load_evals()["suite"] == "dimensional-review-agents"

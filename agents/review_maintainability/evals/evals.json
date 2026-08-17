@@ -1,0 +1,59 @@
+{
+  "agent": "review_maintainability",
+  "evals": [
+    {
+      "id": "review-maintainability-report-builder",
+      "agent": "review_maintainability",
+      "prompt": "You are review_maintainability. Follow agents/review_maintainability/review_maintainability.md. Review only agents/review_maintainability/evals/files/report_builder.py. Do not edit files. Return the JSON issue schema.",
+      "files": [
+        "evals/files/report_builder.py"
+      ],
+      "expected_output": "JSON issue list for readability and style defects only",
+      "expectations": [
+        "Reports BuildReport camelCase vs local snake_case",
+        "Reports opaque names (data, tmp, x)",
+        "Reports comments that restate the next line",
+        "Reports the mixed-concern long function",
+        "Does not file the SQL string as an injection finding"
+      ],
+      "must_find": [
+        {
+          "id": "camel-case",
+          "keywords": [
+            "buildreport",
+            "camel"
+          ]
+        },
+        {
+          "id": "opaque-names",
+          "keywords": [
+            "data",
+            "tmp"
+          ]
+        },
+        {
+          "id": "restating-comments",
+          "keywords": [
+            "comment",
+            "restate"
+          ]
+        },
+        {
+          "id": "mixed-concerns",
+          "keywords": [
+            "function",
+            "concern"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "sql-injection",
+          "keywords": [
+            "sql"
+          ]
+        }
+      ]
+    }
+  ]
+}

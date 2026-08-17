@@ -1,0 +1,54 @@
+{
+  "agent": "review_orchestrator",
+  "evals": [
+    {
+      "id": "review-orchestrator-group-findings",
+      "agent": "review_orchestrator",
+      "prompt": "You are review_orchestrator. The four reviewers already returned JSON in agents/review_orchestrator/evals/files/reviewer_findings.json. Do not re-review source. Dedupe, group 1-3 similar issues per work item, and emit the orchestrator JSON schema (paths may be planned; this eval scores the JSON).",
+      "files": [
+        "evals/files/reviewer_findings.json"
+      ],
+      "expected_output": "Orchestrator JSON with deduped 1-3-issue work items",
+      "expectations": [
+        "Drops C-003 as a duplicate of SEC-001",
+        "Groups the two PII leaks together",
+        "Groups the two maintainability issues together",
+        "Groups the timeout and swallowed-error scale issues together",
+        "Never puts more than 3 issues in a work item",
+        "Every surviving issue appears in exactly one work item"
+      ],
+      "expected_dropped": [
+        {
+          "kept": "SEC-001",
+          "dropped": "C-003"
+        }
+      ],
+      "expected_groups": [
+        [
+          "SEC-001"
+        ],
+        [
+          "SEC-002",
+          "SEC-003"
+        ],
+        [
+          "C-001"
+        ],
+        [
+          "C-002"
+        ],
+        [
+          "M-001",
+          "M-002"
+        ],
+        [
+          "R-001"
+        ],
+        [
+          "R-002",
+          "R-003"
+        ]
+      ]
+    }
+  ]
+}

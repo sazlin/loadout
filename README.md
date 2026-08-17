@@ -157,17 +157,20 @@ Compose freely — for example `base,python-monorepo,terraform` or `base,typescr
 
 ## Agents
 
-Custom subagents live as markdown files under `agents/`. Sync copies each
-selected file once to `.claude/agents/` (Cursor compatibility path and Claude
-Code's project agents directory). A loadout lists the agents it ships; files
-are not auto-discovered.
+Custom subagents live under `agents/<name>/`, with the definition at
+`agents/<name>/<name>.md` and evals at `agents/<name>/evals/`. Sync copies each
+selected definition once to `.claude/agents/<name>.md` (Cursor compatibility
+path and Claude Code's project agents directory). A loadout lists the agents it
+ships; files are not auto-discovered. Agent `evals/` stays in this repo and is
+not vendored.
 
 **Authoring.** Copy [`agents/_agent_template.md`](agents/_agent_template.md) to
-`agents/<name>.md` (no leading underscore) and fill every section. The Cursor
-rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
-(globs `agents/**/*.md`, shipped on `base`) requires that template for new
+`agents/<name>/<name>.md` (no leading underscore) and fill every section. The
+Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
+(globs `agents/*/*.md`, shipped on `base`) requires that template for new
 agents and for imported ones. Underscore-prefixed files are templates or notes,
-not agents: lint, orphan checks, and sync skip them.
+not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
+is not an agent.
 
 **Two families.**
 
@@ -179,13 +182,12 @@ not agents: lint, orphan checks, and sync skip them.
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.
 
-**Evals.** Review-agent fixtures and goldens live in
-[`tests/evals/review_agents/`](tests/evals/review_agents/). Implementation-agent
-evals live in
-[`tests/evals/implementation_agents/`](tests/evals/implementation_agents/).
-Both suites freeze a blank `generalPurpose` transcript that must fail
-`score_behavior` and a custom-agent golden that must pass the full scorer.
-Use the `refining-evals` skill when tightening those splits.
+**Evals.** Each agent's fixtures, goldens, blank transcripts, and `evals.json`
+live in [`agents/<name>/evals/`](agents/). Pytest scorers in `tests/` load those
+files. A blank `generalPurpose` transcript must fail `score_behavior`; the
+custom-agent golden must pass the full scorer. Davinci also has a live
+simplification harness under [`agents/davinci/evals/`](agents/davinci/evals/).
+Use the `refining-evals` skill when tightening keyword splits.
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci and the review pack) and adds
@@ -280,8 +282,7 @@ vendored on the `agents` loadout; see [Agents](#agents).
 
 - [loadout-spec.md](loadout-spec.md) — full specification (agents: section 5.10)
 - [agents/_agent_template.md](agents/_agent_template.md) — authoring skeleton
-- [tests/evals/review_agents/](tests/evals/review_agents/) — dimensional review evals
-- [tests/evals/implementation_agents/](tests/evals/implementation_agents/) — implementation-agent evals
+- [agents/](agents/) — agent definitions plus colocated `evals/`
 - [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract
 - [CHANGELOG.md](CHANGELOG.md) — release notes
 

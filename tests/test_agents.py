@@ -38,5 +38,5 @@ def test_sync_writes_agent_under_claude_agents(project: Path) -> None:
     text = agent.read_text()
     assert "name: demo_agent" in text
     assert "loadout.managed:" in text
-    assert "loadout.source: agents/demo_agent.md" in text
+    assert "loadout.source: agents/demo_agent/demo_agent.md" in text
     assert not (project / ".cursor/agents").exists()

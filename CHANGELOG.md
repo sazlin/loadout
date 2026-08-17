@@ -2,14 +2,19 @@
 
 ## Unreleased
 
+- Nest each agent under `agents/<name>/` with definition `agents/<name>/<name>.md`
+  and colocated `evals/` (keyword fixtures, goldens, blank runs, and davinci's
+  live harness). Remove `tests/evals/` and top-level `evals/`. Sync still
+  vendors only the markdown definition to `.claude/agents/<name>.md`.
+
 - Add `agents/_agent_template.md` as the authoring skeleton. Underscore-prefixed
   files under `agents/` are not agents (lint, orphan checks, and sync skip them).
-- Add `rules/agents/agent-authoring.mdc` (globs `agents/**/*.md`) so new and
+- Add `rules/agents/agent-authoring.mdc` (globs `agents/*/*.md`) so new and
   imported agents follow the template. Included in the `base` loadout.
 - Align `davinci` and `e2e_test_generator` output-schema closers with the
   template; assert every agent file uses the template heading order.
 - Add implementation-agent evals for `python_coder`, `davinci`, and
-  `e2e_test_generator` under `tests/evals/implementation_agents/`, with
+  `e2e_test_generator` under `agents/<name>/evals/`, with
   frozen blank transcripts that fail `score_behavior`.
 - Document how agents are organized in the README (template, loadouts, evals).
 
@@ -18,12 +23,12 @@
   `review_orchestrator` to the `base` loadout. The orchestrator launches the
   four reviewers in parallel, dedupes findings, and writes 1–3-issue markdown
   work items for a later fix subagent.
-- Add eval fixtures and a scorer under `tests/evals/review_agents/` so each
+- Add eval fixtures and a scorer under `agents/<name>/evals/` so each
   reviewer's core checks (and the orchestrator's grouping rules) can be
   verified without implementing the fixes.
 - Tighten review-agent evals so a blank general-purpose reviewer fails
   `score_behavior` (out-of-dimension bait) while custom-agent goldens still
-  pass. Frozen blank transcripts live in `tests/evals/review_agents/blank_runs/`.
+  pass. Frozen blank transcripts live in `agents/<name>/evals/blank_runs/`.
 - Add repo-local skill `.claude/skills/refining-evals` for proving an eval
   fails a blank reviewer and passes the custom agent (Ralph loop, max 5).
 - Vendor `skills/refining-evals` and attach it to the `agents` loadout.

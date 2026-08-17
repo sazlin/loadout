@@ -1,6 +1,6 @@
 # Agent template
 
-Copy this file to `agents/<name>.md` (no leading underscore). Fill every
+Copy this file to `agents/<name>/<name>.md` (no leading underscore). Fill every
 section. `name` in frontmatter must equal the file stem. Do not sync this
 template; underscore-prefixed files under `agents/` are not agents.
 

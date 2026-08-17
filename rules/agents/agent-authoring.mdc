@@ -3,7 +3,8 @@ description: >-
   Author and import agents from agents/_agent_template.md. Applies only when
   working on files under agents/.
 globs:
-  - agents/**/*.md
+  - agents/*/*.md
+  - agents/_agent_template.md
 ---
 
 # Agent authoring
@@ -12,7 +13,7 @@ This rule applies only while creating or editing files under `agents/`.
 
 ## New agents
 
-Copy `agents/_agent_template.md` to `agents/<name>.md` (no leading
+Copy `agents/_agent_template.md` to `agents/<name>/<name>.md` (no leading
 underscore). Fill every template section before merge. Do not invent a
 different heading set or omit the JSON output schema.
 
@@ -46,6 +47,6 @@ layout or a prose-only agent.
 ## Not an agent
 
 Files whose names start with `_` (including `_agent_template.md`) are
-templates or notes. Do not add them to a loadout `agents:` list, do not
-sync them to `.claude/agents/`, and do not treat them as dispatchable
-subagents.
+templates or notes. Markdown under `evals/` is eval infrastructure.
+Do not add either to a loadout `agents:` list, do not sync them to
+`.claude/agents/`, and do not treat them as dispatchable subagents.

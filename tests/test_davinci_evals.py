@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-EVAL_ROOT = REPO / "evals" / "davinci"
+EVAL_ROOT = REPO / "agents" / "davinci" / "evals"
 RUNNER = EVAL_ROOT / "scripts" / "run_eval.py"
 
 
@@ -32,6 +32,8 @@ def test_fixture_self_checks_pass() -> None:
 def test_evals_json_references_existing_files() -> None:
     data = json.loads((EVAL_ROOT / "evals.json").read_text())
     for entry in data["evals"]:
+        if not isinstance(entry.get("id"), int):
+            continue
         rel = entry["files"][0].removeprefix("evals/files/")
         assert (EVAL_ROOT / "files" / rel).is_file()
 

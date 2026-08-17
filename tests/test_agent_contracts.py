@@ -67,7 +67,7 @@ def assert_agent_contract(path: Path) -> None:
     ],
 )
 def test_production_agent_best_practices_contract(filename: str) -> None:
-    assert_agent_contract(AGENTS / filename)
+    assert_agent_contract(AGENTS / Path(filename).stem / filename)
 
 
 def _template_headings_in_order(text: str) -> list[str]:
@@ -75,7 +75,7 @@ def _template_headings_in_order(text: str) -> list[str]:
 
 
 def test_every_agent_follows_template_heading_order() -> None:
-    for path in sorted(AGENTS.glob("*.md")):
+    for path in sorted(AGENTS.glob("*/*.md")):
         if path.name.startswith("_"):
             continue
         assert _template_headings_in_order(path.read_text()) == REQUIRED_HEADINGS, path.name

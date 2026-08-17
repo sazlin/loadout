@@ -66,10 +66,13 @@ description: Use <dangerous> syntax.
 
 
 def test_is_agent_definition_skips_underscore_prefixed_markdown() -> None:
+    assert is_agent_definition(Path("agents/python_coder/python_coder.md"))
     assert is_agent_definition(Path("agents/python_coder.md"))
     assert not is_agent_definition(Path("agents/_agent_template.md"))
     assert not is_agent_definition(Path("agents/_notes.txt"))
     assert not is_agent_definition(Path("agents/readme.txt"))
+    assert not is_agent_definition(Path("agents/python_coder/evals/ralph-loop.md"))
+    assert not is_agent_definition(Path("agents/python_coder/notes.md"))
 
 
 def test_parse_rule_rejects_missing_description() -> None:

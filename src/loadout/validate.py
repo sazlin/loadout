@@ -73,7 +73,7 @@ def _validate_agent(file: ResolvedFile, source_path: Path, agents_dir: str) -> N
     if len(source_parts) < 2 or source_parts[0] != "agents" or not file.src.endswith(".md"):
         raise ValidationError(f"Agent source must be a markdown file under agents/: {file.src}")
     if not is_agent_definition(source_path):
-        raise ValidationError(f"Underscore-prefixed files are not agents: {file.src}")
+        raise ValidationError(f"Not an agent definition: {file.src}")
 
     dest = PurePosixPath(file.dest)
     agents_dir_parts = PurePosixPath(agents_dir).parts
