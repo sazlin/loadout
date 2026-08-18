@@ -4,10 +4,11 @@
 
 - Restore the verifier eval `bad.ts` fixture (generic identity, no `any`)
   so project `VERIFIERS.md` passes without a filename workaround. Add a
-  second claim that files are not renamed or retyped to bypass checks.
+  second claim that files are not renamed or given a different extension
+  to bypass checks.
 - Add `rules/core/honor-check-intent.mdc` to `pr_review`: do not rename,
-  retype, or move a file to work around a failing rule, verifier, test, or
-  CI check when a legitimate fix exists.
+  change a file extension, or move a file to work around a failing rule,
+  verifier, test, or CI check when a legitimate fix exists.
 
 - Dogfood `base` and `pr_review` on this repo (`.loadout.yaml` pins `v0.7.0`)
   and vendor the synced agents, skills, rules, hooks, and MCP configs.

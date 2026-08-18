@@ -39,8 +39,8 @@ def test_verifiers_md_forbids_any_and_check_workarounds() -> None:
     ]
     assert "no use of any in TypeScript files" in lines
     assert (
-        "files were not renamed or their types changed to work around or "
-        "bypass verifiers, rules, evals, or other CI checks"
+        "files were not renamed or given a different extension to bypass "
+        "verifiers, rules, evals, or other CI checks"
     ) in lines
 
 
