@@ -4,11 +4,11 @@
     {
       "id": "verifier-any-claim-false",
       "agent": "verifier",
-      "prompt": "You are verifier. Follow agents/verifier/verifier.md. Judge each claim in agents/verifier/evals/files/VERIFIERS.md against agents/verifier/evals/files/widget.ts and agents/verifier/evals/files/bad.ts. Check claims individually in order. Do not edit files. Return the JSON schema.",
+      "prompt": "You are verifier. Follow agents/verifier/verifier.md. Judge each claim in agents/verifier/evals/files/VERIFIERS.md against agents/verifier/evals/files/widget.ts and agents/verifier/evals/files/bad.ts.txt. Check claims individually in order. Do not edit files. Return the JSON schema.",
       "files": [
         "evals/files/VERIFIERS.md",
         "evals/files/widget.ts",
-        "evals/files/bad.ts"
+        "evals/files/bad.ts.txt"
       ],
       "expected_output": "JSON claims list with any/TypeScript false and eval true",
       "expectations": [

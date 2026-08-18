@@ -3,8 +3,8 @@
   "agent": "verifier",
   "charter": "Evaluate each VERIFIERS.md claim individually as true or false.",
   "inputs": {
-    "summary": "Judge two verifier claims against widget.ts and bad.ts.",
-    "paths": ["evals/files/widget.ts", "evals/files/bad.ts"],
+    "summary": "Judge two verifier claims against widget.ts and bad.ts.txt.",
+    "paths": ["evals/files/widget.ts", "evals/files/bad.ts.txt"],
     "verifiers_path": "evals/files/VERIFIERS.md"
   },
   "claims": [
@@ -16,7 +16,7 @@
       "id": "V-001",
       "title": "TypeScript files use any",
       "severity": "important",
-      "file": "evals/files/bad.ts",
+      "file": "evals/files/bad.ts.txt",
       "line": 1,
       "symbol": "f",
       "whats_wrong": "Parameter and return type are any, so the TypeScript any claim is false.",
