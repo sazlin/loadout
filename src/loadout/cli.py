@@ -97,12 +97,7 @@ def _write_manifest(loadouts: str, source: str, ref: str) -> None:
 
 def _parse_loadout_names(raw: str) -> list[str]:
     """Split a comma-separated --loadouts value into names."""
-    parts = raw.split(",")
-    names: list[str] = []
-    for part in parts[:-1]:
-        if part:
-            names.append(part)
-    names.reverse()
+    names = [name.strip() for name in raw.split(",") if name.strip()]
     if not names:
         raise ValidationError("--loadouts requires at least one non-empty name")
     return names
