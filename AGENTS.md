@@ -36,3 +36,30 @@ full details.
   auto-installed; run `uv run pre-commit run --all-files` if you want the ruff
   and pyrefly hooks. CI (`.github/workflows/ci.yml`) runs `uv sync --all-extras`
   then `just lint && just test`, plus a `typecheck` job (`uv run pyrefly check`).
+
+<!-- BEGIN LOADOUT: agent-rules (generated, do not edit) -->
+## Agent Rules
+
+This project's coding rules live as individual files under `.cursor/rules/`. Cursor loads
+them automatically based on the scopes below. Other agents do not, so you have to load them
+yourself.
+
+Before editing files that match a rule's scope, read that rule file and follow it. These are
+binding project conventions, not suggestions. Rules scoped `Always` apply to all work in this
+repo, so read them at the start of a session.
+
+| Rule | Scope | What it covers |
+| --- | --- | --- |
+| `.cursor/rules/colocated-evals.mdc` | Always | Keep agent and skill eval fixtures next to the artifact they test. Applies when adding or moving evals. |
+| `.cursor/rules/commit-style.mdc` | Always | Write focused, reviewable commits with clear intent. |
+| `.cursor/rules/repo-conventions.mdc` | Always | Preserve repository conventions and verify scoped changes. |
+| `.cursor/rules/agent-authoring.mdc` | `agents/*/*.md`, `agents/_agent_template.md` | Author and import agents from agents/_agent_template.md. Applies only when working on files under agents/. |
+| `.cursor/rules/pytest.mdc` | `**/test_*.py`, `**/*_test.py`, `tests/**/*.py` | Write reliable, focused pytest coverage for Python behavior. |
+| `.cursor/rules/python-code-style.mdc` | `**/*.py`, `**/*.pyi` | Write simple, readable, maintainable Python that a reviewer can quickly read and understand in one pass. |
+
+Skills are installed at `.claude/skills/`, which both Cursor and Claude Code load
+automatically. You do not need to read those manually.
+
+Managed by [loadout](https://github.com/sazlin/loadout). Run `just loadout-sync` to regenerate.
+Edits inside this block are overwritten.
+<!-- END LOADOUT: agent-rules -->

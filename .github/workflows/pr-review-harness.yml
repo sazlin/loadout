@@ -1,0 +1,59 @@
+name: PR review harness
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dispatch-orchestrator:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Launch review_orchestrator on this pull request
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO_URL: ${{ github.event.repository.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CURSOR_API_KEY}" ]]; then
+            echo "CURSOR_API_KEY is not set; skipping review_orchestrator dispatch." >&2
+            echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
+            exit 0
+          fi
+          prompt="$(cat <<EOF
+          You are review_orchestrator. Follow .claude/agents/review_orchestrator.md and the pr_review skills.
+
+          This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}).
+
+          Run the full PR-review harness on this existing PR:
+          1. Dispatch the four dimensional reviewers in parallel (dispatch-panel-review).
+          2. Dedupe into TASKS_TO_RESOLVE.md and resolve tasks with issue_resolver (commit and push to this PR branch only).
+          3. Repeat panel review until no significant issues remain, max 3 panel loops.
+          4. Dispatch verifiers sequentially from VERIFIERS.md (missing file = empty list), max 3 verify loops.
+          5. Dispatch risk_classifier. It classifies the diff. If low risk and required checks are green, squash-merge with gh pr merge --squash. Never pass --admin.
+
+          Work on the current PR branch (do not open a second PR). Do not rewrite git history.
+          EOF
+          )"
+          body="$(jq -n \
+            --arg prompt "$prompt" \
+            --arg pr "$PR_URL" \
+            --arg repo "$REPO_URL" \
+            '{
+              name: "PR review harness",
+              prompt: {text: $prompt},
+              repos: [{url: $repo, prUrl: $pr}],
+              workOnCurrentBranch: true,
+              autoCreatePR: false
+            }')"
+          curl --fail-with-body --request POST \
+            --url https://api.cursor.com/v1/agents \
+            -u "${CURSOR_API_KEY}:" \
+            --header 'Content-Type: application/json' \
+            --data "$body"

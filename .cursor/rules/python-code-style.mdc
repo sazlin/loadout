@@ -1,0 +1,134 @@
+---
+description: Write simple, readable, maintainable Python that a reviewer can quickly
+  read and understand in one pass.
+globs:
+- '**/*.py'
+- '**/*.pyi'
+metadata:
+  loadout.managed: 'true'
+  loadout.source: rules/python/python-code-style.mdc
+  loadout.sha: 8dad2b6
+---
+
+# Python code style
+
+Optimize every change for the next reader. Prefer the boring solution that is obviously correct over the clever one that needs explaining.
+
+## Default posture
+
+- Solve only the problem in front of you. Do not add configuration, hooks, or extension points for hypothetical future needs.
+- Prefer straight-line procedural code and plain functions. Introduce a class only for real state or a required
+  protocol, and inheritance only for a genuine is-a relationship.
+- Reach for the standard library before a third-party dependency, and for an existing helper in the repo before a new one.
+- Duplicate a few lines rather than build an abstraction over two dissimilar call sites. Wait for the third real case.
+- Delete dead code, unused parameters, and commented-out blocks instead of leaving them.
+
+## Structure and flow
+
+- Keep functions short and single-purpose: under 30 lines and doing one thing that the name fully describes.
+- Return early with guard clauses; do not nest the happy path inside conditionals.
+- Keep nesting to three levels or less. Extract a named helper when you need a fourth.
+- Keep positional parameters to at most four. Beyond that, pass a dataclass or use keyword-only arguments (`def f(*, retries: int, timeout: float)`).
+- Prefer pure functions that take inputs and return values. Isolate I/O, network calls, and global state at the edges so
+  the core logic is trivially testable.
+- Never mutate an argument the caller still owns unless the function name suggests that is expected.
+- Put imports at the top of the module, grouped stdlib / third-party / local, and avoid wildcard imports.
+- Keep module import side effects to constants and definitions; put work behind functions and an `if __name__ == "__main__":` guard.
+- Be DRY: Don't Repeat Yourself. Use functions to invoke the same code in 2 or more places.
+- Use constants at module scope for any literals that are repeated 2 or more times.
+
+```python
+# Prefer
+ZERO = Decimal(0)
+
+
+def price_for(order: Order) -> Decimal:
+    if not order.items:
+        return ZERO
+    if order.is_comped:
+        return ZERO
+    return sum(item.price for item in order.items)
+
+
+# Avoid
+def price_for(order):
+    if order.items:
+        if not order.is_comped:
+            return sum([i.price for i in order.items])
+        else:
+            return 0
+    else:
+        return 0
+```
+
+## Naming
+
+- Use `snake_case` for functions and variables, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants; prefix
+  internal helpers with a single underscore.
+- Name things after intent and domain meaning, not type or implementation: `retry_count`, not `num`; `active_users`, not
+  `list2`.
+- Use verb phrases for functions (`load_config`, `is_expired`) and nouns for values.
+- Reserve one-letter names for tight, conventional scopes (`i`, `x`, `_`). Spell out everything else and avoid invented
+  abbreviations.
+- Replace magic numbers and repeated literals with named module-level constants.
+
+## Types and data
+
+- Annotate every public function's parameters and return type. Annotate locals only when the type is genuinely unclear.
+- Use modern syntax: `list[str]`, `dict[str, int]`, `str | None`. Avoid `Any` and bare `# type: ignore`; if you must use
+  one, say why in a comment.
+- Model structured data with `@dataclass` (add `frozen=True` when it should not change) or a `NamedTuple`, rather than
+  passing dicts or tuples of positional meaning.
+- Use `enum.Enum` for a closed set of values instead of bare strings.
+- Never use a mutable default argument; use `None` and create the value inside the function.
+- Choose the right container: `set` for membership, `dict` for lookup, `collections.Counter` and `defaultdict` for
+  tallies and grouping.
+
+## Idioms worth using
+
+- Iterate directly over items; use `enumerate` and `zip` instead of index arithmetic.
+- Use a comprehension when it stays on one readable line with at most one condition; use an explicit loop otherwise.
+  Never use a comprehension purely for side effects.
+- Use `pathlib.Path` for filesystem paths and f-strings for interpolation.
+- Use `with` for anything that must be closed or released, and `contextlib` helpers instead of hand-rolled try/finally.
+- Prefer generators and `yield` for large or streaming sequences instead of building full lists in memory.
+- Compare with `is None`, test emptiness with `if not items`, and let truthiness read naturally.
+
+## Errors and logging
+
+- Validate inputs and fail fast with a specific exception and a message naming the offending value.
+- Catch the narrowest exception that can actually occur; never use bare `except:` and never swallow an error with a
+  silent `pass`.
+- Raise domain-meaningful exceptions rather than returning sentinel values or `None` on failure. Use
+  `raise ... from err` to preserve the cause.
+- Keep `try` blocks down to the statement that can fail.
+- Use the `logging` module in library and application code; reserve `print` for CLI output.
+- Never log or embed secrets, tokens, or credentials.
+
+## Comments and docstrings
+
+- Write a one-line docstring for every public module, class, and function stating what it does and, where useful, what
+  it returns or raises. Skip docstrings on obvious private helpers.
+- Comment only what the code cannot say: a non-obvious constraint, a trade-off, a workaround and its reason. Do not
+  narrate the next line.
+- Never leave comments that describe the change or the review (`# fixed bug`, `# new code`).
+- Fix stale comments when you touch the code they describe.
+
+## Unit Tests
+
+- Cover the observable behavior of new code, plus edge cases and the error paths you raise.
+- One behavior per test, with a name that states the expectation.
+- Arrange-act-assert, no logic in tests, and assert on outputs and side effects rather than internals.
+- Mock all IO to keep unit tests fast, deterministic, and to prevent side-effects in live systems. Create helpers and fixtures as needed to facilitate this.
+
+## Tooling
+
+- Match the repository's formatter and linter configuration (typically `ruff format` and `ruff check`) instead of
+  hand-formatting or arguing style in review.
+- Run the formatter, linter, type checker, and relevant tests before handing work off.
+
+## Avoid
+
+Metaclasses, `__getattr__` dispatch tricks, patching library internals at runtime, `eval`/`exec`, deep `**kwargs`
+pass-through chains, mutable module-level state, star imports, nested ternaries and walrus chains that pack several
+ideas into one line, and single-use indirection layers. Each one trades a few characters for real reader effort.
