@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.7.0
+
 - Add standalone `pr_review` loadout: move dimensional review agents off
   `base`, rewrite `review_orchestrator` as a Review → Verification → Decision
   loop, and add `issue_resolver`, `verifier`, and `risk_classifier`. Skills:
