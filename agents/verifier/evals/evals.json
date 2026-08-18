@@ -10,17 +10,18 @@
         "evals/files/widget.ts",
         "evals/files/bad.ts.txt"
       ],
-      "expected_output": "JSON claims list with any/TypeScript false and eval true",
+      "expected_output": "JSON claims list with eval true, any/TypeScript true, and debugger false",
       "expectations": [
         "Marks no-eval as true",
-        "Marks no-any-in-TypeScript as false",
-        "Files an issue for the any claim",
+        "Marks no-any-in-TypeScript as true",
+        "Marks no-debugger as false",
+        "Files an issue for the debugger claim",
         "Does not skip the second claim"
       ],
       "must_find": [
         {
-          "id": "any-in-typescript",
-          "keywords": ["any", "typescript"]
+          "id": "debugger-used",
+          "keywords": ["debugger"]
         }
       ],
       "must_not_find": [
