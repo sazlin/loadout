@@ -33,7 +33,7 @@ def test_ci_matrix_includes_pr_review() -> None:
     assert "pr_review" in text
 
 
-def test_verifiers_md_forbids_any_and_check_workarounds() -> None:
+def test_verifiers_md_contains_required_claims() -> None:
     lines = [
         line for line in (REPO / "VERIFIERS.md").read_text().splitlines() if line.strip() and not line.startswith("#")
     ]
