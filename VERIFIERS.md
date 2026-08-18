@@ -1,1 +1,1 @@
-'any' is not used anywhere in Typescript files
+no use of any in TypeScript files
