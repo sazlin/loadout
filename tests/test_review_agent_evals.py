@@ -139,6 +139,9 @@ def test_pr_review_loadout_includes_harness_agents_and_skills() -> None:
         "skills/log-progress",
         "skills/dispatch-verifiers",
     }
+    assert {entry["src"] for entry in loadout.rules} == {
+        "rules/core/honor-check-intent.mdc",
+    }
 
 
 @pytest.mark.parametrize("filename", sorted(REVIEW_DIMENSION_AGENTS))

@@ -1,0 +1,20 @@
+---
+description: >-
+  Do not rename, change a file extension, or move files to bypass a failing
+  check. Honor the intent of the rule, verifier, test, or CI check. Applies
+  to all work.
+alwaysApply: true
+---
+
+# Honor check intent
+
+Never rename a file, change its file extension, or move it just to work around
+a rule, verifier, test, eval, or other check when a legitimate fix exists.
+
+- If a verifier, rule, test, or CI check fails, fix the underlying issue.
+  Honor the intent of the failing check, not only its glob or filename.
+- Do not rename `foo.ts` to `foo.ts.txt`, change an extension, or relocate a
+  file so a glob, linter, or `VERIFIERS.md` line no longer matches.
+- Users may explicitly override this. Never assume they want a workaround.
+- A rename that restores the real extension (for example `.ts.txt`
+  back to `.ts`) plus a real fix is allowed.
