@@ -44,8 +44,9 @@ def test_verifiers_md_forbids_any_and_check_workarounds() -> None:
     ) in lines
 
 
-def test_verifier_eval_bad_fixture_is_typescript_without_any() -> None:
+def test_verifier_eval_fixture_is_typescript_without_any() -> None:
     path = REPO / "agents" / "verifier" / "evals" / "files" / "bad.ts"
     assert path.is_file()
+    # bad.ts.txt was the old check-bypass and must stay gone.
     assert not (path.parent / "bad.ts.txt").exists()
     assert re.search(r"\bany\b", path.read_text()) is None
