@@ -2,6 +2,8 @@ name: pr_review
 description: >-
   Agentic PR review harness: dimensional panel, sequential verifiers, issue
   resolution, and low-risk squash merge.
+rules:
+  - src: rules/core/honor-check-intent.mdc
 skills:
   - src: skills/dispatch-panel-review
   - src: skills/dedupe-and-write-tasks

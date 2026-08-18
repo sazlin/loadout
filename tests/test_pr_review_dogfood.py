@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -30,3 +31,21 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
 def test_ci_matrix_includes_pr_review() -> None:
     text = (REPO / ".github/workflows/ci.yml").read_text()
     assert "pr_review" in text
+
+
+def test_verifiers_md_forbids_any_and_check_workarounds() -> None:
+    lines = [
+        line for line in (REPO / "VERIFIERS.md").read_text().splitlines() if line.strip() and not line.startswith("#")
+    ]
+    assert "no use of any in TypeScript files" in lines
+    assert (
+        "files were not renamed or their types changed to work around or "
+        "bypass verifiers, rules, evals, or other CI checks"
+    ) in lines
+
+
+def test_verifier_eval_bad_fixture_is_typescript_without_any() -> None:
+    path = REPO / "agents" / "verifier" / "evals" / "files" / "bad.ts"
+    assert path.is_file()
+    assert not (path.parent / "bad.ts.txt").exists()
+    assert re.search(r"\bany\b", path.read_text()) is None

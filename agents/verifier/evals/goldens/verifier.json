@@ -3,8 +3,8 @@
   "agent": "verifier",
   "charter": "Evaluate each VERIFIERS.md claim individually as true or false.",
   "inputs": {
-    "summary": "Judge three verifier claims against widget.ts and bad.ts.txt.",
-    "paths": ["evals/files/widget.ts", "evals/files/bad.ts.txt"],
+    "summary": "Judge three verifier claims against widget.ts and bad.ts.",
+    "paths": ["evals/files/widget.ts", "evals/files/bad.ts"],
     "verifiers_path": "evals/files/VERIFIERS.md"
   },
   "claims": [
@@ -25,7 +25,7 @@
       "how_to_fix": ["Remove the debugger statement"],
       "acceptance_criteria": ["No debugger in files in scope"],
       "suggested_test": "rg -n debugger evals/files",
-      "do_not_change": "bad.ts.txt"
+      "do_not_change": "bad.ts"
     }
   ],
   "verification": [

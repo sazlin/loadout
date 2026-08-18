@@ -152,7 +152,7 @@ Example GitHub Actions step:
 | `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
-| `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, and slash-command skills |
+| `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
 

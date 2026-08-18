@@ -4,11 +4,11 @@
     {
       "id": "verifier-debugger-claim-false",
       "agent": "verifier",
-      "prompt": "You are verifier. Follow agents/verifier/verifier.md. Judge each claim in agents/verifier/evals/files/VERIFIERS.md against agents/verifier/evals/files/widget.ts and agents/verifier/evals/files/bad.ts.txt. Check claims individually in order. Do not edit files. Return the JSON schema.",
+      "prompt": "You are verifier. Follow agents/verifier/verifier.md. Judge each claim in agents/verifier/evals/files/VERIFIERS.md against agents/verifier/evals/files/widget.ts and agents/verifier/evals/files/bad.ts. Check claims individually in order. Do not edit files. Return the JSON schema.",
       "files": [
         "evals/files/VERIFIERS.md",
         "evals/files/widget.ts",
-        "evals/files/bad.ts.txt"
+        "evals/files/bad.ts"
       ],
       "expected_output": "JSON claims list with eval true, any/TypeScript true, and debugger false",
       "expectations": [
