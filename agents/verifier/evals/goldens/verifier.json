@@ -3,32 +3,34 @@
   "agent": "verifier",
   "charter": "Evaluate each VERIFIERS.md claim individually as true or false.",
   "inputs": {
-    "summary": "Judge two verifier claims against widget.ts and bad.ts.",
-    "paths": ["evals/files/widget.ts", "evals/files/bad.ts"],
+    "summary": "Judge three verifier claims against widget.ts and bad.ts.txt.",
+    "paths": ["evals/files/widget.ts", "evals/files/bad.ts.txt"],
     "verifiers_path": "evals/files/VERIFIERS.md"
   },
   "claims": [
     { "line": 3, "text": "no use of eval()", "result": "true" },
-    { "line": 4, "text": "no use of any in TypeScript files", "result": "false" }
+    { "line": 4, "text": "no use of any in TypeScript files", "result": "true" },
+    { "line": 5, "text": "no use of debugger", "result": "false" }
   ],
   "issues": [
     {
       "id": "V-001",
-      "title": "TypeScript files use any",
+      "title": "debugger is used",
       "severity": "important",
-      "file": "evals/files/bad.ts",
-      "line": 1,
-      "symbol": "f",
-      "whats_wrong": "Parameter and return type are any, so the TypeScript any claim is false.",
-      "why_it_matters": "The project forbids any in TypeScript files.",
-      "how_to_fix": ["Replace any with a concrete type"],
-      "acceptance_criteria": ["No any in TypeScript files in scope"],
-      "suggested_test": "tsc --noImplicitAny",
-      "do_not_change": "widget.ts"
+      "file": "evals/files/widget.ts",
+      "line": 2,
+      "symbol": "n",
+      "whats_wrong": "widget.ts contains debugger, so the debugger claim is false.",
+      "why_it_matters": "The project forbids debugger statements.",
+      "how_to_fix": ["Remove the debugger statement"],
+      "acceptance_criteria": ["No debugger in files in scope"],
+      "suggested_test": "rg -n debugger evals/files",
+      "do_not_change": "bad.ts.txt"
     }
   ],
   "verification": [
-    { "command": "rg -n eval\\(\\) evals/files", "result": "pass", "notes": "no eval() calls" }
+    { "command": "rg -n eval\\(\\) evals/files", "result": "pass", "notes": "no eval() calls" },
+    { "command": "rg -n '\\bany\\b' --glob '*.ts' --glob '*.tsx' evals/files", "result": "pass", "notes": "no any in TypeScript files" }
   ],
   "assumptions": [],
   "tried": [],
