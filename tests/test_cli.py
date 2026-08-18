@@ -117,6 +117,33 @@ def test_init_writes_manifest_with_defaults(runner: CliRunner) -> None:
         assert manifest["ref"] == "main"
 
 
+def test_init_keeps_every_comma_separated_name(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init", "--loadouts", "base,python,pr_review"])
+
+        assert result.exit_code == 0, result.output
+        manifest = yaml.safe_load(Path(".loadout.yaml").read_text())
+        assert manifest["loadouts"] == ["base", "python", "pr_review"]
+
+
+def test_init_strips_whitespace_around_loadout_names(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init", "--loadouts", " base , python "])
+
+        assert result.exit_code == 0, result.output
+        manifest = yaml.safe_load(Path(".loadout.yaml").read_text())
+        assert manifest["loadouts"] == ["base", "python"]
+
+
+def test_init_preserves_loadout_name_order(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        result = runner.invoke(main, ["init", "--loadouts", "python,base,terraform"])
+
+        assert result.exit_code == 0, result.output
+        manifest = yaml.safe_load(Path(".loadout.yaml").read_text())
+        assert manifest["loadouts"] == ["python", "base", "terraform"]
+
+
 def test_init_accepts_custom_source_and_ref(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         result = runner.invoke(
