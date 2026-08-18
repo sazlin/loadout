@@ -42,6 +42,10 @@ def test_verifiers_md_forbids_any_and_check_workarounds() -> None:
         "files were not renamed or given a different extension to bypass "
         "verifiers, rules, evals, or other CI checks"
     ) in lines
+    assert (
+        "meaningful tests: newly added tests that explicitly target newly implemented behavior "
+        "fail on the base commit and pass on the branch"
+    ) in lines
 
 
 def test_verifier_eval_fixture_is_typescript_without_any() -> None:
