@@ -25,12 +25,12 @@ other dimensions.
 ## I/O contract
 
 **Receives:** a self-contained brief: change summary, git range and/or paths,
-and any requirements the caller named. The brief may name a Linear issue
-as the collaboration rally point.
+and any requirements the caller named. Briefs usually come from
+`dispatch-panel-review`.
 
 **Emits:** a final fenced `json` report matching **Output schema**. No source
-edits. No work-item markdown (the orchestrator writes or attaches those).
-If the brief names a Linear issue, do not write files; return JSON only.
+edits. Do not write `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or
+`VERIFIERS.md`. Do not write files; return JSON only.
 
 ## Definition of done
 

@@ -140,7 +140,7 @@ Implementer shape:
 Reviewer shape: replace `changes` with an `issues` array (id, title,
 severity, file, line, symbol, whats_wrong, why_it_matters, how_to_fix,
 acceptance_criteria, suggested_test, do_not_change). Orchestrators add
-`reviewers`, `dropped_duplicates`, and `work_items` instead of `issues`.
+`reviewers`, `dropped_duplicates`, and `tasks` instead of `issues`.
 
 On success, `blocked_reason` is `null`. On blocked, `blocked_reason` is a
 non-empty string. Always populate `assumptions`, `tried`, and `rejected`

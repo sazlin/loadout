@@ -1,41 +1,41 @@
 {
   "status": "ok",
   "agent": "general_reviewer",
-  "work_items": [
+  "tasks": [
     {
-      "id": "WI-001",
+      "id": "TASK-001",
       "title": "Record zero-qty lines and fix history_page off-by-one",
-      "path": "review-work-items/WI-001.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["C-001", "C-002"]
     },
     {
-      "id": "WI-002",
+      "id": "TASK-002",
       "title": "Parameterize user lookup SQL",
-      "path": "review-work-items/WI-002.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["SEC-001"]
     },
     {
-      "id": "WI-003",
+      "id": "TASK-003",
       "title": "Stop logging and returning secrets from user lookup",
-      "path": "review-work-items/WI-003.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["SEC-002", "SEC-003"]
     },
     {
-      "id": "WI-004",
+      "id": "TASK-004",
       "title": "Rename BuildReport helpers and drop restating comments",
-      "path": "review-work-items/WI-004.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["M-001", "M-002"]
     },
     {
-      "id": "WI-005",
+      "id": "TASK-005",
       "title": "Stop unbounded growth of module-level results",
-      "path": "review-work-items/WI-005.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["R-001"]
     },
     {
-      "id": "WI-006",
+      "id": "TASK-006",
       "title": "Add partner GET timeout and surface failures",
-      "path": "review-work-items/WI-006.md",
+      "path": "TASKS_TO_RESOLVE.md",
       "issue_ids": ["R-002", "R-003"]
     }
   ],

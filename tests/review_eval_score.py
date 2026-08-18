@@ -16,7 +16,11 @@ REVIEW_AGENTS = (
     "review_scale",
     "review_security",
     "review_orchestrator",
+    "issue_resolver",
+    "verifier",
+    "risk_classifier",
 )
+BLOB_AGENTS = frozenset({"issue_resolver", "risk_classifier"})
 
 ISSUE_FIELDS = (
     "id",
@@ -33,10 +37,10 @@ ISSUE_FIELDS = (
     "do_not_change",
 )
 SEVERITIES = frozenset({"critical", "important", "minor"})
-MAX_ISSUES_PER_WORK_ITEM = 3
+MAX_ISSUES_PER_TASK = 3
 _JSON_FENCE = re.compile(r"```json\s*(.*?)\s*```", re.DOTALL)
 _REPORT_KEYS = ("status", "agent", "charter", "inputs", "issues")
-_ORCH_KEYS = ("status", "agent", "work_items", "dropped_duplicates", "reviewers")
+_ORCH_KEYS = ("status", "agent", "tasks", "dropped_duplicates", "reviewers")
 
 
 @dataclass(frozen=True)
@@ -138,10 +142,31 @@ def _keyword_failures(issues: list[dict[str, Any]], spec: dict[str, Any]) -> lis
     return failures
 
 
+def report_blob(report: dict[str, Any]) -> str:
+    """Lowercased JSON of the whole report, used for keyword matching."""
+    return json.dumps(report, default=str).lower()
+
+
+def _blob_keyword_failures(blob: str, spec: dict[str, Any]) -> list[str]:
+    failures: list[str] = []
+    for item in spec.get("must_find", []):
+        keywords = [word.lower() for word in item["keywords"]]
+        if not all(word in blob for word in keywords):
+            failures.append(f"missing must_find {item['id']}: {keywords}")
+    for item in spec.get("must_not_find", []):
+        keywords = [word.lower() for word in item["keywords"]]
+        if all(word in blob for word in keywords):
+            failures.append(f"hit must_not_find {item['id']}: {keywords}")
+    return failures
+
+
 def score_behavior(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
     """Score only differentiating checks (keywords / groups), not agent identity."""
     if spec.get("agent") == "review_orchestrator":
         return _score_orchestrator_behavior(report, spec)
+    if spec.get("agent") in BLOB_AGENTS:
+        failures = _blob_keyword_failures(report_blob(report), spec)
+        return ScoreResult(not failures, tuple(failures))
     issues = report.get("issues")
     if not isinstance(issues, list):
         return ScoreResult(False, ("issues must be a list",))
@@ -155,10 +180,10 @@ def _score_orchestrator_behavior(report: dict[str, Any], spec: dict[str, Any]) -
     expected_dropped = {(pair["kept"], pair["dropped"]) for pair in spec["expected_dropped"]}
     if not expected_dropped <= dropped:
         failures.append(f"dropped_duplicates {dropped} missing {expected_dropped}")
-    work_items = report.get("work_items")
-    if not isinstance(work_items, list):
-        return ScoreResult(False, tuple(failures + ["work_items must be a list"]))
-    failures.extend(_orchestrator_group_failures(work_items, spec))
+    tasks = report.get("tasks")
+    if not isinstance(tasks, list):
+        return ScoreResult(False, tuple(failures + ["tasks must be a list"]))
+    failures.extend(_orchestrator_group_failures(tasks, spec))
     return ScoreResult(not failures, tuple(failures))
 
 
@@ -190,22 +215,22 @@ def _group_set(issue_ids: list[str]) -> frozenset[str]:
     return frozenset(issue_ids)
 
 
-def _orchestrator_group_failures(work_items: list[dict[str, Any]], spec: dict[str, Any]) -> list[str]:
+def _orchestrator_group_failures(tasks: list[dict[str, Any]], spec: dict[str, Any]) -> list[str]:
     failures: list[str] = []
-    actual = [_group_set(item.get("issue_ids", [])) for item in work_items]
+    actual = [_group_set(item.get("issue_ids", [])) for item in tasks]
     expected = [_group_set(group) for group in spec["expected_groups"]]
     if sorted(actual, key=lambda group: tuple(sorted(group))) != sorted(
         expected, key=lambda group: tuple(sorted(group))
     ):
-        failures.append(f"work item groups {actual} != {expected}")
+        failures.append(f"task groups {actual} != {expected}")
     seen: set[str] = set()
-    for item in work_items:
+    for item in tasks:
         ids = item.get("issue_ids", [])
-        if not 1 <= len(ids) <= MAX_ISSUES_PER_WORK_ITEM:
+        if not 1 <= len(ids) <= MAX_ISSUES_PER_TASK:
             failures.append(f"{item.get('id')} has {len(ids)} issues")
         overlap = seen.intersection(ids)
         if overlap:
-            failures.append(f"issue {sorted(overlap)} in two work items")
+            failures.append(f"issue {sorted(overlap)} in two tasks")
         seen.update(ids)
     return failures
 
@@ -222,10 +247,10 @@ def score_orchestrator_report(report: dict[str, Any], spec: dict[str, Any]) -> S
     expected_dropped = {(pair["kept"], pair["dropped"]) for pair in spec["expected_dropped"]}
     if not expected_dropped <= dropped:
         failures.append(f"dropped_duplicates {dropped} missing {expected_dropped}")
-    work_items = report.get("work_items")
-    if not isinstance(work_items, list):
-        return ScoreResult(False, tuple(failures + ["work_items must be a list"]))
-    failures.extend(_orchestrator_group_failures(work_items, spec))
+    tasks = report.get("tasks")
+    if not isinstance(tasks, list):
+        return ScoreResult(False, tuple(failures + ["tasks must be a list"]))
+    failures.extend(_orchestrator_group_failures(tasks, spec))
     return ScoreResult(not failures, tuple(failures))
 
 
@@ -237,3 +262,17 @@ def load_golden(agent: str) -> dict[str, Any]:
 def load_blank_run(agent: str) -> dict[str, Any]:
     """Load the frozen blank-agent transcript for one agent."""
     return json.loads((evals_root(agent) / "blank_runs" / f"{agent}.json").read_text())
+
+
+def score_blob_report(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
+    """Score schema, identity, and blob keywords for harness agents that are not issue lists."""
+    failures: list[str] = []
+    for key in ("status", "agent", "charter", "inputs"):
+        if key not in report:
+            failures.append(f"missing report key {key}")
+    if report.get("agent") != spec["agent"]:
+        failures.append(f"agent {report.get('agent')!r} != {spec['agent']!r}")
+    if report.get("status") != "ok":
+        failures.append(f"status {report.get('status')!r} is not ok")
+    failures.extend(_blob_keyword_failures(report_blob(report), spec))
+    return ScoreResult(not failures, tuple(failures))

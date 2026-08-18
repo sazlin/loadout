@@ -1,0 +1,17 @@
+{
+  "skill_name": "resolve-next-task",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Resolve the next open task on this PR branch.",
+      "expected_output": "One task implemented, committed, pushed, not merged",
+      "files": ["evals/files/TASKS_TO_RESOLVE.md"],
+      "expectations": [
+        "Only the first open task is taken",
+        "git push to the existing branch",
+        "Does not gh pr merge",
+        "Does not commit TASKS_TO_RESOLVE.md"
+      ]
+    }
+  ]
+}

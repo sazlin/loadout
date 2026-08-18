@@ -143,7 +143,7 @@ Example GitHub Actions step:
 
 | Loadout | Extends | What you get |
 | --- | --- | --- |
-| `base` | — | Core conventions, release checklist skill, deny-dangerous hook, davinci and dimensional review agents, Context7 MCP |
+| `base` | — | Core conventions, release checklist skill, deny-dangerous hook, davinci, Context7 MCP |
 | `python` | `base` | Python code style + pytest rules, python_coder agent |
 | `python-monorepo` | `python` | UV workspace rules + db-migrations skill |
 | `typescript` | `base` | TypeScript code style rules |
@@ -152,6 +152,7 @@ Example GitHub Actions step:
 | `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
+| `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, and slash-command skills |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`.
 
@@ -177,20 +178,22 @@ is not an agent.
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
 | Implementation | `python_coder`, `davinci`, `e2e_test_generator` | `python`, `base`, `playwright-e2e` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
-| Dimensional review | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, plus `review_orchestrator` | `base` | Read-only reviewers (orchestrator writes work-item markdown, or attaches it to Linear). Stay in one dimension; emit `issues` JSON. Orchestrator also accepts a GitHub PR (new summary comment per run) or Linear issue (ticket is the artifact rally point) |
+| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.
 
 **Evals.** Each agent's fixtures, goldens, blank transcripts, and `evals.json`
-live in [`agents/<name>/evals/`](agents/). Pytest scorers in `tests/` load those
+live in [`agents/<name>/evals/`](agents/). Skill evals live in
+[`skills/<name>/evals/`](skills/). Pytest scorers in `tests/` load those
 files. A blank `generalPurpose` transcript must fail `score_behavior`; the
 custom-agent golden must pass the full scorer. Davinci also has a live
 simplification harness under [`agents/davinci/evals/`](agents/davinci/evals/).
-Use the `refining-evals` skill when tightening keyword splits.
+Use the `refining-evals` skill when tightening keyword splits. The
+`colocated-evals` rule on `base` forbids a parallel eval tree.
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
-It extends `base` (so you already get davinci and the review pack) and adds
+It extends `base` (so you already get davinci) and adds
 the LangChain docs MCP plus the vendored `refining-evals` skill:
 
 ```yaml

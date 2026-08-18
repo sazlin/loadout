@@ -64,6 +64,7 @@ def assert_agent_contract(path: Path) -> None:
         "python_coder.md",
         "davinci.md",
         "e2e_test_generator.md",
+        "issue_resolver.md",
     ],
 )
 def test_production_agent_best_practices_contract(filename: str) -> None:

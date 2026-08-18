@@ -1,0 +1,27 @@
+{
+  "skill_name": "dispatch-verifiers",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run dispatch-verifiers. VERIFIERS.md is missing from the project root.",
+      "expected_output": "Empty verifier list, no file created",
+      "files": ["evals/files/no-verifiers.md"],
+      "expectations": [
+        "Treats a missing VERIFIERS.md as an empty list",
+        "Does not create VERIFIERS.md",
+        "Does not invent lint or test checks"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Run dispatch-verifiers against the sample VERIFIERS.md.",
+      "expected_output": "Each claim judged sequentially true or false",
+      "files": ["evals/files/VERIFIERS.md"],
+      "expectations": [
+        "Checks claims one at a time in order",
+        "Does not parallelize lines",
+        "Does not rewrite VERIFIERS.md"
+      ]
+    }
+  ]
+}

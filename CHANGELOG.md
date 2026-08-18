@@ -2,14 +2,21 @@
 
 ## Unreleased
 
+- Add standalone `pr_review` loadout: move dimensional review agents off
+  `base`, rewrite `review_orchestrator` as a Review → Verification → Decision
+  loop, and add `issue_resolver`, `verifier`, and `risk_classifier`. Skills:
+  `dispatch-panel-review`, `dedupe-and-write-tasks`, `resolve-next-task`,
+  `log-progress`, `dispatch-verifiers`. Runtime files: `TASKS_TO_RESOLVE.md`
+  and `REVIEW_HISTORY.md`. `VERIFIERS.md` is an optional project-owned
+  true/false checklist (missing = empty list). `risk_classifier` may
+  `gh pr merge --squash` for low-risk diffs after required checks are green
+  (never `--admin`).
+- Add `rules/core/colocated-evals.mdc` to `base` so agent and skill evals
+  stay in `agents/<name>/evals/` or `skills/<name>/evals/`.
 - Expand `review_orchestrator` to accept a GitHub pull request as the change
   set and post one new well-formatted PR comment per run (`gh pr comment`,
   never `--edit-last`).
-- Expand `review_orchestrator` to accept a Linear issue ID or URL. When
-  Linear is present it is the rally point: reviewer and orchestrator
-  artifacts are attached to the ticket instead of written to the project
-  filesystem, and the run summary is posted as a Linear comment. Add
-  `mcps/linear` (`https://mcp.linear.app/mcp`) to the `base` loadout.
+- Add `mcps/linear` (`https://mcp.linear.app/mcp`) to the `base` loadout.
 
 - Nest each agent under `agents/<name>/` with definition `agents/<name>/<name>.md`
   and colocated `evals/` (keyword fixtures, goldens, blank runs, and davinci's
@@ -29,9 +36,9 @@
 
 - Add four dimensional review agents (`review_correctness`,
   `review_maintainability`, `review_scale`, `review_security`) and
-  `review_orchestrator` to the `base` loadout. The orchestrator launches the
-  four reviewers in parallel, dedupes findings, and writes 1–3-issue markdown
-  work items for a later fix subagent.
+  `review_orchestrator` (now shipped on `pr_review`). The orchestrator
+  launches the four reviewers in parallel, dedupes findings, and writes
+  1–3-issue tasks to `TASKS_TO_RESOLVE.md`.
 - Add eval fixtures and a scorer under `agents/<name>/evals/` so each
   reviewer's core checks (and the orchestrator's grouping rules) can be
   verified without implementing the fixes.

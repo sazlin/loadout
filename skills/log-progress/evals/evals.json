@@ -1,0 +1,16 @@
+{
+  "skill_name": "log-progress",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Log that the panel phase finished with two tasks.",
+      "expected_output": "One appended REVIEW_HISTORY.md entry",
+      "files": ["evals/files/REVIEW_HISTORY.md"],
+      "expectations": [
+        "Appends an entry",
+        "Does not rewrite or truncate prior entries",
+        "Does not log secrets"
+      ]
+    }
+  ]
+}
