@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Dogfood `base` and `pr_review` on this repo (`.loadout.yaml` pins `v0.7.0`)
+  and vendor the synced agents, skills, rules, hooks, and MCP configs.
+- Add a GitHub Action that launches `review_orchestrator` via the Cursor
+  Cloud Agents API when a pull request is opened (`CURSOR_API_KEY` secret).
+- Include `pr_review` in the CI resolve/sync matrix.
+
 ## 0.7.0
 
 - Add standalone `pr_review` loadout: move dimensional review agents off

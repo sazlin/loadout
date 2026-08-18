@@ -1,6 +1,7 @@
 source: https://github.com/sazlin/loadout
-ref: main
+ref: v0.7.0
 loadouts:
 - base
 - superpowers
 - python
+- pr_review

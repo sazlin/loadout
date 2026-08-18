@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/deny-dangerous/deny-dangerous.sh cursor"
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/session-start/session-start cursor"
+      }
+    ]
+  }
+}
