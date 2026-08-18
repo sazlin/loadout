@@ -88,13 +88,19 @@ def _write_manifest(loadouts: str, source: str, ref: str) -> None:
     if manifest_path.exists():
         raise ValidationError(f"{MANIFEST_NAME} already exists; remove it first")
 
-    names = [name.strip() for name in loadouts.split(",") if name.strip()]
-    if not names:
-        raise ValidationError("--loadouts requires at least one non-empty name")
+    names = _parse_loadout_names(loadouts)
 
     body = {"source": source, "ref": ref, "loadouts": names}
     manifest_path.write_text(yaml.safe_dump(body, sort_keys=False))
     click.echo(f"loadout: wrote {MANIFEST_NAME}")
+
+
+def _parse_loadout_names(raw: str) -> list[str]:
+    """Split a comma-separated --loadouts value into names."""
+    names = [name.strip() for name in raw.split(",") if name.strip()]
+    if not names:
+        raise ValidationError("--loadouts requires at least one non-empty name")
+    return names
 
 
 def _print_resolved() -> None:
