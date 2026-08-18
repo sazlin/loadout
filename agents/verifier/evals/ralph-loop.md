@@ -7,6 +7,6 @@ Goal: this eval must **fail** a blank general-purpose agent and **pass**
 
 | Eval | Blank iter 0 | Ralph iters | Outcome |
 | --- | --- | --- | --- |
-| `verifier-any-claim-false` | FAIL (`eval()` false positive, skipped any) | 0 | Keep. Custom files TypeScript any only. |
+| `verifier-debugger-claim-false` | FAIL (`eval()` false positive, skipped any) | 0 | Keep. Custom files a false debugger claim across three ordered claims. |
 
 No eval was thrown out.

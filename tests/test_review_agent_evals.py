@@ -258,7 +258,7 @@ def test_golden_harness_reports_pass_eval() -> None:
     assert score_blob_report(load_golden("issue_resolver"), spec).ok
     spec = eval_by_id("risk-classifier-typo-squash")
     assert score_blob_report(load_golden("risk_classifier"), spec).ok
-    spec = eval_by_id("verifier-any-claim-false")
+    spec = eval_by_id("verifier-debugger-claim-false")
     result = score_dimension_report(load_golden("verifier"), spec)
     assert result.ok, result.failures
     spec = eval_by_id("review-orchestrator-group-findings")
