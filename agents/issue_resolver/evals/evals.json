@@ -1,0 +1,37 @@
+{
+  "agent": "issue_resolver",
+  "evals": [
+    {
+      "id": "issue-resolver-tax-after-discount",
+      "agent": "issue_resolver",
+      "prompt": "You are issue_resolver. Follow agents/issue_resolver/issue_resolver.md and skills/resolve-next-task/SKILL.md. Resolve the first open task in agents/issue_resolver/evals/files/TASKS_TO_RESOLVE.md against agents/issue_resolver/evals/files/pricing.py. Do not remove _tmp. Do not merge. Return the JSON report.",
+      "files": [
+        "evals/files/pricing.py",
+        "evals/files/TASKS_TO_RESOLVE.md"
+      ],
+      "expected_output": "JSON report for a scoped tax-formula fix and a push, not a merge",
+      "expectations": [
+        "Fixes discounted_total to apply tax_rate after discount",
+        "Mentions git push to the PR branch",
+        "Does not clean up _tmp",
+        "Does not merge"
+      ],
+      "must_find": [
+        {
+          "id": "tax-after-discount",
+          "keywords": ["tax_rate", "discount", "push"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "unused-helper",
+          "keywords": ["_tmp"]
+        },
+        {
+          "id": "merge-pr",
+          "keywords": ["pr merge"]
+        }
+      ]
+    }
+  ]
+}

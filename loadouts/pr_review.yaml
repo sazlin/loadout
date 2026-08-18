@@ -1,0 +1,19 @@
+name: pr_review
+description: >-
+  Agentic PR review harness: dimensional panel, sequential verifiers, issue
+  resolution, and low-risk squash merge.
+skills:
+  - src: skills/dispatch-panel-review
+  - src: skills/dedupe-and-write-tasks
+  - src: skills/resolve-next-task
+  - src: skills/log-progress
+  - src: skills/dispatch-verifiers
+agents:
+  - src: agents/review_correctness/review_correctness.md
+  - src: agents/review_maintainability/review_maintainability.md
+  - src: agents/review_scale/review_scale.md
+  - src: agents/review_security/review_security.md
+  - src: agents/review_orchestrator/review_orchestrator.md
+  - src: agents/issue_resolver/issue_resolver.md
+  - src: agents/verifier/verifier.md
+  - src: agents/risk_classifier/risk_classifier.md

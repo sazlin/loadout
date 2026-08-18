@@ -26,6 +26,7 @@ from review_eval_score import (
     load_golden,
     parse_report,
     score_behavior,
+    score_blob_report,
     score_dimension_report,
     score_orchestrator_report,
 )
@@ -43,6 +44,10 @@ REVIEW_DIMENSION_AGENTS = frozenset(
     }
 )
 REVIEW_ORCHESTRATOR = "review_orchestrator.md"
+ISSUE_RESOLVER = "issue_resolver.md"
+VERIFIER = "verifier.md"
+RISK_CLASSIFIER = "risk_classifier.md"
+HARNESS_AGENTS = frozenset({ISSUE_RESOLVER, VERIFIER, RISK_CLASSIFIER})
 
 REVIEW_HEADINGS = [
     "## Charter",
@@ -104,17 +109,36 @@ def issue_blob_safe(issue: dict[str, object]) -> str:
 
 def test_every_agent_file_is_classified() -> None:
     on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
-    classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}
+    classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}
     assert on_disk == classified
     assert (AGENTS / "_agent_template.md").is_file()
 
 
-def test_base_loadout_includes_dimensional_review_agents() -> None:
+def test_base_loadout_does_not_include_dimensional_review_agents() -> None:
     loadout = load_loadout(REPO / "loadouts" / "base.yaml")
     srcs = {entry["src"] for entry in loadout.agents}
-    expected = {f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}}
-    assert expected <= srcs
+    review_srcs = {f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | {REVIEW_ORCHESTRATOR}}
+    assert srcs.isdisjoint(review_srcs)
     assert {entry["src"] for entry in loadout.mcps} >= {"mcps/context7", "mcps/linear"}
+    assert "agents/davinci/davinci.md" in srcs
+    assert "rules/core/colocated-evals.mdc" in {entry["src"] for entry in loadout.rules}
+
+
+def test_pr_review_loadout_includes_harness_agents_and_skills() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "pr_review.yaml")
+    srcs = {entry["src"] for entry in loadout.agents}
+    expected_agents = {
+        f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}
+    }
+    assert expected_agents <= srcs
+    skill_srcs = {entry["src"] for entry in loadout.skills}
+    assert skill_srcs == {
+        "skills/dispatch-panel-review",
+        "skills/dedupe-and-write-tasks",
+        "skills/resolve-next-task",
+        "skills/log-progress",
+        "skills/dispatch-verifiers",
+    }
 
 
 @pytest.mark.parametrize("filename", sorted(REVIEW_DIMENSION_AGENTS))
@@ -137,7 +161,7 @@ def test_dimension_reviewer_is_readonly_and_schema_complete(filename: str) -> No
         assert marker in lowered
 
 
-def test_orchestrator_dispatches_four_reviewers_and_groups_work_items() -> None:
+def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     path = _agent_file(REVIEW_ORCHESTRATOR)
     text = path.read_text()
     meta = parse_agent_md(path, text, file_stem=path.stem)
@@ -153,9 +177,14 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_work_items() -> None:
     assert "parallel" in lowered
     assert "1-3" in lowered or "1–3" in lowered
     assert "dropped_duplicates" in text
-    assert "work_items" in text
+    assert '"tasks"' in text
+    assert "TASKS_TO_RESOLVE.md" in text
+    assert "issue_resolver" in lowered
+    assert "risk_classifier" in lowered
     assert "git push" in lowered
-    assert "do not implement the fixes" in lowered or "do not implement the fix" in lowered
+    assert "do not implement" in lowered
+    assert "gh pr merge" in lowered
+    assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
 
 
 def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
@@ -169,36 +198,32 @@ def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
     assert "inputs.github_pr" in text or '"github_pr"' in text
 
 
-def test_orchestrator_uses_linear_as_artifact_rally_point() -> None:
-    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
-    lowered = text.lower()
-    assert "linear" in lowered
-    assert "rally point" in lowered
-    assert "prepare_attachment_upload" in text
-    assert "create_attachment_from_upload" in text
-    assert "save_comment" in text
-    assert "do not write work items into the project" in lowered
-    assert "linear_comment_url" in text
-    assert "linear_attachments" in text
-    assert '"linear_issue"' in text
+def test_orchestrator_does_not_use_linear_as_artifact_rally_point() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text().lower()
+    assert "rally point" not in text
+    assert "prepare_attachment_upload" not in text
+    assert "linear_issue" not in text
     loadout = load_loadout(REPO / "loadouts" / "base.yaml")
     assert any(entry["src"] == "mcps/linear" for entry in loadout.mcps)
 
 
-def test_dimension_reviewers_treat_linear_as_rally_point() -> None:
+def test_dimension_reviewers_do_not_write_harness_files() -> None:
     for filename in REVIEW_DIMENSION_AGENTS:
         text = _agent_file(filename).read_text().lower()
-        assert "linear issue" in text
-        assert "rally point" in text
         assert "do not write files" in text
+        assert "tasks_to_resolve.md" in text
+        assert "rally point" not in text
 
 
 def test_evals_json_files_exist_and_cover_each_review_agent() -> None:
     suite = load_evals()
     agents = {entry["agent"] for entry in suite["evals"]}
-    assert agents == set(REVIEWER_NAMES) | {"review_orchestrator"}
+    assert agents == set(REVIEW_AGENTS)
     for entry in suite["evals"]:
-        assert entry["must_find"] if entry["agent"] != "review_orchestrator" else entry["expected_groups"]
+        if entry["agent"] == "review_orchestrator":
+            assert entry["expected_groups"]
+        else:
+            assert entry["must_find"]
         agent_root = AGENTS_DIR / entry["agent"]
         for relative in entry["files"]:
             assert (agent_root / relative).is_file(), relative
@@ -228,7 +253,14 @@ def test_blank_agent_transcript_fails_behavior_score(agent: str) -> None:
     assert not result.ok, f"blank agent unexpectedly passed {spec['id']}"
 
 
-def test_golden_orchestrator_report_matches_expected_groups() -> None:
+def test_golden_harness_reports_pass_eval() -> None:
+    spec = eval_by_id("issue-resolver-tax-after-discount")
+    assert score_blob_report(load_golden("issue_resolver"), spec).ok
+    spec = eval_by_id("risk-classifier-typo-squash")
+    assert score_blob_report(load_golden("risk_classifier"), spec).ok
+    spec = eval_by_id("verifier-any-claim-false")
+    result = score_dimension_report(load_golden("verifier"), spec)
+    assert result.ok, result.failures
     spec = eval_by_id("review-orchestrator-group-findings")
     result = score_orchestrator_report(load_golden("review_orchestrator"), spec)
     assert result.ok, result.failures
@@ -267,14 +299,14 @@ def test_dimension_scorer_fails_when_out_of_scope_issue_is_filed() -> None:
     assert any("naming-nit" in failure for failure in result.failures)
 
 
-def test_orchestrator_scorer_rejects_more_than_three_issues_in_a_work_item() -> None:
+def test_orchestrator_scorer_rejects_more_than_three_issues_in_a_task() -> None:
     spec = eval_by_id("review-orchestrator-group-findings")
     report = load_golden("review_orchestrator")
-    report["work_items"] = [
+    report["tasks"] = [
         {
-            "id": "WI-001",
+            "id": "TASK-001",
             "title": "everything",
-            "path": "review-work-items/WI-001.md",
+            "path": "TASKS_TO_RESOLVE.md",
             "issue_ids": ["SEC-001", "SEC-002", "SEC-003", "C-001"],
         }
     ]
@@ -305,3 +337,33 @@ def test_evals_path_is_the_committed_suite() -> None:
         assert raw["agent"] == agent
         assert (evals_root(agent) / "goldens" / f"{agent}.json").is_file()
     assert load_evals()["suite"] == "dimensional-review-agents"
+
+
+def test_verifier_is_readonly_and_judges_claims() -> None:
+    text = _agent_file(VERIFIER).read_text()
+    meta = parse_agent_md(_agent_file(VERIFIER), text, file_stem="verifier")
+    assert meta.readonly is True
+    assert _tools(meta).isdisjoint(WRITE_TOOLS)
+    lowered = text.lower()
+    assert "verifiers.md" in lowered
+    assert "true" in lowered and "false" in lowered
+    assert "missing" in lowered
+    assert "do not create" in lowered or "never create" in lowered
+
+
+def test_issue_resolver_pushes_and_does_not_merge() -> None:
+    text = _agent_file(ISSUE_RESOLVER).read_text().lower()
+    assert "git push" in text
+    assert "gh pr merge" in text
+    assert "do not merge" in text
+    assert "tasks_to_resolve.md" in text
+
+
+def test_risk_classifier_squash_merges_without_admin() -> None:
+    text = _agent_file(RISK_CLASSIFIER).read_text().lower()
+    assert "gh pr merge" in text
+    assert "--squash" in text
+    assert "--admin" in text
+    assert "never" in text
+    assert "required checks" in text
+    assert "low risk" in text or "low-risk" in text

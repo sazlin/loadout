@@ -630,8 +630,8 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     assert (project / "infra/.claude/skills/terraform-plan-review/SKILL.md").is_file()
     assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
     assert (project / ".claude/agents/davinci.md").is_file()
-    assert (project / ".claude/agents/review_orchestrator.md").is_file()
-    assert (project / ".claude/agents/review_correctness.md").is_file()
+    assert not (project / ".claude/agents/review_orchestrator.md").exists()
+    assert not (project / ".claude/agents/review_correctness.md").exists()
     assert (project / ".claude/agents/e2e_test_generator.md").is_file()
     assert (project / ".cursor/hooks/deny-dangerous/deny-dangerous.sh").is_file()
     assert (project / ".cursor/hooks.json").is_file()
@@ -660,7 +660,7 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
     assert paths, "sync wrote nothing, so this test would pass vacuously"
     assert (project / ".claude/agents/python_coder.md").is_file()
     assert (project / ".claude/agents/davinci.md").is_file()
-    assert (project / ".claude/agents/review_security.md").is_file()
+    assert not (project / ".claude/agents/review_security.md").exists()
     assert (project / ".claude/agents/e2e_test_generator.md").is_file()
     assert not (project / "infra").exists()
     assert not any("terraform" in path.lower() for path in paths)
@@ -686,11 +686,34 @@ def test_real_agents_loadout_writes_langchain_docs_mcp(tmp_path: Path, monkeypat
         "url": "https://docs.langchain.com/mcp",
     }
     assert (project / ".claude/agents/davinci.md").is_file()
-    assert (project / ".claude/agents/review_orchestrator.md").is_file()
+    assert not (project / ".claude/agents/review_orchestrator.md").exists()
     assert (project / ".claude/skills/refining-evals/SKILL.md").is_file()
     assert (project / ".cursor/rules/agent-authoring.mdc").is_file()
     assert not (project / ".claude/agents/_agent_template.md").exists()
     assert not any(path.is_dir() and path.name == "evals" for path in project.rglob("*"))
+
+
+def test_real_pr_review_loadout_vendors_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repository = Path(__file__).parent.parent
+    monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body("[base, pr_review]"))
+
+    sync(project)
+
+    assert (project / ".claude/agents/review_orchestrator.md").is_file()
+    assert (project / ".claude/agents/issue_resolver.md").is_file()
+    assert (project / ".claude/agents/verifier.md").is_file()
+    assert (project / ".claude/agents/risk_classifier.md").is_file()
+    assert (project / ".claude/skills/dispatch-panel-review/SKILL.md").is_file()
+    assert (project / ".claude/skills/dedupe-and-write-tasks/SKILL.md").is_file()
+    assert (project / ".claude/skills/resolve-next-task/SKILL.md").is_file()
+    assert (project / ".claude/skills/log-progress/SKILL.md").is_file()
+    assert (project / ".claude/skills/dispatch-verifiers/SKILL.md").is_file()
+    assert (project / ".cursor/rules/colocated-evals.mdc").is_file()
+    assert not any(path.is_dir() and path.name == "evals" for path in project.rglob("*"))
+    assert not (project / "TASKS_TO_RESOLVE.md").exists()
+    assert not (project / "VERIFIERS.md").exists()
 
 
 def _project_text(project: Path) -> list[str]:

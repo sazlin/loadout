@@ -1,0 +1,34 @@
+{
+  "agent": "verifier",
+  "evals": [
+    {
+      "id": "verifier-any-claim-false",
+      "agent": "verifier",
+      "prompt": "You are verifier. Follow agents/verifier/verifier.md. Judge each claim in agents/verifier/evals/files/VERIFIERS.md against agents/verifier/evals/files/widget.ts and agents/verifier/evals/files/bad.ts. Check claims individually in order. Do not edit files. Return the JSON schema.",
+      "files": [
+        "evals/files/VERIFIERS.md",
+        "evals/files/widget.ts",
+        "evals/files/bad.ts"
+      ],
+      "expected_output": "JSON claims list with any/TypeScript false and eval true",
+      "expectations": [
+        "Marks no-eval as true",
+        "Marks no-any-in-TypeScript as false",
+        "Files an issue for the any claim",
+        "Does not skip the second claim"
+      ],
+      "must_find": [
+        {
+          "id": "any-in-typescript",
+          "keywords": ["any", "typescript"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "eval-false-positive",
+          "keywords": ["eval()"]
+        }
+      ]
+    }
+  ]
+}

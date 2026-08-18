@@ -1,0 +1,38 @@
+{
+  "status": "ok",
+  "agent": "verifier",
+  "charter": "Evaluate each VERIFIERS.md claim individually as true or false.",
+  "inputs": {
+    "summary": "Judge two verifier claims against widget.ts and bad.ts.",
+    "paths": ["evals/files/widget.ts", "evals/files/bad.ts"],
+    "verifiers_path": "evals/files/VERIFIERS.md"
+  },
+  "claims": [
+    { "line": 3, "text": "no use of eval()", "result": "true" },
+    { "line": 4, "text": "no use of any in TypeScript files", "result": "false" }
+  ],
+  "issues": [
+    {
+      "id": "V-001",
+      "title": "TypeScript files use any",
+      "severity": "important",
+      "file": "evals/files/bad.ts",
+      "line": 1,
+      "symbol": "f",
+      "whats_wrong": "Parameter and return type are any, so the TypeScript any claim is false.",
+      "why_it_matters": "The project forbids any in TypeScript files.",
+      "how_to_fix": ["Replace any with a concrete type"],
+      "acceptance_criteria": ["No any in TypeScript files in scope"],
+      "suggested_test": "tsc --noImplicitAny",
+      "do_not_change": "widget.ts"
+    }
+  ],
+  "verification": [
+    { "command": "rg -n eval\\(\\) evals/files", "result": "pass", "notes": "no eval() calls" }
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

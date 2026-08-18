@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Check verifiers",
+  "inputs": { "summary": "verifiers", "paths": [] },
+  "claims": [
+    { "line": 3, "text": "no use of eval()", "result": "false" }
+  ],
+  "issues": [
+    {
+      "id": "V-001",
+      "title": "eval() is forbidden",
+      "severity": "critical",
+      "file": "evals/files/widget.ts",
+      "line": 1,
+      "symbol": "n",
+      "whats_wrong": "Skipped the TypeScript any line. Flagged eval() instead.",
+      "why_it_matters": "eval() is dangerous",
+      "how_to_fix": ["remove eval()"],
+      "acceptance_criteria": ["no eval()"],
+      "suggested_test": "none",
+      "do_not_change": "none"
+    }
+  ],
+  "verification": [],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

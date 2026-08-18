@@ -1,0 +1,6 @@
+{
+  "issues": [
+    {"id": "SEC-001", "file": "user_api.py", "line": 16, "title": "SQL interpolation"},
+    {"id": "C-003", "file": "user_api.py", "line": 16, "title": "SQL from user_id"}
+  ]
+}

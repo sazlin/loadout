@@ -1,5 +1,3 @@
 name: linear
-description: >-
-  Linear — issues, comments, and file attachments for the review orchestrator
-  rally point.
+description: Linear — issues, comments, and file attachments via the Linear MCP.
 url: https://mcp.linear.app/mcp

@@ -6,8 +6,8 @@ Keyword eval for `review_orchestrator`. Fixtures, goldens, and blank transcripts
 
 | Path | Role |
 | --- | --- |
-| `evals.json` | Prompt, fixture files, `must_find` / `must_not_find` (or orchestrator groups) |
-| `files/` | Planted-bug fixture |
+| `evals.json` | Prompt, fixture files, expected task groups |
+| `files/` | Pre-baked four-reviewer JSON |
 | `goldens/` | Report that already passes the scorer |
 | `blank_runs/` | Frozen blank-agent transcript; must fail `score_behavior` |
 | `ralph-loop.md` | Blank vs custom differentiation log |

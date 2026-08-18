@@ -60,6 +60,7 @@ loadout/
     core/
       commit-style.mdc
       repo-conventions.mdc
+      colocated-evals.mdc
     python/
       python-code-style.mdc
       uv-workspace.mdc
@@ -75,6 +76,11 @@ loadout/
     refining-evals/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
+    dispatch-panel-review/SKILL.md
+    dedupe-and-write-tasks/SKILL.md
+    resolve-next-task/SKILL.md
+    log-progress/SKILL.md
+    dispatch-verifiers/SKILL.md
   .claude/skills/                 # repo-local only (not vendored via loadouts)
     skill-security-check/SKILL.md
     refining-evals/SKILL.md
@@ -110,6 +116,15 @@ loadout/
     review_orchestrator/
       review_orchestrator.md
       evals/
+    issue_resolver/
+      issue_resolver.md
+      evals/
+    verifier/
+      verifier.md
+      evals/
+    risk_classifier/
+      risk_classifier.md
+      evals/
   mcps/
     langchain-docs/
       mcp.yaml
@@ -128,6 +143,8 @@ loadout/
     aws.yaml
     terraform.yaml
     playwright-e2e.yaml
+    superpowers.yaml
+    pr_review.yaml
   tests/
   CHANGELOG.md
 ```

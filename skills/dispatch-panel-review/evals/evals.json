@@ -1,0 +1,16 @@
+{
+  "skill_name": "dispatch-panel-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Start the panel review for the current GitHub PR using dispatch-panel-review.",
+      "expected_output": "Four parallel reviewer dispatches, no in-process review",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches review_correctness, review_maintainability, review_scale, and review_security",
+        "All four calls in one turn",
+        "Does not review the diff in-process"
+      ]
+    }
+  ]
+}
