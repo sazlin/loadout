@@ -154,7 +154,7 @@ Example GitHub Actions step:
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 | `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, and slash-command skills |
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`.
+Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright-e2e`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
 
 ## Agents
 
