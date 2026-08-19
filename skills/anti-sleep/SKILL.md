@@ -23,8 +23,10 @@ Keep a **local macOS** agent session from idle-sleeping during long waits and po
 1. Start once, before the first long wait:
 
 ```bash
-.claude/skills/anti-sleep/scripts/keep-awake start
+scripts/keep-awake start
 ```
+
+Run it from this skill's directory (next to `SKILL.md`). After sync that is usually `.claude/skills/anti-sleep/`.
 
 Default timeout is 8 hours. Pass seconds to override: `keep-awake start 14400`.
 

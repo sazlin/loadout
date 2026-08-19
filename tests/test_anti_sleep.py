@@ -41,11 +41,19 @@ def _run(
     return completed.returncode, completed.stdout, completed.stderr
 
 
-def _darwin_bin(tmp_path: Path) -> Path:
-    bindir = tmp_path / "bin"
+def _uname_bin(tmp_path: Path, *, system: str) -> Path:
+    bindir = tmp_path / f"bin-{system.lower()}"
     bindir.mkdir()
+    (bindir / "uname").write_text(
+        f'#!/bin/sh\n[ "$1" = "-s" ] && {{ echo {system}; exit 0; }}\nexec /usr/bin/uname "$@"\n'
+    )
+    (bindir / "uname").chmod(0o755)
+    return bindir
+
+
+def _darwin_bin(tmp_path: Path) -> Path:
+    bindir = _uname_bin(tmp_path, system="Darwin")
     args_file = tmp_path / "caffeinate.args"
-    (bindir / "uname").write_text('#!/bin/sh\n[ "$1" = "-s" ] && { echo Darwin; exit 0; }\nexec /usr/bin/uname "$@"\n')
     # Stay in-process so ps args still name this stub and include -i.
     (bindir / "caffeinate").write_text(
         "#!/usr/bin/env python3\n"
@@ -54,8 +62,7 @@ def _darwin_bin(tmp_path: Path) -> Path:
         f"open({str(args_file)!r}, 'w', encoding='utf-8').write(' '.join(sys.argv[1:]) + '\\n')\n"
         "time.sleep(999)\n"
     )
-    for name in ("uname", "caffeinate"):
-        (bindir / name).chmod(0o755)
+    (bindir / "caffeinate").chmod(0o755)
     return bindir
 
 
@@ -106,7 +113,8 @@ def test_keep_awake_script_is_executable() -> None:
 
 
 def test_keep_awake_is_noop_on_non_darwin(tmp_path: Path) -> None:
-    code, stdout, stderr = _run(tmp_path, "start")
+    bindir = _uname_bin(tmp_path, system="Linux")
+    code, stdout, stderr = _run(tmp_path, "start", extra_path=bindir)
     assert code == 0
     assert "not macOS" in stdout
     assert "Darwin" not in stdout
@@ -120,11 +128,8 @@ def test_keep_awake_start_on_darwin_launches_idle_assertion(tmp_path: Path) -> N
     try:
         assert code == 0
         assert "started" in stdout
-        args = _wait_file(tmp_path / "caffeinate.args").read_text()
-        assert "-i" in args.split()
-        assert "-t" in args.split()
-        assert "120" in args.split()
-        assert "-d" not in args.split()
+        args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
+        assert args == ["-i", "-t", "120"]
         pid = int(_pidfile(tmp_path).read_text().strip())
         os.kill(pid, 0)
         cache_dir = _pidfile(tmp_path).parent
@@ -183,7 +188,7 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
             os.kill(old_pid, 0)
         assert "renewed" in stdout
         args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
-        assert "90" in args
+        assert args == ["-i", "-t", "90"]
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
 
@@ -344,6 +349,16 @@ def test_overlapping_renews_leave_one_keeper(tmp_path: Path) -> None:
             os.kill(keeper, 0)
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_keep_awake_script_never_uses_sudo_or_pmset_writes() -> None:
+    text = SCRIPT.read_text()
+    assert "sudo" not in text
+    assert "disablesleep" not in text
+    assert "pmset -a" not in text
+    assert "pmset -b" not in text
+    assert "pmset -c" not in text
+    assert "pmset -g assertions" in text
 
 
 def test_keep_awake_unknown_command_exits_nonzero(tmp_path: Path) -> None:
