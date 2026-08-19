@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.10.0
+
 ## 0.9.0
 
 - Add a `VERIFIERS.md` claim that newly added tests targeting new behavior
