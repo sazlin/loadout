@@ -4,6 +4,8 @@
 
 ## 0.10.0
 
+- No user-facing changes since 0.9.0.
+
 ## 0.9.0
 
 - Add a `VERIFIERS.md` claim that newly added tests targeting new behavior
