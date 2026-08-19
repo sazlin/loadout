@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import time
@@ -387,10 +388,10 @@ def test_skill_forbids_per_wait_wraps_and_shell_pid_wait() -> None:
     text = SKILL_MD.read_text()
     lowered = text.lower()
     assert "keep-awake start" in lowered
-    assert "caffeinate -w $$" in text or "caffeinate -w $ $" in text or "-w $$" in text
+    assert "caffeinate -w $$" in text
     assert "do not wrap" in lowered or "don't wrap" in lowered
     assert "idle" in lowered
-    assert "/anti-sleep" in lowered or "/anti-sleep" in text
+    assert "/anti-sleep" in lowered
 
 
 def test_skill_forbids_sudo_pmset_and_display_keep_awake() -> None:
@@ -411,6 +412,11 @@ def test_base_loadout_includes_anti_sleep() -> None:
 def test_anti_sleep_evals_exist() -> None:
     evals = SKILL_ROOT / "evals" / "evals.json"
     assert evals.is_file()
-    data = evals.read_text()
-    assert '"skill_name": "anti-sleep"' in data
-    assert "keep-awake" in data
+    payload = json.loads(evals.read_text())
+    assert payload["skill_name"] == "anti-sleep"
+    texts: list[str] = []
+    for entry in payload["evals"]:
+        texts.append(entry.get("prompt", ""))
+        texts.append(entry.get("expected_output", ""))
+        texts.extend(entry.get("expectations") or [])
+    assert any("keep-awake" in text for text in texts)
