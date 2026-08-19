@@ -40,6 +40,10 @@ is_positive_pid() {
 }
 
 is_keeper_pid() {
+  # Live PID plus " -i " in args so unrelated caffeinate -w/-d is rejected.
+  # comm==caffeinate matches macOS; args *caffeinate* is for PATH stubs whose
+  # comm is the interpreter (python3 shebang in Linux CI). comm= is space-padded
+  # on some ps; args= is empty on some BSD ps, so fall back to command=.
   local pid="$1"
   local comm args padded
   is_positive_pid "$pid" || return 1
@@ -84,13 +88,16 @@ running_pid() {
 
 write_pidfile() {
   local pid="$1"
+  # Unlink an existing symlink so we never write through it.
   if [[ -L "$PIDFILE" ]]; then
     rm -f "$PIDFILE"
   fi
+  # If a symlink is still there, refuse (do not follow it).
   if [[ -L "$PIDFILE" ]]; then
     echo "anti-sleep: pidfile is a symlink; refusing to write" >&2
     return 1
   fi
+  # Remove a leftover regular pidfile so noclobber can create a new regular file.
   rm -f "$PIDFILE"
   (
     set -o noclobber
