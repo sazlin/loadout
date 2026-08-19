@@ -44,9 +44,8 @@ def _run(
 def _uname_bin(tmp_path: Path, *, system: str) -> Path:
     bindir = tmp_path / f"bin-{system.lower()}"
     bindir.mkdir()
-    (bindir / "uname").write_text(
-        f'#!/bin/sh\n[ "$1" = "-s" ] && {{ echo {system}; exit 0; }}\nexec /usr/bin/uname "$@"\n'
-    )
+    # Never fall through to the host uname; tests must not depend on the machine OS.
+    (bindir / "uname").write_text(f'#!/bin/sh\n[ "$1" = "-s" ] && {{ echo "{system}"; exit 0; }}\nexit 1\n')
     (bindir / "uname").chmod(0o755)
     return bindir
 
@@ -114,12 +113,29 @@ def test_keep_awake_script_is_executable() -> None:
 
 def test_keep_awake_is_noop_on_non_darwin(tmp_path: Path) -> None:
     bindir = _uname_bin(tmp_path, system="Linux")
-    code, stdout, stderr = _run(tmp_path, "start", extra_path=bindir)
-    assert code == 0
-    assert "not macOS" in stdout
-    assert "Darwin" not in stdout
-    assert stderr == ""
-    assert not _pidfile(tmp_path).exists()
+    uname_s = subprocess.run(
+        [str(bindir / "uname"), "-s"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert uname_s == "Linux"
+    # Shadow host caffeinate so a failed no-op cannot start a real keeper.
+    invoked = tmp_path / "caffeinate.invoked"
+    trap = bindir / "caffeinate"
+    trap.write_text(f"#!/bin/sh\nprintf 'invoked\\n' > {str(invoked)!r}\nexit 1\n")
+    trap.chmod(0o755)
+    try:
+        code, stdout, stderr = _run(tmp_path, "start", extra_path=bindir)
+        assert code == 0
+        assert "not macOS" in stdout
+        assert "Linux" in stdout
+        assert "Darwin" not in stdout
+        assert stderr == ""
+        assert not _pidfile(tmp_path).exists()
+        assert not invoked.exists()
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
 
 
 def test_keep_awake_start_on_darwin_launches_idle_assertion(tmp_path: Path) -> None:
