@@ -18,11 +18,6 @@ is_darwin() {
   [[ "$(uname -s)" == "Darwin" ]]
 }
 
-not_macos() {
-  echo "anti-sleep: not macOS ($(uname -s)); no-op"
-  exit 0
-}
-
 require_timeout() {
   local timeout="$1"
   if [[ ! "$timeout" =~ ^[1-9][0-9]*$ ]]; then
@@ -191,17 +186,21 @@ cmd_renew() {
 command="$1"
 shift || true
 
+# Unknown verbs must be rejected before the non-macOS no-op so they still
+# exit 2 on Linux instead of printing the Darwin skip and exiting 0.
 case "$command" in
   start | status | stop | renew) ;;
   *) usage ;;
 esac
 
-is_darwin || not_macos
+if ! is_darwin; then
+  echo "anti-sleep: not macOS ($(uname -s)); no-op"
+  exit 0
+fi
 
 case "$command" in
   start) cmd_start "${1:-}" ;;
   status) cmd_status ;;
   stop) cmd_stop ;;
   renew) cmd_renew "${1:-}" ;;
-  *) usage ;;
 esac
