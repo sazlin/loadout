@@ -98,21 +98,66 @@ write_pidfile() {
   )
 }
 
+lock_holder_alive() {
+  local holder
+  [[ -f "$LOCKDIR/pid" ]] || return 1
+  holder="$(tr -d '[:space:]' <"$LOCKDIR/pid" 2>/dev/null || true)"
+  is_positive_pid "$holder" || return 1
+  kill -0 -- "$holder" 2>/dev/null
+}
+
+lockdir_age_seconds() {
+  local now mtime
+  now="$(date +%s)"
+  mtime="$(stat -c %Y "$LOCKDIR" 2>/dev/null || stat -f %m "$LOCKDIR" 2>/dev/null || echo "$now")"
+  echo $((now - mtime))
+}
+
+reclaim_stale_lock() {
+  rm -f "$LOCKDIR/pid" 2>/dev/null || true
+  rmdir "$LOCKDIR" 2>/dev/null || true
+}
+
 acquire_lock() {
   local n=0
   ensure_state_dir
   while ! mkdir "$LOCKDIR" 2>/dev/null; do
     n=$((n + 1))
+    if lock_holder_alive; then
+      if [[ "$n" -ge 100 ]]; then
+        echo "anti-sleep: timed out waiting for lock" >&2
+        exit 1
+      fi
+      sleep 0.05
+      continue
+    fi
+    # Dead holder, empty lockdir older than the 5s wait, or last attempt.
+    if [[ -f "$LOCKDIR/pid" ]] || [[ "$(lockdir_age_seconds)" -ge 5 ]] || [[ "$n" -ge 100 ]]; then
+      reclaim_stale_lock
+    fi
     if [[ "$n" -ge 100 ]]; then
+      if mkdir "$LOCKDIR" 2>/dev/null; then
+        break
+      fi
       echo "anti-sleep: timed out waiting for lock" >&2
       exit 1
     fi
-    sleep 0.05
+    if [[ -d "$LOCKDIR" ]]; then
+      sleep 0.05
+    fi
   done
+  printf '%s\n' "$$" >"$LOCKDIR/pid"
   trap release_lock EXIT
+  trap 'exit 1' INT TERM HUP
 }
 
 release_lock() {
+  local holder=""
+  holder="$(tr -d '[:space:]' <"$LOCKDIR/pid" 2>/dev/null || true)"
+  if [[ "$holder" != "$$" ]]; then
+    return 0
+  fi
+  rm -f "$LOCKDIR/pid" 2>/dev/null || true
   rmdir "$LOCKDIR" 2>/dev/null || true
 }
 
@@ -126,8 +171,11 @@ launch() {
   fi
   nohup caffeinate -i -t "$timeout" >/dev/null 2>&1 &
   pid=$!
+  if ! write_pidfile "$pid"; then
+    kill -- "$pid" 2>/dev/null || true
+    return 1
+  fi
   disown "$pid" 2>/dev/null || true
-  write_pidfile "$pid"
   printf '%s\n' "$pid"
 }
 
@@ -139,14 +187,20 @@ cmd_start() {
     echo "anti-sleep: already running pid=$pid"
     return 0
   fi
-  pid="$(launch "$timeout")"
+  if ! pid="$(launch "$timeout")"; then
+    return 1
+  fi
   echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
   echo "anti-sleep: verify with: pmset -g assertions"
 }
 
 cmd_status() {
-  local pid
-  if pid="$(running_pid)"; then
+  local pid=""
+  acquire_lock
+  pid="$(running_pid || true)"
+  release_lock
+  trap - EXIT INT TERM HUP
+  if [[ -n "$pid" ]]; then
     echo "anti-sleep: running pid=$pid"
     if command -v pmset >/dev/null; then
       pmset -g assertions || true
@@ -175,7 +229,9 @@ cmd_renew() {
   local old new
   acquire_lock
   old="$(running_pid || true)"
-  new="$(launch "$timeout")"
+  if ! new="$(launch "$timeout")"; then
+    return 1
+  fi
   if [[ -n "$old" && "$old" != "$new" ]] && is_keeper_pid "$old"; then
     kill -- "$old" 2>/dev/null || true
   fi

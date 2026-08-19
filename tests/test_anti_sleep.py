@@ -70,6 +70,10 @@ def _pidfile(tmp_path: Path) -> Path:
     return tmp_path / "Library" / "Caches" / "loadout-anti-sleep" / "keep-awake.pid"
 
 
+def _lockdir(tmp_path: Path) -> Path:
+    return Path(str(_pidfile(tmp_path)) + ".lock")
+
+
 def _prepare_pidfile(tmp_path: Path, contents: str) -> Path:
     pidfile = _pidfile(tmp_path)
     pidfile.parent.mkdir(parents=True, exist_ok=True)
@@ -333,6 +337,123 @@ def test_overlapping_starts_leave_one_keeper(tmp_path: Path) -> None:
         assert sum("already running" in text for text in texts) == 1
         keeper = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
         os.kill(keeper, 0)
+        assert set(_keeper_pids(bindir)) == {keeper}
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+@pytest.mark.parametrize("stale_kind", ["dead_pid", "empty_old"])
+def test_start_recovers_stale_lockdir(tmp_path: Path, stale_kind: str) -> None:
+    bindir = _darwin_bin(tmp_path)
+    lockdir = _lockdir(tmp_path)
+    lockdir.mkdir(parents=True)
+    if stale_kind == "dead_pid":
+        dead = subprocess.Popen(["true"])
+        dead.wait()
+        (lockdir / "pid").write_text(f"{dead.pid}\n")
+    else:
+        past = time.time() - 10
+        os.utime(lockdir, (past, past))
+    code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+    try:
+        assert code == 0
+        assert "started" in stdout
+        keeper = int(_pidfile(tmp_path).read_text().strip())
+        os.kill(keeper, 0)
+        assert set(_keeper_pids(bindir)) == {keeper}
+        assert not lockdir.exists()
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_start_does_not_steal_live_lock(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    holder = subprocess.Popen(["sleep", "60"])
+    lockdir = _lockdir(tmp_path)
+    try:
+        lockdir.mkdir(parents=True)
+        (lockdir / "pid").write_text(f"{holder.pid}\n")
+        started = time.monotonic()
+        completed = subprocess.run(
+            [str(SCRIPT), "start", "120"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=_env(tmp_path, extra_path=bindir),
+            timeout=10,
+        )
+        elapsed = time.monotonic() - started
+        assert completed.returncode == 1
+        assert "timed out" in completed.stderr
+        assert elapsed >= 4.0
+        assert _keeper_pids(bindir) == []
+        assert lockdir.is_dir()
+        assert (lockdir / "pid").read_text().strip() == str(holder.pid)
+    finally:
+        holder.kill()
+        holder.wait()
+        pid_path = lockdir / "pid"
+        if pid_path.exists():
+            pid_path.unlink()
+        if lockdir.exists():
+            lockdir.rmdir()
+
+
+def test_concurrent_status_and_start_leave_one_tracked_keeper(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    dead = subprocess.Popen(["true"])
+    dead.wait()
+    _prepare_pidfile(tmp_path, f"{dead.pid}\n")
+    env = _env(tmp_path, extra_path=bindir)
+    procs = [
+        subprocess.Popen(
+            [str(SCRIPT), "status"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        ),
+        subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        ),
+    ]
+    for proc in procs:
+        proc.communicate(timeout=10)
+    try:
+        keepers = _keeper_pids(bindir)
+        assert len(keepers) == 1
+        pidfile_pid = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+        assert pidfile_pid == keepers[0]
+        os.kill(pidfile_pid, 0)
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_start_kills_keeper_when_pidfile_write_fails(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    pidfile = _pidfile(tmp_path)
+    pidfile.parent.mkdir(parents=True, exist_ok=True)
+    pidfile.parent.chmod(0o700)
+    pidfile.mkdir()
+    try:
+        code, _stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+        assert code != 0
+        time.sleep(0.05)
+        assert _keeper_pids(bindir) == []
+        assert pidfile.is_dir()
+    finally:
+        if pidfile.is_dir():
+            pidfile.rmdir()
+        _run(tmp_path, "stop", extra_path=bindir)
+    code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+    try:
+        assert code == 0
+        assert "started" in stdout
+        keeper = int(_pidfile(tmp_path).read_text().strip())
         assert set(_keeper_pids(bindir)) == {keeper}
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
