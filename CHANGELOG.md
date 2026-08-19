@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `anti-sleep` to the `base` loadout: a `/anti-sleep` skill and
+  `keep-awake` helper that hold a session-long `caffeinate -i` assertion
+  so local Mac agents survive idle sleep during long waits and polling.
+
 ## 0.10.0
 
 ## 0.9.0

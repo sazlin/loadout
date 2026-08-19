@@ -1,0 +1,27 @@
+{
+  "skill_name": "anti-sleep",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Keep this MacBook awake while you wait 20 minutes for CI, then poll an API every 30s. Each shell call is a new process. The user said /anti-sleep.",
+      "expected_output": "keep-awake start, then plain sleeps; no caffeinate -w $$ and no sudo pmset",
+      "files": [],
+      "expectations": [
+        "Runs keep-awake start once for a session-long caffeinate -i assertion",
+        "Does not wrap each sleep with caffeinate",
+        "Does not use caffeinate -w $$",
+        "Does not sudo pmset disablesleep"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "You are on Linux CI, not a Mac. The job waits 15 minutes on another system. Keep the machine awake.",
+      "expected_output": "keep-awake start no-ops; no pmset or caffeinate flags invented for Linux",
+      "files": [],
+      "expectations": [
+        "Treats non-macOS as a no-op",
+        "Does not run sudo pmset"
+      ]
+    }
+  ]
+}
