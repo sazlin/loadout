@@ -4,7 +4,10 @@
 set -euo pipefail
 
 DEFAULT_TIMEOUT=28800
-PIDFILE="${TMPDIR:-/tmp}/loadout-anti-sleep.${UID}.pid"
+umask 077
+STATE_DIR="${HOME}/Library/Caches/loadout-anti-sleep"
+PIDFILE="${STATE_DIR}/keep-awake.pid"
+LOCKDIR="${PIDFILE}.lock"
 
 usage() {
   echo "usage: keep-awake start [seconds] | status | stop | renew [seconds]" >&2
@@ -28,36 +31,115 @@ require_timeout() {
   fi
 }
 
+ensure_state_dir() {
+  if [[ -z "${HOME:-}" ]]; then
+    echo "anti-sleep: HOME is not set" >&2
+    exit 1
+  fi
+  mkdir -p "$STATE_DIR"
+  chmod 700 "$STATE_DIR"
+}
+
+is_positive_pid() {
+  [[ "$1" =~ ^[1-9][0-9]*$ ]]
+}
+
+is_keeper_pid() {
+  local pid="$1"
+  local comm args padded
+  is_positive_pid "$pid" || return 1
+  kill -0 -- "$pid" 2>/dev/null || return 1
+  comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+  comm="${comm//[$' \t']/}"
+  args="$(ps -ww -p "$pid" -o args= 2>/dev/null || true)"
+  if [[ -z "$args" ]]; then
+    args="$(ps -ww -p "$pid" -o command= 2>/dev/null || true)"
+  fi
+  padded=" ${args} "
+  case "$padded" in
+    *" -i "*) ;;
+    *) return 1 ;;
+  esac
+  if [[ "$comm" == "caffeinate" ]]; then
+    return 0
+  fi
+  case "$args" in
+    *caffeinate*) return 0 ;;
+  esac
+  return 1
+}
+
 running_pid() {
   local pid
+  if [[ -L "$PIDFILE" ]]; then
+    rm -f "$PIDFILE"
+    return 1
+  fi
   if [[ ! -f "$PIDFILE" ]]; then
     return 1
   fi
   pid="$(tr -d '[:space:]' <"$PIDFILE")"
-  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+  if is_keeper_pid "$pid"; then
     printf '%s\n' "$pid"
     return 0
   fi
+  rm -f "$PIDFILE"
   return 1
+}
+
+write_pidfile() {
+  local pid="$1"
+  if [[ -L "$PIDFILE" ]]; then
+    rm -f "$PIDFILE"
+  fi
+  if [[ -L "$PIDFILE" ]]; then
+    echo "anti-sleep: pidfile is a symlink; refusing to write" >&2
+    return 1
+  fi
+  rm -f "$PIDFILE"
+  (
+    set -o noclobber
+    printf '%s\n' "$pid" >"$PIDFILE"
+  )
+}
+
+acquire_lock() {
+  local n=0
+  ensure_state_dir
+  while ! mkdir "$LOCKDIR" 2>/dev/null; do
+    n=$((n + 1))
+    if [[ "$n" -ge 100 ]]; then
+      echo "anti-sleep: timed out waiting for lock" >&2
+      exit 1
+    fi
+    sleep 0.05
+  done
+  trap release_lock EXIT
+}
+
+release_lock() {
+  rmdir "$LOCKDIR" 2>/dev/null || true
 }
 
 launch() {
   local timeout="$1"
+  local pid
   require_timeout "$timeout"
   if ! command -v caffeinate >/dev/null; then
     echo "anti-sleep: caffeinate not found on PATH" >&2
     exit 1
   fi
   nohup caffeinate -i -t "$timeout" >/dev/null 2>&1 &
-  local pid=$!
+  pid=$!
   disown "$pid" 2>/dev/null || true
-  printf '%s\n' "$pid" >"$PIDFILE"
+  write_pidfile "$pid"
   printf '%s\n' "$pid"
 }
 
 cmd_start() {
   local timeout="${1:-$DEFAULT_TIMEOUT}"
   local pid
+  acquire_lock
   if pid="$(running_pid)"; then
     echo "anti-sleep: already running pid=$pid"
     return 0
@@ -82,8 +164,9 @@ cmd_status() {
 
 cmd_stop() {
   local pid
+  acquire_lock
   if pid="$(running_pid)"; then
-    kill "$pid" 2>/dev/null || true
+    kill -- "$pid" 2>/dev/null || true
     rm -f "$PIDFILE"
     echo "anti-sleep: stopped pid=$pid"
     return 0
@@ -95,10 +178,11 @@ cmd_stop() {
 cmd_renew() {
   local timeout="${1:-$DEFAULT_TIMEOUT}"
   local old new
+  acquire_lock
   old="$(running_pid || true)"
   new="$(launch "$timeout")"
-  if [[ -n "$old" && "$old" != "$new" ]]; then
-    kill "$old" 2>/dev/null || true
+  if [[ -n "$old" && "$old" != "$new" ]] && is_keeper_pid "$old"; then
+    kill -- "$old" 2>/dev/null || true
   fi
   echo "anti-sleep: renewed pid=$new timeout=${timeout}s (PreventUserIdleSystemSleep)"
 }

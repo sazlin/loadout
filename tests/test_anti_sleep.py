@@ -17,21 +17,26 @@ SCRIPT = SKILL_ROOT / "scripts" / "keep-awake"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
 
 
+def _env(tmp_path: Path, extra_path: Path | None = None) -> dict[str, str]:
+    env = os.environ.copy()
+    env["HOME"] = str(tmp_path)
+    env["TMPDIR"] = str(tmp_path)
+    if extra_path is not None:
+        env["PATH"] = f"{extra_path}{os.pathsep}{env.get('PATH', '')}"
+    return env
+
+
 def _run(
     tmp_path: Path,
     *args: str,
     extra_path: Path | None = None,
 ) -> tuple[int, str, str]:
-    env = os.environ.copy()
-    env["TMPDIR"] = str(tmp_path)
-    if extra_path is not None:
-        env["PATH"] = f"{extra_path}{os.pathsep}{env.get('PATH', '')}"
     completed = subprocess.run(
         [str(SCRIPT), *args],
         check=False,
         capture_output=True,
         text=True,
-        env=env,
+        env=_env(tmp_path, extra_path),
     )
     return completed.returncode, completed.stdout, completed.stderr
 
@@ -41,14 +46,29 @@ def _darwin_bin(tmp_path: Path) -> Path:
     bindir.mkdir()
     args_file = tmp_path / "caffeinate.args"
     (bindir / "uname").write_text('#!/bin/sh\n[ "$1" = "-s" ] && { echo Darwin; exit 0; }\nexec /usr/bin/uname "$@"\n')
-    (bindir / "caffeinate").write_text(f'#!/bin/sh\nprintf "%s\\n" "$*" > "{args_file}"\nexec sleep 999\n')
+    # Stay in-process so ps args still name this stub and include -i.
+    (bindir / "caffeinate").write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "import time\n"
+        f"open({str(args_file)!r}, 'w', encoding='utf-8').write(' '.join(sys.argv[1:]) + '\\n')\n"
+        "time.sleep(999)\n"
+    )
     for name in ("uname", "caffeinate"):
         (bindir / name).chmod(0o755)
     return bindir
 
 
 def _pidfile(tmp_path: Path) -> Path:
-    return tmp_path / f"loadout-anti-sleep.{os.getuid()}.pid"
+    return tmp_path / "Library" / "Caches" / "loadout-anti-sleep" / "keep-awake.pid"
+
+
+def _prepare_pidfile(tmp_path: Path, contents: str) -> Path:
+    pidfile = _pidfile(tmp_path)
+    pidfile.parent.mkdir(parents=True, exist_ok=True)
+    pidfile.parent.chmod(0o700)
+    pidfile.write_text(contents)
+    return pidfile
 
 
 def _wait_file(path: Path, timeout: float = 1.0) -> Path:
@@ -58,6 +78,26 @@ def _wait_file(path: Path, timeout: float = 1.0) -> Path:
             return path
         time.sleep(0.01)
     raise AssertionError(f"timed out waiting for {path}")
+
+
+def _keeper_pids(bindir: Path) -> list[int]:
+    needle = str(bindir / "caffeinate")
+    listed = subprocess.run(
+        ["ps", "-ww", "-eo", "pid=,args="],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pids: list[int] = []
+    for line in listed.stdout.splitlines():
+        stripped = line.strip()
+        if needle not in stripped:
+            continue
+        pid_str, _, args = stripped.partition(" ")
+        if " -i " not in f" {args} ":
+            continue
+        pids.append(int(pid_str))
+    return pids
 
 
 def test_keep_awake_script_is_executable() -> None:
@@ -87,6 +127,10 @@ def test_keep_awake_start_on_darwin_launches_idle_assertion(tmp_path: Path) -> N
         assert "-d" not in args.split()
         pid = int(_pidfile(tmp_path).read_text().strip())
         os.kill(pid, 0)
+        cache_dir = _pidfile(tmp_path).parent
+        assert cache_dir.name == "loadout-anti-sleep"
+        assert cache_dir.stat().st_mode & 0o777 == 0o700
+        assert not (tmp_path / f"loadout-anti-sleep.{os.getuid()}.pid").exists()
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
 
@@ -140,6 +184,164 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
         assert "renewed" in stdout
         args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
         assert "90" in args
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_status_treats_live_non_caffeinate_pidfile_as_not_running(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        _prepare_pidfile(tmp_path, f"{sleeper.pid}\n")
+        code, _stdout, stderr = _run(tmp_path, "status", extra_path=bindir)
+        assert code == 1
+        assert "not running" in stderr
+        assert sleeper.poll() is None
+        assert not _pidfile(tmp_path).exists()
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+
+
+def test_start_launches_when_pidfile_points_at_live_sleep(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        _prepare_pidfile(tmp_path, f"{sleeper.pid}\n")
+        code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+        assert code == 0
+        assert "started" in stdout
+        keeper = int(_pidfile(tmp_path).read_text().strip())
+        assert keeper != sleeper.pid
+        os.kill(keeper, 0)
+        assert sleeper.poll() is None
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_stop_does_not_signal_live_non_caffeinate_pid(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        _prepare_pidfile(tmp_path, f"{sleeper.pid}\n")
+        code, stdout, _stderr = _run(tmp_path, "stop", extra_path=bindir)
+        assert code == 0
+        assert "not running" in stdout
+        assert sleeper.poll() is None
+        os.kill(sleeper.pid, 0)
+        assert not _pidfile(tmp_path).exists()
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+
+
+@pytest.mark.parametrize("contents", ["0", "-9", "--1"])
+def test_stop_ignores_non_positive_pidfile_contents(tmp_path: Path, contents: str) -> None:
+    bindir = _darwin_bin(tmp_path)
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        _prepare_pidfile(tmp_path, f"{contents}\n")
+        code, stdout, _stderr = _run(tmp_path, "stop", extra_path=bindir)
+        assert code == 0
+        assert "not running" in stdout
+        assert sleeper.poll() is None
+        assert not _pidfile(tmp_path).exists()
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+
+
+def test_renew_does_not_signal_live_non_caffeinate_pid(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        _prepare_pidfile(tmp_path, f"{sleeper.pid}\n")
+        code, stdout, _stderr = _run(tmp_path, "renew", "90", extra_path=bindir)
+        assert code == 0
+        assert "renewed" in stdout
+        assert sleeper.poll() is None
+        keeper = int(_pidfile(tmp_path).read_text().strip())
+        assert keeper != sleeper.pid
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_start_does_not_follow_pidfile_symlink(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    target = tmp_path / "clobber_me"
+    target.write_text("secret\n")
+    pidfile = _pidfile(tmp_path)
+    pidfile.parent.mkdir(parents=True, exist_ok=True)
+    pidfile.parent.chmod(0o700)
+    pidfile.symlink_to(target)
+    try:
+        code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+        assert code == 0
+        assert "started" in stdout
+        assert target.read_text() == "secret\n"
+        assert pidfile.is_file()
+        assert not pidfile.is_symlink()
+        int(pidfile.read_text().strip())
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_overlapping_starts_leave_one_keeper(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    env = _env(tmp_path, extra_path=bindir)
+    procs = [
+        subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(2)
+    ]
+    results = [proc.communicate(timeout=10) for proc in procs]
+    try:
+        assert [proc.returncode for proc in procs] == [0, 0]
+        texts = [stdout for stdout, _stderr in results]
+        assert sum("started" in text for text in texts) == 1
+        assert sum("already running" in text for text in texts) == 1
+        keeper = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+        os.kill(keeper, 0)
+        assert set(_keeper_pids(bindir)) == {keeper}
+    finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_overlapping_renews_leave_one_keeper(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    _run(tmp_path, "start", "120", extra_path=bindir)
+    env = _env(tmp_path, extra_path=bindir)
+    procs = [
+        subprocess.Popen(
+            [str(SCRIPT), "renew", "90"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(2)
+    ]
+    results = [proc.communicate(timeout=10) for proc in procs]
+    try:
+        assert [proc.returncode for proc in procs] == [0, 0]
+        assert all("renewed" in stdout for stdout, _stderr in results)
+        keeper = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+        os.kill(keeper, 0)
+        assert set(_keeper_pids(bindir)) == {keeper}
+        _run(tmp_path, "stop", extra_path=bindir)
+        assert not _pidfile(tmp_path).exists()
+        time.sleep(0.05)
+        with pytest.raises(OSError):
+            os.kill(keeper, 0)
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
 
