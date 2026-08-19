@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.9.0
+
+- Add a `VERIFIERS.md` claim that newly added tests targeting new behavior
+  fail on the base commit and pass on the branch.
+
 ## 0.8.0
 
 - Dogfood `base` and `pr_review` on this repo (`.loadout.yaml` pins `v0.7.0`)
