@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Hold a session-long macOS idle-sleep assertion for agent work.
+# Usage: keep-awake start [seconds] | status | stop | renew [seconds]
+set -euo pipefail
+
+DEFAULT_TIMEOUT=28800
+PIDFILE="${TMPDIR:-/tmp}/loadout-anti-sleep.${UID}.pid"
+
+usage() {
+  echo "usage: keep-awake start [seconds] | status | stop | renew [seconds]" >&2
+  exit 2
+}
+
+is_darwin() {
+  [[ "$(uname -s)" == "Darwin" ]]
+}
+
+not_macos() {
+  echo "anti-sleep: not macOS ($(uname -s)); no-op"
+  exit 0
+}
+
+require_timeout() {
+  local timeout="$1"
+  if [[ ! "$timeout" =~ ^[1-9][0-9]*$ ]]; then
+    echo "anti-sleep: timeout must be a positive integer of seconds, got: $timeout" >&2
+    exit 2
+  fi
+}
+
+running_pid() {
+  local pid
+  if [[ ! -f "$PIDFILE" ]]; then
+    return 1
+  fi
+  pid="$(tr -d '[:space:]' <"$PIDFILE")"
+  if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+    printf '%s\n' "$pid"
+    return 0
+  fi
+  return 1
+}
+
+launch() {
+  local timeout="$1"
+  require_timeout "$timeout"
+  if ! command -v caffeinate >/dev/null; then
+    echo "anti-sleep: caffeinate not found on PATH" >&2
+    exit 1
+  fi
+  nohup caffeinate -i -t "$timeout" >/dev/null 2>&1 &
+  local pid=$!
+  disown "$pid" 2>/dev/null || true
+  printf '%s\n' "$pid" >"$PIDFILE"
+  printf '%s\n' "$pid"
+}
+
+cmd_start() {
+  local timeout="${1:-$DEFAULT_TIMEOUT}"
+  local pid
+  if pid="$(running_pid)"; then
+    echo "anti-sleep: already running pid=$pid"
+    return 0
+  fi
+  pid="$(launch "$timeout")"
+  echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
+  echo "anti-sleep: verify with: pmset -g assertions"
+}
+
+cmd_status() {
+  local pid
+  if pid="$(running_pid)"; then
+    echo "anti-sleep: running pid=$pid"
+    if command -v pmset >/dev/null; then
+      pmset -g assertions || true
+    fi
+    return 0
+  fi
+  echo "anti-sleep: not running" >&2
+  exit 1
+}
+
+cmd_stop() {
+  local pid
+  if pid="$(running_pid)"; then
+    kill "$pid" 2>/dev/null || true
+    rm -f "$PIDFILE"
+    echo "anti-sleep: stopped pid=$pid"
+    return 0
+  fi
+  rm -f "$PIDFILE"
+  echo "anti-sleep: not running"
+}
+
+cmd_renew() {
+  local timeout="${1:-$DEFAULT_TIMEOUT}"
+  local old new
+  old="$(running_pid || true)"
+  new="$(launch "$timeout")"
+  if [[ -n "$old" && "$old" != "$new" ]]; then
+    kill "$old" 2>/dev/null || true
+  fi
+  echo "anti-sleep: renewed pid=$new timeout=${timeout}s (PreventUserIdleSystemSleep)"
+}
+
+[[ $# -ge 1 ]] || usage
+command="$1"
+shift || true
+
+case "$command" in
+  start | status | stop | renew) ;;
+  *) usage ;;
+esac
+
+is_darwin || not_macos
+
+case "$command" in
+  start) cmd_start "${1:-}" ;;
+  status) cmd_status ;;
+  stop) cmd_stop ;;
+  renew) cmd_renew "${1:-}" ;;
+  *) usage ;;
+esac
