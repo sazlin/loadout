@@ -143,7 +143,7 @@ Example GitHub Actions step:
 
 | Loadout | Extends | What you get |
 | --- | --- | --- |
-| `base` | — | Core conventions, release checklist skill, deny-dangerous hook, davinci, Context7 MCP |
+| `base` | — | Core conventions, release checklist, anti-sleep, session decision-review skills, deny-dangerous hook, davinci, Context7 MCP |
 | `python` | `base` | Python code style + pytest rules, python_coder agent |
 | `python-monorepo` | `python` | UV workspace rules + db-migrations skill |
 | `typescript` | `base` | TypeScript code style rules |

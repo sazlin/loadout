@@ -1,0 +1,29 @@
+{
+  "skill_name": "decisions",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This session you read README.md, chose to persist a decision list in .session-decisions.md instead of conversation-only, ran just lint, skipped a live subagent harness because the repo already uses evals.json plus pytest contracts, committed, and scoped out a third scoring skill as YAGNI. User: /decisions",
+      "expected_output": "Chronological D1..Dn grok lines for the real choices only; write .session-decisions.md; no transcript or status table",
+      "files": [],
+      "expectations": [
+        "Assigns stable D1, D2, ... ids in chronological order",
+        "One grok line per decision, enough to understand what was chosen",
+        "Omits mechanical steps such as reading files, running tests, and committing",
+        "Does not use a Done/Open status table",
+        "Writes .session-decisions.md and does not commit it",
+        "Points the human to /next-decision for a full review"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Recap the decisions you made this session so I can grok them. Do not wait for a slash command if /decisions applies.",
+      "expected_output": "Same grok list of session decisions, oldest first",
+      "files": [],
+      "expectations": [
+        "Treats a recap request as /decisions",
+        "Lists choices not a play-by-play of the session"
+      ]
+    }
+  ]
+}

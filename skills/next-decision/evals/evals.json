@@ -1,0 +1,38 @@
+{
+  "skill_name": "next-decision",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions.md (next: D1). User: /next-decision",
+      "expected_output": "Full review of D1 only, then advance next to D2",
+      "files": ["evals/files/session-decisions.md"],
+      "expectations": [
+        "Reviews D1 in full (choice, alternatives, why, stakes, trade-offs, review point)",
+        "Does not review D2 or D3 in this run",
+        "Does not treat next as a future decision to make or say those choices are already done",
+        "Advances next: to D2"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Same .session-decisions.md with next: D1. User: /next-decision D2",
+      "expected_output": "Full review of D2 only; leave next at D1",
+      "files": ["evals/files/session-decisions.md"],
+      "expectations": [
+        "Reviews D2 only",
+        "Does not move next: unless the target was D1",
+        "Uses the full review recipe, not a one-line restatement"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Mid-implementation the user says we decided to use Postgres. Do not run next-decision. Continue implementing.",
+      "expected_output": "No next-decision review; command only",
+      "files": [],
+      "expectations": [
+        "Does not trigger on a passing mention of a decision",
+        "Triggers only on /next-decision or /next-decision with an id"
+      ]
+    }
+  ]
+}
