@@ -23,13 +23,18 @@ def _evals_payload(skill_root: Path) -> dict[str, object]:
 
 
 def _eval_texts(payload: dict[str, object]) -> str:
+    raw = payload.get("evals")
+    if not isinstance(raw, list):
+        return ""
     chunks: list[str] = []
-    for entry in payload.get("evals") or []:
+    for entry in raw:
         if not isinstance(entry, dict):
             continue
         chunks.append(str(entry.get("prompt", "")))
         chunks.append(str(entry.get("expected_output", "")))
-        chunks.extend(str(item) for item in (entry.get("expectations") or []))
+        expectations = entry.get("expectations")
+        if isinstance(expectations, list):
+            chunks.extend(str(item) for item in expectations)
     return "\n".join(chunks).lower()
 
 
@@ -90,7 +95,11 @@ def test_session_decision_skills_have_colocated_evals() -> None:
         assert isinstance(evals, list) and evals
         for index, entry in enumerate(evals):
             assert isinstance(entry, dict)
-            for relative in entry.get("files") or []:
+            files = entry.get("files")
+            if not isinstance(files, list):
+                continue
+            for relative in files:
+                assert isinstance(relative, str)
                 path = root / relative
                 assert path.is_file(), f"{name} evals[{index}] missing {relative}"
 
