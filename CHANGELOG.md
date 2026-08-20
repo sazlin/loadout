@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `decisions` and `next-decision` to the `base` loadout: `/decisions`
+  lists this session's choices as chronological grok-lines; `/next-decision`
+  (optional id) reviews the next listed choice in full.
 - Add `anti-sleep` to the `base` loadout: a `/anti-sleep` skill and
   `keep-awake` helper that hold a session-long `caffeinate -i` assertion
   so local Mac agents survive idle sleep during long waits and polling.

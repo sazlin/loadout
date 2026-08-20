@@ -1,0 +1,50 @@
+{
+  "skill_name": "decisions",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This session you read README.md, chose to persist a decision list in .session-decisions.md instead of conversation-only, ran just lint, skipped a live subagent harness because the repo already uses evals.json plus pytest contracts, committed, and scoped out a third scoring skill as YAGNI. User: /decisions",
+      "expected_output": "Chronological D1..Dn grok lines for the real choices only; write .session-decisions.md; no transcript or status table",
+      "files": [],
+      "expectations": [
+        "Assigns stable D1, D2, ... ids in chronological order",
+        "One grok line per decision, enough to understand what was chosen",
+        "Omits mechanical steps such as reading files, running tests, and committing",
+        "Does not use a Done/Open status table",
+        "Writes .session-decisions.md and does not commit it",
+        "Points the human to /next-decision for a full review"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Recap the decisions you made this session so I can grok them. Do not wait for a slash command if /decisions applies.",
+      "expected_output": "Same grok list of session decisions, oldest first",
+      "files": [],
+      "expectations": [
+        "Treats a recap request as /decisions",
+        "Lists choices not a play-by-play of the session"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions-partial.md (next: D2, D1=Postgres, D2=skip harness, D3=YAGNI). A cleaner rescan drops Postgres. User: /decisions",
+      "expected_output": "Rewrite ## D<n> without Postgres. next: follows the previous grok-line text, so next: D1 is skip harness, not next: D2 YAGNI",
+      "files": ["evals/files/session-decisions-partial.md"],
+      "expectations": [
+        "Matches the previous next: target by grok-line text, then writes that line's new D-id",
+        "Does not keep next: D2 merely because a heading named D2 still exists after ids were compacted",
+        "File has next: D1 (skip harness), not next: D2 (YAGNI)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions-done.md (next: done, D1=Postgres, D2=skip harness, D3=YAGNI). A second /decisions finds the same grok lines and adds none. User: /decisions",
+      "expected_output": "Same ## D<n> sections; leave next: done, not next: D1",
+      "files": ["evals/files/session-decisions-done.md"],
+      "expectations": [
+        "Treats next: done as a cursor to keep when no new headings were added",
+        "Does not reset next: to D1"
+      ]
+    }
+  ]
+}

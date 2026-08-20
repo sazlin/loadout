@@ -1,0 +1,71 @@
+{
+  "skill_name": "next-decision",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions.md (next: D1). User: /next-decision",
+      "expected_output": "Full review of D1 only, then advance next to D2",
+      "files": ["evals/files/session-decisions.md"],
+      "expectations": [
+        "Reviews D1 in full (choice, alternatives, why, stakes, trade-offs, review point)",
+        "Does not review D2 or D3 in this run",
+        "Does not treat next as a future decision to make or say those choices are already done",
+        "Advances next: to D2"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Same .session-decisions.md with next: D1. User: /next-decision D2",
+      "expected_output": "Full review of D2 only; leave next at D1",
+      "files": ["evals/files/session-decisions.md"],
+      "expectations": [
+        "Reviews D2 only",
+        "Leaves next: unchanged because the explicit id D2 is not the current next: value",
+        "Uses the full review recipe, not a one-line restatement"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Mid-implementation the user says we decided to use Postgres. Do not run next-decision. Continue implementing.",
+      "expected_output": "No next-decision review; command only",
+      "files": [],
+      "expectations": [
+        "Does not trigger on a passing mention of a decision",
+        "Triggers only on /next-decision or /next-decision with an id"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions-done.md (next: done, D1–D3). User: /next-decision",
+      "expected_output": "Every listed decision has been reviewed. Do not call done an unknown id.",
+      "files": ["evals/files/session-decisions-done.md"],
+      "expectations": [
+        "Says every listed decision has been reviewed",
+        "Does not call the id unknown",
+        "Does not write a D1–D3 review recipe"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Same .session-decisions.md with next: done and D1–D3. User: /next-decision D2",
+      "expected_output": "Full D2 recipe; leave next: done",
+      "files": ["evals/files/session-decisions-done.md"],
+      "expectations": [
+        "Reviews D2 with the full recipe even though next: is done",
+        "Leaves next: done",
+        "Does not apply the done short-circuit to an explicit id"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Conversation already contains a D1–D3 grok list (persist .session-decisions.md, skip harness, YAGNI). Project root has no .session-decisions.md. User: /next-decision",
+      "expected_output": "Write .session-decisions.md from the in-session grok list (next: D1 or advance from D1) and review D1 only",
+      "files": [],
+      "expectations": [
+        "Writes .session-decisions.md even though a grok list already exists in chat",
+        "Reuses the in-session grok list instead of requiring a second scan",
+        "Reviews D1 only"
+      ]
+    }
+  ]
+}
