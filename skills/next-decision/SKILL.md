@@ -8,13 +8,13 @@ description: >-
 
 # Next-decision
 
-Command only. Follows **decisions**. Review **one** listed decision so a human can judge whether it was the right call.
+Command only. Follows the `/decisions` skill. Review **one** listed decision so a human can judge whether it was the right call.
 
 This is not "the next decision to make". Listed choices are not "already done" — they still need review.
 
 ## Steps
 
-1. If `.session-decisions.md` is missing, follow **decisions** first, then continue. If this session already has a grok list, reuse it when writing the file instead of requiring a second scan — do not use "has a list" as a reason to skip file creation. After that write, pick `next:` as in step 2 (D1 if missing).
+1. If `.session-decisions.md` is missing, run `/decisions` first, then continue. If this session already has a grok list, reuse it when writing the file instead of requiring a second scan — do not use "has a list" as a reason to skip file creation. After that write, pick `next:` as in step 2 (D1 if missing).
 2. Pick the target:
    - `/next-decision` → the id in `next:` (D1 if missing)
    - `/next-decision D2` or `/next-decision 2` → that id

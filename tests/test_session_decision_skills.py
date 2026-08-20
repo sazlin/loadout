@@ -71,7 +71,7 @@ def test_next_decision_body_reviews_one_listed_choice() -> None:
     assert "command only" in lowered
     assert "/next-decision" in lowered
     assert "d2" in lowered or "decision id" in lowered
-    assert "decisions" in lowered
+    assert "/decisions" in lowered
     assert "alternatives" in lowered
     assert "one" in lowered
     assert "already done" in lowered or "next decision to make" in lowered
