@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.0
+
 - Add `decisions` and `next-decision` to the `base` loadout: `/decisions`
   lists this session's choices as chronological grok-lines; `/next-decision`
   (optional id) reviews the next listed choice in full.
