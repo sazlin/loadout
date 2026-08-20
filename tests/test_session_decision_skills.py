@@ -151,7 +151,7 @@ def test_next_decision_rebuilds_missing_file_even_with_in_session_list() -> None
 
 def test_next_decision_done_short_circuit_is_no_id_only() -> None:
     text = (NEXT_DECISION / "SKILL.md").read_text()
-    steps, _, _ = text.partition("## Review recipe")
+    steps, _, after_steps = text.partition("## Review recipe")
     lowered = steps.lower()
     no_id_done = lowered.index("passed no id")
     unknown = lowered.index("unknown")
@@ -162,6 +162,24 @@ def test_next_decision_done_short_circuit_is_no_id_only() -> None:
     assert "bare `/next-decision`" in lowered
     assert "leave `next:` unchanged" in lowered
     assert "current `next:` value" in lowered
+
+    intro, _, _ = text.partition("## Steps")
+    intro_lower = intro.lower()
+    assert "d-id" in intro_lower
+    assert "`next:` is `done`" in intro_lower
+
+    _, _, mistakes = after_steps.partition("## Common mistakes")
+    assert "every listed decision has been reviewed" in mistakes.lower()
+    for line in mistakes.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip().lower() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        temptation, action = cells[0], cells[1]
+        if "done" in temptation and "d-id" not in temptation:
+            assert "every listed" in action
+            assert "review the next listed" not in action
 
 
 def test_next_decision_evals_cover_done_no_arg_explicit_id_and_missing_file() -> None:

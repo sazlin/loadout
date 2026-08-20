@@ -10,7 +10,7 @@ description: >-
 
 Command only. Follows the `/decisions` skill. Review **one** listed decision so a human can judge whether it was the right call.
 
-This is not "the next decision to make". Listed choices are not "already done" — they still need review.
+This is not "the next decision to make". While `next:` is a D-id, listed choices are not "already done" — they still need review. When `next:` is `done`, they have already been reviewed.
 
 ## Steps
 
@@ -42,7 +42,8 @@ Enough to judge the call. Not a session recap. Not a one-line restatement. Not a
 
 | Temptation | Do this instead |
 | --- | --- |
-| "Nothing next — those are already done" | Review the next listed choice |
+| `next:` is a D-id, and "Nothing next — those are already done" | Review the next listed choice |
+| `next:` is `done` and the user passed no id | Say every listed decision has been reviewed. Stop. |
 | Treat `/next-decision` as future work | Review a past choice from the list |
 | Dump every decision in full | One id this run |
 | One-line restatement | Full recipe |
