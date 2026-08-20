@@ -84,7 +84,8 @@ def test_next_decision_description_is_command_only() -> None:
     lowered = meta.description.lower()
     assert "/next-decision" in lowered
     assert "only" in lowered
-    assert "/decisions" not in lowered or "do not" in lowered
+    remainder = lowered.replace("/next-decision", "")
+    assert "/decisions" not in remainder
 
 
 def test_session_decision_skills_have_colocated_evals() -> None:
@@ -115,7 +116,7 @@ def test_decisions_rewrite_step_names_d_sections_and_preserves_next_by_grok_line
     assert "done" in lowered
 
 
-def test_decisions_evals_cover_grok_list_not_transcript() -> None:
+def test_decisions_evals_mention_ids_and_mechanical_omit() -> None:
     texts = _eval_texts(_evals_payload(DECISIONS))
     assert "/decisions" in texts
     assert "d1" in texts
@@ -131,7 +132,7 @@ def test_decisions_evals_preserve_next_by_grok_line_after_rewrite() -> None:
     assert "yagni" in texts
 
 
-def test_next_decision_evals_cover_cursor_and_id_arg() -> None:
+def test_next_decision_evals_mention_id_arg_and_not_already_done() -> None:
     texts = _eval_texts(_evals_payload(NEXT_DECISION))
     assert "/next-decision" in texts
     assert "d2" in texts
