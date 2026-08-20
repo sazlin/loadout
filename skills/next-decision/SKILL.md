@@ -14,14 +14,14 @@ This is not "the next decision to make". Listed choices are not "already done" �
 
 ## Steps
 
-1. If `.session-decisions.md` is missing and this session has no decisions list, follow **decisions** first, then continue.
+1. If `.session-decisions.md` is missing, follow **decisions** first, then continue. If this session already has a grok list, reuse it when writing the file instead of requiring a second scan — do not use "has a list" as a reason to skip file creation. After that write, pick `next:` as in step 2 (D1 if missing).
 2. Pick the target:
    - `/next-decision` → the id in `next:` (D1 if missing)
    - `/next-decision D2` or `/next-decision 2` → that id
-3. If the list is empty or the id is unknown, say so. Stop.
-4. If `next:` is `done`, say every listed decision has been reviewed. Stop.
+3. If the user passed no id and `next:` is `done`, say every listed decision has been reviewed. Stop. Do not treat `done` as a decision id.
+4. If the list is empty or the id is unknown, say so. Stop.
 5. Write **one** review using the recipe below. No other decisions.
-6. If the target was `next:`, set `next:` to the following id (or `done`). An explicit-id review does not move `next:` unless it matches. Do not commit `.session-decisions.md`.
+6. If the user passed no id (bare `/next-decision`), set `next:` to the id after the one just reviewed, or `done` if none remain. If the user passed `D<n>` / `n`, leave `next:` unchanged unless that id equals the current `next:` value, in which case advance it the same way. Do not commit `.session-decisions.md`.
 
 ## Review recipe
 

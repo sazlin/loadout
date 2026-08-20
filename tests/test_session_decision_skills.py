@@ -136,3 +136,37 @@ def test_next_decision_evals_cover_cursor_and_id_arg() -> None:
     assert "/next-decision" in texts
     assert "d2" in texts
     assert "already" in texts or "next decision to make" in texts or "future" in texts
+
+
+def test_next_decision_rebuilds_missing_file_even_with_in_session_list() -> None:
+    text = (NEXT_DECISION / "SKILL.md").read_text()
+    steps, _, _ = text.partition("## Review recipe")
+    lowered = steps.lower()
+    assert "`.session-decisions.md` is missing" in lowered
+    assert "missing and this session has no" not in lowered
+    assert "reuse" in lowered
+    assert "grok list" in lowered
+
+
+def test_next_decision_done_short_circuit_is_no_id_only() -> None:
+    text = (NEXT_DECISION / "SKILL.md").read_text()
+    steps, _, _ = text.partition("## Review recipe")
+    lowered = steps.lower()
+    no_id_done = lowered.index("passed no id")
+    unknown = lowered.index("unknown")
+    assert no_id_done < unknown
+    assert "every listed" in lowered
+    assert "do not treat `done` as a decision id" in lowered
+    assert "the target was `next:`" not in steps
+    assert "bare `/next-decision`" in lowered
+    assert "leave `next:` unchanged" in lowered
+    assert "current `next:` value" in lowered
+
+
+def test_next_decision_evals_cover_done_no_arg_explicit_id_and_missing_file() -> None:
+    texts = _eval_texts(_evals_payload(NEXT_DECISION))
+    assert "next: done" in texts
+    assert "/next-decision d2" in texts
+    assert "unknown" in texts
+    assert "no .session-decisions.md" in texts
+    assert "grok list" in texts
