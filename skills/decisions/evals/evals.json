@@ -24,6 +24,27 @@
         "Treats a recap request as /decisions",
         "Lists choices not a play-by-play of the session"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions-partial.md (next: D2, D1=Postgres, D2=skip harness, D3=YAGNI). A cleaner rescan drops Postgres. User: /decisions",
+      "expected_output": "Rewrite ## D<n> without Postgres. next: follows the previous grok-line text, so next: D1 is skip harness, not next: D2 YAGNI",
+      "files": ["evals/files/session-decisions-partial.md"],
+      "expectations": [
+        "Matches the previous next: target by grok-line text, then writes that line's new D-id",
+        "Does not keep next: D2 merely because a heading named D2 still exists after ids were compacted",
+        "File has next: D1 (skip harness), not next: D2 (YAGNI)"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Project root has .session-decisions.md matching evals/files/session-decisions-done.md (next: done, D1=Postgres, D2=skip harness, D3=YAGNI). A second /decisions finds the same grok lines and adds none. User: /decisions",
+      "expected_output": "Same ## D<n> sections; leave next: done, not next: D1",
+      "files": ["evals/files/session-decisions-done.md"],
+      "expectations": [
+        "Treats next: done as a cursor to keep when no new headings were added",
+        "Does not reset next: to D1"
+      ]
     }
   ]
 }

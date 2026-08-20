@@ -104,11 +104,31 @@ def test_session_decision_skills_have_colocated_evals() -> None:
                 assert path.is_file(), f"{name} evals[{index}] missing {relative}"
 
 
+def test_decisions_rewrite_step_names_d_sections_and_preserves_next_by_grok_line() -> None:
+    text = (DECISIONS / "SKILL.md").read_text()
+    steps, _, _ = text.partition("## Reply recipe")
+    lowered = steps.lower()
+    assert "## d" in lowered
+    assert "next:" in lowered
+    assert "grok headings" not in lowered
+    assert "grok-line" in lowered or "grok line" in lowered
+    assert "done" in lowered
+
+
 def test_decisions_evals_cover_grok_list_not_transcript() -> None:
     texts = _eval_texts(_evals_payload(DECISIONS))
     assert "/decisions" in texts
     assert "d1" in texts
     assert "mechanical" in texts or "ran tests" in texts or "read " in texts
+
+
+def test_decisions_evals_preserve_next_by_grok_line_after_rewrite() -> None:
+    texts = _eval_texts(_evals_payload(DECISIONS))
+    assert "postgres" in texts
+    assert "next: done" in texts
+    assert "grok-line" in texts or "grok line" in texts
+    assert "skip harness" in texts
+    assert "yagni" in texts
 
 
 def test_next_decision_evals_cover_cursor_and_id_arg() -> None:
