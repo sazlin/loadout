@@ -111,6 +111,7 @@ def test_decisions_rewrite_step_names_d_sections_and_preserves_next_by_grok_line
     lowered = steps.lower()
     assert "## d" in lowered
     assert "next:" in lowered
+    # next: identity is grok-line text, not a heading labeled grok headings.
     assert "grok headings" not in lowered
     assert "grok-line" in lowered or "grok line" in lowered
     assert "done" in lowered
@@ -144,6 +145,7 @@ def test_next_decision_rebuilds_missing_file_even_with_in_session_list() -> None
     steps, _, _ = text.partition("## Review recipe")
     lowered = steps.lower()
     assert "`.session-decisions.md` is missing" in lowered
+    # Missing-file write is not gated on an empty session.
     assert "missing and this session has no" not in lowered
     assert "reuse" in lowered
     assert "grok list" in lowered
@@ -158,10 +160,8 @@ def test_next_decision_done_short_circuit_is_no_id_only() -> None:
     assert no_id_done < unknown
     assert "every listed" in lowered
     assert "do not treat `done` as a decision id" in lowered
+    # done is not an unknown target id.
     assert "the target was `next:`" not in steps
-    assert "bare `/next-decision`" in lowered
-    assert "leave `next:` unchanged" in lowered
-    assert "current `next:` value" in lowered
 
     intro, _, _ = text.partition("## Steps")
     intro_lower = intro.lower()
@@ -180,6 +180,15 @@ def test_next_decision_done_short_circuit_is_no_id_only() -> None:
         if "done" in temptation and "d-id" not in temptation:
             assert "every listed" in action
             assert "review the next listed" not in action
+
+
+def test_next_decision_explicit_id_advances_only_when_it_matches_current_next() -> None:
+    text = (NEXT_DECISION / "SKILL.md").read_text()
+    steps, _, _ = text.partition("## Review recipe")
+    lowered = steps.lower()
+    assert "bare `/next-decision`" in lowered
+    assert "leave `next:` unchanged" in lowered
+    assert "current `next:` value" in lowered
 
 
 def test_next_decision_evals_cover_done_no_arg_explicit_id_and_missing_file() -> None:
