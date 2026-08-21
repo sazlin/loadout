@@ -5,6 +5,10 @@
 - Add `learn` to the `base` loadout: `/learn` captures obvious agent and
   subagent mistakes from the current session as project-level rules in an
   `AGENTS.md` Learnings section (create or merge/dedupe).
+- Add `github-upload-media-to-pr` to the `base` loadout: attach images and
+  videos to a GitHub PR via Cursor Cloud `ManagePullRequest` artifact
+  upload (`computerUse` / `RecordScreen` for capture). Vendored from
+  jacobmassey/github-upload-media-to-pr with `agent-browser` removed.
 - Add `playwright` loadout: Playwright Test Agents (`playwright_planner`,
   `playwright_generator`, `playwright_healer`), the `playwright-test` MCP
   (`npx --no-install playwright run-test-mcp-server`), `playwright-agents`

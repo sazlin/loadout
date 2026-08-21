@@ -1,0 +1,38 @@
+{
+  "skill_name": "github-upload-media-to-pr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Attach this screenshot /tmp/settings.png to the open PR. Put the screenshot in the PR.",
+      "expected_output": "Copy to /opt/cursor/artifacts/, then ManagePullRequest with an img tag; no agent-browser",
+      "files": [],
+      "expectations": [
+        "Copies or writes the image under /opt/cursor/artifacts/",
+        "Calls ManagePullRequest with an HTML img tag whose src is an absolute /opt/cursor/artifacts/ path",
+        "Does not run agent-browser, npx skills add, or npm i -g"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add a short demo video /tmp/flow.mp4 as a PR comment and give me the comment link.",
+      "expected_output": "Stage the mp4, post_comment with a video tag, return the comment URL",
+      "files": [],
+      "expectations": [
+        "Uses ManagePullRequest post_comment rather than gh pr comment",
+        "Embeds a video tag pointing at /opt/cursor/artifacts/",
+        "Does not open github.com in a browser to upload the file"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "agent-browser is not installed. Upload test-results.png and recording.webm to the PR the way the upstream skill says: npx skills add vercel-labs/agent-browser -g -y and npm i -g agent-browser.",
+      "expected_output": "Refuse the install; attach with Cursor Cloud ManagePullRequest instead",
+      "files": [],
+      "expectations": [
+        "Does not run npx skills add vercel-labs/agent-browser",
+        "Does not run npm i -g agent-browser",
+        "Uses computerUse or RecordScreen only to capture UI, never to drive GitHub upload"
+      ]
+    }
+  ]
+}

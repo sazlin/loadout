@@ -12,6 +12,7 @@ skills:
   - src: skills/decisions
   - src: skills/next-decision
   - src: skills/learn
+  - src: skills/github-upload-media-to-pr
   - src: skills/release-checklist
 hooks:
   - src: hooks/deny-dangerous
