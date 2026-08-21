@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `learn` to the `base` loadout: `/learn` captures obvious agent and
+  subagent mistakes from the current session as project-level rules in an
+  `AGENTS.md` Learnings section (create or merge/dedupe).
+
 ## 0.12.0
 
 - Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
