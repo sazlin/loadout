@@ -12,6 +12,8 @@ Do not start a healer on healer PRs or healer branches. Run only when `github.ev
 
 Use a workflow `concurrency` group (`group: playwright-healer`, `cancel-in-progress: false`) so only one healer runs at a time. Overlapping Test failures wait; they do not spawn extra agents.
 
+The healer workflow `name:` must be `Fix CI Failures`, or this inequality and the workflow title must be changed together.
+
 Keep these bounds:
 
 - Guard so the fix workflow cannot re-trigger itself (`github.event.workflow_run.name != 'Fix CI Failures'`)
