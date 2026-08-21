@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.12.0
+
 - Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
   a git commit co-author (`Co-authored-by`, `--trailer`, or templates).
 
