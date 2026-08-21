@@ -56,7 +56,8 @@ Never:
 - Weaken assertions, drop steps, or add `page.waitForTimeout` / `networkidle` to pass
 - Edit application/production source so the test matches a regression
 - Loosen Playwright, lint, or CI config to pass gates
-- Auto-merge or push a healer branch unless the invoker explicitly names that exception
+- Do not auto-merge
+- No `git push`, force-push, or history rewrite
 - Commit secrets, tokens, or real PII
 
 If the only path to a green run is one of the above: stop and emit `blocked`.
