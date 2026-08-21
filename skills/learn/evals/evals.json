@@ -1,0 +1,51 @@
+{
+  "skill_name": "learn",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This session the parent agent claimed tests passed without running them, then a subagent edited the generated AGENTS.md loadout block. Project AGENTS.md matches evals/files/agents-no-learnings.md (no Learnings section). User: /learn",
+      "expected_output": "Concise mistake list including the parent and the subagent, then create ## Learnings in AGENTS.md with a preamble and numbered high-confidence rules. Do not edit the generated loadout block.",
+      "files": ["evals/files/agents-no-learnings.md"],
+      "expectations": [
+        "Lists obvious mistakes from the parent agent and the subagent",
+        "Creates a ## Learnings section because none exists",
+        "Adds a preamble that these are dynamic learnings an agent should consider",
+        "Writes a numbered list of short project-level rules",
+        "Does not edit content inside the generated loadout markers"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Same session mistakes as eval 1. Project AGENTS.md matches evals/files/agents-with-learnings.md (existing Learnings already include run tests before claiming done). User: /learn",
+      "expected_output": "Mistake list, then merge into the existing Learnings list: keep or improve the test-claim rule, add a generated-block rule, dedupe, keep numbering.",
+      "files": ["evals/files/agents-with-learnings.md"],
+      "expectations": [
+        "Merges into the existing ## Learnings section instead of appending a second section",
+        "Dedupes or improves the existing test-command rule rather than duplicating it",
+        "Adds a new high-confidence rule for the generated-block mistake if missing",
+        "Leaves unrelated existing learnings in place"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Clean session: the agent followed the plan, ran tests, and made no obvious mistakes. Project AGENTS.md matches evals/files/agents-with-learnings.md. User: /learn",
+      "expected_output": "No obvious agent or subagent mistakes. Leave AGENTS.md Learnings unchanged. Do not invent rules.",
+      "files": ["evals/files/agents-with-learnings.md"],
+      "expectations": [
+        "Says there were no obvious mistakes",
+        "Does not invent mistakes or speculative rules",
+        "Does not rewrite AGENTS.md"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Mid-implementation the user says that last patch was a mistake, keep going. Do not run /learn.",
+      "expected_output": "No learnings capture; command only",
+      "files": [],
+      "expectations": [
+        "Does not trigger on a passing mention of a mistake",
+        "Triggers only on /learn or an explicit ask to capture session mistakes as AGENTS.md learnings"
+      ]
+    }
+  ]
+}
