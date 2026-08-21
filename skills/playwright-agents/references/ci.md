@@ -6,14 +6,19 @@ Shard, cache `~/.cache/ms-playwright`, install with `--with-deps`, upload `playw
 
 ## Healer lane
 
-Trigger a **Cursor Cloud Agent** or an already-installed `cursor-agent` CLI on `workflow_run` conclusion `failure` of the Test workflow. Guard so the fix workflow cannot re-trigger itself (`github.event.workflow_run.name != 'Fix CI Failures'`).
+Trigger a **Cursor Cloud Agent** or an already-installed `cursor-agent` CLI on `workflow_run` conclusion `failure` of the Test workflow.
 
-Healer job rules:
+Do not start a healer on healer PRs or healer branches. Run only when `github.event.workflow_run.head_branch` equals the repository `default_branch`. Also skip when a healer PR is already open for that failing SHA.
 
-- Touch test files only
-- Cap 2 iterations per test
-- Open or update a fix PR for human review
+Use a workflow `concurrency` group (`group: playwright-healer`, `cancel-in-progress: false`) so only one healer runs at a time. Overlapping Test failures wait; they do not spawn extra agents.
+
+Keep these bounds:
+
+- Guard so the fix workflow cannot re-trigger itself (`github.event.workflow_run.name != 'Fix CI Failures'`)
+- Open or update a single fix PR for human review
 - Never auto-merge
+- Cap 2 iterations per test (inside one healer process)
+- Touch test files only
 - Least-privilege `contents: write` and `pull-requests: write`
 
 Do not add a remote-bootstrap installer for the Cursor CLI. Install `cursor-agent` on the runner image, or use a Cloud Agent Automation with browsers already in `.cursor/environment.json`.
