@@ -18,7 +18,6 @@ AGENTS_DIR = REPO_ROOT / "agents"
 IMPLEMENTATION_AGENTS = (
     "python_coder",
     "davinci",
-    "e2e_test_generator",
     "playwright_planner",
     "playwright_generator",
     "playwright_healer",

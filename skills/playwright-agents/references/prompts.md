@@ -6,7 +6,7 @@ Use these shapes when dispatching the vendored agents. Replace the seed path wit
 
 Create a test plan for "add to cart".
 
-- Seed file: `tests/seed.spec.ts`
+- Seed file: `e2e/seed.spec.ts`
 - Test plan: `specs/add-to-cart.md`
 
 ## Generate

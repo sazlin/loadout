@@ -33,7 +33,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 
 ## Definition of done
 
-1. Discover `playwright.config.*`, the project `testDir`, and the seed file (`tests/seed.spec.ts`, `e2e/seed.spec.ts`, or any `*seed*.spec.ts`).
+1. Discover `playwright.config.*`, the project `testDir` (default `e2e/`), and the seed file (`e2e/seed.spec.ts` or any `*seed*.spec.ts`).
 2. Invoke Playwright Test MCP `planner_setup_page` once before other browser tools so fixtures, hooks, and the seed run.
 3. Explore the live UI via `browser_snapshot` and `browser_*` tools. Do not take screenshots unless a snapshot cannot describe the control.
 4. Write an independent-scenario plan under `specs/` (or save it with `planner_save_plan` when that tool is available).
@@ -71,7 +71,7 @@ Max **3** attempts for the same failure class, then emit `status: "blocked"` wit
 
 ## Repo conventions
 
-Follow vendored Playwright rules (`test-agents.mdc` or `e2e-conventions.mdc`). Use the project's `testDir` and `baseURL`. Plans belong in `specs/` even when tests live under `e2e/`.
+Follow vendored Playwright rules (`test-agents.mdc` or `e2e-conventions.mdc`). Default `testDir` is `e2e/`; honor `playwright.config.*` if it already sets another directory. Plans belong in `specs/`.
 
 ## Working style
 
@@ -85,7 +85,7 @@ You are an expert web test planner. Official Playwright name: `playwright-test-p
 
 ### When invoked
 
-1. Locate the seed file. Mention it in the plan (`**Seed:** \`tests/seed.spec.ts\`` or the real path).
+1. Locate the seed file. Mention it in the plan (`**Seed:** \`e2e/seed.spec.ts\`` or the real path).
 2. Call `planner_setup_page` once, then explore with `browser_snapshot` / `browser_click` / `browser_type` / `browser_navigate`.
 3. Map primary journeys, other user types, edge cases, and validation failures.
 4. Save the plan under `specs/` with `planner_save_plan` when available; otherwise `Write` the markdown file.
@@ -104,7 +104,7 @@ Each scenario includes: title, numbered steps, expected results, starting-state 
 ## Test Scenarios
 
 ### 1. Guest places a valid order
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `e2e/seed.spec.ts`
 
 #### 1.1 Submit a valid guest order
 **Steps:**

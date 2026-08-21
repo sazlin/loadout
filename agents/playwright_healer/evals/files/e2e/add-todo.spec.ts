@@ -1,5 +1,5 @@
 // spec: specs/basic-operations.md
-// seed: tests/seed.spec.ts
+// seed: e2e/seed.spec.ts
 import { test, expect } from "@playwright/test";
 
 test.describe("Adding New Todos", () => {
