@@ -34,7 +34,7 @@ Run planner and generator interactively (human-gated). Run healer only after a r
 
 ## Setup
 
-Playwright ≥ 1.56. This loadout vendors Cursor/Claude agent files and the Test MCP (`npx playwright run-test-mcp-server`). That server is **not** `@playwright/mcp` (general browser automation).
+Playwright ≥ 1.56 must already be a project dependency before the Test MCP will start; do not rely on npx to download it. This loadout vendors Cursor/Claude agent files and the Test MCP (`npx --no-install playwright run-test-mcp-server`). That server is **not** `@playwright/mcp` (general browser automation).
 
 1. Seed file in `testDir`: copy [references/seed.spec.ts](references/seed.spec.ts)
 2. `specs/` directory for plans

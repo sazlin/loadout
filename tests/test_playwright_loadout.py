@@ -39,7 +39,13 @@ def test_playwright_test_mcp_runs_the_bundled_test_server() -> None:
     assert meta.name == "playwright-test"
     assert meta.transport == "stdio"
     assert meta.command == "npx"
-    assert meta.args == ["playwright", "run-test-mcp-server"]
+    assert meta.args == ["--no-install", "playwright", "run-test-mcp-server"]
+    command = "npx --no-install playwright run-test-mcp-server"
+    skill = (REPO / "skills" / "playwright-agents" / "SKILL.md").read_text()
+    scripts = (REPO / "skills" / "playwright-agents" / "references" / "package-scripts.md").read_text()
+    assert command in skill
+    assert command in scripts
+    assert "already be a project dependency" in skill
 
 
 def test_playwright_sync_vendors_agents_skill_rule_and_test_mcp(
@@ -71,10 +77,11 @@ loadouts: [playwright]
     cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
     assert cursor_mcp["mcpServers"]["playwright-test"] == {
         "command": "npx",
-        "args": ["playwright", "run-test-mcp-server"],
+        "args": ["--no-install", "playwright", "run-test-mcp-server"],
     }
     claude_mcp = json.loads((project / ".mcp.json").read_text())
     assert claude_mcp["mcpServers"]["playwright-test"]["args"] == [
+        "--no-install",
         "playwright",
         "run-test-mcp-server",
     ]
