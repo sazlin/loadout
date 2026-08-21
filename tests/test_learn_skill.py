@@ -11,6 +11,8 @@ from loadout.models import load_loadout
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / "skills" / "learn"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
+LEARNINGS_CAP = 20
+CAP_FIXTURE = SKILL_ROOT / "evals" / "files" / "agents-at-cap.md"
 
 
 def _evals_payload() -> dict[str, object]:
@@ -35,6 +37,18 @@ def _eval_texts(payload: dict[str, object]) -> str:
         if isinstance(expectations, list):
             chunks.extend(str(item) for item in expectations)
     return "\n".join(chunks).lower()
+
+
+def _numbered_learnings(text: str) -> list[str]:
+    _, _, rest = text.partition("## Learnings")
+    section, _, _ = rest.partition("<!-- BEGIN LOADOUT:")
+    items: list[str] = []
+    for line in section.splitlines():
+        stripped = line.strip()
+        prefix, _, remainder = stripped.partition(". ")
+        if prefix.isdigit() and remainder:
+            items.append(stripped)
+    return items
 
 
 def test_learn_skill_parses() -> None:
@@ -128,3 +142,34 @@ def test_learn_evals_cover_create_merge_empty_subagent_and_command_only() -> Non
     assert "subagent" in texts
     assert "generated" in texts or "do not edit" in texts
     assert "passing" in texts or "implement" in texts
+
+
+def test_learn_body_caps_numbered_learnings_and_prunes() -> None:
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+    assert str(LEARNINGS_CAP) in text
+    assert "prune" in lowered
+    assert "improve" in lowered and "in place" in lowered
+    assert "unbounded" in lowered or "exceed" in lowered
+
+
+def test_learn_body_leaves_agents_unchanged_when_no_durable_rules() -> None:
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+    assert "unchanged" in lowered
+    assert "high-confidence" in lowered or "high confidence" in lowered
+    assert "session-specific" in lowered
+
+
+def test_learn_cap_fixture_has_exactly_cap_numbered_items() -> None:
+    assert CAP_FIXTURE.is_file(), CAP_FIXTURE
+    items = _numbered_learnings(CAP_FIXTURE.read_text())
+    assert len(items) == LEARNINGS_CAP
+
+
+def test_learn_evals_cover_cap_prune_and_session_specific_noop() -> None:
+    texts = _eval_texts(_evals_payload())
+    assert str(LEARNINGS_CAP) in texts
+    assert "prune" in texts or "cap" in texts
+    assert "session-specific" in texts or "one-off" in texts
+    assert "unchanged" in texts
