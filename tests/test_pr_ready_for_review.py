@@ -31,6 +31,17 @@ def test_pr_ready_for_review_rule_always_applies_and_forbids_drafts() -> None:
     assert "ask" in lowered
 
 
+def test_pr_ready_for_review_push_is_gated_by_agent_charter() -> None:
+    text = (REPO / RULE_SRC).read_text()
+    lowered = text.lower()
+    assert "draft" in lowered
+    assert "ready for review" in lowered
+    assert "charter" in lowered
+    assert "forbids" in lowered
+    assert "git push" in lowered
+    assert "Push the branch if useful" not in text
+
+
 def test_base_sync_vendors_pr_ready_for_review_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
