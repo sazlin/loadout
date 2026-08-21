@@ -149,8 +149,8 @@ Example GitHub Actions step:
 | `typescript` | `base` | TypeScript code style rules |
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
-| `playwright-e2e` | `base` | Playwright e2e rules (scoped under `e2e/`) + e2e test generator agent |
-| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), Test MCP, and plan-generate-heal skill |
+| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), Test MCP, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
+| `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 | `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
@@ -178,7 +178,7 @@ is not an agent.
 
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
-| Implementation | `python_coder`, `davinci`, `e2e_test_generator`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright-e2e`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
 | PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a

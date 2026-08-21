@@ -29,7 +29,7 @@
   ],
   "tried": [
     "Read app/index.html for roles and accessible names.",
-    "Looked for a seed spec; none was present, so the plan names tests/seed.spec.ts as the conventional seed."
+    "Looked for a seed spec; none was present, so the plan names e2e/seed.spec.ts as the conventional seed."
   ],
   "rejected": [
     "Starting a local server (explicitly forbidden).",

@@ -43,7 +43,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`, `mcp__playwright-test`.
 
-- **Write scope:** Playwright test files under the project's `testDir` only (`tests/`, `e2e/`, or the path in `playwright.config.*`). Never application source, never CI config, never package manifests.
+- **Write scope:** Playwright test files under the project's `testDir` only (`e2e/` by default, or the path in `playwright.config.*`). Never application source, never CI config, never package manifests.
 - **Shell:** Playwright Test MCP (`test_run`, `test_debug`, `test_list`) and `npx playwright test`. No `git push`, force-push, history rewrite, or `gh pr merge`.
 - You are not the planner, generator, or integrator.
 

@@ -24,14 +24,29 @@ def write_manifest(project: Path, body: str) -> None:
     (project / ".loadout.yaml").write_text(body)
 
 
-def test_playwright_loadout_ships_agents_skill_mcp_and_rule() -> None:
+def test_playwright_loadout_ships_agents_skill_mcp_and_e2e_conventions() -> None:
     loadout = load_loadout(REPO / "loadouts" / "playwright.yaml")
     assert loadout.name == "playwright"
     assert loadout.extends == ["base"]
     assert {entry["src"] for entry in loadout.agents} == {f"agents/{name}/{name}.md" for name in PLAYWRIGHT_AGENTS}
     assert {entry["src"] for entry in loadout.skills} == {"skills/playwright-agents"}
     assert {entry["src"] for entry in loadout.mcps} == {"mcps/playwright-test"}
-    assert {entry["src"] for entry in loadout.rules} == {"rules/playwright/test-agents.mdc"}
+    assert {entry["src"] for entry in loadout.rules} == {
+        "rules/playwright/test-agents.mdc",
+        "rules/playwright/e2e-conventions.mdc",
+    }
+    dests = {entry["src"]: entry.get("dest") for entry in loadout.rules}
+    assert dests["rules/playwright/e2e-conventions.mdc"] == "e2e/.cursor/rules/e2e-conventions.mdc"
+
+
+def test_playwright_e2e_is_an_alias_of_playwright() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "playwright-e2e.yaml")
+    assert loadout.name == "playwright-e2e"
+    assert loadout.extends == ["playwright"]
+    assert loadout.agents == []
+    assert loadout.rules == []
+    assert loadout.skills == []
+    assert loadout.mcps == []
 
 
 def test_playwright_test_mcp_runs_the_bundled_test_server() -> None:
@@ -72,6 +87,9 @@ loadouts: [playwright]
     skill = project / ".claude/skills/playwright-agents/SKILL.md"
     assert skill.is_file()
     assert (project / ".cursor/rules/test-agents.mdc").is_file()
+    assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert not (project / ".cursor/rules/e2e-conventions.mdc").exists()
+    assert not (project / ".claude/agents/e2e_test_generator.md").exists()
     assert not list(project.rglob("evals"))
 
     cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
@@ -85,6 +103,31 @@ loadouts: [playwright]
         "playwright",
         "run-test-mcp-server",
     ]
+
+
+def test_playwright_e2e_alias_syncs_the_same_playwright_payload(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
+    project = tmp_path / "project"
+    write_manifest(
+        project,
+        """source: https://github.com/sazlin/loadout
+ref: main
+loadouts: [playwright-e2e]
+""",
+    )
+
+    sync(project)
+
+    assert (project / ".claude/agents/playwright_generator.md").is_file()
+    assert (project / ".claude/agents/playwright_planner.md").is_file()
+    assert (project / ".claude/agents/playwright_healer.md").is_file()
+    assert not (project / ".claude/agents/e2e_test_generator.md").exists()
+    assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
+    assert (project / ".cursor/rules/test-agents.mdc").is_file()
+    cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
+    assert "playwright-test" in cursor_mcp["mcpServers"]
 
 
 def test_playwright_skill_encodes_pipeline_and_healer_guardrails() -> None:
@@ -120,9 +163,11 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     assert "planner_setup_page" in planner
     assert "planner_save_plan" in planner
 
-    assert "// spec:" in generator or "`// spec:`" in generator
-    assert "generator_write_test" in generator
-    assert "getByRole" in generator
+    assert "e2e/" in generator
+    assert "e2e/seed.spec.ts" in generator
+    assert "// seed: tests/seed.spec.ts" not in generator
+    assert "**Seed:** `e2e/seed.spec.ts`" in planner
+    assert "`tests/seed.spec.ts`" not in planner.split("## Agent-specific guidance", 1)[1]
 
     assert "production" in healer.lower()
     assert "test.fixme" in healer
@@ -131,6 +176,26 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     anti_reward = healer.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0]
     assert "auto-merge" in anti_reward.lower()
     assert "unless" not in anti_reward.lower()
+
+
+def test_playwright_defaults_test_dir_to_e2e() -> None:
+    rule = (REPO / "rules" / "playwright" / "test-agents.mdc").read_text()
+    prompts = (REPO / "skills" / "playwright-agents" / "references" / "prompts.md").read_text()
+    cloud = (REPO / "skills" / "playwright-agents" / "references" / "cursor-cloud.md").read_text()
+    assert "e2e/" in rule
+    assert "tests/**/*.spec.ts" not in rule
+    assert "tests/**/*.spec.js" not in rule
+    assert "e2e/seed.spec.ts" in prompts
+    assert "tests/seed.spec.ts" not in prompts
+    assert "e2e/seed.spec.ts" in cloud
+    assert "tests/seed.spec.ts" not in cloud
+
+
+def test_cookiecutter_maps_use_playwright_to_playwright() -> None:
+    for relative in ("docs/consumer-contract.md", "loadout-spec.md"):
+        text = (REPO / relative).read_text()
+        assert 'LOADOUTS.append("playwright")' in text, relative
+        assert 'LOADOUTS.append("playwright-e2e")' not in text, relative
 
 
 def test_playwright_skill_evals_are_colocated() -> None:

@@ -8,7 +8,7 @@
       "files": [
         "evals/files/specs/basic-operations.md",
         "evals/files/app/index.html",
-        "evals/files/tests/seed.spec.ts",
+        "evals/files/e2e/seed.spec.ts",
         "evals/files/process_data.py"
       ],
       "expected_output": "JSON report for a generated add-todo spec",

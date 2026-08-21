@@ -7,7 +7,7 @@ A todo list with an accessible textbox named "What needs to be done?".
 ## Test Scenarios
 
 ### 1. Adding New Todos
-**Seed:** `tests/seed.spec.ts`
+**Seed:** `e2e/seed.spec.ts`
 
 #### 1.1 Add Valid Todo
 **Steps:**

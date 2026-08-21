@@ -26,7 +26,7 @@ Turn a reviewed Markdown plan under `specs/` into executable Playwright tests in
 **Receives:** path to a Markdown plan (or a scenario id such as `1.1`), optional seed path.
 
 **Emits:**
-1. One `*.spec.ts` file per scenario under the project's `testDir` (`tests/` unless the repo already uses `e2e/`)
+1. One `*.spec.ts` file per scenario under the project's `testDir` (`e2e/` unless `playwright.config.*` already sets another directory)
 2. A final fenced `json` report matching **Output schema**
 
 Do not end on prose alone. The JSON report is the machine-readable artifact.
@@ -71,7 +71,7 @@ Max **3** attempts for the same failure class, then emit `status: "blocked"` wit
 
 ## Repo conventions
 
-Follow vendored Playwright rules. Prefer the project's `baseURL` / `webServer`. If `e2e/` is the established test tree, write there instead of creating a parallel `tests/` suite.
+Follow vendored Playwright rules. Prefer the project's `baseURL` / `webServer`. Write under `e2e/` by default. Honor an existing `playwright.config.*` `testDir` if it already points elsewhere.
 
 ## Working style
 
@@ -95,7 +95,7 @@ You are an expert in Playwright generation. Official Playwright name: `playwrigh
 
 ```ts
 // spec: specs/basic-operations.md
-// seed: tests/seed.spec.ts
+// seed: e2e/seed.spec.ts
 
 import { test, expect } from "@playwright/test";
 
