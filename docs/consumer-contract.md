@@ -50,8 +50,9 @@ if ctx["use_aws"] == "yes":
     LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright-e2e")
-    # Official Test Agents (planner/generator/healer + Test MCP): also append "playwright"
 ```
+
+`use_playwright` keeps mapping to `playwright-e2e` so existing cookiecutters do not gain a new loadout name; add `playwright` only as its own answer or explicit compose list.
 
 ### Hook must never hard-fail
 
