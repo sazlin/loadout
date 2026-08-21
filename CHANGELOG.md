@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
+  a git commit co-author (`Co-authored-by`, `--trailer`, or templates).
+
 ## 0.11.0
 
 - Add `decisions` and `next-decision` to the `base` loadout: `/decisions`

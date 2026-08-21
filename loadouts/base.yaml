@@ -4,6 +4,7 @@ rules:
   - src: rules/core/commit-style.mdc
   - src: rules/core/repo-conventions.mdc
   - src: rules/core/colocated-evals.mdc
+  - src: rules/core/no-cursor-coauthor.mdc
   - src: rules/agents/agent-authoring.mdc
 skills:
   - src: skills/anti-sleep

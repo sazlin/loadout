@@ -711,6 +711,7 @@ def test_real_pr_review_loadout_vendors_harness(tmp_path: Path, monkeypatch: pyt
     assert (project / ".claude/skills/log-progress/SKILL.md").is_file()
     assert (project / ".claude/skills/dispatch-verifiers/SKILL.md").is_file()
     assert (project / ".cursor/rules/colocated-evals.mdc").is_file()
+    assert (project / ".cursor/rules/no-cursor-coauthor.mdc").is_file()
     assert (project / ".cursor/rules/honor-check-intent.mdc").is_file()
     assert not any(path.is_dir() and path.name == "evals" for path in project.rglob("*"))
     assert not (project / "TASKS_TO_RESOLVE.md").exists()
