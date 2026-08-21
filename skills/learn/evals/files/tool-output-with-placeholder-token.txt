@@ -1,0 +1,2 @@
+$ env | grep TOKEN
+GH_TOKEN=ghp_EXAMPLE_NOT_A_SECRET
