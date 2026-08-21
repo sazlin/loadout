@@ -1,4 +1,4 @@
-"""Validate a loadout repo's rules, skills, hooks, agents, mcps, and loadouts (`loadout lint`, spec 7.1)."""
+"""Validate a loadout repo's rules, skills, hooks, agents, mcps, cli_tools, and loadouts (`loadout lint`, spec 7.1)."""
 
 from __future__ import annotations
 

@@ -216,6 +216,18 @@ loadouts: [agents]
 
 Full format: [loadout-spec.md](loadout-spec.md).
 
+## CLI tools
+
+A loadout can declare `cli_tools`: named, idempotent shell commands that install CLIs its skills or agents need. `loadout sync` and `loadout update` run them in the project root after writing files. Failures are printed (`loadout: cli_tools: <name>: failed (exit N)`) and do not abort the install. `loadout sync --check` validates them but does not run them.
+
+```yaml
+cli_tools:
+  - name: jq
+    command: command -v jq >/dev/null || brew install jq
+```
+
+`command` is a YAML string passed to `bash -c`. Quote values that YAML would otherwise treat as booleans (`true`, `false`, `yes`, `no`).
+
 ## After syncing
 
 Rules, skills, agents, hooks, and MCP configs are files on disk. Agents do not always pick them up until reload:

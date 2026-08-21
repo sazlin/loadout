@@ -193,6 +193,23 @@ def test_resolve_list_prints_src_to_dest_table(runner: CliRunner) -> None:
         assert "skills/demo/SKILL.md -> .claude/skills/demo/SKILL.md" in result.output
 
 
+def test_resolve_list_prints_cli_tools(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        source = Path("source")
+        shutil.copytree(FIXTURE, source)
+        (source / "loadouts" / "python.yaml").write_text(
+            "name: python\nextends: [base]\ndescription: Python\n"
+            "rules:\n  - src: rules/python/b.mdc\n"
+            "cli_tools:\n  - name: jq\n    command: command -v jq || true\n"
+        )
+        write_manifest()
+
+        result = runner.invoke(main, ["resolve", "--list"], env={"LOADOUT_PATH": str(source.resolve())})
+
+        assert result.exit_code == 0, result.output
+        assert "cli_tools: jq: command -v jq || true" in result.output
+
+
 def test_resolve_without_list_flag_is_a_usage_error(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
         write_manifest()
@@ -257,6 +274,25 @@ def test_update_rewrites_ref_syncs_and_prints_changelog_slice(runner: CliRunner)
         assert "Third release notes" in result.output
         assert "Second release notes" in result.output
         assert "First release notes" not in result.output
+
+
+def test_update_runs_cli_tools(runner: CliRunner) -> None:
+    with runner.isolated_filesystem():
+        source = Path("source")
+        shutil.copytree(FIXTURE, source)
+        (source / "CHANGELOG.md").write_text("# CHANGELOG\n\n## 2.0.0\n\n- Next\n\n## 1.0.0\n\n- First\n")
+        (source / "loadouts" / "python.yaml").write_text(
+            "name: python\nextends: [base]\ndescription: Python\n"
+            "rules:\n  - src: rules/python/b.mdc\n"
+            "cli_tools:\n  - name: marker\n    command: echo updated > marker.txt\n"
+        )
+        write_manifest()
+
+        result = runner.invoke(main, ["update", "--to", "v2.0.0"], env={"LOADOUT_PATH": str(source.resolve())})
+
+        assert result.exit_code == 0, result.output
+        assert Path("marker.txt").read_text() == "updated\n"
+        assert "loadout: cli_tools: marker: ok" in result.output
 
 
 def test_update_without_manifest_exits_with_validation_error_code(runner: CliRunner) -> None:

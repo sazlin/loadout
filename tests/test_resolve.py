@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 from loadout.errors import ValidationError
-from loadout.models import Manifest
-from loadout.resolve import ResolvedFile, resolve
+from loadout.models import CliTool, Manifest
+from loadout.resolve import ResolvedFile, resolve, resolve_cli_tools
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "mini_loadout"
 
@@ -176,3 +176,63 @@ def test_resolve_reports_malformed_loadout_yaml_as_a_validation_error(tmp_path: 
 
     with pytest.raises(ValidationError, match="invalid YAML"):
         resolve(manifest(loadouts=["base"]), source)
+
+
+def test_resolve_cli_tools_collects_from_extended_loadouts(tmp_path: Path) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "cli_tools:\n  - name: jq\n    command: 'true'\n"
+    )
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: ruff\n    command: uv tool install ruff\n"
+    )
+
+    tools = resolve_cli_tools(manifest(loadouts=["python"]), source)
+
+    assert tools == [
+        CliTool(name="jq", command="true"),
+        CliTool(name="ruff", command="uv tool install ruff"),
+    ]
+
+
+def test_resolve_cli_tools_deduplicates_identical_name_and_command(tmp_path: Path) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "cli_tools:\n  - name: jq\n    command: 'true'\n"
+    )
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: jq\n    command: 'true'\n"
+    )
+
+    tools = resolve_cli_tools(manifest(loadouts=["python"]), source)
+
+    assert tools == [CliTool(name="jq", command="true")]
+
+
+def test_resolve_cli_tools_rejects_same_name_with_different_commands(tmp_path: Path) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "base.yaml").write_text(
+        "name: base\ndescription: Base\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "cli_tools:\n  - name: jq\n    command: brew install jq\n"
+    )
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: jq\n    command: apt-get install jq\n"
+    )
+
+    with pytest.raises(ValidationError, match="cli_tools name collision for 'jq'"):
+        resolve_cli_tools(manifest(loadouts=["python"]), source)
+
+
+def test_resolve_cli_tools_is_empty_when_none_are_declared() -> None:
+    assert resolve_cli_tools(manifest(), FIXTURE_ROOT) == []

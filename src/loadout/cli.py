@@ -14,7 +14,7 @@ from loadout.errors import LoadoutError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.lint import lint_repo
 from loadout.models import load_lockfile, load_manifest
-from loadout.resolve import resolve as resolve_loadouts
+from loadout.resolve import resolve_selection
 from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
 from loadout.sync import sync as run_sync
 from loadout.update import update as run_update
@@ -71,7 +71,7 @@ def resolve(show_list: bool) -> None:
 
 @main.command()
 def lint() -> None:
-    """Validate this loadout repo's rules, skills, hooks, agents, mcps, and loadouts (spec 7.1)."""
+    """Validate this loadout repo's rules, skills, hooks, agents, mcps, cli_tools, and loadouts (spec 7.1)."""
     _guarded(_run_lint)
 
 
@@ -112,7 +112,7 @@ def _print_resolved() -> None:
     manifest = load_manifest(manifest_path)
     lock = load_lockfile(project_root / LOCKFILE_NAME)
     fetched = fetch_source(manifest, lock)
-    files = resolve_loadouts(manifest, fetched.root)
+    files, cli_tools = resolve_selection(manifest, fetched.root)
     validate_resolved(files, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 
     for file in sorted(files, key=lambda resolved: resolved.dest):
@@ -120,6 +120,8 @@ def _print_resolved() -> None:
             click.echo(f"{file.src} -> .cursor/mcp.json, .mcp.json")
         else:
             click.echo(f"{file.src} -> {file.dest}")
+    for tool in cli_tools:
+        click.echo(f"cli_tools: {tool.name}: {tool.command}")
 
 
 def _run_lint() -> None:

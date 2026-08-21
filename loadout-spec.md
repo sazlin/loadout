@@ -35,7 +35,7 @@ Rejected alternatives:
 | Hook | A directory under `hooks/` with `hook.yaml` plus scripts/assets. Synced once to `.cursor/hooks/<name>/`. Sync also generates `.cursor/hooks.json` (Cursor-native) and `.claude/settings.json` hooks (Claude Code) that both point at that single script copy. See section 5.9 |
 | Agent | A markdown file with YAML frontmatter at `agents/<name>/<name>.md`, optionally with a colocated `evals/` tree. Synced once to `.claude/agents/<name>.md`, which both Cursor (compatibility path) and Claude Code read. See section 5.10 |
 | MCP | A directory under `mcps/` with `mcp.yaml` describing a Cursor/Claude MCP server (HTTP URL or stdio command). Sync generates `.cursor/mcp.json` (Cursor) and `.mcp.json` (Claude Code). See section 5.11 |
-| Loadout | A named, composable selection of rules, skills, hooks, agents, and MCPs, defined in the loadout repo and selected by a project. The unit a project actually chooses |
+| Loadout | A named, composable selection of rules, skills, hooks, agents, MCPs, and CLI tools, defined in the loadout repo and selected by a project. The unit a project actually chooses |
 | Manifest | `.loadout.yaml`, committed in each project |
 | Lockfile | `.loadout.lock`, committed in each project |
 | Sync | Resolving the manifest and writing the file set into the project |
@@ -320,6 +320,10 @@ hooks:
 
 mcps:
   - src: mcps/langchain-docs
+
+cli_tools:
+  - name: terraform
+    command: command -v terraform >/dev/null || brew install terraform
 ```
 
 Rules:
@@ -331,6 +335,7 @@ Rules:
 - A hook `dest` must end in `<hooks_dir>/<dirname>`. Hook scripts are stored once under the Cursor-native path; harness config generation rewrites command paths to match.
 - An agent `dest` must end in `<agents_dir>/<basename>` and keep the source basename (the file stem is the agent identity alongside frontmatter `name`).
 - The same `src` appearing in two loadouts is fine and deduplicates. The same `dest` receiving two different `src` values is a fatal error.
+- `cli_tools` is an optional list of named shell commands. Each entry requires `name` and `command` (YAML strings; quote values like `true` / `false` / `yes` / `no`). Commands run with `bash -c` in the project root after a successful file sync. They must be idempotent: sync and update re-run them every time. Duplicate `name` values with the same `command` (including via `extends`) deduplicate; the same `name` with two different commands is a fatal error. A failed command is printed (`loadout: cli_tools: <name>: failed (exit N)`) and does not abort the sync. `sync --check` resolves and validates `cli_tools` but does not run them. `include` / `exclude` do not apply.
 
 ### 5.4 Manifest (`.loadout.yaml`)
 
@@ -619,16 +624,17 @@ uvx --from git+<loadout>@<ref> loadout <command>
 7. Render and write the managed blocks in `AGENTS.md` and `CLAUDE.md` (5.7, 5.8).
 8. Write the lockfile, including `managed_blocks` hashes.
 9. Print a summary: added, updated, removed, unchanged, plus whether either managed block changed.
+10. Run each resolved `cli_tools` command (5.3) in the project root. Print `running` / `ok` / `failed (exit N)` (or `failed to start`) per name. Command stdout and stderr are replayed. Failures do not change the exit code.
 
-Sync is idempotent. Running it twice at the same ref produces no diff.
+File writes are idempotent. Running sync twice at the same ref produces no file diff. CLI tool commands still re-run; they must be written to tolerate that.
 
 ### `loadout sync --check`
 
-Same resolution, no writes. Exit 1 if the on-disk file set, any file hash, or either managed block differs from the lockfile. Content outside the block markers is ignored entirely. This catches hand-edits to generated files, a stale `AGENTS.md` table, and a bumped `ref` that was not re-synced. Intended for CI.
+Same resolution, no writes. Exit 1 if the on-disk file set, any file hash, or either managed block differs from the lockfile. Content outside the block markers is ignored entirely. This catches hand-edits to generated files, a stale `AGENTS.md` table, and a bumped `ref` that was not re-synced. Intended for CI. Does not run `cli_tools`.
 
 ### `loadout update [--to <ref>]`
 
-Resolve the latest release tag (or the given ref), rewrite `ref` in the manifest, run a full sync, print the `CHANGELOG.md` entries between the old and new version.
+Resolve the latest release tag (or the given ref), rewrite `ref` in the manifest, run a full sync (including `cli_tools`), print the `CHANGELOG.md` entries between the old and new version.
 
 ### `loadout init --loadouts a,b`
 
@@ -690,7 +696,7 @@ try project:
 - Every skill satisfies the frontmatter contract in 5.2.2, including `name` matching its directory.
 - No stray `SKILL.md` below a skill root. A supporting doc must live in `references/` under a different filename, or it will be discovered as a separate skill.
 - Every path in `evals[].files` exists.
-- Every loadout resolves, with no `extends` cycles and no `dest` collisions.
+- Every loadout resolves, with no `extends` cycles, no `dest` collisions, and no `cli_tools` name collisions.
 - No orphan files: present in `rules/`, `skills/`, `hooks/`, `agents/`, or `mcps/` but referenced by no loadout. Underscore-prefixed files under `agents/` are templates, not agents, and are not orphans. Markdown under `agents/<name>/evals/` is eval infrastructure, not an agent.
 
 Warn, but do not fail, when `SKILL.md` exceeds 500 lines or a `references/` file exceeds 300 lines without a table of contents. These are budget signals, not errors.

@@ -350,3 +350,24 @@ def test_long_reference_file_with_toc_does_not_warn(tmp_path: Path) -> None:
 
     assert result.ok
     assert result.warnings == []
+
+
+def test_cli_tools_name_collision_across_extends_is_a_lint_error(tmp_path: Path) -> None:
+    base_repo(tmp_path)
+    write(
+        tmp_path / "loadouts" / "base.yaml",
+        "name: base\ndescription: Base rules and skills\n"
+        "rules:\n  - src: rules/core/a.mdc\n"
+        "skills:\n  - src: skills/demo\n"
+        "cli_tools:\n  - name: jq\n    command: brew install jq\n",
+    )
+    write(
+        tmp_path / "loadouts" / "python.yaml",
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "cli_tools:\n  - name: jq\n    command: apt-get install jq\n",
+    )
+
+    result = lint_repo(tmp_path)
+
+    assert not result.ok
+    assert any("cli_tools name collision" in error for error in result.errors)

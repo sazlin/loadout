@@ -18,6 +18,7 @@ from loadout.blocks import (
     render_claude_import_block,
     splice_block,
 )
+from loadout.cli_tools import run_cli_tools
 from loadout.errors import DriftError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.frontmatter import parse_rule
@@ -53,7 +54,7 @@ from loadout.models import (
     load_lockfile,
     load_manifest,
 )
-from loadout.resolve import ResolvedFile, resolve
+from loadout.resolve import ResolvedFile, resolve_selection
 from loadout.validate import validate_resolved
 
 _BlockName = Literal["agent-rules", "agents-import"]
@@ -139,14 +140,16 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
     lock = load_lockfile(lock_path)
 
     fetched = fetch_source(manifest, lock)
-    resolved = resolve(manifest, fetched.root)
+    resolved, cli_tools = resolve_selection(manifest, fetched.root)
     validate_resolved(resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 
     plan = _build_plan(manifest, fetched.root, fetched.resolved_sha, resolved, project_root)
 
     if check:
         return _check(project_root, plan, lock)
-    return _apply(project_root, lock_path, plan, lock)
+    result = _apply(project_root, lock_path, plan, lock)
+    run_cli_tools(cli_tools, project_root)
+    return result
 
 
 def _build_plan(
