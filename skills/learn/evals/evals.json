@@ -16,7 +16,7 @@
     },
     {
       "id": 2,
-      "prompt": "Same session mistakes as eval 1. Project AGENTS.md matches evals/files/agents-with-learnings.md (existing Learnings already include run tests before claiming done). User: /learn",
+      "prompt": "This session the parent agent claimed tests passed without running them, then a subagent edited the generated AGENTS.md loadout block. Project AGENTS.md matches evals/files/agents-with-learnings.md (existing Learnings already include run tests before claiming done). User: /learn",
       "expected_output": "Mistake list, then merge into the existing Learnings list: keep or improve the test-claim rule, add a generated-block rule, dedupe, keep numbering.",
       "files": ["evals/files/agents-with-learnings.md"],
       "expectations": [

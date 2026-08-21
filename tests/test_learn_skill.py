@@ -144,6 +144,24 @@ def test_learn_evals_cover_create_merge_empty_subagent_and_command_only() -> Non
     assert "passing" in texts or "implement" in texts
 
 
+def test_learn_merge_eval_prompt_restates_session_mistakes() -> None:
+    raw = _evals_payload().get("evals")
+    assert isinstance(raw, list)
+    merge_eval = next(
+        (entry for entry in raw if isinstance(entry, dict) and entry.get("id") == 2),
+        None,
+    )
+    assert merge_eval is not None
+    prompt = str(merge_eval.get("prompt", "")).lower()
+    assert "claimed tests passed" in prompt
+    assert "without running" in prompt
+    assert "subagent" in prompt
+    assert "generated" in prompt
+    assert "loadout" in prompt
+    assert "agents-with-learnings.md" in prompt
+    assert "eval 1" not in prompt
+
+
 def test_learn_body_caps_numbered_learnings_and_prunes() -> None:
     text = SKILL_MD.read_text()
     lowered = text.lower()
