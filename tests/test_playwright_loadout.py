@@ -128,6 +128,10 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     assert "test.fixme" in healer
     assert "auto-merge" in healer.lower() or "do not merge" in healer.lower()
 
+    anti_reward = healer.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0]
+    assert "auto-merge" in anti_reward.lower()
+    assert "unless" not in anti_reward.lower()
+
 
 def test_playwright_skill_evals_are_colocated() -> None:
     evals = REPO / "skills" / "playwright-agents" / "evals" / "evals.json"
