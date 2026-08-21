@@ -63,6 +63,7 @@ loadout/
       colocated-evals.mdc
       no-cursor-coauthor.mdc
       honor-check-intent.mdc
+      pr-ready-for-review.mdc
     python/
       python-code-style.mdc
       uv-workspace.mdc
@@ -71,9 +72,9 @@ loadout/
       typescript-code-style.mdc
     terraform/
       aws-conventions.mdc
-      playwright/
-        e2e-conventions.mdc
-        test-agents.mdc
+    playwright/
+      e2e-conventions.mdc
+      test-agents.mdc
   skills/
     db-migrations/SKILL.md
     playwright-agents/SKILL.md
