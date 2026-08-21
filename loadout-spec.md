@@ -61,6 +61,7 @@ loadout/
       commit-style.mdc
       repo-conventions.mdc
       colocated-evals.mdc
+      no-cursor-coauthor.mdc
       honor-check-intent.mdc
     python/
       python-code-style.mdc
