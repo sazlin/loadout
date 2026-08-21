@@ -49,8 +49,10 @@ if ctx["use_terraform"] == "yes":
 if ctx["use_aws"] == "yes":
     LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
-    LOADOUTS.append("playwright-e2e")
+    LOADOUTS.append("playwright")
 ```
+
+`use_playwright` maps to `playwright`. `playwright-e2e` remains a compatibility alias of that loadout.
 
 ### Hook must never hard-fail
 

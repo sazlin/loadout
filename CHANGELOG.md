@@ -5,6 +5,17 @@
 - Add `learn` to the `base` loadout: `/learn` captures obvious agent and
   subagent mistakes from the current session as project-level rules in an
   `AGENTS.md` Learnings section (create or merge/dedupe).
+- Add `playwright` loadout: Playwright Test Agents (`playwright_planner`,
+  `playwright_generator`, `playwright_healer`), the `playwright-test` MCP
+  (`npx --no-install playwright run-test-mcp-server`), `playwright-agents`
+  skill, dest-scoped `e2e/` conventions, and default `testDir` `e2e/`
+  (`e2e/seed.spec.ts`). `playwright-e2e` is a compatibility alias of
+  `playwright`. Cookiecutter `use_playwright` maps to `playwright`.
+- Remove `e2e_test_generator`; planner/generator/healer own Playwright
+  coverage under `e2e/`.
+- Add `rules/core/pr-ready-for-review.mdc` to `base`: agents must open
+  GitHub PRs ready for review (never as drafts). If the change is not
+  ready, do not open a PR; ask the user what is blocking.
 
 ## 0.12.0
 

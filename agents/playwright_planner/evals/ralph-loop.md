@@ -1,8 +1,8 @@
-# Ralph loop: e2e_test_generator
+# Ralph loop: playwright_planner
 
 Goal: this eval must **fail** a blank general-purpose agent and **pass**
-the named custom agent. Identity checks (`"agent": "e2e_test_generator"`) do not
-count as differentiation.
+the named custom agent. Identity checks (`"agent": "playwright_planner"`)
+do not count as differentiation.
 
 Max 5 modify/test iterations. Throw the eval out if it still cannot
 separate blank vs custom.
@@ -21,6 +21,6 @@ Frozen blank transcripts: `blank_runs/`.
 
 | Eval | Blank iter 0 | Ralph iters | Outcome |
 | --- | --- | --- | --- |
-| `e2e-checkout-spec` | FAIL on `processdata`; also missed specialist `getbyrole` | 1 | Keep. `must_find: [checkout, order]` (fixture words). `must_not_find: [processdata]`. Live custom passed full score. |
+| `playwright-planner-checkout-plan` | FAIL on `processdata`; also missed `specs/` + `scenario` | 1 | Keep. `must_find: [specs/, scenario]`. `must_not_find: [processdata]`. Golden custom passes full score. |
 
 No eval was thrown out.

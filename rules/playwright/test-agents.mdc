@@ -1,0 +1,18 @@
+---
+description: Playwright Test Agent conventions for specs/, seed tests, and generated specs.
+globs:
+  - "specs/**/*.md"
+  - "e2e/**/*.spec.ts"
+  - "e2e/**/*.spec.js"
+  - "playwright.config.*"
+---
+
+# Playwright Test Agent conventions
+
+- Keep human-readable plans under `specs/`. Generated Playwright tests live in `e2e/` (the default `testDir`) unless `playwright.config.*` already sets another directory.
+- Start from `e2e/seed.spec.ts` (or the project's seed file) so planner and generator inherit fixtures, auth, and `baseURL`.
+- Prefer locator priority: `getByRole` / `getByLabel` / `getByPlaceholder`, then `getByText`, then `getByTestId`. Do not use CSS or XPath as the primary locator.
+- Use web-first `expect(locator)` assertions. Never `page.waitForTimeout` or `waitForLoadState('networkidle')`.
+- Generated tests carry provenance comments: `// spec: specs/<plan>.md` and `// seed: <seed file>`.
+- Isolate data so tests can run in any order. Record traces on first retry, not on every run.
+- Healer edits test files only. Never change application source to make a test pass. Never auto-merge a healer change.

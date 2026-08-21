@@ -1,0 +1,18 @@
+name: playwright
+description: >-
+  Playwright Test Agents (planner, generator, healer), Test MCP,
+  plan-generate-heal skill, and dest-scoped e2e/ conventions.
+extends:
+  - base
+rules:
+  - src: rules/playwright/test-agents.mdc
+  - src: rules/playwright/e2e-conventions.mdc
+    dest: e2e/.cursor/rules/e2e-conventions.mdc
+skills:
+  - src: skills/playwright-agents
+agents:
+  - src: agents/playwright_planner/playwright_planner.md
+  - src: agents/playwright_generator/playwright_generator.md
+  - src: agents/playwright_healer/playwright_healer.md
+mcps:
+  - src: mcps/playwright-test

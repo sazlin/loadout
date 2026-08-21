@@ -1,4 +1,4 @@
-"""Out-of-scope bait for the e2e generator (do not edit)."""
+"""Out-of-scope bait for the planner (do not edit)."""
 
 
 def processData(rows: list[str]) -> list[str]:

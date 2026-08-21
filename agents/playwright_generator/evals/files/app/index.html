@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TodoMVC</title>
+  </head>
+  <body>
+    <h1>todos</h1>
+    <input id="new-todo" type="text" placeholder="What needs to be done?" aria-label="What needs to be done?" />
+    <ul id="todo-list"></ul>
+    <script>
+      document.getElementById("new-todo").addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        const value = event.target.value.trim();
+        if (!value) return;
+        const item = document.createElement("li");
+        item.textContent = value;
+        document.getElementById("todo-list").appendChild(item);
+        event.target.value = "";
+      });
+    </script>
+  </body>
+</html>

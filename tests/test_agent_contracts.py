@@ -63,7 +63,9 @@ def assert_agent_contract(path: Path) -> None:
     [
         "python_coder.md",
         "davinci.md",
-        "e2e_test_generator.md",
+        "playwright_planner.md",
+        "playwright_generator.md",
+        "playwright_healer.md",
         "issue_resolver.md",
     ],
 )

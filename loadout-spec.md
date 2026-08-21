@@ -63,6 +63,7 @@ loadout/
       colocated-evals.mdc
       no-cursor-coauthor.mdc
       honor-check-intent.mdc
+      pr-ready-for-review.mdc
     python/
       python-code-style.mdc
       uv-workspace.mdc
@@ -73,8 +74,10 @@ loadout/
       aws-conventions.mdc
     playwright/
       e2e-conventions.mdc
+      test-agents.mdc
   skills/
     db-migrations/SKILL.md
+    playwright-agents/SKILL.md
     refining-evals/SKILL.md
     release-checklist/SKILL.md
     terraform-plan-review/SKILL.md
@@ -100,8 +103,14 @@ loadout/
     davinci/
       davinci.md
       evals/
-    e2e_test_generator/
-      e2e_test_generator.md
+    playwright_planner/
+      playwright_planner.md
+      evals/
+    playwright_generator/
+      playwright_generator.md
+      evals/
+    playwright_healer/
+      playwright_healer.md
       evals/
     review_correctness/
       review_correctness.md
@@ -136,6 +145,8 @@ loadout/
       mcp.yaml
     linear/
       mcp.yaml
+    playwright-test/
+      mcp.yaml
   loadouts/
     base.yaml
     agents.yaml
@@ -145,6 +156,7 @@ loadout/
     aws.yaml
     terraform.yaml
     playwright-e2e.yaml
+    playwright.yaml
     superpowers.yaml
     pr_review.yaml
   tests/
@@ -731,8 +743,10 @@ if ctx["use_terraform"] == "yes":
 if ctx["use_aws"] == "yes":
     LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
-    LOADOUTS.append("playwright-e2e")
+    LOADOUTS.append("playwright")
 ```
+
+`use_playwright` maps to `playwright`. `playwright-e2e` remains a compatibility alias of that loadout.
 
 Keep this mapping coarse and stable. Already-generated projects receive changes to loadout *contents* but never to this mapping, so most improvements should land as content changes inside an existing loadout.
 
