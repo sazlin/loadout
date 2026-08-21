@@ -5,16 +5,19 @@
 - Add `learn` to the `base` loadout: `/learn` captures obvious agent and
   subagent mistakes from the current session as project-level rules in an
   `AGENTS.md` Learnings section (create or merge/dedupe).
-
-## 0.12.0
-
-- Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
-  a git commit co-author (`Co-authored-by`, `--trailer`, or templates).
 - Add `playwright` loadout: Playwright Test Agents (`playwright_planner`,
   `playwright_generator`, `playwright_healer`), the `playwright-test` MCP
   (`npx playwright run-test-mcp-server`), `playwright-agents` skill, and
   `rules/playwright/test-agents.mdc`. Distinct from `playwright-e2e` (the
   `e2e/` conventions plus `e2e_test_generator`).
+- Add `rules/core/pr-ready-for-review.mdc` to `base`: agents must open
+  GitHub PRs ready for review (never as drafts). If the change is not
+  ready, do not open a PR; ask the user what is blocking.
+
+## 0.12.0
+
+- Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
+  a git commit co-author (`Co-authored-by`, `--trailer`, or templates).
 
 ## 0.11.0
 
