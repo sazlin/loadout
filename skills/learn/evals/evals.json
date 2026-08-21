@@ -11,7 +11,8 @@
         "Creates a ## Learnings section because none exists",
         "Adds a preamble that these are dynamic learnings an agent should consider",
         "Writes a numbered list of short project-level rules",
-        "Does not edit content inside the generated loadout markers"
+        "Does not edit content inside the generated loadout markers",
+        "Does not commit AGENTS.md unless asked"
       ]
     },
     {
@@ -23,7 +24,8 @@
         "Merges into the existing ## Learnings section instead of appending a second section",
         "Dedupes or improves the existing test-command rule rather than duplicating it",
         "Adds a new high-confidence rule for the generated-block mistake if missing",
-        "Leaves unrelated existing learnings in place"
+        "Leaves unrelated existing learnings in place",
+        "Does not commit AGENTS.md unless asked"
       ]
     },
     {

@@ -62,13 +62,13 @@ def test_base_loadout_includes_learn() -> None:
     assert "skills/learn" in srcs
 
 
-def test_learn_description_is_command_triggered() -> None:
+def test_learn_description_is_command_only() -> None:
     meta = parse_skill_md(SKILL_MD, SKILL_MD.read_text(), dir_name="learn")
     lowered = meta.description.lower()
     assert "/learn" in lowered
     assert "only" in lowered
-    remainder = lowered.replace("/learn", "")
-    assert "implement" in remainder or "passing" in remainder
+    assert "do not use while implementing" in lowered
+    assert "in passing" in lowered
 
 
 def test_learn_body_reflects_then_lists_mistakes_then_derives_rules() -> None:
@@ -83,18 +83,7 @@ def test_learn_body_reflects_then_lists_mistakes_then_derives_rules() -> None:
     assert "project-level" in lowered or "project level" in lowered
     steps, _, _ = text.partition("## Common mistakes")
     steps_lower = steps.lower()
-    reflect = steps_lower.index("reflect")
-    enumerate_at = min(
-        i
-        for i in (
-            steps_lower.find("enumerate"),
-            steps_lower.find("list the"),
-            steps_lower.find("concise list"),
-        )
-        if i >= 0
-    )
-    derive = min(i for i in (steps_lower.find("derive"), steps_lower.find("mitigate")) if i >= 0)
-    assert reflect < enumerate_at < derive
+    assert steps_lower.index("reflect") < steps_lower.index("enumerate") < steps_lower.index("derive")
 
 
 def test_learn_body_creates_or_merges_agents_learnings() -> None:
@@ -115,6 +104,8 @@ def test_learn_body_skips_generated_block_and_does_not_invent() -> None:
     assert "generated" in lowered
     assert "do not invent" in lowered or "don't invent" in lowered or "do not fabricate" in lowered
     assert "unchanged" in lowered or "no obvious" in lowered
+    collapsed = " ".join(lowered.split())
+    assert "do not commit" in collapsed or "don't commit" in collapsed
 
 
 def test_learn_has_colocated_evals() -> None:
@@ -141,7 +132,8 @@ def test_learn_evals_cover_create_merge_empty_subagent_and_command_only() -> Non
     assert "no obvious" in texts or "no mistakes" in texts or "clean session" in texts
     assert "subagent" in texts
     assert "generated" in texts or "do not edit" in texts
-    assert "passing" in texts or "implement" in texts
+    assert "passing mention" in texts
+    assert "command only" in texts
 
 
 def test_learn_merge_eval_prompt_restates_session_mistakes() -> None:
