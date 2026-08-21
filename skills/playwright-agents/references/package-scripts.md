@@ -18,10 +18,10 @@ Install browsers for CI parity:
 npx playwright install --with-deps chromium
 ```
 
-The Test MCP used by planner/generator/healer is the project Playwright binary:
+The Test MCP used by planner/generator/healer is the project Playwright binary (`--no-install` fails fast when it is missing):
 
 ```bash
-npx playwright run-test-mcp-server
+npx --no-install playwright run-test-mcp-server
 ```
 
 Do not add a remote-bootstrap installer. Do not pin `@playwright/mcp@latest` when the bundled Test MCP is enough.

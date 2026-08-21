@@ -4,5 +4,6 @@ description: >-
   planner, generator, and healer agents.
 command: npx
 args:
+  - --no-install
   - playwright
   - run-test-mcp-server
