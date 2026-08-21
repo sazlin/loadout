@@ -4,6 +4,11 @@
 
 - Add `rules/core/no-cursor-coauthor.mdc` to `base`: never include Cursor as
   a git commit co-author (`Co-authored-by`, `--trailer`, or templates).
+- Add `playwright` loadout: Playwright Test Agents (`playwright_planner`,
+  `playwright_generator`, `playwright_healer`), the `playwright-test` MCP
+  (`npx playwright run-test-mcp-server`), `playwright-agents` skill, and
+  `rules/playwright/test-agents.mdc`. Distinct from `playwright-e2e` (the
+  `e2e/` conventions plus `e2e_test_generator`).
 
 ## 0.11.0
 

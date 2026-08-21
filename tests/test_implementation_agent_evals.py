@@ -31,6 +31,9 @@ EVAL_IDS = (
     "python-coder-discounted-total",
     "davinci-inline-adder",
     "e2e-checkout-spec",
+    "playwright-planner-checkout-plan",
+    "playwright-generator-add-todo",
+    "playwright-healer-locator-drift",
 )
 
 

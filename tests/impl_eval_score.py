@@ -15,7 +15,14 @@ from review_eval_score import ScoreResult, parse_report
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / "agents"
-IMPLEMENTATION_AGENTS = ("python_coder", "davinci", "e2e_test_generator")
+IMPLEMENTATION_AGENTS = (
+    "python_coder",
+    "davinci",
+    "e2e_test_generator",
+    "playwright_planner",
+    "playwright_generator",
+    "playwright_healer",
+)
 
 _REPORT_KEYS = (
     "status",

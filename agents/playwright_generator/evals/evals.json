@@ -1,0 +1,38 @@
+{
+  "agent": "playwright_generator",
+  "evals": [
+    {
+      "id": "playwright-generator-add-todo",
+      "agent": "playwright_generator",
+      "prompt": "You are playwright_generator. Follow agents/playwright_generator/playwright_generator.md. Read agents/playwright_generator/evals/files/specs/basic-operations.md and agents/playwright_generator/evals/files/app/index.html. Generate a Playwright test for scenario 1.1 Add Valid Todo. Do not start a server. Do not run playwright. Do not edit process_data.py. Do not read agents/playwright_generator/evals/evals.json, goldens/, blank_runs/, or ralph-loop.md. Return the JSON report.",
+      "files": [
+        "evals/files/specs/basic-operations.md",
+        "evals/files/app/index.html",
+        "evals/files/tests/seed.spec.ts",
+        "evals/files/process_data.py"
+      ],
+      "expected_output": "JSON report for a generated add-todo spec",
+      "expectations": [
+        "Writes a spec with // spec: provenance and getByRole locators",
+        "Does not mention processData or waitForTimeout"
+      ],
+      "must_find": [
+        {
+          "id": "spec-provenance-role",
+          "keywords": [
+            "spec:",
+            "getbyrole"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "python-bait",
+          "keywords": [
+            "processdata"
+          ]
+        }
+      ]
+    }
+  ]
+}

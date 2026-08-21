@@ -1,0 +1,16 @@
+name: playwright
+description: >-
+  Playwright Test Agents (planner, generator, healer), Test MCP, and the
+  plan-generate-heal operating skill.
+extends:
+  - base
+rules:
+  - src: rules/playwright/test-agents.mdc
+skills:
+  - src: skills/playwright-agents
+agents:
+  - src: agents/playwright_planner/playwright_planner.md
+  - src: agents/playwright_generator/playwright_generator.md
+  - src: agents/playwright_healer/playwright_healer.md
+mcps:
+  - src: mcps/playwright-test

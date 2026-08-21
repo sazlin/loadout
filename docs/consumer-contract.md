@@ -50,6 +50,7 @@ if ctx["use_aws"] == "yes":
     LOADOUTS.append("aws")
 if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright-e2e")
+    # Official Test Agents (planner/generator/healer + Test MCP): also append "playwright"
 ```
 
 ### Hook must never hard-fail
