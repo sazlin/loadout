@@ -14,12 +14,14 @@ _SHELL = ("bash", "-c")
 
 def run_cli_tools(tools: list[CliTool], project_root: Path) -> None:
     """Run each command in ``project_root``. Continue after failures."""
+    sys.stdout.flush()
+    sys.stderr.flush()
     for tool in tools:
         _run_one(tool, project_root)
 
 
 def _run_one(tool: CliTool, project_root: Path) -> None:
-    print(f"loadout: cli_tools: {tool.name}: running")
+    print(f"loadout: cli_tools: {tool.name}: running", flush=True)
     try:
         completed = subprocess.run(
             [*_SHELL, tool.command],
@@ -29,17 +31,17 @@ def _run_one(tool: CliTool, project_root: Path) -> None:
             check=False,
         )
     except OSError as error:
-        print(f"loadout: cli_tools: {tool.name}: failed to start: {error}")
+        print(f"loadout: cli_tools: {tool.name}: failed to start: {error}", flush=True)
         return
     _replay_output(completed.stdout, sys.stdout)
     _replay_output(completed.stderr, sys.stderr)
     if completed.returncode == 0:
-        print(f"loadout: cli_tools: {tool.name}: ok")
+        print(f"loadout: cli_tools: {tool.name}: ok", flush=True)
         return
-    print(f"loadout: cli_tools: {tool.name}: failed (exit {completed.returncode})")
+    print(f"loadout: cli_tools: {tool.name}: failed (exit {completed.returncode})", flush=True)
 
 
 def _replay_output(text: str, stream: TextIO) -> None:
     if not text:
         return
-    print(text, end="" if text.endswith("\n") else "\n", file=stream)
+    print(text, end="" if text.endswith("\n") else "\n", file=stream, flush=True)
