@@ -5,3 +5,7 @@ def test_version_is_semver():
     parts = __version__.split(".")
     assert len(parts) == 3
     assert all(p.isdigit() for p in parts)
+
+
+def test_version_is_0_12_0():
+    assert __version__ == "0.12.0"
