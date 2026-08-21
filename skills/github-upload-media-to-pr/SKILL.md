@@ -93,20 +93,36 @@ Do not wrap the video in a markdown image tag. Do not invent
 
 ## Step 3: Attach via ManagePullRequest
 
-**Option A — PR description** (default unless the user asks for a comment):
+**Option A — PR description** (default; this is the rewrite that inlines media):
 
 Call `ManagePullRequest` `update_pr` and append a `## Screenshots`, `## Demo`,
 or `## Media` section that contains the HTML tags. Keep any human-edited PR
 body text. Pass `branch_name` for this branch.
 
+After the call, read the PR body. Successful rewrite looks like:
+
+- Image: `![alt](https://cursor.com/artifacts/c/art-<id>)`
+- Video: a thumbnail `img` wrapped in a link to the artifact
+
 **Option B — Comment** (when the user asks for a comment, or wants comment
 links):
 
-Call `ManagePullRequest` `post_comment` with the same HTML in `body`. Provide
-only `body` for a top-level conversation comment.
+Do **not** send `/opt/cursor/artifacts/` HTML to `post_comment` first. That
+path becomes a markdown click-through link, not an inline image. Stage with
+Option A, copy the rewritten `https://cursor.com/artifacts/c/art-<id>` URLs
+from the PR body, then `post_comment` using that markdown:
 
-The tool uploads the files and rewrites the paths to hosted URLs. Do not paste
-repo-relative paths or `file://` URLs.
+```markdown
+![screenshot](https://cursor.com/artifacts/c/art-<id>)
+```
+
+```markdown
+[demo.mp4](https://cursor.com/agents/<id>/artifacts?path=/opt/cursor/artifacts/pr-demo.mp4)
+```
+
+Provide only `body` for a top-level conversation comment.
+
+Do not paste repo-relative paths or `file://` URLs.
 
 ## Step 4: Verify
 
@@ -141,7 +157,8 @@ Confirm the returned body or comment contains hosted media URLs, not the
 
 | Issue | Solution |
 | --- | --- |
-| Path not rewritten | Use an absolute `/opt/cursor/artifacts/...` path in `src` |
+| Path not rewritten | Use an absolute `/opt/cursor/artifacts/...` path in `src` on `update_pr` |
+| Comment is a text link, not an image | `post_comment` does not inline local HTML; copy `https://cursor.com/artifacts/c/art-` URLs from the PR body |
 | Special characters in the filename | Copy to a simple name under `/opt/cursor/artifacts/` first |
 | Video does not play | Use `mp4` or `webm`; include `controls` on the `video` tag |
 | No PR yet | Create it with `ManagePullRequest` `create_pr`, then attach |
