@@ -100,6 +100,17 @@ def test_playwright_skill_encodes_pipeline_and_healer_guardrails() -> None:
     assert "playwright-test" in text
 
 
+def test_playwright_ci_bounds_healer_retriggers() -> None:
+    text = (REPO / "skills" / "playwright-agents" / "references" / "ci.md").read_text().lower()
+    assert "default_branch" in text or "default branch" in text
+    assert "healer pr" in text or "healer branch" in text
+    assert "concurrency" in text
+    assert "cancel-in-progress" in text
+    assert "fix ci failures" in text
+    assert "auto-merge" in text
+    assert "single" in text and "fix pr" in text
+
+
 def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     planner = (REPO / "agents" / "playwright_planner" / "playwright_planner.md").read_text()
     generator = (REPO / "agents" / "playwright_generator" / "playwright_generator.md").read_text()
