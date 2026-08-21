@@ -34,7 +34,16 @@ from review_eval_score import (
 REPO = _TESTS.parent
 AGENTS = REPO / "agents"
 
-IMPLEMENTATION_AGENTS = frozenset({"python_coder.md", "davinci.md", "e2e_test_generator.md"})
+IMPLEMENTATION_AGENTS = frozenset(
+    {
+        "python_coder.md",
+        "davinci.md",
+        "e2e_test_generator.md",
+        "playwright_planner.md",
+        "playwright_generator.md",
+        "playwright_healer.md",
+    }
+)
 REVIEW_DIMENSION_AGENTS = frozenset(
     {
         "review_correctness.md",

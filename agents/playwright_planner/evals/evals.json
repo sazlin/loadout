@@ -1,0 +1,36 @@
+{
+  "agent": "playwright_planner",
+  "evals": [
+    {
+      "id": "playwright-planner-checkout-plan",
+      "agent": "playwright_planner",
+      "prompt": "You are playwright_planner. Follow agents/playwright_planner/playwright_planner.md. Read agents/playwright_planner/evals/files/app/index.html and write a Markdown test plan under specs/ for guest checkout. Do not start a server. Do not write Playwright tests. Do not edit process_data.py. Do not read agents/playwright_planner/evals/evals.json, goldens/, blank_runs/, or ralph-loop.md. Return the JSON report.",
+      "files": [
+        "evals/files/app/index.html",
+        "evals/files/process_data.py"
+      ],
+      "expected_output": "JSON report for a specs/ checkout plan",
+      "expectations": [
+        "Writes a plan under specs/ with independent scenarios and expected results",
+        "Does not mention processData or generate a .spec.ts"
+      ],
+      "must_find": [
+        {
+          "id": "specs-scenario",
+          "keywords": [
+            "specs/",
+            "scenario"
+          ]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "python-bait",
+          "keywords": [
+            "processdata"
+          ]
+        }
+      ]
+    }
+  ]
+}
