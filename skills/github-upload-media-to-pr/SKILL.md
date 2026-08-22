@@ -123,15 +123,15 @@ Do not wrap the video in a markdown image tag. Do not invent
 
 **Option A — PR description** (default; this is the rewrite that inlines media):
 
-Call `ManagePullRequest` `update_pr` **once** per attach and append a
+Call `ManagePullRequest` attach `update_pr` **once** per attach and append a
 `## Screenshots`, `## Demo`, or `## Media` section that contains the HTML
 tags. Keep any human-edited PR body text. Pass `branch_name` for this
 branch.
 
-After that single `update_pr`, read the PR body. If
+After that single attach `update_pr`, read the PR body. If
 `/opt/cursor/artifacts/` paths are still in the body, stop and report
-that artifact hosting failed. Do not retry `update_pr`, do not start
-another recording, and do not loop Step 4.
+that artifact hosting failed. Do not retry that attach `update_pr`, do not
+start another recording, and do not loop Step 4.
 
 Successful rewrite looks like:
 
@@ -143,10 +143,10 @@ links):
 
 Do **not** send `/opt/cursor/artifacts/` HTML to `post_comment` first. That
 path becomes a markdown click-through link, not an inline image. Stage with
-Option A (`update_pr`), copy the rewritten
+Option A (attach `update_pr`), copy the rewritten
 `https://cursor.com/artifacts/c/art-<id>` URLs from the PR body, then
 `post_comment` using that markdown. If no
-`https://cursor.com/artifacts/c/art-` URL appears after that single
+`https://cursor.com/artifacts/c/art-` URL appears after that single attach
 `update_pr`, skip `post_comment`. Stop and report that artifact hosting
 failed. `post_comment` bodies must use those rewritten hosted URLs and
 must not include `/opt/cursor/artifacts/` in `src` or `href`. Do not
@@ -161,8 +161,10 @@ construct artifact URLs from local paths or the current run id.
 ```
 
 Keep the Option A description section so the comment URLs stay valid. If
-the user asked for a comment only, `update_pr` again to remove that
-section after the comment is posted.
+the user asked for a comment only, call a cleanup (remove-section)
+`update_pr` to drop that section after a successful hosted rewrite and
+posted comment. That cleanup `update_pr` is not a rewrite retry; do not
+use it when staging paths remain.
 
 Provide only `body` for a top-level conversation comment.
 

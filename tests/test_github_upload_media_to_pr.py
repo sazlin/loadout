@@ -309,6 +309,27 @@ def test_body_stages_via_update_pr_before_post_comment() -> None:
     assert STAGING_PATH_QUERY not in option_b
 
 
+def test_body_labels_cleanup_update_pr_not_attach_retry() -> None:
+    """Option B's second update_pr is labeled cleanup, not an attach rewrite retry."""
+    text = SKILL_MD.read_text()
+    step3 = _section_after_heading(text, "## step 3")
+    collapsed_step3 = " ".join(step3.split())
+    assert re.search(
+        r"attach[`\s]+update_pr",
+        collapsed_step3,
+    ), "Option A must name the first call the attach update_pr"
+    assert "do not retry" in collapsed_step3
+
+    option_b = _option_b_section(text)
+    collapsed_b = " ".join(option_b.split())
+    assert re.search(
+        r"(cleanup|remove-section).{0,80}update_pr|update_pr.{0,80}(cleanup|remove-section)",
+        collapsed_b,
+    ), "Option B must label the second update_pr as cleanup/remove-section"
+    assert "retry" in collapsed_b
+    assert "staging" in collapsed_b
+
+
 def test_body_fail_closed_on_artifact_host() -> None:
     """One update_pr per attach; a failed rewrite stops and does not retry."""
     text = SKILL_MD.read_text()
