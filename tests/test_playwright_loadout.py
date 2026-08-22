@@ -79,7 +79,7 @@ def _assert_shell_disambiguates_browser_cli(label: str, text: str) -> None:
     shell = next((line for line in text.splitlines() if line.startswith("- **Shell:**")), "")
     assert shell, f"{label}: missing Shell bullet"
     lowered = shell.lower()
-    assert "npx playwright-cli" in shell or "npx playwright cli" in shell, label
+    assert "npx playwright-cli" in shell, label
     assert "browser cli" in lowered, label
     assert "npx playwright test" in shell, label
     assert "spec runner" in lowered, label
@@ -103,7 +103,7 @@ def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
         assert "mcp__playwright-test" not in text
         assert "@playwright/mcp" not in text
         _assert_no_unpinned_npx_playwright_cli(label, text)
-        assert "npx playwright-cli" in text or "npx playwright cli" in text, label
+        assert "npx playwright-cli" in text, label
     assert "playwright-cli --version" in scripts
     assert "npx --no-install playwright-cli --version" in scripts
     assert "0.1.18" in scripts
@@ -232,6 +232,10 @@ def _assert_forbids_storage_state_secret_dump(label: str, text: str) -> None:
     assert any(word in window for word in ("forbid", "never", "do not")), label
 
 
+def _iter_playwright_agent_texts() -> list[tuple[str, str]]:
+    return [(name, (REPO / "agents" / name / f"{name}.md").read_text()) for name in PLAYWRIGHT_AGENTS]
+
+
 def _assert_closes_playwright_cli_sessions(label: str, text: str) -> None:
     """Finished and blocked runs must close sessions this agent opened."""
     assert "npx playwright-cli close" in text, label
@@ -284,13 +288,25 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     assert "unless" not in anti_reward.lower()
 
     for label, text in (("planner", planner), ("generator", generator), ("healer", healer)):
-        _assert_forbids_storage_state_secret_dump(label, text)
-        _assert_closes_playwright_cli_sessions(label, text)
         _assert_no_unpinned_npx_playwright_cli(label, text)
-        _assert_shell_disambiguates_browser_cli(label, text)
     healer_lower = healer.lower()
     assert "url" in healer_lower and "status" in healer_lower
     assert "authorization" in healer_lower
+
+
+def test_playwright_agents_forbid_storage_state_secret_dump() -> None:
+    for name, text in _iter_playwright_agent_texts():
+        _assert_forbids_storage_state_secret_dump(name, text)
+
+
+def test_playwright_agents_require_cli_session_teardown() -> None:
+    for name, text in _iter_playwright_agent_texts():
+        _assert_closes_playwright_cli_sessions(name, text)
+
+
+def test_playwright_agents_disambiguate_browser_cli_from_spec_runner() -> None:
+    for name, text in _iter_playwright_agent_texts():
+        _assert_shell_disambiguates_browser_cli(name, text)
 
 
 def test_playwright_rule_and_skill_require_cli_session_teardown() -> None:
