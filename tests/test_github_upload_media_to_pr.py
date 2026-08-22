@@ -302,9 +302,9 @@ def test_body_does_not_instruct_installing_agent_browser() -> None:
     )
     for needle in install_needles:
         assert needle in lowered
-    do_not, _, _ = lowered.partition("## do not")
-    assert "npx skills add vercel-labs/agent-browser" not in do_not
-    assert "npm i -g agent-browser && agent-browser install" not in do_not
+    before_do_not, _, _ = lowered.partition("## do not")
+    assert "npx skills add vercel-labs/agent-browser" not in before_do_not
+    assert "npm i -g agent-browser && agent-browser install" not in before_do_not
 
 
 def test_has_colocated_evals() -> None:
