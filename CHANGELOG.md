@@ -5,6 +5,10 @@
 - Add `cli_tools` on loadout YAML: named idempotent shell commands that
   `sync` and `update` run in the project root after writing files. Failures
   are printed and do not abort the install. `sync --check` does not run them.
+- Add `rules/core/readme-loadouts.mdc` to `base`: when loadouts are
+  added, removed, or changed, update `README.md` **Available loadouts**
+  in the same change. Catalog tests fail if a loadout is missing or its
+  Extends cell drifts from the YAML.
 - Add `supabase` loadout: vendors
   `skills/supabase-postgres-best-practices` from
   [supabase/agent-skills](https://github.com/supabase/agent-skills)
