@@ -276,6 +276,32 @@ def test_playwright_rule_and_skill_require_cli_session_teardown() -> None:
     _assert_closes_playwright_cli_sessions("playwright-agents/SKILL.md", skill)
 
 
+def test_playwright_cloud_and_local_install_cli_and_project_browsers() -> None:
+    cloud = (REPO / "skills" / "playwright-agents" / "references" / "cursor-cloud.md").read_text()
+    scripts = (REPO / "skills" / "playwright-agents" / "references" / "package-scripts.md").read_text()
+    planner = (REPO / "agents" / "playwright_planner" / "playwright_planner.md").read_text()
+    generator = (REPO / "agents" / "playwright_generator" / "playwright_generator.md").read_text()
+    install_line = next(line for line in cloud.splitlines() if '"install"' in line)
+    project_browsers = "npx playwright install --with-deps chromium"
+    cli_browsers = "npx playwright-cli install-browser --with-deps chromium"
+    assert project_browsers in install_line
+    assert cli_browsers in install_line
+    assert install_line.index(project_browsers) < install_line.index(cli_browsers)
+    assert "npx playwright test e2e/seed.spec.ts" in cloud
+    assert project_browsers in scripts
+    assert cli_browsers in scripts
+    for label, text in (
+        ("cursor-cloud", cloud),
+        ("package-scripts", scripts),
+        ("planner", planner),
+        ("generator", generator),
+    ):
+        lowered = text.lower()
+        assert "install-browser" in text, label
+        assert "stop immediately" in lowered, label
+        assert "open" in lowered, label
+
+
 def test_playwright_defaults_test_dir_to_e2e() -> None:
     rule = (REPO / "rules" / "playwright" / "test-agents.mdc").read_text()
     prompts = (REPO / "skills" / "playwright-agents" / "references" / "prompts.md").read_text()

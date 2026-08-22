@@ -12,11 +12,14 @@ Add to the consumer `package.json` when the project does not already define them
 }
 ```
 
-Install browsers for CI parity:
+Install browsers once after `loadout sync` or `npm ci`. Do both: the project's Playwright and `@playwright/cli@0.1.18` can pin different `playwright-core` revisions.
 
 ```bash
 npx playwright install --with-deps chromium
+npx playwright-cli install-browser --with-deps chromium
 ```
+
+`npx playwright test` uses the first (project browsers). `npx playwright-cli open` uses the second (CLI-bundled Chromium). If `npx playwright-cli install-browser` fails, stop immediately rather than retrying `npx playwright-cli open`.
 
 `loadout sync` adds `@playwright/cli@0.1.18` as a `devDependency` when `playwright-cli` is missing from PATH and `node_modules/.bin`. Commit that package.json / lockfile change. After that, planner/generator/healer use `npx playwright-cli` (the browser CLI this loadout installs) and `npx playwright test` (the spec runner):
 

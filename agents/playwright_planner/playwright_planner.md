@@ -65,7 +65,7 @@ If the only path to done is one of the above: stop and emit `blocked`.
 
 ## Blocked protocol
 
-Max **3** attempts for the same failure class, then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`. If the app cannot start or `npx playwright-cli` cannot see the UI, stop immediately — do not fabricate a plan. Prefer the last coherent `specs/` file over guesses. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
+Max **3** attempts for the same failure class, then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`. If the app cannot start, `npx playwright-cli install-browser` failed, or `npx playwright-cli` cannot see the UI, stop immediately rather than retrying `open` — do not fabricate a plan. Prefer the last coherent `specs/` file over guesses. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 
 ## Context acquisition
 
