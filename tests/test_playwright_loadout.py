@@ -162,6 +162,26 @@ def test_playwright_ci_bounds_healer_retriggers() -> None:
     assert "single" in text and "fix pr" in text
 
 
+def _assert_forbids_storage_state_secret_dump(label: str, text: str) -> None:
+    """Seed storageState must be loaded via CLI only; cookies stay out of reports."""
+    lowered = text.lower()
+    assert "state-load" in text, label
+    assert "storagestate" in lowered, label
+    assert "cookie-get" in lowered, label
+    forbids_read = (
+        "never `read`" in lowered
+        or "never read" in lowered
+        or ("never" in lowered and "`cat`" in lowered)
+        or "do not read" in lowered
+        or "do not `read`" in lowered
+    )
+    assert forbids_read, label
+    assert "cookie" in lowered and "token" in lowered, label
+    cookie_get_at = lowered.find("cookie-get")
+    window = lowered[max(0, cookie_get_at - 160) : cookie_get_at + 160]
+    assert any(word in window for word in ("forbid", "never", "do not")), label
+
+
 def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     planner = (REPO / "agents" / "playwright_planner" / "playwright_planner.md").read_text()
     generator = (REPO / "agents" / "playwright_generator" / "playwright_generator.md").read_text()
@@ -191,6 +211,12 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     anti_reward = healer.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0]
     assert "auto-merge" in anti_reward.lower()
     assert "unless" not in anti_reward.lower()
+
+    for label, text in (("planner", planner), ("generator", generator), ("healer", healer)):
+        _assert_forbids_storage_state_secret_dump(label, text)
+    healer_lower = healer.lower()
+    assert "url" in healer_lower and "status" in healer_lower
+    assert "authorization" in healer_lower
 
 
 def test_playwright_defaults_test_dir_to_e2e() -> None:
