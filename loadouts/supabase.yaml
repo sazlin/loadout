@@ -1,0 +1,8 @@
+name: supabase
+description: >-
+  Supabase and Postgres authoring — vendored postgres-best-practices skill
+  from supabase/agent-skills (query, connections, RLS, schema).
+extends:
+  - base
+skills:
+  - src: skills/supabase-postgres-best-practices

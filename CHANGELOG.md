@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add `supabase` loadout: vendors
+  `skills/supabase-postgres-best-practices` from
+  [supabase/agent-skills](https://github.com/supabase/agent-skills)
+  (`8331f91`) for Postgres query, connection, RLS, and schema guidance.
 - Add `learn` to the `base` loadout: `/learn` captures obvious agent and
   subagent mistakes from the current session as project-level rules in an
   `AGENTS.md` Learnings section (create or merge/dedupe).
