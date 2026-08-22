@@ -6,6 +6,7 @@ rules:
   - src: rules/core/colocated-evals.mdc
   - src: rules/core/no-cursor-coauthor.mdc
   - src: rules/core/pr-ready-for-review.mdc
+  - src: rules/core/readme-loadouts.mdc
   - src: rules/agents/agent-authoring.mdc
 skills:
   - src: skills/anti-sleep
