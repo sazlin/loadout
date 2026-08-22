@@ -33,7 +33,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. List tests with `npx playwright test --list`. Run only the failing names with `npx playwright test <file> -g "<title>"` (do not heal a green suite).
-2. On failure, open the page with `playwright-cli`, `snapshot` the UI, and inspect locators (`playwright-cli generate-locator <ref>`), `console`, and `requests`. Use `npx playwright show-trace` when a trace exists.
+2. On failure, open the page with `playwright-cli`, `playwright-cli snapshot` the UI, and inspect locators (`playwright-cli generate-locator <ref>`), `playwright-cli console`, and `playwright-cli requests`. Use `npx playwright show-trace` when a trace exists.
 3. Decide: test wrong vs app wrong. Test-wrong: patch locator/wait/data and re-run. Cap **2** reruns per test.
 4. App-wrong: do not weaken assertions. Leave or add `test.fixme` with a comment on the failing step, and emit `blocked` — never `ok`.
 5. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.

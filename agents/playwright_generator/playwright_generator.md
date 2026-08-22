@@ -85,7 +85,7 @@ You are an expert in Playwright generation. Official Playwright name: `playwrigh
 ### When invoked
 
 1. Obtain the plan (`specs/*.md`) and the scenario list (all bullets, or the named `1.1` item).
-2. `playwright-cli open <baseURL>` (load seed `storageState` when the seed uses it). Named session `-s=e2e` when isolating.
+2. If the seed uses `storageState`, `playwright-cli state-load` that file first. Then `playwright-cli open <baseURL>`. Named session `-s=e2e` when isolating.
 3. Execute each step and verification live. Use snapshot refs or `playwright-cli generate-locator <ref>` for role locators.
 4. `Write` the spec immediately from the live session.
 5. Verify with `npx playwright test` unless forbidden. Emit JSON.
