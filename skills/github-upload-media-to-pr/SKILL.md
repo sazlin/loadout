@@ -1,12 +1,11 @@
 ---
 name: github-upload-media-to-pr
 description: >-
-  Use when asked to attach screenshots, images, recordings, or videos to a
-  GitHub pull request; when putting visual evidence, test results, before/after
-  images, or a demo video in a PR description or comment; or when phrases like
-  "put the screenshot in the PR", "show the recording in the PR", "add images
-  to PR", "embed screenshots", "attach UI screenshots", or "upload recording
-  to PR" appear. Supports png, jpg, jpeg, gif, webp, mp4, webm, and mov.
+  Use when the user explicitly asked to attach screenshots, images, recordings,
+  or videos to a GitHub pull request — for example "put the screenshot in the
+  PR", "show the recording in the PR", "add images to PR", "embed screenshots
+  in the PR", "attach UI screenshots to the PR", or "upload recording to PR".
+  Supports png, jpg, jpeg, gif, webp, mp4, webm, and mov.
 license: MIT
 compatibility: >-
   Cursor Cloud agents with ManagePullRequest. Do not install agent-browser or
@@ -26,11 +25,16 @@ absolute paths in HTML. Do not drive github.com in a browser and do not install
 
 ## When to use
 
-- User wants screenshots, recordings, or other media on a PR
-- Walkthrough evidence should appear in the PR body or a comment
+- User explicitly asked to put screenshots, recordings, or other media on a
+  GitHub pull request (description or comment)
+- User used an attach-to-PR phrase such as "put the screenshot in the PR"
 
-**Skip** for attaching files that are not images or videos, and skip installing
-third-party browser CLIs to "make upload work".
+**Skip** when walkthrough artifacts already exist or a run only has generic
+test results, unless the user asked to put that media on the PR. Do not
+attach just because screenshots or videos are on disk. Do not start
+computerUse, RecordScreen, or ManagePullRequest for generic test results or
+to finish a Cloud PR. Also skip non-image/non-video files, and skip
+installing third-party browser CLIs to "make upload work".
 
 ## Cursor Cloud mapping
 

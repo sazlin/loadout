@@ -54,6 +54,17 @@ def test_base_loadout_includes_github_upload_media_skill() -> None:
     assert f"skills/{SKILL_NAME}" in srcs
 
 
+def _when_to_use_trigger_and_skip(text: str) -> tuple[str, str]:
+    """Split the When-to-use section into trigger copy and the Skip paragraph."""
+    lowered = text.lower()
+    _, found, after = lowered.partition("## when to use")
+    assert found, "SKILL.md is missing ## When to use"
+    section, _, _ = after.partition("\n## ")
+    trigger, skip_mark, skip = section.partition("**skip**")
+    assert skip_mark, "When to use is missing a **Skip** rule"
+    return trigger, skip
+
+
 def test_description_triggers_on_media_and_pr_phrases() -> None:
     meta = parse_skill_md(SKILL_MD, SKILL_MD.read_text(), dir_name=SKILL_NAME)
     lowered = meta.description.lower()
@@ -61,6 +72,32 @@ def test_description_triggers_on_media_and_pr_phrases() -> None:
     assert "screenshot" in lowered
     assert "video" in lowered or "recording" in lowered
     assert "put the screenshot in the pr" in lowered
+
+
+def test_description_requires_explicit_pr_attach_request() -> None:
+    """Walkthrough artifacts and generic test results are not a standalone attach trigger."""
+    text = SKILL_MD.read_text()
+    description = parse_skill_md(SKILL_MD, text, dir_name=SKILL_NAME).description.lower()
+    trigger, skip = _when_to_use_trigger_and_skip(text)
+    standalone_triggers = (
+        "test results",
+        "walkthrough",
+        "visual evidence",
+        "before/after",
+    )
+    for phrase in standalone_triggers:
+        assert phrase not in description
+        assert phrase not in trigger
+    collapsed_skip = " ".join(skip.split())
+    assert "asked" in description
+    assert "user" in trigger
+    assert "ask" in trigger or "want" in trigger
+    assert "walkthrough" in skip
+    assert "test results" in skip
+    assert "do not attach" in collapsed_skip or "do not use" in collapsed_skip
+    assert "computeruse" in skip
+    assert "recordscreen" in skip
+    assert "managepullrequest" in skip
 
 
 def test_body_uses_cursor_cloud_attach_not_agent_browser() -> None:
