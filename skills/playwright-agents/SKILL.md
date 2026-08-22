@@ -34,7 +34,7 @@ Run planner and generator interactively (human-gated). Run healer only after a r
 
 ## Setup
 
-This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1.18` via `cli_tools` (PATH `playwright-cli`, or `node_modules/.bin/playwright-cli`). Prefer that CLI over any Playwright MCP — snapshots stay on disk, so live exploration stays token-cheap. `@playwright/test` should already be a project dependency; do not add a Playwright MCP.
+This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1.18` as a project `devDependency` via `cli_tools`. Commit the package.json / lockfile change. Prefer `npx playwright-cli` over any Playwright MCP — snapshots stay on disk, so live exploration stays token-cheap. `@playwright/test` should already be a project dependency; do not add a Playwright MCP.
 
 1. Seed file in `e2e/` (default `testDir`): copy [references/seed.spec.ts](references/seed.spec.ts) to `e2e/seed.spec.ts`
 2. `specs/` directory for plans
@@ -43,7 +43,7 @@ This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1
 5. Cloud VM browsers: [references/cursor-cloud.md](references/cursor-cloud.md)
 6. CI + failure-triggered healer PRs: [references/ci.md](references/ci.md)
 
-If `playwright-cli` is missing after sync, `npx playwright cli` (project Playwright) or `npx @playwright/cli` works. Run `playwright-cli --help` for commands.
+Invoke the CLI as `npx playwright-cli`. Run `npx playwright-cli --help` for commands.
 
 Regenerate upstream definitions after a Playwright upgrade with `npx playwright init-agents --loop=claude`, then keep this loadout's templated agents (do not replace the charter/JSON schema). Prompts: [references/prompts.md](references/prompts.md).
 
@@ -57,7 +57,7 @@ Regenerate upstream definitions after a Playwright upgrade with `npx playwright 
 - Do not skip, xfail, or `test.fixme` to greening a locator bug.
 - `test.fixme` only when the **product** is broken; that run is blocked, not ok.
 - Human review of every healer diff. Never auto-merge.
-- Point `playwright-cli` at the project's origin; do not explore production.
+- Point `npx playwright-cli` at the project's origin; do not explore production.
 
 | Excuse | Reality |
 | --- | --- |

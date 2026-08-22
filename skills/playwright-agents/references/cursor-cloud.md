@@ -4,7 +4,7 @@ Cloud Agents need browsers on the VM. Put this in the **consumer** `.cursor/envi
 
 ```json
 {
-  "install": "npm ci && npx playwright install --with-deps chromium",
+  "install": "npm ci && npx playwright install --with-deps chromium && npx playwright-cli --help",
   "start": "npm run dev",
   "terminals": [{ "name": "app", "command": "npm run dev" }]
 }
@@ -18,4 +18,4 @@ Add a **Cursor Cloud specific instructions** section to the consumer `AGENTS.md`
 - The ready check (HTTP 200 on the local origin, or `npx playwright test e2e/seed.spec.ts`)
 - That planner/generator need that origin, and healer runs only on failed tests
 
-Prefer `playwright-cli` (installed by this loadout's `cli_tools`) over any Playwright MCP for these three agents. `npx playwright test` runs specs.
+Prefer `npx playwright-cli` (installed by this loadout's `cli_tools`) over any Playwright MCP for these three agents. `npx playwright test` runs specs.
