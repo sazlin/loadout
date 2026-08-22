@@ -34,7 +34,7 @@ Run planner and generator interactively (human-gated). Run healer only after a r
 
 ## Setup
 
-This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1.18` via `cli_tools` (`playwright-cli` on PATH). Prefer that CLI over any Playwright MCP — snapshots stay on disk, so live exploration stays token-cheap. `@playwright/test` should already be a project dependency; do not add a Playwright MCP.
+This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1.18` via `cli_tools` (PATH `playwright-cli`, or `node_modules/.bin/playwright-cli`). Prefer that CLI over any Playwright MCP — snapshots stay on disk, so live exploration stays token-cheap. `@playwright/test` should already be a project dependency; do not add a Playwright MCP.
 
 1. Seed file in `e2e/` (default `testDir`): copy [references/seed.spec.ts](references/seed.spec.ts) to `e2e/seed.spec.ts`
 2. `specs/` directory for plans
