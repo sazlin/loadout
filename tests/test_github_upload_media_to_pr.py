@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -157,6 +158,56 @@ def test_stage_copy_is_artifacts_only_after_mime_refuse() -> None:
         assert "/opt/cursor/artifacts/" in nearby
 
     assert simple not in step0 or "/opt/cursor/artifacts/" in step0
+
+
+def test_body_bounds_artifact_size_and_count() -> None:
+    """Max bytes-per-file and file count must be stated before any cp or update_pr."""
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+
+    first_cp_at: int | None = None
+    first_update_pr_at: int | None = None
+    offset = 0
+    for raw_line in text.splitlines(keepends=True):
+        stripped = raw_line.strip()
+        if first_cp_at is None and stripped.startswith("cp "):
+            first_cp_at = offset
+        if first_update_pr_at is None and "update_pr" in raw_line.lower():
+            first_update_pr_at = offset
+        offset += len(raw_line)
+    assert first_cp_at is not None
+    assert first_update_pr_at is not None
+    gate = lowered[: min(first_cp_at, first_update_pr_at)]
+
+    size_match = re.search(r"\b(\d+)\s*(mb|mib|bytes)\b", gate)
+    assert size_match, "missing max bytes-per-file before cp/update_pr"
+    assert int(size_match.group(1)) > 0
+
+    count_match = re.search(r"\b(\d+)\s+files?\b", gate)
+    assert count_match, "missing max file count before cp/update_pr"
+    assert int(count_match.group(1)) > 0
+
+    assert "stat" in gate
+    assert "refuse" in gate or "skip" in gate
+    assert "do not copy" in gate
+
+
+def test_body_bounds_recording_duration_and_discard() -> None:
+    """RecordScreen must have a numeric max duration and DISCARD on capture hang."""
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+    _, found, after = lowered.partition("## capturing media")
+    assert found, "SKILL.md is missing a capturing-media section"
+    capture, _, _ = after.partition("\n## ")
+
+    duration = re.search(r"\b(\d+)\s*seconds?\b", capture)
+    assert duration, "missing numeric max recording duration"
+    assert int(duration.group(1)) > 0
+    assert "discard_recording" in capture
+    assert "save_recording" in capture
+    assert "does not return" in capture or "hang" in capture or "timeout" in capture or "deadline" in capture
+    assert "already on disk" in capture or "files already" in capture
+    assert "exercise the ui, save" not in capture
 
 
 def test_body_does_not_instruct_installing_agent_browser() -> None:

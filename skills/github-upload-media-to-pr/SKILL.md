@@ -44,7 +44,7 @@ This vendored copy replaces that stack:
 | Job | Cursor Cloud tool |
 | --- | --- |
 | Capture a UI screenshot | `computerUse` subagent (browser/desktop) |
-| Capture a short demo video | `RecordScreen` (`START_RECORDING` / `SAVE_RECORDING`) |
+| Capture a ≤30s demo video | `RecordScreen` (`START_RECORDING` / `SAVE_RECORDING` / `DISCARD_RECORDING`) |
 | Host and embed on the PR | `ManagePullRequest` with HTML `img` / `video` tags |
 
 `gh` is **read-only** in Cursor Cloud. Never `gh pr edit`, `gh pr comment`, or
@@ -73,11 +73,24 @@ Refuse source paths whose basename or parent looks like a secret
 (`.env`, `id_rsa`, credentials, `*.pem`, `*.key`, `.git`, tokens) even if
 the user asked to attach them. Stop. Do not copy those files.
 
+After the mime-type check, `stat` each remaining file and refuse any
+file larger than **25 MB** (26214400 bytes). Stop. Do not copy it.
+
+```bash
+stat -c '%s' /path/to/media
+```
+
+Cap the attach at **6 files**. Keep the smallest set that answers the
+user. Do not copy more than 6 files.
+
 If the filename has special characters, copy it once to
 `/opt/cursor/artifacts/<safe-basename>` only. Never copy into the repo
 working directory or any other destination.
 
 ## Step 1: Stage under `/opt/cursor/artifacts/`
+
+Skip any file that failed the Step 0 mime, secret, or 25 MB size
+checks. Do not copy more than 6 files.
 
 ```bash
 mkdir -p /opt/cursor/artifacts
@@ -152,8 +165,12 @@ Confirm the returned body or comment contains hosted media URLs, not the
 
 - **Screenshot of an app:** `computerUse` against the running UI, save the
   image, then Stage (Step 1).
-- **Demo video of an app:** `RecordScreen` start, exercise the UI, save, then
-  Stage. Do not record a GitHub tab to "upload" anything.
+- **Demo video of an app:** `RecordScreen` `START_RECORDING`, then
+  `computerUse` to exercise the UI for at most **30 seconds**. If
+  `computerUse` returns in time, `SAVE_RECORDING`. If `computerUse`
+  does not return in that window (hang), `DISCARD_RECORDING` and attach
+  only files already on disk. Do not leave RecordScreen running without
+  a deadline. Do not record a GitHub tab to "upload" anything.
 - **Already-on-disk files:** skip capture; start at Step 1.
 
 ## Do not
@@ -183,5 +200,6 @@ Confirm the returned body or comment contains hosted media URLs, not the
 - Vendored from [jacobmassey/github-upload-media-to-pr](https://github.com/jacobmassey/github-upload-media-to-pr)
   (MIT; copyright 2026 tonkotsuboy, Jacob Massey). Capture/attach replaced with
   Cursor Cloud `computerUse`, `RecordScreen`, and `ManagePullRequest`.
-- Multiple files: stage all of them, then attach in one description section or
-  one comment unless the user asked for separate comments.
+- Multiple files: attach at most 6; keep the smallest set that answers
+  the user. Stage those, then attach in one description section or one
+  comment unless the user asked for separate comments.
