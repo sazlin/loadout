@@ -24,7 +24,8 @@ MANIFEST_KEYS = frozenset(
     }
 )
 
-LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks", "agents", "mcps"})
+LOADOUT_KEYS = frozenset({"name", "extends", "description", "rules", "skills", "hooks", "agents", "mcps", "cli_tools"})
+CLI_TOOL_KEYS = frozenset({"name", "command"})
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,14 @@ class Manifest:
 
 
 @dataclass(frozen=True)
+class CliTool:
+    """An idempotent shell command a loadout runs on sync and update."""
+
+    name: str
+    command: str
+
+
+@dataclass(frozen=True)
 class LoadoutDef:
     name: str
     extends: list[str]
@@ -50,6 +59,7 @@ class LoadoutDef:
     hooks: list[Mapping[str, Any]] = field(default_factory=list)
     agents: list[Mapping[str, Any]] = field(default_factory=list)
     mcps: list[Mapping[str, Any]] = field(default_factory=list)
+    cli_tools: list[CliTool] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -122,6 +132,43 @@ def _require_str(data: dict[str, Any], key: str, context: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValidationError(f"{context} requires non-empty {key}")
     return value
+
+
+def _normalize_cli_tools(value: Any, field_name: str) -> list[CliTool]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValidationError(f"{field_name} must be a list")
+    tools = [_parse_cli_tool(item, f"{field_name}[{index}]") for index, item in enumerate(value)]
+    _reject_duplicate_cli_tool_names(tools)
+    return tools
+
+
+def _parse_cli_tool(item: Any, context: str) -> CliTool:
+    if not isinstance(item, dict):
+        raise ValidationError(f"{context} must be a mapping")
+    _reject_unknown_keys(item, CLI_TOOL_KEYS, context)
+    return CliTool(
+        name=_require_stripped_str(item, "name", context),
+        command=_require_stripped_str(item, "command", context),
+    )
+
+
+def _require_stripped_str(data: dict[str, Any], key: str, context: str) -> str:
+    value = data.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValidationError(f"{context} requires non-empty {key}")
+    return value.strip()
+
+
+def _reject_duplicate_cli_tool_names(tools: list[CliTool]) -> None:
+    # Parse-time for a single loadout file; identical name+command across extends is
+    # handled by resolve._deduplicate_cli_tools.
+    seen: set[str] = set()
+    for tool in tools:
+        if tool.name in seen:
+            raise ValidationError(f"duplicate cli_tools name: {tool.name!r}")
+        seen.add(tool.name)
 
 
 def _parse_yaml(path: Path) -> Any:
@@ -200,6 +247,7 @@ def load_loadout(path: Path) -> LoadoutDef:
         hooks=_normalize_mapping_list(data.get("hooks"), "hooks"),
         agents=_normalize_mapping_list(data.get("agents"), "agents"),
         mcps=_normalize_mapping_list(data.get("mcps"), "mcps"),
+        cli_tools=_normalize_cli_tools(data.get("cli_tools"), "cli_tools"),
     )
 
 

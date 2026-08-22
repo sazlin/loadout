@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add `cli_tools` on loadout YAML: named idempotent shell commands that
+  `sync` and `update` run in the project root after writing files. Failures
+  are printed and do not abort the install. `sync --check` does not run them.
 - Add `supabase` loadout: vendors
   `skills/supabase-postgres-best-practices` from
   [supabase/agent-skills](https://github.com/supabase/agent-skills)

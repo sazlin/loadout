@@ -8,7 +8,7 @@ from loadout.errors import ValidationError
 from loadout.frontmatter import is_agent_definition
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.mcps import MCP_META_NAME, load_mcp_meta
-from loadout.models import LoadoutDef, Manifest, load_loadout
+from loadout.models import CliTool, LoadoutDef, Manifest, load_loadout
 
 
 @dataclass(frozen=True)
@@ -19,7 +19,23 @@ class ResolvedFile:
 
 
 def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
-    """Resolve manifest-selected loadouts into individual source and destination files."""
+    """Resolve manifest-selected loadouts into individual source and destination files.
+
+    Still validates cli_tools name collisions via resolve_selection even though the
+    tools half is discarded.
+    """
+    files, _cli_tools = resolve_selection(manifest, source_root)
+    return files
+
+
+def resolve_cli_tools(manifest: Manifest, source_root: Path) -> list[CliTool]:
+    """Resolve the idempotent CLI install commands selected loadouts declare."""
+    _files, cli_tools = resolve_selection(manifest, source_root)
+    return cli_tools
+
+
+def resolve_selection(manifest: Manifest, source_root: Path) -> tuple[list[ResolvedFile], list[CliTool]]:
+    """Resolve selected loadouts into files and CLI tool commands."""
     loadouts = _load_selected_loadouts(manifest.loadouts, source_root)
     files = [
         resolved
@@ -31,7 +47,7 @@ def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
     files.extend(_resolve_includes(manifest, source_root))
     _validate_selectors(manifest.exclude, source_root)
     files = _apply_excludes(files, manifest.exclude)
-    return _deduplicate(files)
+    return _deduplicate(files), _collect_cli_tools(loadouts)
 
 
 def _load_selected_loadouts(names: list[str], source_root: Path) -> list[LoadoutDef]:
@@ -286,3 +302,28 @@ def _deduplicate(files: list[ResolvedFile]) -> list[ResolvedFile]:
             seen.add(key)
             deduplicated.append(file)
     return deduplicated
+
+
+def _collect_cli_tools(loadouts: list[LoadoutDef]) -> list[CliTool]:
+    collected: list[CliTool] = []
+    for loadout in loadouts:
+        collected.extend(loadout.cli_tools)
+    return _deduplicate_cli_tools(collected)
+
+
+def _deduplicate_cli_tools(tools: list[CliTool]) -> list[CliTool]:
+    # First name wins when command matches (extends-dedup); different commands collide.
+    # Per-file duplicates are already rejected in models._reject_duplicate_cli_tool_names.
+    by_name: dict[str, CliTool] = {}
+    ordered: list[CliTool] = []
+    for tool in tools:
+        existing = by_name.get(tool.name)
+        if existing is None:
+            by_name[tool.name] = tool
+            ordered.append(tool)
+            continue
+        if existing.command != tool.command:
+            raise ValidationError(
+                f"cli_tools name collision for {tool.name!r}: {existing.command!r} and {tool.command!r}"
+            )
+    return ordered

@@ -1,4 +1,4 @@
-"""Validate a loadout repo's rules, skills, hooks, agents, mcps, and loadouts (`loadout lint`, spec 7.1)."""
+"""Validate a loadout repo's rules, skills, hooks, agents, mcps, cli_tools, and loadouts (`loadout lint`, spec 7.1)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from loadout.frontmatter import is_agent_definition, parse_agent_md, parse_rule,
 from loadout.hooks import HOOK_META_NAME, load_hook_meta
 from loadout.mcps import MCP_META_NAME, load_mcp_meta
 from loadout.models import LoadoutDef, Manifest, load_loadout
-from loadout.resolve import resolve
+from loadout.resolve import resolve_selection
 from loadout.validate import validate_resolved
 
 SKILL_MD_WARN_LINES = 500
@@ -270,7 +270,8 @@ def _lint_loadouts(repo_root: Path, result: LintResult) -> tuple[set[str], set[s
 
         try:
             manifest = Manifest(source="lint", ref="lint", loadouts=[name])
-            resolved = resolve(manifest, repo_root)
+            # Unpack tools so name collisions are lint errors; commands are not run.
+            resolved, _cli_tools = resolve_selection(manifest, repo_root)
             validate_resolved(resolved, repo_root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
         except ValidationError as error:
             result.errors.append(f"loadouts/{name}.yaml: {error}")

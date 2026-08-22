@@ -720,6 +720,68 @@ def test_real_pr_review_loadout_vendors_harness(tmp_path: Path, monkeypatch: pyt
     assert not (project / "VERIFIERS.md").exists()
 
 
+def test_sync_runs_cli_tools_after_writing_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: marker\n    command: echo installed > marker.txt\n"
+    )
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body())
+
+    result = sync(project)
+
+    assert (project / RULE_B).is_file()
+    assert (project / "marker.txt").read_text() == "installed\n"
+    assert result.added > 0
+    output = capsys.readouterr().out
+    assert "loadout: cli_tools: marker: running" in output
+    assert "loadout: cli_tools: marker: ok" in output
+
+
+def test_sync_continues_when_a_cli_tool_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: boom\n    command: exit 3\n"
+    )
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body())
+
+    result = sync(project)
+
+    assert (project / RULE_B).is_file()
+    assert (project / ".loadout.lock").is_file()
+    assert result.added > 0
+    assert "loadout: cli_tools: boom: failed (exit 3)" in capsys.readouterr().out
+
+
+def test_sync_check_does_not_run_cli_tools(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    source = copy_fixture(tmp_path)
+    (source / "loadouts" / "python.yaml").write_text(
+        "name: python\nextends: [base]\ndescription: Python\n"
+        "rules:\n  - src: rules/python/b.mdc\n"
+        "cli_tools:\n  - name: marker\n    command: echo installed > marker.txt\n"
+    )
+    monkeypatch.setenv("LOADOUT_PATH", str(source))
+    project = tmp_path / "project"
+    write_manifest(project, manifest_body())
+    sync(project)
+    (project / "marker.txt").unlink()
+
+    sync(project, check=True)
+
+    assert not (project / "marker.txt").exists()
+
+
 def _project_text(project: Path) -> list[str]:
     """Every file sync produced, so vendored content is checked, not just path names."""
     return [
