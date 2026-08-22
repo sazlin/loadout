@@ -63,10 +63,7 @@ def test_readme_loadouts_rule_is_glob_scoped_to_catalog_sources() -> None:
     text = RULE.read_text()
     meta = parse_rule(RULE, text)
     assert meta.always_apply is False
-    assert meta.globs is not None
-    joined = " ".join(meta.globs)
-    assert "loadouts/" in joined
-    assert any(glob.endswith(".yaml") for glob in meta.globs)
+    assert meta.globs == ["loadouts/*.yaml", "README.md"]
     lowered = meta.description.lower()
     assert "readme" in lowered
     assert "loadout" in lowered

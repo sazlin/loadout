@@ -3,7 +3,7 @@ description: >-
   Keep README.md Available loadouts in sync when adding, removing, or
   changing a loadout. Applies when editing loadouts/ or the catalog.
 globs:
-  - loadouts/**/*.yaml
+  - loadouts/*.yaml
   - README.md
 ---
 
