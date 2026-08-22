@@ -23,11 +23,14 @@
 - Add `db` loadout: owns `db-migrations` (moved off `python-monorepo`).
   `supabase` now extends `db` instead of `base`.
 - Add `playwright` loadout: Playwright Test Agents (`playwright_planner`,
-  `playwright_generator`, `playwright_healer`), the `playwright-test` MCP
-  (`npx --no-install playwright run-test-mcp-server`), `playwright-agents`
+  `playwright_generator`, `playwright_healer`), `cli_tools` install of
+  `@playwright/cli@0.1.18` (`playwright-cli`), `playwright-agents`
   skill, dest-scoped `e2e/` conventions, and default `testDir` `e2e/`
   (`e2e/seed.spec.ts`). `playwright-e2e` is a compatibility alias of
   `playwright`. Cookiecutter `use_playwright` maps to `playwright`.
+- Switch the `playwright` loadout from the `playwright-test` MCP to
+  `playwright-cli`. Planner, generator, and healer explore the live app
+  with CLI commands and run specs with `npx playwright test`.
 - Remove `e2e_test_generator`; planner/generator/healer own Playwright
   coverage under `e2e/`.
 - Add `rules/core/pr-ready-for-review.mdc` to `base`: agents must open

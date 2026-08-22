@@ -152,7 +152,7 @@ Example GitHub Actions step:
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
 | `supabase` | `db` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) plus inherited `db-migrations` |
-| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), Test MCP, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
+| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), `playwright-cli`, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
 | `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |

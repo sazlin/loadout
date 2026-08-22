@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-from loadout.mcps import load_mcp_meta
 from loadout.models import load_loadout
 from loadout.sync import sync
 
@@ -17,6 +16,7 @@ PLAYWRIGHT_AGENTS = (
     "playwright_generator",
     "playwright_healer",
 )
+PLAYWRIGHT_CLI_PACKAGE = "@playwright/cli@0.1.18"
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -24,19 +24,29 @@ def write_manifest(project: Path, body: str) -> None:
     (project / ".loadout.yaml").write_text(body)
 
 
-def test_playwright_loadout_ships_agents_skill_mcp_and_e2e_conventions() -> None:
+def _silence_cli_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
+
+
+def test_playwright_loadout_ships_agents_skill_cli_and_e2e_conventions() -> None:
     loadout = load_loadout(REPO / "loadouts" / "playwright.yaml")
     assert loadout.name == "playwright"
     assert loadout.extends == ["base"]
     assert {entry["src"] for entry in loadout.agents} == {f"agents/{name}/{name}.md" for name in PLAYWRIGHT_AGENTS}
     assert {entry["src"] for entry in loadout.skills} == {"skills/playwright-agents"}
-    assert {entry["src"] for entry in loadout.mcps} == {"mcps/playwright-test"}
+    assert loadout.mcps == []
     assert {entry["src"] for entry in loadout.rules} == {
         "rules/playwright/test-agents.mdc",
         "rules/playwright/e2e-conventions.mdc",
     }
     dests = {entry["src"]: entry.get("dest") for entry in loadout.rules}
     assert dests["rules/playwright/e2e-conventions.mdc"] == "e2e/.cursor/rules/e2e-conventions.mdc"
+    assert len(loadout.cli_tools) == 1
+    tool = loadout.cli_tools[0]
+    assert tool.name == "playwright-cli"
+    assert PLAYWRIGHT_CLI_PACKAGE in tool.command
+    assert "command -v playwright-cli" in tool.command
+    assert "npm install -g" in tool.command
 
 
 def test_playwright_e2e_is_an_alias_of_playwright() -> None:
@@ -47,26 +57,27 @@ def test_playwright_e2e_is_an_alias_of_playwright() -> None:
     assert loadout.rules == []
     assert loadout.skills == []
     assert loadout.mcps == []
+    assert loadout.cli_tools == []
 
 
-def test_playwright_test_mcp_runs_the_bundled_test_server() -> None:
-    meta = load_mcp_meta(REPO / "mcps" / "playwright-test" / "mcp.yaml")
-    assert meta.name == "playwright-test"
-    assert meta.transport == "stdio"
-    assert meta.command == "npx"
-    assert meta.args == ["--no-install", "playwright", "run-test-mcp-server"]
-    command = "npx --no-install playwright run-test-mcp-server"
+def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
     skill = (REPO / "skills" / "playwright-agents" / "SKILL.md").read_text()
     scripts = (REPO / "skills" / "playwright-agents" / "references" / "package-scripts.md").read_text()
-    assert command in skill
-    assert command in scripts
-    assert "already be a project dependency" in skill
+    cloud = (REPO / "skills" / "playwright-agents" / "references" / "cursor-cloud.md").read_text()
+    rule = (REPO / "rules" / "playwright" / "test-agents.mdc").read_text()
+    joined = f"{skill}\n{scripts}\n{cloud}\n{rule}"
+    assert "playwright-cli" in joined
+    assert PLAYWRIGHT_CLI_PACKAGE in skill or PLAYWRIGHT_CLI_PACKAGE in scripts
+    assert "run-test-mcp-server" not in joined
+    assert "mcp__playwright-test" not in joined
+    assert "@playwright/mcp" not in joined
 
 
-def test_playwright_sync_vendors_agents_skill_rule_and_test_mcp(
+def test_playwright_sync_vendors_agents_skill_rule_and_not_test_mcp(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
+    _silence_cli_tools(monkeypatch)
     project = tmp_path / "project"
     write_manifest(
         project,
@@ -81,8 +92,10 @@ loadouts: [playwright]
     for name in PLAYWRIGHT_AGENTS:
         agent = project / f".claude/agents/{name}.md"
         assert agent.is_file(), name
-        assert f"name: {name}" in agent.read_text()
-        assert "mcp__playwright-test" in agent.read_text()
+        text = agent.read_text()
+        assert f"name: {name}" in text
+        assert "playwright-cli" in text
+        assert "mcp__playwright-test" not in text
 
     skill = project / ".claude/skills/playwright-agents/SKILL.md"
     assert skill.is_file()
@@ -93,22 +106,16 @@ loadouts: [playwright]
     assert not list(project.rglob("evals"))
 
     cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
-    assert cursor_mcp["mcpServers"]["playwright-test"] == {
-        "command": "npx",
-        "args": ["--no-install", "playwright", "run-test-mcp-server"],
-    }
+    assert "playwright-test" not in cursor_mcp["mcpServers"]
     claude_mcp = json.loads((project / ".mcp.json").read_text())
-    assert claude_mcp["mcpServers"]["playwright-test"]["args"] == [
-        "--no-install",
-        "playwright",
-        "run-test-mcp-server",
-    ]
+    assert "playwright-test" not in claude_mcp["mcpServers"]
 
 
 def test_playwright_e2e_alias_syncs_the_same_playwright_payload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
+    _silence_cli_tools(monkeypatch)
     project = tmp_path / "project"
     write_manifest(
         project,
@@ -127,7 +134,7 @@ loadouts: [playwright-e2e]
     assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
     assert (project / ".cursor/rules/test-agents.mdc").is_file()
     cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
-    assert "playwright-test" in cursor_mcp["mcpServers"]
+    assert "playwright-test" not in cursor_mcp["mcpServers"]
 
 
 def test_playwright_skill_encodes_pipeline_and_healer_guardrails() -> None:
@@ -140,7 +147,7 @@ def test_playwright_skill_encodes_pipeline_and_healer_guardrails() -> None:
     assert "human review" in text or "human-gated" in text
     assert "auto-merge" in text
     assert "production" in text
-    assert "playwright-test" in text
+    assert "playwright-cli" in text
 
 
 def test_playwright_ci_bounds_healer_retriggers() -> None:
@@ -160,18 +167,25 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     healer = (REPO / "agents" / "playwright_healer" / "playwright_healer.md").read_text()
 
     assert "specs/" in planner
-    assert "planner_setup_page" in planner
-    assert "planner_save_plan" in planner
+    assert "playwright-cli" in planner
+    assert "planner_setup_page" not in planner
+    assert "mcp__playwright-test" not in planner
 
     assert "e2e/" in generator
     assert "e2e/seed.spec.ts" in generator
     assert "// seed: tests/seed.spec.ts" not in generator
     assert "**Seed:** `e2e/seed.spec.ts`" in planner
     assert "`tests/seed.spec.ts`" not in planner.split("## Agent-specific guidance", 1)[1]
+    assert "playwright-cli" in generator
+    assert "generator_setup_page" not in generator
+    assert "mcp__playwright-test" not in generator
 
     assert "production" in healer.lower()
     assert "test.fixme" in healer
     assert "auto-merge" in healer.lower() or "do not merge" in healer.lower()
+    assert "playwright-cli" in healer
+    assert "npx playwright test" in healer
+    assert "mcp__playwright-test" not in healer
 
     anti_reward = healer.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0]
     assert "auto-merge" in anti_reward.lower()
