@@ -146,6 +146,7 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
     plan = _build_plan(manifest, fetched.root, fetched.resolved_sha, resolved, project_root)
 
     if check:
+        # cli_tools was already validated by resolve_selection; do not execute commands.
         return _check(project_root, plan, lock)
     result = _apply(project_root, lock_path, plan, lock)
     run_cli_tools(cli_tools, project_root)

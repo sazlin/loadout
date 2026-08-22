@@ -19,7 +19,11 @@ class ResolvedFile:
 
 
 def resolve(manifest: Manifest, source_root: Path) -> list[ResolvedFile]:
-    """Resolve manifest-selected loadouts into individual source and destination files."""
+    """Resolve manifest-selected loadouts into individual source and destination files.
+
+    Still validates cli_tools name collisions via resolve_selection even though the
+    tools half is discarded.
+    """
     files, _cli_tools = resolve_selection(manifest, source_root)
     return files
 
