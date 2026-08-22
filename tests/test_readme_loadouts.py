@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from loadout.frontmatter import parse_rule
-from loadout.models import load_loadout
+from loadout.models import LoadoutDef, load_loadout
 from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
@@ -19,10 +19,28 @@ LOADOUTS_DIR = REPO / "loadouts"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
 _NAME_RE = re.compile(r"`([^`]+)`")
+_NON_ALNUM = re.compile(r"[^a-z0-9]+")
 
 
 def _loadout_names() -> set[str]:
     return {path.stem for path in LOADOUTS_DIR.glob("*.yaml")}
+
+
+def _collapsed(text: str) -> str:
+    return _NON_ALNUM.sub("", text.lower())
+
+
+def _own_artifact_names(loadout: LoadoutDef) -> list[str]:
+    """Return dest-facing names of artifacts this loadout lists (not parents)."""
+    names: list[str] = []
+    for group in (loadout.rules, loadout.skills, loadout.hooks, loadout.agents, loadout.mcps):
+        for entry in group:
+            src = entry.get("src")
+            if not isinstance(src, str):
+                continue
+            path = Path(src)
+            names.append(path.stem if path.suffix else path.name)
+    return names
 
 
 def _available_loadout_rows(readme: str) -> dict[str, tuple[str, str]]:
@@ -43,7 +61,9 @@ def _available_loadout_rows(readme: str) -> dict[str, tuple[str, str]]:
             continue
         names = _NAME_RE.findall(cells[0])
         assert names, f"catalog row has no backticked loadout name: {line}"
-        rows[names[0]] = (cells[1], cells[2])
+        name = names[0]
+        assert name not in rows, f"duplicate catalog row for {name}"
+        rows[name] = (cells[1], cells[2])
     return rows
 
 
@@ -65,7 +85,7 @@ def test_readme_loadouts_rule_is_glob_scoped_to_catalog_sources() -> None:
     text = RULE.read_text()
     meta = parse_rule(RULE, text)
     assert meta.always_apply is False
-    assert meta.globs == ["loadouts/*.yaml", "README.md"]
+    assert meta.globs == ["loadouts/*.yaml"]
     lowered = meta.description.lower()
     assert "readme" in lowered
     assert "loadout" in lowered
@@ -93,6 +113,25 @@ def test_readme_available_loadouts_extends_match_yaml() -> None:
     for name in sorted(_loadout_names()):
         loadout = load_loadout(LOADOUTS_DIR / f"{name}.yaml")
         assert _extends_from_cell(rows[name][0]) == loadout.extends
+
+
+def test_readme_what_you_get_names_an_own_artifact() -> None:
+    rows = _available_loadout_rows(README.read_text())
+    for name in sorted(_loadout_names()):
+        loadout = load_loadout(LOADOUTS_DIR / f"{name}.yaml")
+        artifacts = _own_artifact_names(loadout)
+        summary = rows[name][1]
+        if not artifacts:
+            parents = {parent.lower() for parent in loadout.extends}
+            lowered = summary.lower()
+            assert "alias" in lowered or any(parent in lowered for parent in parents), (
+                f"{name} lists no own artifacts; What you get must name a parent or say alias"
+            )
+            continue
+        collapsed_summary = _collapsed(summary)
+        assert any(_collapsed(artifact) in collapsed_summary for artifact in artifacts), (
+            f"{name} What you get does not name any of {artifacts}: {summary!r}"
+        )
 
 
 def test_base_sync_vendors_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

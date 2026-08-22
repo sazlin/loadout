@@ -1,10 +1,9 @@
 ---
 description: >-
   Keep README.md Available loadouts in sync when adding, removing, or
-  changing a loadout. Applies when editing loadouts/ or the catalog.
+  changing a loadout. Applies when editing loadouts/.
 globs:
   - loadouts/*.yaml
-  - README.md
 ---
 
 # README loadout catalog
@@ -15,12 +14,12 @@ In a consumer project without that directory, ignore it.
 When a loadout is added, removed, renamed, or its distinctive contents
 change, update `README.md` **Available loadouts** in the same change.
 
-The table must list every `loadouts/*.yaml` file:
+The table must list every top-level `loadouts/*.yaml` file:
 
 | Column | Content |
 | --- | --- |
 | Loadout | Exact loadout name in backticks |
-| Extends | Parent loadout in backticks, or — if none |
+| Extends | Parent loadout(s) in backticks, in YAML `extends` order, or — if none |
 | What you get | Short summary of distinctive rules, skills, agents, hooks, and MCPs |
 
 Do not ship the catalog update in a later commit or follow-up PR. Do not
