@@ -12,6 +12,7 @@ from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
 SKILL_SRC = "skills/supabase-postgres-best-practices"
+SKILL_NAME = Path(SKILL_SRC).name
 REFERENCE_MARKERS = (
     "query-missing-indexes.md",
     "conn-pooling.md",
@@ -48,12 +49,12 @@ loadouts: [supabase]
 
     sync(project)
 
-    skill = project / ".claude/skills/supabase-postgres-best-practices/SKILL.md"
+    skill = project / ".claude" / "skills" / SKILL_NAME / "SKILL.md"
     assert skill.is_file()
     text = skill.read_text()
-    assert "name: supabase-postgres-best-practices" in text
+    assert f"name: {SKILL_NAME}" in text
     for marker in REFERENCE_MARKERS:
-        assert (project / ".claude/skills/supabase-postgres-best-practices/references" / marker).is_file()
+        assert (project / ".claude" / "skills" / SKILL_NAME / "references" / marker).is_file()
     assert not list(project.rglob("evals"))
     assert (project / ".claude/agents/davinci.md").is_file()
     assert (project / ".cursor/rules/repo-conventions.mdc").is_file()
@@ -72,28 +73,24 @@ loadouts: [base]
 
     sync(project)
 
-    assert not (project / ".claude/skills/supabase-postgres-best-practices").exists()
+    assert not (project / ".claude" / "skills" / SKILL_NAME).exists()
 
 
 def test_supabase_skill_encodes_postgres_categories() -> None:
-    text = (REPO / "skills" / "supabase-postgres-best-practices" / "SKILL.md").read_text()
+    text = (REPO / SKILL_SRC / "SKILL.md").read_text()
     lowered = text.lower()
     assert "query performance" in lowered
     assert "connection management" in lowered
     assert "row-level security" in lowered or "rls" in lowered
     assert "schema design" in lowered
-    for marker in REFERENCE_MARKERS:
-        assert (
-            marker in text or (REPO / "skills" / "supabase-postgres-best-practices" / "references" / marker).is_file()
-        )
 
 
 def test_supabase_skill_evals_are_colocated() -> None:
-    evals = REPO / "skills" / "supabase-postgres-best-practices" / "evals" / "evals.json"
+    evals = REPO / SKILL_SRC / "evals" / "evals.json"
     payload = json.loads(evals.read_text())
-    assert payload["skill_name"] == "supabase-postgres-best-practices"
+    assert payload["skill_name"] == SKILL_NAME
     assert payload["evals"]
     for index, entry in enumerate(payload["evals"]):
         for relative in entry.get("files", []):
-            path = REPO / "skills" / "supabase-postgres-best-practices" / relative
+            path = REPO / SKILL_SRC / relative
             assert path.is_file(), f"evals[{index}] missing {relative}"
