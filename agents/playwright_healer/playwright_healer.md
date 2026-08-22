@@ -36,14 +36,15 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 2. On failure, if the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only — never `Read`, `cat`, or open the storageState JSON. Open the page with `npx playwright-cli`, `npx playwright-cli snapshot` the UI, and inspect locators (`npx playwright-cli generate-locator <ref>`) and `npx playwright-cli console`. Use `npx playwright-cli requests` for URL and status only; do not dump a single request's headers (`request <n>` is forbidden). Use `npx playwright show-trace` when a trace exists. If a trace is opened, do not copy Cookie or Authorization values into the report. Do not use `npx playwright test --debug` unless a human is watching a headed session.
 3. Decide: test wrong vs app wrong. Test-wrong: patch locator/wait/data and re-run. Cap **2** reruns per test.
 4. App-wrong: do not weaken assertions. Leave or add `test.fixme` with a comment on the failing step, and emit `blocked` — never `ok`.
-5. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.
+5. Close any session this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for sessions it opened.
+6. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.
 
 ## Tools / privileges
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** Playwright test files under the project's `testDir` only (`e2e/` by default, or the path in `playwright.config.*`). Never application source, never CI config, never package manifests.
-- **Shell:** `npx playwright test` (`--list`, named runs) and `npx playwright-cli` for live inspection. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`. `requests` is URL and status only. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, history rewrite, or `gh pr merge`.
+- **Shell:** `npx playwright test` (`--list`, named runs) and `npx playwright-cli` for live inspection. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`, `close`, `close-all`, `list`, `kill-all`. `requests` is URL and status only. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, history rewrite, or `gh pr merge`.
 - Never commit `storageState` files or `.playwright-cli/` snapshot artifacts. Never copy cookie or token values into specs or the JSON report.
 - You are not the planner, generator, or integrator.
 
@@ -68,7 +69,7 @@ If the only path to a green run is one of the above: stop and emit `blocked`.
 
 ## Blocked protocol
 
-Max **3** attempts for the same failure class, then emit `status: "blocked"` with full reasoning fields. Prefer the last coherent test file. A `test.fixme` for a real product bug is `blocked`, not success.
+Max **3** attempts for the same failure class, then emit `status: "blocked"` with full reasoning fields. Prefer the last coherent test file. A `test.fixme` for a real product bug is `blocked`, not success. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 
 ## Context acquisition
 
@@ -98,7 +99,8 @@ The healer's biggest danger is masking a real regression. A passing rerun suppor
 2. If the seed uses `storageState`, `npx playwright-cli state-load <seed-relative-path>` only (never `Read`/`cat` the JSON). Snapshot and locate equivalent elements or flows with `npx playwright-cli`. Use `npx playwright-cli requests` for URL and status only; do not dump headers.
 3. Patch the test: locator update, assertion text that still matches the user contract, wait tied to the user action, or test data.
 4. Re-run. Stop after 2 reruns per test or 3 attempts of the same class.
-5. Emit JSON. `status` is `ok` only when the test passes without skip/fixme and without app-source edits.
+5. Close any session this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used).
+6. Emit JSON. `status` is `ok` only when the test passes without skip/fixme and without app-source edits.
 
 ### Allowed repairs
 

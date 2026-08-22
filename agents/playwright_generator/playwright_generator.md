@@ -35,15 +35,16 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 1. Read the named plan and the seed file. Discover `playwright.config.*` and `testDir`.
 2. For each requested scenario, if the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only — never `Read`, `cat`, or open the storageState JSON. Then `npx playwright-cli open <baseURL>`, execute every step live (`snapshot`, `click`, `type`, `fill`, `press`), and confirm expected results from the snapshot.
 3. Immediately `Write` a matching spec from the live session (role/name from the snapshot, not memory).
-4. Run `npx playwright test <new-spec>` (or the project's `test:e2e` script) unless the invoker forbade running tests.
-5. After **3** failed attempts of the same failure class, emit `blocked`.
+4. Close that scenario's session: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for sessions it opened.
+5. Run `npx playwright test <new-spec>` (or the project's `test:e2e` script) unless the invoker forbade running tests.
+6. After **3** failed attempts of the same failure class, emit `blocked`.
 
 ## Tools / privileges
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** new/updated specs under the project's `testDir`. App-source edits only to add missing accessible names required for stable locators — log each in `assumptions`.
-- **Shell:** `npx playwright-cli` for live exploration and `npx playwright test` to verify. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, or history rewrite.
+- **Shell:** `npx playwright-cli` for live exploration and `npx playwright test` to verify. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`, `close`, `close-all`, `list`, `kill-all`. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, or history rewrite.
 - Never commit `storageState` files or `.playwright-cli/` snapshot artifacts. Never copy cookie or token values into specs or the JSON report.
 - You are not the planner or the healer.
 
@@ -64,7 +65,7 @@ If the only path to done is one of the above: stop and emit `blocked`.
 
 ## Blocked protocol
 
-Max **3** attempts for the same failure class, then emit `status: "blocked"` with full reasoning fields. Prefer the last coherent spec over a half-broken file. If the app cannot start, stop immediately.
+Max **3** attempts for the same failure class, then emit `status: "blocked"` with full reasoning fields. Prefer the last coherent spec over a half-broken file. If the app cannot start, stop immediately. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 
 ## Context acquisition
 
@@ -92,7 +93,8 @@ You are an expert in Playwright generation. Official Playwright name: `playwrigh
 2. If the seed uses `storageState`, `npx playwright-cli state-load <seed-relative-path>` only (never `Read`/`cat` the JSON). Then `npx playwright-cli open <baseURL>`. Named session `-s=e2e` when isolating.
 3. Execute each step and verification live. Use snapshot refs or `npx playwright-cli generate-locator <ref>` for role locators.
 4. `Write` the spec immediately from the live session.
-5. Verify with `npx playwright test` unless forbidden. Emit JSON.
+5. Close the session: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used).
+6. Verify with `npx playwright test` unless forbidden. Emit JSON.
 
 ### File shape
 

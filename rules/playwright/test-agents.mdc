@@ -11,7 +11,7 @@ globs:
 
 - Keep human-readable plans under `specs/`. Generated Playwright tests live in `e2e/` (the default `testDir`) unless `playwright.config.*` already sets another directory.
 - Start from `e2e/seed.spec.ts` (or the project's seed file) so planner and generator inherit fixtures, auth, and `baseURL`.
-- Explore the live app with `npx playwright-cli` (`open`, `snapshot`, `click`, `type`). Do not add a Playwright MCP. Run specs with `npx playwright test`.
+- Explore the live app with `npx playwright-cli` (`open`, `snapshot`, `click`, `type`). Do not add a Playwright MCP. Run specs with `npx playwright test`. After writing the plan or spec, close sessions this run opened with `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished planner, generator, or healer run must leave `npx playwright-cli list` empty for those sessions. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 - Prefer locator priority: `getByRole` / `getByLabel` / `getByPlaceholder`, then `getByText`, then `getByTestId`. Do not use CSS or XPath as the primary locator.
 - Use web-first `expect(locator)` assertions. Never `page.waitForTimeout` or `waitForLoadState('networkidle')`.
 - Generated tests carry provenance comments: `// spec: specs/<plan>.md` and `// seed: <seed file>`.

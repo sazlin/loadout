@@ -182,6 +182,21 @@ def _assert_forbids_storage_state_secret_dump(label: str, text: str) -> None:
     assert any(word in window for word in ("forbid", "never", "do not")), label
 
 
+def _assert_closes_playwright_cli_sessions(label: str, text: str) -> None:
+    """Finished and blocked runs must close sessions this agent opened."""
+    assert "npx playwright-cli close" in text, label
+    assert "npx playwright-cli -s=e2e close" in text, label
+    assert "npx playwright-cli close-all" in text, label
+    assert "npx playwright-cli kill-all" in text, label
+    assert "npx playwright-cli list" in text, label
+    lowered = text.lower()
+    assert "empty" in lowered, label
+    assert "on blocked or after 3 failed attempts" in lowered, label
+    blocked_at = lowered.find("on blocked or after 3 failed attempts")
+    window = lowered[blocked_at : blocked_at + 280]
+    assert "close-all" in window, label
+
+
 def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     planner = (REPO / "agents" / "playwright_planner" / "playwright_planner.md").read_text()
     generator = (REPO / "agents" / "playwright_generator" / "playwright_generator.md").read_text()
@@ -214,9 +229,17 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
 
     for label, text in (("planner", planner), ("generator", generator), ("healer", healer)):
         _assert_forbids_storage_state_secret_dump(label, text)
+        _assert_closes_playwright_cli_sessions(label, text)
     healer_lower = healer.lower()
     assert "url" in healer_lower and "status" in healer_lower
     assert "authorization" in healer_lower
+
+
+def test_playwright_rule_and_skill_require_cli_session_teardown() -> None:
+    rule = (REPO / "rules" / "playwright" / "test-agents.mdc").read_text()
+    skill = (REPO / "skills" / "playwright-agents" / "SKILL.md").read_text()
+    _assert_closes_playwright_cli_sessions("test-agents.mdc", rule)
+    _assert_closes_playwright_cli_sessions("playwright-agents/SKILL.md", skill)
 
 
 def test_playwright_defaults_test_dir_to_e2e() -> None:
