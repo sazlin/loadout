@@ -260,6 +260,39 @@ def test_body_stages_via_update_pr_before_post_comment() -> None:
     assert STAGING_PATH_QUERY not in option_b
 
 
+def test_body_fail_closed_on_artifact_host() -> None:
+    """One update_pr per attach; a failed rewrite stops and does not retry."""
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+
+    _, found, after = lowered.partition("## step 3")
+    assert found, "SKILL.md is missing ## Step 3"
+    step3, _, _ = after.partition("\n## ")
+    collapsed_step3 = " ".join(step3.split())
+    assert re.search(
+        r"(once|single).{0,60}update_pr|update_pr.{0,60}(once|single)",
+        collapsed_step3,
+    ), "Step 3 must state a single update_pr attempt"
+    assert "hosting failed" in collapsed_step3
+    assert "do not retry" in collapsed_step3
+    assert "do not" in collapsed_step3 and "recording" in collapsed_step3
+    assert "do not loop" in collapsed_step3 or "do not re-run" in collapsed_step3
+
+    option_b = _option_b_section(text)
+    collapsed_b = " ".join(option_b.split())
+    assert "skip" in collapsed_b
+    assert "post_comment" in option_b
+    assert HOSTED_ARTIFACT_URL in option_b
+
+    _, ts_found, ts_after = lowered.partition("## troubleshooting")
+    assert ts_found, "SKILL.md is missing ## Troubleshooting"
+    troubleshooting, _, _ = ts_after.partition("\n## ")
+    collapsed_ts = " ".join(troubleshooting.split())
+    assert "hosting failed" in collapsed_ts
+    assert "do not retry" in collapsed_ts
+    assert "use an absolute" not in collapsed_ts
+
+
 def test_body_does_not_instruct_installing_agent_browser() -> None:
     text = SKILL_MD.read_text()
     lowered = text.lower()
