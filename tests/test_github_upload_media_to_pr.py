@@ -116,6 +116,49 @@ def test_body_uses_cursor_cloud_attach_not_agent_browser() -> None:
     assert "gh pr edit" in lowered
 
 
+def test_stage_copy_is_artifacts_only_after_mime_refuse() -> None:
+    """Mime-type and secret-path refuse must run before any copy; dest is artifacts only."""
+    text = SKILL_MD.read_text()
+    lowered = text.lower()
+
+    _, found, after = lowered.partition("## step 0")
+    assert found, "SKILL.md is missing ## Step 0"
+    step0, _, _ = after.partition("\n## ")
+
+    assert "file --mime-type" in step0
+    assert "do not copy" in step0
+    assert "stop" in step0
+    assert "refuse" in step0
+    assert "/opt/cursor/artifacts/" in step0
+    assert "safe-basename" in step0
+    for needle in (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token"):
+        assert needle in step0
+
+    offset = 0
+    first_cp_at: int | None = None
+    for raw_line in text.splitlines(keepends=True):
+        stripped = raw_line.strip()
+        if stripped.startswith("cp "):
+            dest = stripped.split()[-1]
+            assert dest.startswith("/opt/cursor/artifacts/"), dest
+            if first_cp_at is None:
+                first_cp_at = offset
+        offset += len(raw_line)
+    assert first_cp_at is not None
+
+    assert lowered.index("file --mime-type") < first_cp_at
+    assert lowered.index("do not copy") < first_cp_at
+    assert lowered.index("refuse") < first_cp_at
+
+    simple = "copy it to a simple name first"
+    if simple in lowered:
+        idx = lowered.index(simple)
+        nearby = lowered[max(0, idx - 80) : idx + len(simple) + 80]
+        assert "/opt/cursor/artifacts/" in nearby
+
+    assert simple not in step0 or "/opt/cursor/artifacts/" in step0
+
+
 def test_body_does_not_instruct_installing_agent_browser() -> None:
     text = SKILL_MD.read_text()
     lowered = text.lower()

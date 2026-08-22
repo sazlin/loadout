@@ -58,14 +58,24 @@ If the user did not give a PR number or URL:
 gh pr view --json number,url -q '"\(.number) \(.url)"'
 ```
 
-Normalize each file to an absolute path. If the name has special characters,
-copy it to a simple name first.
+Normalize each file to an absolute path. Do not copy yet.
 
 ```bash
 file --mime-type /path/to/media
 ```
 
 **Images:** png, jpg, jpeg, gif, webp. **Videos:** mp4, webm, mov.
+
+If the type is not an allowed image or video, stop. Do not copy the
+file.
+
+Refuse source paths whose basename or parent looks like a secret
+(`.env`, `id_rsa`, credentials, `*.pem`, `*.key`, `.git`, tokens) even if
+the user asked to attach them. Stop. Do not copy those files.
+
+If the filename has special characters, copy it once to
+`/opt/cursor/artifacts/<safe-basename>` only. Never copy into the repo
+working directory or any other destination.
 
 ## Step 1: Stage under `/opt/cursor/artifacts/`
 
