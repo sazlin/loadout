@@ -98,7 +98,9 @@ def test_run_cli_tools_kills_process_group_on_keyboard_interrupt(
     original_communicate = subprocess.Popen.communicate
     waiting_for_interrupt = True
 
-    def communicate_then_interrupt(self: subprocess.Popen[str], *args: object, **kwargs: object) -> tuple[str, str]:
+    def communicate_then_interrupt(
+        self: subprocess.Popen[str], input: str | None = None, timeout: float | None = None
+    ) -> tuple[str, str]:
         nonlocal waiting_for_interrupt
         if waiting_for_interrupt:
             deadline = time.monotonic() + 2
@@ -106,7 +108,7 @@ def test_run_cli_tools_kills_process_group_on_keyboard_interrupt(
                 time.sleep(0.05)
             waiting_for_interrupt = False
             raise KeyboardInterrupt
-        return original_communicate(self, *args, **kwargs)
+        return original_communicate(self, input, timeout)
 
     monkeypatch.setattr(subprocess.Popen, "communicate", communicate_then_interrupt)
     tools = [
