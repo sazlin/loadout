@@ -308,6 +308,8 @@ def _collect_cli_tools(loadouts: list[LoadoutDef]) -> list[CliTool]:
 
 
 def _deduplicate_cli_tools(tools: list[CliTool]) -> list[CliTool]:
+    # First name wins when command matches (extends-dedup); different commands collide.
+    # Per-file duplicates are already rejected in models._reject_duplicate_cli_tool_names.
     by_name: dict[str, CliTool] = {}
     ordered: list[CliTool] = []
     for tool in tools:

@@ -162,6 +162,8 @@ def _require_stripped_str(data: dict[str, Any], key: str, context: str) -> str:
 
 
 def _reject_duplicate_cli_tool_names(tools: list[CliTool]) -> None:
+    # Parse-time for a single loadout file; identical name+command across extends is
+    # handled by resolve._deduplicate_cli_tools.
     seen: set[str] = set()
     for tool in tools:
         if tool.name in seen:
