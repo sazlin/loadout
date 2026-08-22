@@ -136,16 +136,24 @@ links):
 
 Do **not** send `/opt/cursor/artifacts/` HTML to `post_comment` first. That
 path becomes a markdown click-through link, not an inline image. Stage with
-Option A, copy the rewritten `https://cursor.com/artifacts/c/art-<id>` URLs
-from the PR body, then `post_comment` using that markdown:
+Option A (`update_pr`), copy the rewritten
+`https://cursor.com/artifacts/c/art-<id>` URLs from the PR body, then
+`post_comment` using that markdown. `post_comment` bodies must use those
+rewritten hosted URLs and must not include `/opt/cursor/artifacts/` in
+`src` or `href`. Do not construct artifact URLs from local paths or the
+current run id.
 
 ```markdown
 ![screenshot](https://cursor.com/artifacts/c/art-<id>)
 ```
 
 ```markdown
-[demo.mp4](https://cursor.com/agents/<id>/artifacts?path=/opt/cursor/artifacts/pr-demo.mp4)
+[![demo video](https://cursor.com/artifacts/c/art-<id>)](https://cursor.com/artifacts/c/art-<id>)
 ```
+
+Keep the Option A description section so the comment URLs stay valid. If
+the user asked for a comment only, `update_pr` again to remove that
+section after the comment is posted.
 
 Provide only `body` for a top-level conversation comment.
 

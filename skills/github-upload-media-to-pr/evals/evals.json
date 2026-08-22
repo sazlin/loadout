@@ -15,11 +15,12 @@
     {
       "id": 2,
       "prompt": "Add a short demo video /tmp/flow.mp4 as a PR comment and give me the comment link.",
-      "expected_output": "Stage the mp4, update_pr first so artifacts rewrite, then post_comment with the rewritten URL, return the comment URL",
+      "expected_output": "Stage the mp4, update_pr first so artifacts rewrite, then post_comment with rewritten https://cursor.com/artifacts/c/art- URL or thumbnail, not artifacts?path=/opt/cursor/artifacts, return the comment URL",
       "files": [],
       "expectations": [
         "Uses ManagePullRequest update_pr then post_comment rather than gh pr comment",
         "Does not send /opt/cursor/artifacts HTML to post_comment as the first attach step",
+        "post_comment uses rewritten https://cursor.com/artifacts/c/art- CDN or thumbnail form and not artifacts?path=/opt/cursor/artifacts",
         "Does not open github.com in a browser to upload the file"
       ]
     },

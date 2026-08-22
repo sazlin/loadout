@@ -16,6 +16,8 @@ REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / "skills" / "github-upload-media-to-pr"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
 SKILL_NAME = "github-upload-media-to-pr"
+HOSTED_ARTIFACT_URL = "https://cursor.com/artifacts/c/art-"
+STAGING_PATH_QUERY = "artifacts?path=/opt/cursor/artifacts"
 
 
 def _evals_payload() -> dict[str, object]:
@@ -26,6 +28,14 @@ def _evals_payload() -> dict[str, object]:
     return payload
 
 
+def _eval_entry_texts(entry: dict[str, object]) -> str:
+    chunks = [str(entry.get("prompt", "")), str(entry.get("expected_output", ""))]
+    expectations = entry.get("expectations")
+    if isinstance(expectations, list):
+        chunks.extend(str(item) for item in expectations)
+    return "\n".join(chunks).lower()
+
+
 def _eval_texts(payload: dict[str, object]) -> str:
     raw = payload.get("evals")
     if not isinstance(raw, list):
@@ -34,12 +44,17 @@ def _eval_texts(payload: dict[str, object]) -> str:
     for entry in raw:
         if not isinstance(entry, dict):
             continue
-        chunks.append(str(entry.get("prompt", "")))
-        chunks.append(str(entry.get("expected_output", "")))
-        expectations = entry.get("expectations")
-        if isinstance(expectations, list):
-            chunks.extend(str(item) for item in expectations)
-    return "\n".join(chunks).lower()
+        chunks.append(_eval_entry_texts(entry))
+    return "\n".join(chunks)
+
+
+def _eval_by_id(payload: dict[str, object], eval_id: int) -> str:
+    raw = payload.get("evals")
+    assert isinstance(raw, list)
+    for entry in raw:
+        if isinstance(entry, dict) and entry.get("id") == eval_id:
+            return _eval_entry_texts(entry)
+    raise AssertionError(f"missing eval id {eval_id}")
 
 
 def test_github_upload_media_skill_parses() -> None:
@@ -64,6 +79,15 @@ def _when_to_use_trigger_and_skip(text: str) -> tuple[str, str]:
     trigger, skip_mark, skip = section.partition("**skip**")
     assert skip_mark, "When to use is missing a **Skip** rule"
     return trigger, skip
+
+
+def _option_b_section(text: str) -> str:
+    """Return the lowercased Option B comment-attach section."""
+    lowered = text.lower()
+    _, found, after = lowered.partition("option b")
+    assert found, "SKILL.md is missing Option B"
+    section, _, _ = after.partition("\n## ")
+    return section
 
 
 def test_description_triggers_on_media_and_pr_phrases() -> None:
@@ -210,6 +234,32 @@ def test_body_bounds_recording_duration_and_discard() -> None:
     assert "exercise the ui, save" not in capture
 
 
+def test_body_comment_video_uses_rewritten_host_not_staging_path() -> None:
+    """Option B comment examples must use hosted art- URLs, not staging-path queries."""
+    option_b = _option_b_section(SKILL_MD.read_text())
+    examples = re.findall(r"```markdown\n(.*?)```", option_b, flags=re.DOTALL)
+    assert examples, "Option B is missing markdown comment examples"
+    for example in examples:
+        assert HOSTED_ARTIFACT_URL in example
+        assert STAGING_PATH_QUERY not in example
+        assert "/opt/cursor/artifacts/" not in example
+    assert STAGING_PATH_QUERY not in option_b
+
+
+def test_body_stages_via_update_pr_before_post_comment() -> None:
+    """Option B must stage with update_pr before post_comment using rewritten hosts."""
+    option_b = _option_b_section(SKILL_MD.read_text())
+    assert "update_pr" in option_b
+    assert "post_comment" in option_b
+    assert option_b.index("update_pr") < option_b.rindex("post_comment")
+    collapsed = " ".join(option_b.replace("*", "").split())
+    assert "do not send" in collapsed
+    assert "/opt/cursor/artifacts/" in option_b
+    assert "first" in option_b
+    assert HOSTED_ARTIFACT_URL in option_b
+    assert STAGING_PATH_QUERY not in option_b
+
+
 def test_body_does_not_instruct_installing_agent_browser() -> None:
     text = SKILL_MD.read_text()
     lowered = text.lower()
@@ -241,7 +291,8 @@ def test_has_colocated_evals() -> None:
 
 
 def test_evals_cover_img_video_and_install_refusal() -> None:
-    texts = _eval_texts(_evals_payload())
+    payload = _evals_payload()
+    texts = _eval_texts(payload)
     assert "/opt/cursor/artifacts/" in texts
     assert "managepullrequest" in texts
     assert "img" in texts
@@ -250,6 +301,11 @@ def test_evals_cover_img_video_and_install_refusal() -> None:
     assert "npx skills add" in texts
     assert "npm i -g" in texts
     assert "does not run" in texts or "refuse" in texts
+    comment_eval = _eval_by_id(payload, 2)
+    assert "update_pr" in comment_eval
+    assert "first attach" in comment_eval
+    assert HOSTED_ARTIFACT_URL in comment_eval
+    assert STAGING_PATH_QUERY in comment_eval
 
 
 def test_base_sync_vendors_skill_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
