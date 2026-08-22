@@ -90,20 +90,20 @@ def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
     scripts = (REPO / "skills" / "playwright-agents" / "references" / "package-scripts.md").read_text()
     cloud = (REPO / "skills" / "playwright-agents" / "references" / "cursor-cloud.md").read_text()
     rule = (REPO / "rules" / "playwright" / "test-agents.mdc").read_text()
-    joined = f"{skill}\n{scripts}\n{cloud}\n{rule}"
-    assert "playwright-cli" in joined
-    assert PLAYWRIGHT_CLI_PACKAGE in skill or PLAYWRIGHT_CLI_PACKAGE in scripts
-    assert "run-test-mcp-server" not in joined
-    assert "mcp__playwright-test" not in joined
-    assert "@playwright/mcp" not in joined
+    # Skill Setup is the documented pin; yaml already checks cli_tools.
+    assert PLAYWRIGHT_CLI_PACKAGE in skill
     for label, text in (
         ("skill", skill),
         ("package-scripts", scripts),
         ("cursor-cloud", cloud),
         ("test-agents", rule),
     ):
+        assert "playwright-cli" in text
+        assert "run-test-mcp-server" not in text
+        assert "mcp__playwright-test" not in text
+        assert "@playwright/mcp" not in text
         _assert_no_unpinned_npx_playwright_cli(label, text)
-        assert PLAYWRIGHT_CLI_PACKAGE in text or "npx playwright-cli" in text or "npx playwright cli" in text, label
+        assert "npx playwright-cli" in text or "npx playwright cli" in text, label
 
 
 def test_playwright_sync_vendors_agents_skill_rule_and_not_test_mcp(
