@@ -43,7 +43,7 @@ This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1
 5. Cloud VM browsers: [references/cursor-cloud.md](references/cursor-cloud.md)
 6. CI + failure-triggered healer PRs: [references/ci.md](references/ci.md)
 
-Invoke the CLI as `npx playwright-cli`. Run `npx playwright-cli --help` for commands.
+Invoke the CLI as `npx playwright-cli` (the browser CLI this loadout installs). `npx playwright test` is the spec runner. Run `npx playwright-cli --help` for commands.
 
 After a planner, generator, or healer run writes its plan or spec, close sessions that run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for those sessions. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 

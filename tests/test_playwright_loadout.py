@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ PLAYWRIGHT_AGENTS = (
     "playwright_healer",
 )
 PLAYWRIGHT_CLI_PACKAGE = "@playwright/cli@0.1.18"
+UNPINNED_NPX_PLAYWRIGHT_CLI = re.compile(r"npx(?:\s+--yes)?\s+@playwright/cli(?!@0\.1\.18)")
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -61,6 +63,23 @@ def test_playwright_e2e_is_an_alias_of_playwright() -> None:
     assert loadout.cli_tools == []
 
 
+def _assert_no_unpinned_npx_playwright_cli(label: str, text: str) -> None:
+    """Fallback must not tell the model to fetch unpinned @playwright/cli."""
+    match = UNPINNED_NPX_PLAYWRIGHT_CLI.search(text)
+    assert match is None, f"{label}: unpinned {match.group(0)!r}"
+
+
+def _assert_shell_disambiguates_browser_cli(label: str, text: str) -> None:
+    """Shell must name the browser CLI separately from the spec runner."""
+    shell = next((line for line in text.splitlines() if line.startswith("- **Shell:**")), "")
+    assert shell, f"{label}: missing Shell bullet"
+    lowered = shell.lower()
+    assert "npx playwright-cli" in shell or "npx playwright cli" in shell, label
+    assert "browser cli" in lowered, label
+    assert "npx playwright test" in shell, label
+    assert "spec runner" in lowered, label
+
+
 def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
     skill = (REPO / "skills" / "playwright-agents" / "SKILL.md").read_text()
     scripts = (REPO / "skills" / "playwright-agents" / "references" / "package-scripts.md").read_text()
@@ -72,6 +91,14 @@ def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
     assert "run-test-mcp-server" not in joined
     assert "mcp__playwright-test" not in joined
     assert "@playwright/mcp" not in joined
+    for label, text in (
+        ("skill", skill),
+        ("package-scripts", scripts),
+        ("cursor-cloud", cloud),
+        ("test-agents", rule),
+    ):
+        _assert_no_unpinned_npx_playwright_cli(label, text)
+        assert PLAYWRIGHT_CLI_PACKAGE in text or "npx playwright-cli" in text or "npx playwright cli" in text, label
 
 
 def test_playwright_sync_vendors_agents_skill_rule_and_not_test_mcp(
@@ -230,6 +257,8 @@ def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:
     for label, text in (("planner", planner), ("generator", generator), ("healer", healer)):
         _assert_forbids_storage_state_secret_dump(label, text)
         _assert_closes_playwright_cli_sessions(label, text)
+        _assert_no_unpinned_npx_playwright_cli(label, text)
+        _assert_shell_disambiguates_browser_cli(label, text)
     healer_lower = healer.lower()
     assert "url" in healer_lower and "status" in healer_lower
     assert "authorization" in healer_lower

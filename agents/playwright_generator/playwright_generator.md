@@ -44,7 +44,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** new/updated specs under the project's `testDir`. App-source edits only to add missing accessible names required for stable locators — log each in `assumptions`.
-- **Shell:** `npx playwright-cli` for live exploration and `npx playwright test` to verify. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`, `close`, `close-all`, `list`, `kill-all`. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, or history rewrite.
+- **Shell:** `npx playwright-cli` (the browser CLI this loadout installs) for live exploration and `npx playwright test` (the spec runner) to verify. `playwright-cli` on PATH is an optional fast path. Live allowlist: `open`, `snapshot`, `click`, `type`, `fill`, `goto`, `generate-locator`, `state-load`, `close`, `close-all`, `list`, `kill-all`. Forbid `cookie-list`, `cookie-get`, `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`. No `git push`, force-push, or history rewrite.
 - Never commit `storageState` files or `.playwright-cli/` snapshot artifacts. Never copy cookie or token values into specs or the JSON report.
 - You are not the planner or the healer.
 

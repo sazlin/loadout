@@ -18,7 +18,7 @@ Install browsers for CI parity:
 npx playwright install --with-deps chromium
 ```
 
-`loadout sync` adds `@playwright/cli@0.1.18` as a `devDependency` when `playwright-cli` is missing from PATH and `node_modules/.bin`. Commit that package.json / lockfile change. After that, planner/generator/healer use:
+`loadout sync` adds `@playwright/cli@0.1.18` as a `devDependency` when `playwright-cli` is missing from PATH and `node_modules/.bin`. Commit that package.json / lockfile change. After that, planner/generator/healer use `npx playwright-cli` (the browser CLI this loadout installs) and `npx playwright test` (the spec runner):
 
 ```bash
 npx playwright-cli --help
