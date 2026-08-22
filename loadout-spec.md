@@ -154,6 +154,7 @@ loadout/
     python-monorepo.yaml
     typescript.yaml
     aws.yaml
+    supabase.yaml
     terraform.yaml
     playwright-e2e.yaml
     playwright.yaml
