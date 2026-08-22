@@ -1,0 +1,27 @@
+{
+  "skill_name": "supabase-postgres-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a users table with email and write the RLS policy so each row is only visible to its owner. Also add an index for looking up users by email.",
+      "expected_output": "Uses schema, RLS, and index references instead of inventing Postgres advice",
+      "files": [],
+      "expectations": [
+        "Reads security-rls-basics or security-rls-performance before writing RLS",
+        "Adds an index for the email lookup (query-missing-indexes)",
+        "Does not skip the skill because the change is a single table"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "This query is slow and CPU is high. EXPLAIN shows a sequential scan. The app also keeps opening new database connections until it hits max_connections.",
+      "expected_output": "Diagnoses missing indexes and connection pooling from the skill references",
+      "files": [],
+      "expectations": [
+        "Reads query-missing-indexes or monitor-explain-analyze",
+        "Reads conn-pooling or conn-limits",
+        "Does not recommend raising max_connections as the first fix"
+      ]
+    }
+  ]
+}
