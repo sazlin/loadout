@@ -145,11 +145,13 @@ Example GitHub Actions step:
 | --- | --- | --- |
 | `base` | — | Core conventions (including ready-for-review PRs, never drafts), release checklist, anti-sleep, session decision-review and `/learn` skills, deny-dangerous hook, davinci, Context7 MCP |
 | `python` | `base` | Python code style + pytest rules, python_coder agent |
-| `python-monorepo` | `python` | UV workspace rules + db-migrations skill |
+| `python-monorepo` | `python` | UV workspace rules |
+| `db` | `base` | Alembic `db-migrations` skill |
+| `github` | `base` | GitHub PR media attach (`github-upload-media-to-pr`) |
 | `typescript` | `base` | TypeScript code style rules |
 | `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
 | `aws` | `base` | AWS Knowledge MCP |
-| `supabase` | `base` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) |
+| `supabase` | `db` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) plus inherited `db-migrations` |
 | `playwright` | `base` | Playwright Test Agents (planner, generator, healer), Test MCP, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
 | `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |

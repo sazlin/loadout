@@ -1,0 +1,8 @@
+name: github
+description: >-
+  GitHub pull-request media attach via Cursor Cloud ManagePullRequest
+  (images and videos).
+extends:
+  - base
+skills:
+  - src: skills/github-upload-media-to-pr

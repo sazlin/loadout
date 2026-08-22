@@ -1,0 +1,8 @@
+name: db
+description: >-
+  Database migrations (Alembic) shared by Python workspaces and Supabase
+  projects.
+extends:
+  - base
+skills:
+  - src: skills/db-migrations

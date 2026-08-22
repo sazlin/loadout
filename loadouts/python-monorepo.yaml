@@ -1,8 +1,6 @@
 name: python-monorepo
-description: Python workspace conventions, testing guidance, and migration safety.
+description: Python workspace conventions and testing guidance.
 extends:
   - python
 rules:
   - src: rules/python/uv-workspace.mdc
-skills:
-  - src: skills/db-migrations
