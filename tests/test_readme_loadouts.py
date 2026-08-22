@@ -37,7 +37,9 @@ def _available_loadout_rows(readme: str) -> dict[str, tuple[str, str]]:
         if not line.startswith("|"):
             continue
         cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if len(cells) < 3 or cells[0] in {"Loadout", "---"} or set(cells[0]) <= {"-"}:
+        is_header = cells[0] == "Loadout"
+        is_separator = cells[0].replace("-", "") == ""
+        if len(cells) < 3 or is_header or is_separator:
             continue
         names = _NAME_RE.findall(cells[0])
         assert names, f"catalog row has no backticked loadout name: {line}"
