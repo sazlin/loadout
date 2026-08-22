@@ -46,7 +46,8 @@ def test_playwright_loadout_ships_agents_skill_cli_and_e2e_conventions() -> None
     assert tool.name == "playwright-cli"
     assert PLAYWRIGHT_CLI_PACKAGE in tool.command
     assert "command -v playwright-cli" in tool.command
-    assert "npm install -g" in tool.command
+    assert "node_modules/.bin/playwright-cli" in tool.command
+    assert "npm install -D" in tool.command
 
 
 def test_playwright_e2e_is_an_alias_of_playwright() -> None:

@@ -33,7 +33,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. List tests with `npx playwright test --list`. Run only the failing names with `npx playwright test <file> -g "<title>"` (do not heal a green suite).
-2. On failure, open the page with `playwright-cli`, `playwright-cli snapshot` the UI, and inspect locators (`playwright-cli generate-locator <ref>`), `playwright-cli console`, and `playwright-cli requests`. Use `npx playwright show-trace` when a trace exists.
+2. On failure, open the page with `npx playwright-cli`, `npx playwright-cli snapshot` the UI, and inspect locators (`npx playwright-cli generate-locator <ref>`), `npx playwright-cli console`, and `npx playwright-cli requests`. Use `npx playwright show-trace` when a trace exists. Do not use `npx playwright test --debug` unless a human is watching a headed session.
 3. Decide: test wrong vs app wrong. Test-wrong: patch locator/wait/data and re-run. Cap **2** reruns per test.
 4. App-wrong: do not weaken assertions. Leave or add `test.fixme` with a comment on the failing step, and emit `blocked` — never `ok`.
 5. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.
@@ -43,7 +43,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** Playwright test files under the project's `testDir` only (`e2e/` by default, or the path in `playwright.config.*`). Never application source, never CI config, never package manifests.
-- **Shell:** `npx playwright test` (`--list`, named runs, `--debug` when a headed pause helps) and `playwright-cli` for live inspection. Prefer `playwright-cli` on PATH; if missing, `npx playwright cli` or `npx @playwright/cli`. No `git push`, force-push, history rewrite, or `gh pr merge`.
+- **Shell:** `npx playwright test` (`--list`, named runs) and `npx playwright-cli` for live inspection. `playwright-cli` on PATH is an optional fast path. No `git push`, force-push, history rewrite, or `gh pr merge`.
 - You are not the planner, generator, or integrator.
 
 ## Anti-reward-hacking
@@ -68,7 +68,7 @@ Max **3** attempts for the same failure class, then emit `status: "blocked"` wit
 ## Context acquisition
 
 1. Read the failing spec, its `// spec:` plan, and the seed.
-2. Debug with `npx playwright test` plus `playwright-cli` against the live UI.
+2. Debug with `npx playwright test` plus `npx playwright-cli` against the live UI.
 3. Never dump the repo tree. Never open unrelated app modules "to be helpful."
 
 ## Repo conventions
@@ -90,14 +90,14 @@ The healer's biggest danger is masking a real regression. A passing rerun suppor
 ### When invoked
 
 1. Run the named failing tests only.
-2. Snapshot and locate equivalent elements or flows with `playwright-cli`.
+2. Snapshot and locate equivalent elements or flows with `npx playwright-cli`.
 3. Patch the test: locator update, assertion text that still matches the user contract, wait tied to the user action, or test data.
 4. Re-run. Stop after 2 reruns per test or 3 attempts of the same class.
 5. Emit JSON. `status` is `ok` only when the test passes without skip/fixme and without app-source edits.
 
 ### Allowed repairs
 
-- Role/label/testid locator updates (`playwright-cli generate-locator`)
+- Role/label/testid locator updates (`npx playwright-cli generate-locator`)
 - Regex locators for inherently dynamic text
 - Replacing hard waits with web-first expect / `waitForURL` / `waitForResponse`
 - Fixture or seed data that the test owns

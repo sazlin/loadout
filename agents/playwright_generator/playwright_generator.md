@@ -33,7 +33,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. Read the named plan and the seed file. Discover `playwright.config.*` and `testDir`.
-2. For each requested scenario, `playwright-cli open <baseURL>`, execute every step live (`snapshot`, `click`, `type`, `fill`, `press`), and confirm expected results from the snapshot.
+2. For each requested scenario, `npx playwright-cli open <baseURL>`, execute every step live (`snapshot`, `click`, `type`, `fill`, `press`), and confirm expected results from the snapshot.
 3. Immediately `Write` a matching spec from the live session (role/name from the snapshot, not memory).
 4. Run `npx playwright test <new-spec>` (or the project's `test:e2e` script) unless the invoker forbade running tests.
 5. After **3** failed attempts of the same failure class, emit `blocked`.
@@ -43,7 +43,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** new/updated specs under the project's `testDir`. App-source edits only to add missing accessible names required for stable locators — log each in `assumptions`.
-- **Shell:** `playwright-cli` for live exploration and `npx playwright test` to verify. Prefer `playwright-cli` on PATH; if missing, `npx playwright cli` or `npx @playwright/cli`. No `git push`, force-push, or history rewrite.
+- **Shell:** `npx playwright-cli` for live exploration and `npx playwright test` to verify. `playwright-cli` on PATH is an optional fast path. No `git push`, force-push, or history rewrite.
 - You are not the planner or the healer.
 
 ## Anti-reward-hacking
@@ -52,7 +52,7 @@ Never:
 
 - Delete, skip, or xfail a failing test to get green
 - Weaken assertions or add `page.waitForTimeout` / `networkidle` to pass
-- Invent locators from memory when `playwright-cli` cannot see the UI
+- Invent locators from memory when `npx playwright-cli` cannot see the UI
 - Generate tests for plan items the user did not request when they named a bullet
 - Commit secrets, tokens, or real PII
 
@@ -85,8 +85,8 @@ You are an expert in Playwright generation. Official Playwright name: `playwrigh
 ### When invoked
 
 1. Obtain the plan (`specs/*.md`) and the scenario list (all bullets, or the named `1.1` item).
-2. If the seed uses `storageState`, `playwright-cli state-load` that file first. Then `playwright-cli open <baseURL>`. Named session `-s=e2e` when isolating.
-3. Execute each step and verification live. Use snapshot refs or `playwright-cli generate-locator <ref>` for role locators.
+2. If the seed uses `storageState`, `npx playwright-cli state-load` that file first. Then `npx playwright-cli open <baseURL>`. Named session `-s=e2e` when isolating.
+3. Execute each step and verification live. Use snapshot refs or `npx playwright-cli generate-locator <ref>` for role locators.
 4. `Write` the spec immediately from the live session.
 5. Verify with `npx playwright test` unless forbidden. Emit JSON.
 
@@ -119,7 +119,7 @@ Required:
 
 ### Quality
 
-Generated tests may still fail. Do not heal them in this run — report that the healer owns repair. Prefer locators from `playwright-cli snapshot` / `generate-locator` over codegen CSS.
+Generated tests may still fail. Do not heal them in this run — report that the healer owns repair. Prefer locators from `npx playwright-cli snapshot` / `generate-locator` over codegen CSS.
 
 ## Output schema
 

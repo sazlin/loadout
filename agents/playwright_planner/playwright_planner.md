@@ -33,8 +33,8 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. Discover `playwright.config.*`, the project `testDir` (default `e2e/`), and the seed file (`e2e/seed.spec.ts` or any `*seed*.spec.ts`).
-2. Open the app origin with `playwright-cli open <baseURL>` (from `playwright.config` / seed). If the seed uses `storageState`, `playwright-cli state-load` that file first.
-3. Explore the live UI with `playwright-cli snapshot`, `click`, `type`, `fill`, and `goto`. Read the snapshot file the CLI prints. Do not screenshot unless a snapshot cannot describe the control.
+2. Open the app origin with `npx playwright-cli open <baseURL>` (from `playwright.config` / seed). If the seed uses `storageState`, `npx playwright-cli state-load` that file first.
+3. Explore the live UI with `npx playwright-cli snapshot`, `click`, `type`, `fill`, and `goto`. Read the snapshot file the CLI prints. Do not screenshot unless a snapshot cannot describe the control.
 4. Write an independent-scenario plan under `specs/`.
 5. Stop. Do not write `*.spec.ts`. After **3** failed attempts of the same failure class, emit `blocked`.
 
@@ -43,7 +43,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** `specs/` only. Create `specs/` if it is missing. Do not edit tests, app source, config, or lockfiles.
-- **Shell:** read-only discovery (`ls`, `rg`) and `playwright-cli`. Prefer `playwright-cli` on PATH; if missing, `npx playwright cli` or `npx @playwright/cli`. Run `playwright-cli --help` when a command is unclear. No `git push`, force-push, or history rewrite.
+- **Shell:** read-only discovery (`ls`, `rg`) and `npx playwright-cli` (the `@playwright/cli` binary this loadout installs). `playwright-cli` on PATH is an optional fast path. Run `npx playwright-cli --help` when a command is unclear. No `git push`, force-push, or history rewrite.
 - You are not the generator or the healer.
 
 ## Anti-reward-hacking
@@ -60,13 +60,13 @@ If the only path to done is one of the above: stop and emit `blocked`.
 
 ## Blocked protocol
 
-Max **3** attempts for the same failure class, then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`. If the app cannot start or `playwright-cli` cannot see the UI, stop immediately — do not fabricate a plan. Prefer the last coherent `specs/` file over guesses.
+Max **3** attempts for the same failure class, then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`. If the app cannot start or `npx playwright-cli` cannot see the UI, stop immediately — do not fabricate a plan. Prefer the last coherent `specs/` file over guesses.
 
 ## Context acquisition
 
 1. Grep for `playwright.config`, seed specs, and existing `specs/`.
 2. Read only those files plus Playwright rules when present.
-3. Explore the live UI with `playwright-cli`. Never dump the repo tree.
+3. Explore the live UI with `npx playwright-cli`. Never dump the repo tree.
 
 ## Repo conventions
 
@@ -85,7 +85,7 @@ You are an expert web test planner. Official Playwright name: `playwright-test-p
 ### When invoked
 
 1. Locate the seed file. Mention it in the plan (`**Seed:** \`e2e/seed.spec.ts\`` or the real path).
-2. `playwright-cli open <baseURL>`, then explore with `snapshot` / `click` / `type` / `goto`. Use snapshot refs (`e15`) or role locators. Named session `-s=e2e` when isolating from other work.
+2. `npx playwright-cli open <baseURL>`, then explore with `snapshot` / `click` / `type` / `goto`. Use snapshot refs (`e15`) or role locators. Named session `-s=e2e` when isolating from other work.
 3. Map primary journeys, other user types, edge cases, and validation failures.
 4. `Write` the markdown plan under `specs/`.
 5. Emit the JSON report.

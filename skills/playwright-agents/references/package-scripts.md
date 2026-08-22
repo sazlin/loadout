@@ -18,12 +18,12 @@ Install browsers for CI parity:
 npx playwright install --with-deps chromium
 ```
 
-`loadout sync` installs the browser CLI (`@playwright/cli@0.1.18`) when `playwright-cli` is not already on PATH. After that, planner/generator/healer use:
+`loadout sync` adds `@playwright/cli@0.1.18` as a `devDependency` when `playwright-cli` is missing from PATH and `node_modules/.bin`. Commit that package.json / lockfile change. After that, planner/generator/healer use:
 
 ```bash
-playwright-cli --help
-playwright-cli open http://127.0.0.1:3000
+npx playwright-cli --help
+npx playwright-cli open http://127.0.0.1:3000
 npx playwright test
 ```
 
-If the global binary is missing, `npx playwright cli` or `npx @playwright/cli` is the fallback. Do not add a Playwright MCP. Do not pin `@playwright/cli@latest`.
+Do not add a Playwright MCP. Do not pin `@playwright/cli@latest`.
