@@ -47,9 +47,14 @@ def test_playwright_loadout_ships_agents_skill_cli_and_e2e_conventions() -> None
     tool = loadout.cli_tools[0]
     assert tool.name == "playwright-cli"
     assert PLAYWRIGHT_CLI_PACKAGE in tool.command
-    assert "command -v playwright-cli" in tool.command
-    assert "node_modules/.bin/playwright-cli" in tool.command
     assert "npm install -D" in tool.command
+    assert "npm install -g" not in tool.command
+    # Skip only when an already-installed CLI reports 0.1.18, not when a
+    # binary is merely named playwright-cli on PATH or under node_modules.
+    assert "--version" in tool.command
+    assert "grep -q 0.1.18" in tool.command
+    assert "command -v playwright-cli" not in tool.command
+    assert "test -x node_modules/.bin/playwright-cli" not in tool.command
 
 
 def test_playwright_e2e_is_an_alias_of_playwright() -> None:
