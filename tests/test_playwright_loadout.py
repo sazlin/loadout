@@ -194,6 +194,18 @@ def test_playwright_ci_bounds_healer_retriggers() -> None:
     assert "single" in text and "fix pr" in text
 
 
+def _assert_loads_storage_state_before_open(label: str, text: str) -> None:
+    """Cookies from seed storageState apply only if state-load runs before open."""
+    state_load_at = text.find("state-load")
+    open_at = text.find("open <baseURL>")
+    assert state_load_at != -1, f"{label}: missing state-load"
+    assert open_at != -1, f"{label}: missing open <baseURL>"
+    assert state_load_at < open_at, f"{label}: open <baseURL> appears before state-load"
+    between = text[state_load_at:open_at].lower()
+    assert "snapshot" not in between, f"{label}: snapshot between state-load and open"
+    assert "explore" not in between, f"{label}: explore between state-load and open"
+
+
 def _assert_forbids_storage_state_secret_dump(label: str, text: str) -> None:
     """Seed storageState must be loaded via CLI only; cookies stay out of reports."""
     lowered = text.lower()
@@ -227,6 +239,12 @@ def _assert_closes_playwright_cli_sessions(label: str, text: str) -> None:
     blocked_at = lowered.find("on blocked or after 3 failed attempts")
     window = lowered[blocked_at : blocked_at + 280]
     assert "close-all" in window, label
+
+
+def test_playwright_planner_loads_storage_state_before_open() -> None:
+    planner = (REPO / "agents" / "playwright_planner" / "playwright_planner.md").read_text()
+    definition_of_done = planner.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+    _assert_loads_storage_state_before_open("planner definition of done", definition_of_done)
 
 
 def test_playwright_agents_keep_write_scopes_and_healer_safety() -> None:

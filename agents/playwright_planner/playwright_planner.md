@@ -33,7 +33,7 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. Discover `playwright.config.*`, the project `testDir` (default `e2e/`), and the seed file (`e2e/seed.spec.ts` or any `*seed*.spec.ts`).
-2. Open the app origin with `npx playwright-cli open <baseURL>` (from `playwright.config` / seed). If the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only. Never `Read`, `cat`, or open the storageState JSON.
+2. If the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only, then `npx playwright-cli open <baseURL>` (from `playwright.config` / seed). Never `Read`, `cat`, or open the storageState JSON.
 3. Explore the live UI with `npx playwright-cli snapshot`, `click`, `type`, `fill`, and `goto`. Read the snapshot file the CLI prints. Do not screenshot unless a snapshot cannot describe the control.
 4. Write an independent-scenario plan under `specs/`.
 5. Close the session this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for sessions it opened.
