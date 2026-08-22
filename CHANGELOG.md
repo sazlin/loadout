@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.13.0
+
 - Add `cli_tools` on loadout YAML: named idempotent shell commands that
   `sync` and `update` run in the project root after writing files. Failures
   are printed and do not abort the install. `sync --check` does not run them.
