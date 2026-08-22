@@ -48,10 +48,20 @@ def test_github_upload_media_skill_parses() -> None:
     assert meta.license == "MIT"
 
 
-def test_base_loadout_includes_github_upload_media_skill() -> None:
+def test_github_loadout_ships_upload_media_skill() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "github.yaml")
+    assert loadout.name == "github"
+    assert loadout.extends == ["base"]
+    assert {entry["src"] for entry in loadout.skills} == {f"skills/{SKILL_NAME}"}
+    assert loadout.rules == []
+    assert loadout.agents == []
+    assert loadout.mcps == []
+
+
+def test_base_loadout_does_not_include_github_upload_media_skill() -> None:
     loadout = load_loadout(REPO / "loadouts" / "base.yaml")
     srcs = {entry["src"] for entry in loadout.skills}
-    assert f"skills/{SKILL_NAME}" in srcs
+    assert f"skills/{SKILL_NAME}" not in srcs
 
 
 def test_description_triggers_on_media_and_pr_phrases() -> None:
@@ -121,13 +131,23 @@ def test_evals_cover_img_video_and_install_refusal() -> None:
     assert "does not run" in texts or "refuse" in texts
 
 
-def test_base_sync_vendors_skill_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_github_sync_vendors_skill_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
     project.mkdir()
-    (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [base]\n")
+    (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [github]\n")
     sync(project)
     dest = project / ".claude/skills" / SKILL_NAME / "SKILL.md"
     assert dest.is_file()
     assert "ManagePullRequest" in dest.read_text()
     assert not (project / ".claude/skills" / SKILL_NAME / "evals").exists()
+    assert (project / ".claude/agents/davinci.md").is_file()
+
+
+def test_base_sync_does_not_vendor_github_upload_media_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [base]\n")
+    sync(project)
+    assert not (project / ".claude/skills" / SKILL_NAME).exists()

@@ -29,7 +29,7 @@ def write_manifest(project: Path, body: str) -> None:
 def test_supabase_loadout_ships_vendored_postgres_skill() -> None:
     loadout = load_loadout(REPO / "loadouts" / "supabase.yaml")
     assert loadout.name == "supabase"
-    assert loadout.extends == ["base"]
+    assert loadout.extends == ["db"]
     assert {entry["src"] for entry in loadout.skills} == {SKILL_SRC}
     assert loadout.rules == []
     assert loadout.agents == []
@@ -58,6 +58,7 @@ loadouts: [supabase]
     assert not list(project.rglob("evals"))
     assert (project / ".claude/agents/davinci.md").is_file()
     assert (project / ".cursor/rules/repo-conventions.mdc").is_file()
+    assert (project / ".claude/skills/db-migrations/SKILL.md").is_file()
 
 
 def test_base_sync_does_not_vendor_supabase_postgres_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

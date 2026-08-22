@@ -152,6 +152,8 @@ loadout/
     agents.yaml
     python.yaml
     python-monorepo.yaml
+    db.yaml
+    github.yaml
     typescript.yaml
     aws.yaml
     supabase.yaml
