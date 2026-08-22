@@ -13,6 +13,7 @@ from loadout.models import CliTool
 
 _SHELL = ("bash", "-c")
 _CLI_TOOL_TIMEOUT_SECONDS = 300
+_REAP_TIMEOUT_SECONDS = 2
 
 
 def run_cli_tools(tools: list[CliTool], project_root: Path) -> None:
@@ -57,11 +58,21 @@ def _run_command(command: str, project_root: Path) -> subprocess.CompletedProces
     ) as process:
         try:
             stdout, stderr = process.communicate(timeout=_CLI_TOOL_TIMEOUT_SECONDS)
-        except subprocess.TimeoutExpired:
-            _kill_process_group(process)
-            process.communicate()
+        except (subprocess.TimeoutExpired, KeyboardInterrupt):
+            _kill_and_reap(process)
             raise
+        finally:
+            if process.poll() is None:
+                _kill_and_reap(process)
         return subprocess.CompletedProcess(process.args, process.returncode, stdout, stderr)
+
+
+def _kill_and_reap(process: subprocess.Popen[str]) -> None:
+    _kill_process_group(process)
+    try:
+        process.communicate(timeout=_REAP_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def _kill_process_group(process: subprocess.Popen[str]) -> None:

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import signal
+import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -86,3 +89,50 @@ def test_run_cli_tools_times_out_a_hung_command_and_continues(
     pid = int(grandchild_pid.read_text())
     with pytest.raises(OSError):
         os.kill(pid, 0)
+
+
+def test_run_cli_tools_kills_process_group_on_keyboard_interrupt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    grandchild_pid = tmp_path / "grandchild.pid"
+    original_communicate = subprocess.Popen.communicate
+    waiting_for_interrupt = True
+
+    def communicate_then_interrupt(self: subprocess.Popen[str], *args: object, **kwargs: object) -> tuple[str, str]:
+        nonlocal waiting_for_interrupt
+        if waiting_for_interrupt:
+            deadline = time.monotonic() + 2
+            while not grandchild_pid.exists() and time.monotonic() < deadline:
+                time.sleep(0.05)
+            waiting_for_interrupt = False
+            raise KeyboardInterrupt
+        return original_communicate(self, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess.Popen, "communicate", communicate_then_interrupt)
+    tools = [
+        CliTool(
+            name="hung",
+            command=f"sleep 8 & echo $! > {grandchild_pid.name}; wait",
+        ),
+    ]
+
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            run_cli_tools(tools, tmp_path)
+        pid = int(grandchild_pid.read_text())
+        deadline = time.monotonic() + 2
+        while True:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                break
+            if time.monotonic() >= deadline:
+                pytest.fail(f"cli_tools grandchild {pid} still running after cancel")
+            time.sleep(0.05)
+    finally:
+        if grandchild_pid.exists():
+            leftover = int(grandchild_pid.read_text())
+            try:
+                os.kill(leftover, signal.SIGKILL)
+            except OSError:
+                pass
