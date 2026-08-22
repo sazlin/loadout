@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -47,7 +48,7 @@ def test_run_cli_tools_reports_commands_that_fail_to_start(
         del args, kwargs
         raise FileNotFoundError("bash")
 
-    monkeypatch.setattr("loadout.cli_tools.subprocess.run", explode)
+    monkeypatch.setattr("loadout.cli_tools.subprocess.Popen", explode)
 
     run_cli_tools([CliTool(name="jq", command="true")], tmp_path)
 
@@ -60,3 +61,28 @@ def test_run_cli_tools_noops_when_the_list_is_empty(tmp_path: Path, capsys: pyte
 
     assert capsys.readouterr().out == ""
     assert list(tmp_path.iterdir()) == []
+
+
+def test_run_cli_tools_times_out_a_hung_command_and_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr("loadout.cli_tools._CLI_TOOL_TIMEOUT_SECONDS", 0.4)
+    later = tmp_path / "later.txt"
+    grandchild_pid = tmp_path / "grandchild.pid"
+    tools = [
+        CliTool(
+            name="hung",
+            command=f"sleep 8 & echo $! > {grandchild_pid.name}; wait",
+        ),
+        CliTool(name="later", command=f"echo later > {later.name}"),
+    ]
+
+    run_cli_tools(tools, tmp_path)
+
+    assert later.read_text() == "later\n"
+    output = capsys.readouterr().out
+    assert "loadout: cli_tools: hung: failed (timeout" in output
+    assert "loadout: cli_tools: later: ok" in output
+    pid = int(grandchild_pid.read_text())
+    with pytest.raises(OSError):
+        os.kill(pid, 0)
