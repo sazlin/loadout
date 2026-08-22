@@ -104,6 +104,12 @@ def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
         assert "@playwright/mcp" not in text
         _assert_no_unpinned_npx_playwright_cli(label, text)
         assert "npx playwright-cli" in text or "npx playwright cli" in text, label
+    assert "playwright-cli --version" in scripts
+    assert "npx --no-install playwright-cli --version" in scripts
+    assert "0.1.18" in scripts
+    assert "npm install -D --no-fund --no-audit @playwright/cli@0.1.18" in scripts
+    assert "missing from PATH" not in scripts
+    assert "node_modules/.bin" not in scripts
 
 
 def test_playwright_sync_vendors_agents_skill_rule_and_not_test_mcp(
