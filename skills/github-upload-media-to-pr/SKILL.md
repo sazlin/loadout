@@ -89,7 +89,8 @@ working directory or any other destination.
 
 ## Step 1: Stage under `/opt/cursor/artifacts/`
 
-Skip any file that failed the Step 0 mime, secret, or 25 MB size
+Do not copy until Step 0 checks have been run and passed for that
+file. Skip any file that failed the Step 0 mime, secret, or 25 MB size
 checks. Do not copy more than 6 files.
 
 ```bash
@@ -182,14 +183,15 @@ step.
 ## Capturing media you do not already have
 
 - **Screenshot of an app:** `computerUse` against the running UI, save the
-  image, then Stage (Step 1).
+  image, run Step 0 on the saved file, then Stage (Step 1).
 - **Demo video of an app:** `RecordScreen` `START_RECORDING`, then
   `computerUse` to exercise the UI for at most **30 seconds**. If
-  `computerUse` returns in time, `SAVE_RECORDING`. If `computerUse`
-  does not return in that window (hang), `DISCARD_RECORDING` and attach
-  only files already on disk. Do not leave RecordScreen running without
-  a deadline. Do not record a GitHub tab to "upload" anything.
-- **Already-on-disk files:** skip capture; start at Step 1.
+  `computerUse` returns in time, `SAVE_RECORDING`, run Step 0 on the
+  saved file, then Stage (Step 1). If `computerUse` does not return in
+  that window (hang), `DISCARD_RECORDING` and attach only files already
+  on disk via Step 0. Do not leave RecordScreen running without a
+  deadline. Do not record a GitHub tab to "upload" anything.
+- **Already-on-disk files:** skip capture; start at Step 0.
 
 ## Do not
 
@@ -208,7 +210,7 @@ step.
 | --- | --- |
 | Artifact hosting failed (path not rewritten) | Staging paths still in the body after the single `update_pr`. Stop and report that artifact hosting failed. Do not retry `update_pr`, do not start another recording, and do not loop Step 4. |
 | Comment is a text link, not an image | `post_comment` does not inline local HTML; copy `https://cursor.com/artifacts/c/art-` URLs from the PR body |
-| Special characters in the filename | Copy to a simple name under `/opt/cursor/artifacts/` first |
+| Special characters in the filename | After Step 0 passed, copy to a simple name under `/opt/cursor/artifacts/` |
 | Video does not play | Use `mp4` or `webm`; include `controls` on the `video` tag |
 | No PR yet | Create it with `ManagePullRequest` `create_pr`, then attach |
 | `computerUse` unavailable | Attach files you already have; do not install a browser CLI |

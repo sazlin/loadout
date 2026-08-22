@@ -90,6 +90,15 @@ def _option_b_section(text: str) -> str:
     return section
 
 
+def _section_after_heading(text: str, heading: str) -> str:
+    """Return the lowercased body of a markdown heading until the next h2."""
+    lowered = text.lower()
+    _, found, after = lowered.partition(heading)
+    assert found, f"SKILL.md is missing {heading}"
+    section, _, _ = after.partition("\n## ")
+    return section
+
+
 def test_description_triggers_on_media_and_pr_phrases() -> None:
     meta = parse_skill_md(SKILL_MD, SKILL_MD.read_text(), dir_name=SKILL_NAME)
     lowered = meta.description.lower()
@@ -232,6 +241,46 @@ def test_body_bounds_recording_duration_and_discard() -> None:
     assert "does not return" in capture or "hang" in capture or "timeout" in capture or "deadline" in capture
     assert "already on disk" in capture or "files already" in capture
     assert "exercise the ui, save" not in capture
+
+
+def test_capture_and_on_disk_paths_start_at_step_0() -> None:
+    """Capture and already-on-disk files must run Step 0 before any Stage/cp."""
+    text = SKILL_MD.read_text()
+    capture = _section_after_heading(text, "## capturing media")
+    collapsed_capture = " ".join(capture.split())
+    assert "start at step 1" not in collapsed_capture
+    assert "begin at step 1" not in collapsed_capture
+
+    bullets = [f"- {part}" if not part.startswith("-") else part for part in capture.split("\n- ")]
+    screenshot = next((b for b in bullets if "screenshot" in b), "")
+    video = next((b for b in bullets if "recordscreen" in b or "demo video" in b), "")
+    on_disk = next((b for b in bullets if "already-on-disk" in b), "")
+    assert screenshot and video and on_disk
+
+    for name, bullet in (("screenshot", screenshot), ("video", video), ("on_disk", on_disk)):
+        collapsed = " ".join(bullet.split())
+        assert "step 0" in collapsed, f"{name} must run Step 0"
+        stage_at = collapsed.find("stage")
+        if stage_at != -1:
+            assert collapsed.find("step 0") < stage_at, f"{name} stages before Step 0"
+
+    assert "discard_recording" in video
+    discard_at = video.find("discard_recording")
+    assert "step 0" in video[discard_at:]
+
+    step1 = _section_after_heading(text, "## step 1")
+    collapsed_step1 = " ".join(step1.split())
+    assert re.search(r"been run and passed|run and passed", collapsed_step1)
+    assert "do not copy" in collapsed_step1 or "forbidden" in collapsed_step1
+
+    troubleshooting = _section_after_heading(text, "## troubleshooting")
+    special = next((line for line in troubleshooting.splitlines() if "special character" in line), "")
+    assert special and "step 0" in special
+
+    eval1 = _eval_by_id(_evals_payload(), 1)
+    assert "mime" in eval1
+    assert "secret" in eval1
+    assert eval1.index("refuse") < eval1.index("copy")
 
 
 def test_body_comment_video_uses_rewritten_host_not_staging_path() -> None:

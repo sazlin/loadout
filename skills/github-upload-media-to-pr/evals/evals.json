@@ -4,9 +4,10 @@
     {
       "id": 1,
       "prompt": "Attach this screenshot /tmp/settings.png to the open PR. Put the screenshot in the PR.",
-      "expected_output": "Copy to /opt/cursor/artifacts/, then ManagePullRequest with an img tag; no agent-browser",
+      "expected_output": "Refuse non-image/non-video mime types and secret-like paths (Step 0), then copy to /opt/cursor/artifacts/, then ManagePullRequest with an img tag; no agent-browser",
       "files": [],
       "expectations": [
+        "Runs mime-type and secret-path refuse before any copy",
         "Copies or writes the image under /opt/cursor/artifacts/",
         "Calls ManagePullRequest update_pr with an HTML img tag whose src is an absolute /opt/cursor/artifacts/ path",
         "Does not run agent-browser, npx skills add, or npm i -g"
