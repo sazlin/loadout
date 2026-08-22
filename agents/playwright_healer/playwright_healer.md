@@ -33,11 +33,13 @@ Do not end on prose alone. The JSON report is the machine-readable artifact.
 ## Definition of done
 
 1. List tests with `npx playwright test --list`. Run only the failing names with `npx playwright test <file> -g "<title>"` (do not heal a green suite).
-2. On failure, if the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only — never `Read`, `cat`, or open the storageState JSON. Open the page with `npx playwright-cli`, `npx playwright-cli snapshot` the UI, and inspect locators (`npx playwright-cli generate-locator <ref>`) and `npx playwright-cli console`. Use `npx playwright-cli requests` for URL and status only; do not dump a single request's headers (`request <n>` is forbidden). Use `npx playwright show-trace` when a trace exists. If a trace is opened, do not copy Cookie or Authorization values into the report. Do not use `npx playwright test --debug` unless a human is watching a headed session.
-3. Decide: test wrong vs app wrong. Test-wrong: patch locator/wait/data and re-run. Cap **2** reruns per test.
-4. App-wrong: do not weaken assertions. Leave or add `test.fixme` with a comment on the failing step, and emit `blocked` — never `ok`.
-5. Close any session this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for sessions it opened.
-6. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.
+2. On failure, if the seed uses `storageState`, run `npx playwright-cli state-load <seed-relative-path>` only — never `Read`, `cat`, or open the storageState JSON. Then `npx playwright-cli open`.
+3. `npx playwright-cli snapshot` the UI, and inspect locators (`npx playwright-cli generate-locator <ref>`) and `npx playwright-cli console`.
+4. Use `npx playwright-cli requests` for URL and status only; do not dump a single request's headers (`request <n>` is forbidden). Use `npx playwright show-trace` when a trace exists. If a trace is opened, do not copy Cookie or Authorization values into the report. Do not use `npx playwright test --debug` unless a human is watching a headed session.
+5. Decide: test wrong vs app wrong. Test-wrong: patch locator/wait/data and re-run. Cap **2** reruns per test.
+6. App-wrong: do not weaken assertions. Leave or add `test.fixme` with a comment on the failing step, and emit `blocked` — never `ok`.
+7. Close any session this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for sessions it opened.
+8. After **3** attempts of the same failure class, emit `blocked`. Never merge, never `git push`.
 
 ## Tools / privileges
 
