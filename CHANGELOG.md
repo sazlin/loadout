@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.14.0
+
 ## 0.13.0
 
 - Add `cli_tools` on loadout YAML: named idempotent shell commands that
