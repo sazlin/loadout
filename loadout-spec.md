@@ -145,8 +145,6 @@ loadout/
       mcp.yaml
     linear/
       mcp.yaml
-    playwright-test/
-      mcp.yaml
   loadouts/
     base.yaml
     agents.yaml

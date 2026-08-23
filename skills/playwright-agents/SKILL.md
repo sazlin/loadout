@@ -3,8 +3,8 @@ name: playwright-agents
 description: >-
   Use when planning, generating, or healing Playwright end-to-end tests; when
   asked for Playwright Test Agents, init-agents, a specs/ plan, seed.spec.ts,
-  or a failing Playwright spec; or when wiring Playwright Test MCP, Cursor
-  Cloud browsers, or a healer quarantine lane.
+  or a failing Playwright spec; or when wiring playwright-cli, Cursor Cloud
+  browsers, or a healer quarantine lane.
 ---
 
 # Playwright Test Agents
@@ -18,7 +18,7 @@ Plan, generate, and heal Playwright coverage with the three first-party agents. 
 - New feature needs E2E coverage, or the user names planner / generator / healer
 - A Markdown plan exists under `specs/` and should become `*.spec.ts`
 - A named Playwright test is red on a retry/quarantine lane
-- Wiring `playwright-test` MCP, seed tests, or Cloud Agent browsers
+- Wiring `playwright-cli`, seed tests, or Cloud Agent browsers
 
 **Skip** for unit/component tests, and do not run the healer against a green suite or production.
 
@@ -34,7 +34,7 @@ Run planner and generator interactively (human-gated). Run healer only after a r
 
 ## Setup
 
-Playwright ≥ 1.56 must already be a project dependency before the Test MCP will start; do not rely on npx to download it. This loadout vendors Cursor/Claude agent files and the Test MCP (`npx --no-install playwright run-test-mcp-server`). That server is **not** `@playwright/mcp` (general browser automation).
+This loadout vendors Cursor/Claude agent files and installs `@playwright/cli@0.1.18` as a project `devDependency` via `cli_tools`. Commit the package.json / lockfile change. Prefer `npx playwright-cli` over any Playwright MCP — snapshots stay on disk, so live exploration stays token-cheap. `@playwright/test` should already be a project dependency; do not add a Playwright MCP.
 
 1. Seed file in `e2e/` (default `testDir`): copy [references/seed.spec.ts](references/seed.spec.ts) to `e2e/seed.spec.ts`
 2. `specs/` directory for plans
@@ -42,6 +42,10 @@ Playwright ≥ 1.56 must already be a project dependency before the Test MCP wil
 4. Scripts: see [references/package-scripts.md](references/package-scripts.md)
 5. Cloud VM browsers: [references/cursor-cloud.md](references/cursor-cloud.md)
 6. CI + failure-triggered healer PRs: [references/ci.md](references/ci.md)
+
+Invoke the CLI as `npx playwright-cli` (the browser CLI this loadout installs). `npx playwright test` is the spec runner. Run `npx playwright-cli --help` for commands.
+
+After a planner, generator, or healer run writes its plan or spec, close sessions that run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that session was used). A finished run must leave `npx playwright-cli list` empty for those sessions. On blocked or after 3 failed attempts, run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if `npx playwright-cli list` still shows zombies).
 
 Regenerate upstream definitions after a Playwright upgrade with `npx playwright init-agents --loop=claude`, then keep this loadout's templated agents (do not replace the charter/JSON schema). Prompts: [references/prompts.md](references/prompts.md).
 
@@ -55,7 +59,7 @@ Regenerate upstream definitions after a Playwright upgrade with `npx playwright 
 - Do not skip, xfail, or `test.fixme` to greening a locator bug.
 - `test.fixme` only when the **product** is broken; that run is blocked, not ok.
 - Human review of every healer diff. Never auto-merge.
-- Isolate MCP with the project's origin; do not point agents at production.
+- Point `npx playwright-cli` at the project's origin; do not explore production.
 
 | Excuse | Reality |
 | --- | --- |
@@ -67,5 +71,5 @@ Regenerate upstream definitions after a Playwright upgrade with `npx playwright 
 
 - Generating tests from an unreviewed plan
 - Healing a green suite or editing `src/` to pass
-- Unpinned MCP packages or a pipe-to-shell bootstrap in CI
+- Adding a Playwright MCP or an unpinned `@playwright/cli@latest` bootstrap
 - Auto-merge on a healer PR

@@ -1,9 +1,0 @@
-name: playwright-test
-description: >-
-  Playwright Test MCP — live browser, snapshots, and test-runner tools for
-  planner, generator, and healer agents.
-command: npx
-args:
-  - --no-install
-  - playwright
-  - run-test-mcp-server

@@ -621,6 +621,7 @@ def test_lockfile_records_a_hash_for_every_copied_file(project: Path) -> None:
 def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repository = Path(__file__).parent.parent
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
     project = tmp_path / "project"
     write_manifest(project, manifest_body("[aws, terraform, playwright-e2e]"))
 
@@ -652,6 +653,7 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
 ) -> None:
     repository = Path(__file__).parent.parent
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
+    monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
     project = tmp_path / "project"
     write_manifest(project, manifest_body("[base, python-monorepo, playwright-e2e]"))
 
