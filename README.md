@@ -157,7 +157,7 @@ Example GitHub Actions step:
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 | `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
-| `agentic` | — | PRD-to-PR implementation harness: implementation_orchestrator, implementation_planner, implementation_plan_reviewer, imp_builder, imp_reviewer, and critic-loop skills (`create-implementation-plan`, `review-implementation-plan`, `build-implementation-plan`, `review-build`) |
+| `agentic` | — | PRD-to-PR implementation harness: implementation_orchestrator, implementation_planner, implementation_plan_reviewer, implementation_builder, implementation_build_reviewer, and critic-loop skills (`create-implementation-plan`, `review-implementation-plan`, `build-implementation-plan`, `review-build`) |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
 
@@ -184,7 +184,7 @@ is not an agent.
 | --- | --- | --- | --- |
 | Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
 | PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
-| Agentic implementation | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `imp_builder`, `imp_reviewer` | `agentic` | PRD → plan critic loop (max 10) → build critic loop (max 10) → ready-for-review PR. Opt in with `loadouts: [base, agentic]`. |
+| Agentic implementation | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `agentic` | PRD → plan critic loop (max 10) → build critic loop (max 10) → ready-for-review PR. Opt in with `loadouts: [base, agentic]`. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.

@@ -4,10 +4,10 @@
     {
       "id": 1,
       "prompt": "Run review-build on the current working tree.",
-      "expected_output": "One imp_reviewer dispatch, no code edits",
+      "expected_output": "One implementation_build_reviewer dispatch, no code edits",
       "files": ["evals/files/brief.md"],
       "expectations": [
-        "Dispatches imp_reviewer",
+        "Dispatches implementation_build_reviewer",
         "Treats critical/important issues as substantial, cap 10"
       ]
     }

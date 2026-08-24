@@ -1,10 +1,10 @@
 {
-  "agent": "imp_reviewer",
+  "agent": "implementation_build_reviewer",
   "evals": [
     {
-      "id": "imp-reviewer-linear-delay",
-      "agent": "imp_reviewer",
-      "prompt": "You are imp_reviewer. Follow agents/imp_reviewer/imp_reviewer.md. Review agents/imp_reviewer/evals/files/backoff.py against agents/imp_reviewer/evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Do not file issues about _tmp. Return the JSON issue schema.",
+      "id": "implementation-build-reviewer-linear-delay",
+      "agent": "implementation_build_reviewer",
+      "prompt": "You are implementation_build_reviewer. Follow agents/implementation_build_reviewer/implementation_build_reviewer.md. Review agents/implementation_build_reviewer/evals/files/backoff.py against agents/implementation_build_reviewer/evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Do not file issues about _tmp. Return the JSON issue schema.",
       "files": [
         "evals/files/IMPLEMENTATION_PLAN.md",
         "evals/files/backoff.py"

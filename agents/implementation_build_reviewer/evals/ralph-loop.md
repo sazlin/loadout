@@ -1,4 +1,4 @@
-# Ralph loop: imp_builder
+# Ralph loop: implementation_build_reviewer
 
 Goal: this eval must **fail** a blank general-purpose agent and **pass**
 the named custom agent. Identity checks do not count as differentiation.
@@ -7,6 +7,6 @@ the named custom agent. Identity checks do not count as differentiation.
 
 | Eval | Blank iter 0 | Ralph iters | Outcome |
 | --- | --- | --- | --- |
-| `imp-builder-exponential-backoff` | FAIL (hit `_tmp`, no exponential backoff) | 0 | Keep. Custom implements exponential backoff and omits the bait. |
+| `implementation-build-reviewer-linear-delay` | FAIL (filed `_tmp`, missed linear vs exponential) | 0 | Keep. Custom reports linear vs exponential and omits `_tmp`. |
 
 No eval was thrown out.

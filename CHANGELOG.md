@@ -4,7 +4,8 @@
 
 - Add `agentic` loadout: PRD-to-PR implementation harness with
   `implementation_orchestrator`, `implementation_planner`,
-  `implementation_plan_reviewer`, `imp_builder`, `imp_reviewer`, and
+  `implementation_plan_reviewer`, `implementation_builder`,
+  `implementation_build_reviewer`, and
   critic-loop skills (`create-implementation-plan`,
   `review-implementation-plan`, `build-implementation-plan`,
   `review-build`). Plan and build loops cap at 10 or until no substantial

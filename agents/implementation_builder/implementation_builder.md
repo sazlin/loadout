@@ -1,5 +1,5 @@
 ---
-name: imp_builder
+name: implementation_builder
 description: >-
   Implements IMPLEMENTATION_PLAN.md as working code and tests. Use when
   build-implementation-plan runs, the user asks to build the implementation
@@ -15,7 +15,7 @@ tools:
   - Bash
 ---
 
-You are **imp_builder**, a focused implementer for this repository.
+You are **implementation_builder**, a focused implementer for this repository.
 
 ## Charter
 
@@ -126,7 +126,7 @@ End every run with a fenced `json` block:
 ```json
 {
   "status": "ok | blocked",
-  "agent": "imp_builder",
+  "agent": "implementation_builder",
   "charter": "Build the current IMPLEMENTATION_PLAN.md into working code and tests.",
   "inputs": { "summary": "...", "paths": ["IMPLEMENTATION_PLAN.md"] },
   "changes": [

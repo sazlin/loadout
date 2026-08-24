@@ -45,8 +45,8 @@ from review_eval_score import (
 REPO = _TESTS.parent
 AGENTS = REPO / "agents"
 
-AGENTIC_IMPLEMENTERS = ("implementation_planner", "imp_builder")
-AGENTIC_REVIEWERS = ("implementation_plan_reviewer", "imp_reviewer")
+AGENTIC_IMPLEMENTERS = ("implementation_planner", "implementation_builder")
+AGENTIC_REVIEWERS = ("implementation_plan_reviewer", "implementation_build_reviewer")
 AGENTIC_ORCHESTRATOR = "implementation_orchestrator"
 AGENTIC_AGENTS = (*AGENTIC_IMPLEMENTERS, *AGENTIC_REVIEWERS, AGENTIC_ORCHESTRATOR)
 
@@ -104,7 +104,7 @@ def test_agentic_evals_json_files_exist() -> None:
     "eval_id,agent",
     [
         ("implementation-planner-backoff-plan", "implementation_planner"),
-        ("imp-builder-exponential-backoff", "imp_builder"),
+        ("implementation-builder-exponential-backoff", "implementation_builder"),
         ("implementation-orchestrator-prd-loop", "implementation_orchestrator"),
     ],
 )
@@ -119,7 +119,7 @@ def test_golden_agentic_implementer_report_passes_eval(eval_id: str, agent: str)
     "eval_id,agent",
     [
         ("implementation-plan-reviewer-missing-tests", "implementation_plan_reviewer"),
-        ("imp-reviewer-linear-delay", "imp_reviewer"),
+        ("implementation-build-reviewer-linear-delay", "implementation_build_reviewer"),
     ],
 )
 def test_golden_agentic_reviewer_report_passes_eval(eval_id: str, agent: str) -> None:
@@ -205,7 +205,7 @@ def test_agentic_planner_and_builder_forbid_prs() -> None:
     assert "do not open a pull request" in planner
     assert "do not implement" in planner
 
-    builder = _agent_file("imp_builder").read_text().lower()
+    builder = _agent_file("implementation_builder").read_text().lower()
     assert "implementation_plan.md" in builder
     assert "git add" in builder
     assert "git commit" in builder
@@ -219,7 +219,7 @@ def test_agentic_planner_and_builder_forbid_prs() -> None:
 
 def test_agentic_harness_commits_before_pr_create() -> None:
     planner = _agent_file("implementation_planner").read_text().lower()
-    builder = _agent_file("imp_builder").read_text().lower()
+    builder = _agent_file("implementation_builder").read_text().lower()
     orchestrator = _agent_file(AGENTIC_ORCHESTRATOR).read_text().lower()
 
     assert "git add" in planner and "git commit" in planner
@@ -234,7 +234,7 @@ def test_agentic_harness_commits_before_pr_create() -> None:
 
     assert "git status --porcelain" in orchestrator
     assert "uncommitted" in orchestrator
-    assert "imp_builder" in orchestrator
+    assert "implementation_builder" in orchestrator
     assert "blocked" in orchestrator
     assert "git push" in orchestrator
     assert "gh pr create" in orchestrator

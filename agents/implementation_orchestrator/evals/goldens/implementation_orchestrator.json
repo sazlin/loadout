@@ -15,10 +15,10 @@
     { "agent": "implementation_plan_reviewer", "status": "ok", "loop": 1 },
     { "agent": "implementation_planner", "status": "ok", "loop": 2 },
     { "agent": "implementation_plan_reviewer", "status": "ok", "loop": 2 },
-    { "agent": "imp_builder", "status": "ok", "loop": 1 },
-    { "agent": "imp_reviewer", "status": "ok", "loop": 1 },
-    { "agent": "imp_builder", "status": "ok", "loop": 2 },
-    { "agent": "imp_reviewer", "status": "ok", "loop": 2 }
+    { "agent": "implementation_builder", "status": "ok", "loop": 1 },
+    { "agent": "implementation_build_reviewer", "status": "ok", "loop": 1 },
+    { "agent": "implementation_builder", "status": "ok", "loop": 2 },
+    { "agent": "implementation_build_reviewer", "status": "ok", "loop": 2 }
   ],
   "delivery": {
     "pull_request_url": "https://github.com/example/repo/pull/1"

@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "agent": "imp_reviewer",
+  "agent": "implementation_build_reviewer",
   "charter": "Find places where the working tree fails IMPLEMENTATION_PLAN.md.",
   "inputs": {
     "summary": "Build uses a linear one-second sleep instead of exponential backoff.",

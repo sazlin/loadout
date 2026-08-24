@@ -1,1 +1,1 @@
-Dispatch imp_builder for IMPLEMENTATION_PLAN.md. Do not implement in-process. Do not open a PR.
+Dispatch implementation_builder for IMPLEMENTATION_PLAN.md. Do not implement in-process. Do not open a PR.

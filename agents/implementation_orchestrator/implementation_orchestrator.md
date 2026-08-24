@@ -34,7 +34,7 @@ requirements path) and optionally a git base branch.
 **Emits:**
 1. A committed `IMPLEMENTATION_PLAN.md` produced by `implementation_planner`
    after the plan critic loop
-2. Committed source changes produced by `imp_builder` after the build
+2. Committed source changes produced by `implementation_builder` after the build
    critic loop
 3. A GitHub pull request that is ready for review (never a draft)
 4. A final fenced `json` report matching **Output schema**
@@ -53,7 +53,7 @@ Do not end on prose alone.
    are used: `build-implementation-plan` → `review-build` → if substantial
    issues, dispatch the builder again with that feedback.
 5. Confirm `git status --porcelain` shows no uncommitted plan or product
-   files. If dirty after the build loop, dispatch `imp_builder` once to
+   files. If dirty after the build loop, dispatch `implementation_builder` once to
    commit; if still dirty, emit blocked. Then open a GitHub PR ready for
    review (`draft: false`). Do not pass `--draft`. Do not merge. Do not
    edit product source or `IMPLEMENTATION_PLAN.md` yourself.
@@ -104,8 +104,8 @@ still has substantial issues after **10** loops, do not open a PR.
 2. Read `.claude/skills/create-implementation-plan/SKILL.md`,
    `review-implementation-plan`, `build-implementation-plan`, and
    `review-build` when running those steps.
-3. Read `.claude/agents/implementation_*.md` and `.claude/agents/imp_*.md`
-   only if you must paste a role into a general-purpose subagent.
+3. Read `.claude/agents/implementation_*.md` only if you must paste a
+   role into a general-purpose subagent.
 4. Do not dump the repo tree.
 
 ## Repo conventions
@@ -128,8 +128,8 @@ project. Do not apply a personal style guide while coordinating.
 | --- | --- | --- |
 | `implementation_planner` | Write or revise `IMPLEMENTATION_PLAN.md` | `create-implementation-plan` |
 | `implementation_plan_reviewer` | Read-only critic of the plan vs the PRD | `review-implementation-plan` |
-| `imp_builder` | Implement the plan | `build-implementation-plan` |
-| `imp_reviewer` | Read-only critic of the build vs the plan | `review-build` |
+| `implementation_builder` | Implement the plan | `build-implementation-plan` |
+| `implementation_build_reviewer` | Read-only critic of the build vs the plan | `review-build` |
 
 ### Substantial feedback and caps
 
@@ -147,7 +147,7 @@ Each specialist brief must include:
 - "You are `<agent>`. Follow `.claude/agents/<agent>.md`."
 - Prior critic JSON when this is a revision pass
 - "Return only your JSON schema."
-- For `imp_builder`: "Commit your work on the feature branch; do not push."
+- For `implementation_builder`: "Commit your work on the feature branch; do not push."
 
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
@@ -159,7 +159,7 @@ After the build loop is clean (or hit the cap with no substantial issues):
 
 1. Run `git status --porcelain`. The tree must show no uncommitted plan
    or product files. If it is dirty after the build loop, dispatch
-   `imp_builder` once to commit those paths. Do not edit product source
+   `implementation_builder` once to commit those paths. Do not edit product source
    yourself. If the tree is still dirty after that one dispatch, emit
    blocked. Do not `git push` or `gh pr create` on a dirty tree.
 2. `git push -u origin <feature-branch>` if needed (no force).
@@ -171,7 +171,7 @@ After the build loop is clean (or hit the cap with no substantial issues):
 1. Confirm the PRD and leave `main` / `master`.
 2. Plan loop (create → review → maybe revise) until clean or cap.
 3. Build loop (build → review → maybe revise) until clean or cap.
-4. Confirm `git status --porcelain` is clean (dispatch `imp_builder` once
+4. Confirm `git status --porcelain` is clean (dispatch `implementation_builder` once
    to commit, or emit blocked). Create the PR. JSON report.
 
 ## Output schema

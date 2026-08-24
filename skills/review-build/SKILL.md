@@ -1,7 +1,7 @@
 ---
 name: review-build
 description: >-
-  Dispatch imp_reviewer to critic the working tree against
+  Dispatch implementation_build_reviewer to critic the working tree against
   IMPLEMENTATION_PLAN.md. Use when implementation_orchestrator needs a
   build critic pass, or when the user says review build or /review_build.
   Do not fix the code.
@@ -9,7 +9,7 @@ description: >-
 
 # Review build
 
-Launch `imp_reviewer` to score the current build against
+Launch `implementation_build_reviewer` to score the current build against
 `IMPLEMENTATION_PLAN.md`.
 
 ## When to use
@@ -23,8 +23,8 @@ Launch `imp_reviewer` to score the current build against
 
 1. Resolve the change set (`git diff` of the feature branch vs base, or the
    paths in the brief) plus `IMPLEMENTATION_PLAN.md`.
-2. Dispatch **one** isolated `imp_reviewer` call. Include:
-   - "You are `imp_reviewer`. Follow `.claude/agents/imp_reviewer.md`."
+2. Dispatch **one** isolated `implementation_build_reviewer` call. Include:
+   - "You are `implementation_build_reviewer`. Follow `.claude/agents/implementation_build_reviewer.md`."
    - Plan path, PRD path, git range and/or paths
    - "Return only your JSON issue schema. Do not edit files. Do not implement fixes."
 3. Wait for the JSON. Substantial feedback is any `critical` or `important`
@@ -36,7 +36,7 @@ Launch `imp_reviewer` to score the current build against
 ## Harness
 
 - Cursor: one `Task` call (named agent type if available).
-- Claude Code: one Agent call using `imp_reviewer`.
+- Claude Code: one Agent call using `implementation_build_reviewer`.
 
 ## Guardrails
 

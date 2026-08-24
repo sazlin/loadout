@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "agent": "imp_builder",
+  "agent": "implementation_builder",
   "charter": "Build the current IMPLEMENTATION_PLAN.md into working code and tests.",
   "inputs": {
     "summary": "Implement exponential backoff retries in backoff.py. Leave helpers.py alone.",

@@ -1,7 +1,7 @@
 ---
 name: build-implementation-plan
 description: >-
-  Dispatch imp_builder to implement IMPLEMENTATION_PLAN.md. Use when
+  Dispatch implementation_builder to implement IMPLEMENTATION_PLAN.md. Use when
   implementation_orchestrator starts or repeats the build phase, or when the
   user says build implementation plan or /build_implementation_plan. Do not
   implement the plan yourself.
@@ -9,7 +9,7 @@ description: >-
 
 # Build implementation plan
 
-Launch `imp_builder` to turn `IMPLEMENTATION_PLAN.md` into working code and
+Launch `implementation_builder` to turn `IMPLEMENTATION_PLAN.md` into working code and
 tests (or to revise a build from critic JSON).
 
 ## When to use
@@ -25,10 +25,10 @@ open a PR here.
 1. Confirm `IMPLEMENTATION_PLAN.md` exists and the plan loop reported no
    substantial issues (or the orchestrator explicitly continues after the
    cap).
-2. Dispatch **one** isolated `imp_builder` call. Include:
-   - "You are `imp_builder`. Follow `.claude/agents/imp_builder.md`."
+2. Dispatch **one** isolated `implementation_builder` call. Include:
+   - "You are `implementation_builder`. Follow `.claude/agents/implementation_builder.md`."
    - The plan path, PRD path, and that push / PR creation are forbidden
-   - Prior `imp_reviewer` JSON when this is a revision
+   - Prior `implementation_build_reviewer` JSON when this is a revision
    - "Return only your JSON schema. Do not open a pull request."
 3. Wait for the builder JSON. If `status` is not `ok` and not `blocked`,
    one retry, then record the builder as `missing`.
@@ -38,7 +38,7 @@ open a PR here.
 ## Harness
 
 - Cursor: one `Task` call (named agent type if available).
-- Claude Code: one Agent call using `imp_builder`.
+- Claude Code: one Agent call using `implementation_builder`.
 
 ## Guardrails
 

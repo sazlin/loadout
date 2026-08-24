@@ -40,12 +40,12 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
     assert "substantial" in review_plan.lower()
 
     build = (SKILLS / "build-implementation-plan" / "SKILL.md").read_text()
-    assert "imp_builder" in build
+    assert "implementation_builder" in build
     assert "git push" in build.lower()
     assert "pr create" in build.lower() or "pull request" in build.lower()
 
     review_build = (SKILLS / "review-build" / "SKILL.md").read_text()
-    assert "imp_reviewer" in review_build
+    assert "implementation_build_reviewer" in review_build
     assert "10" in review_build
     assert "do not fix" in review_build.lower()
 

@@ -15,8 +15,8 @@ AGENTIC_AGENTS = (
     "implementation_orchestrator",
     "implementation_planner",
     "implementation_plan_reviewer",
-    "imp_builder",
-    "imp_reviewer",
+    "implementation_builder",
+    "implementation_build_reviewer",
 )
 AGENTIC_SKILLS = (
     "create-implementation-plan",
