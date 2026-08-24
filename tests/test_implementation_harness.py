@@ -18,8 +18,8 @@ if str(_TESTS) not in sys.path:
 
 from impl_harness_eval_score import (
     AGENTS_DIR,
-    HARNESS_AGENTS,
-    SKILLS,
+    IMPLEMENTATION_HARNESS_AGENTS,
+    IMPLEMENTATION_HARNESS_SKILLS,
     eval_by_id,
     evals_path,
     evals_root,
@@ -77,13 +77,13 @@ def test_implementation_harness_loadout_lists_agents_and_skills() -> None:
     assert loadout.name == "implementation_harness"
     assert loadout.extends == []
     agent_srcs = {entry["src"] for entry in loadout.agents}
-    assert agent_srcs == {f"agents/{name}/{name}.md" for name in HARNESS_AGENTS}
+    assert agent_srcs == {f"agents/{name}/{name}.md" for name in IMPLEMENTATION_HARNESS_AGENTS}
     skill_srcs = {entry["src"] for entry in loadout.skills}
-    assert skill_srcs == {f"skills/{name}" for name in SKILLS}
+    assert skill_srcs == {f"skills/{name}" for name in IMPLEMENTATION_HARNESS_SKILLS}
 
 
 def test_implementation_harness_skills_have_colocated_evals() -> None:
-    for name in SKILLS:
+    for name in IMPLEMENTATION_HARNESS_SKILLS:
         path = SKILLS_DIR / name / "evals" / "evals.json"
         data = json.loads(path.read_text())
         assert data["skill_name"] == name
@@ -114,7 +114,7 @@ def test_implementation_harness_skill_bodies_dispatch_named_agents() -> None:
     assert "do not edit" in build_review.lower() or "do not write" in build_review.lower()
 
 
-@pytest.mark.parametrize("name", HARNESS_AGENTS)
+@pytest.mark.parametrize("name", IMPLEMENTATION_HARNESS_AGENTS)
 def test_harness_agent_follows_template_and_lights_out_contract(name: str) -> None:
     path = AGENTS_DIR / name / f"{name}.md"
     text = path.read_text()
@@ -178,7 +178,7 @@ def test_planner_and_builder_own_the_review_loops() -> None:
 def test_evals_json_files_exist_and_cover_each_harness_agent() -> None:
     suite = load_evals()
     agents = {entry["agent"] for entry in suite["evals"]}
-    assert agents == set(HARNESS_AGENTS)
+    assert agents == set(IMPLEMENTATION_HARNESS_AGENTS)
     for entry in suite["evals"]:
         assert entry["must_find"]
         assert entry["must_not_find"]
@@ -189,14 +189,14 @@ def test_evals_json_files_exist_and_cover_each_harness_agent() -> None:
         assert (evals_root(entry["agent"]) / "ralph-loop.md").is_file()
 
 
-@pytest.mark.parametrize("agent", HARNESS_AGENTS)
+@pytest.mark.parametrize("agent", IMPLEMENTATION_HARNESS_AGENTS)
 def test_golden_harness_report_passes_eval(agent: str) -> None:
     spec = next(entry for entry in load_evals()["evals"] if entry["agent"] == agent)
     result = score_harness_report(load_golden(agent), spec)
     assert result.ok, result.failures
 
 
-@pytest.mark.parametrize("agent", HARNESS_AGENTS)
+@pytest.mark.parametrize("agent", IMPLEMENTATION_HARNESS_AGENTS)
 def test_blank_harness_transcript_fails_behavior_score(agent: str) -> None:
     spec = next(entry for entry in load_evals()["evals"] if entry["agent"] == agent)
     result = score_behavior(load_blank_run(agent), spec)
@@ -239,8 +239,8 @@ def test_implementation_harness_sync_vendors_agents_and_skills(tmp_path: Path, m
         "source: https://github.com/sazlin/loadout\nref: main\nloadouts: [implementation_harness]\n"
     )
     sync(project)
-    for name in HARNESS_AGENTS:
+    for name in IMPLEMENTATION_HARNESS_AGENTS:
         assert (project / ".claude/agents" / f"{name}.md").is_file()
-    for name in SKILLS:
+    for name in IMPLEMENTATION_HARNESS_SKILLS:
         assert (project / ".claude/skills" / name / "SKILL.md").is_file()
     assert not any(path.is_dir() and path.name == "evals" for path in project.rglob("*"))

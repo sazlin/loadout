@@ -15,14 +15,14 @@ from impl_eval_score import ScoreResult, parse_report, report_blob, score_behavi
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / "agents"
-HARNESS_AGENTS = (
+IMPLEMENTATION_HARNESS_AGENTS = (
     "implementation_orchestrator",
     "implementation_planner",
     "implementation_plan_reviewer",
     "implementation_builder",
     "implementation_build_reviewer",
 )
-SKILLS = (
+IMPLEMENTATION_HARNESS_SKILLS = (
     "create-implementation-plan",
     "review-implementation-plan",
     "build-implementation-plan",
@@ -59,7 +59,7 @@ def evals_path(agent: str) -> Path:
 def load_evals() -> dict[str, Any]:
     """Merge keyword evals from each implementation-harness agent."""
     evals: list[dict[str, Any]] = []
-    for agent in HARNESS_AGENTS:
+    for agent in IMPLEMENTATION_HARNESS_AGENTS:
         data = json.loads(evals_path(agent).read_text())
         for entry in data.get("evals", []):
             if isinstance(entry, dict) and entry.get("agent") == agent:
@@ -108,8 +108,8 @@ def score_harness_report(report: dict[str, Any], spec: dict[str, Any]) -> ScoreR
 
 __all__ = [
     "AGENTS_DIR",
-    "HARNESS_AGENTS",
-    "SKILLS",
+    "IMPLEMENTATION_HARNESS_AGENTS",
+    "IMPLEMENTATION_HARNESS_SKILLS",
     "ScoreResult",
     "eval_by_id",
     "evals_path",
