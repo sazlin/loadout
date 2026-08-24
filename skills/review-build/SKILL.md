@@ -31,7 +31,7 @@ Launch `implementation_build_reviewer` to score the current build against
    issue. Minors do not restart the build loop. Empty `issues` (or only
    minors) means the build is ready.
 4. Do **not** fix code. Do **not** dispatch the builder here (the
-   orchestrator does that on substantial feedback, up to **10** loops).
+   orchestrator retries on substantial (`critical` / `important`) feedback).
 
 ## Harness
 

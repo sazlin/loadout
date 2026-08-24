@@ -8,7 +8,7 @@
       "files": ["evals/files/brief.md"],
       "expectations": [
         "Dispatches implementation_plan_reviewer",
-        "Treats critical/important issues as substantial, cap 10"
+        "Treats critical/important issues as substantial"
       ]
     }
   ]

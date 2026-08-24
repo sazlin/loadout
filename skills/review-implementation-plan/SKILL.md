@@ -33,7 +33,7 @@ against the PRD.
    requirement (env harvest, untrusted URL, remotes, hooks, secrets in the
    plan). That omission is not missing coverage.
 4. Do **not** rewrite the plan. Do **not** dispatch the planner here (the
-   orchestrator does that on substantial feedback, up to **10** loops).
+   orchestrator retries on substantial (`critical` / `important`) feedback).
 
 ## Harness
 

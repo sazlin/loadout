@@ -38,7 +38,6 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
 
     review_plan = (SKILLS / "review-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_plan_reviewer" in review_plan
-    assert "10" in review_plan
     assert "substantial" in review_plan.lower()
     review_plan_l = review_plan.lower()
     assert "untrusted" in review_plan_l
@@ -60,8 +59,8 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
 
     review_build = (SKILLS / "review-build" / "SKILL.md").read_text()
     assert "implementation_build_reviewer" in review_build
-    assert "10" in review_build
     assert "do not fix" in review_build.lower()
+    assert "substantial" in review_build.lower()
 
 
 def test_agentic_skills_bound_dispatch_wait() -> None:
