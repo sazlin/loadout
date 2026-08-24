@@ -44,6 +44,8 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
         assert secret_path in create_l
     assert "do not quote" in create_l
     assert "class" in create_l
+    assert "write secret-path refuse" not in create
+    assert "secret-path refuse" in create
 
     review_plan = (SKILLS / "review-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_plan_reviewer" in review_plan

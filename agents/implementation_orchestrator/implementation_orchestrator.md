@@ -250,7 +250,12 @@ After the build loop is clean (or hit the cap with no substantial issues):
    gitignored path from Write scope. Apply the same redact-or-drop
    rule (tokens, passwords, keys, connection strings, raw PII) to
    `--title` and `--body-file`. `--title` is a short product summary; do
-   not take it verbatim from the PRD.
+   not take it verbatim from the PRD. Pass `--title` and `--head` as
+   quoted literals (or write the title into the body-file sidecar) so
+   the shell cannot expand them. Reject a title or branch name that
+   contains `$`, `` ` ``, `;`, `|`, `&`, or a newline — including a
+   product summary with `$()` or `;` — emit `blocked` and do not
+   record a push or create command in `tried[]`.
 4. Push only `origin` on the current feature branch:
    `git push -u origin <feature-branch>` with a 60s deadline (no force,
    no extra remotes). If the command is hung or does not return, record
@@ -259,10 +264,12 @@ After the build loop is clean (or hit the cap with no substantial issues):
    no editor or pager before every create. If a PR exists, record
    `delivery.pull_request_url` and do not create another.
 6. If no URL was reused, create non-interactively for the origin repo
-   only: `gh pr create --title <title> --body-file <path> --head
-   <feature-branch>` with a 60s deadline and no editor or pager. Do not
-   pass `--draft`. Do not pass `--repo`. Do not put `GH_TOKEN` or tokens
-   on argv or in logs. Do not merge.
+   only: `gh pr create --title "<title>" --body-file <path> --head "<feature-branch>"`
+   with a 60s deadline and no editor or pager. Do not pass `--draft`.
+   Do not pass `--repo`. Do not put `GH_TOKEN` or tokens on argv or in
+   logs. Do not merge. If the title or branch failed the metacharacter
+   check, emit `blocked` and do not record `gh pr create` or `git push`
+   in `tried[]`.
 7. Retry `gh pr create` only after the view check, with backoff between
    attempts, still capped at **3**. Do not immediately re-run create on
    timeout or 5xx. A hung or 5xx GitHub call ends in `blocked` (or a

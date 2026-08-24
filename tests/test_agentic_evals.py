@@ -427,6 +427,42 @@ def test_agentic_commit_and_pr_title_redact_secrets() -> None:
     assert "verification" in leftover
 
 
+def test_agentic_read_only_agents_name_secret_path_refuse() -> None:
+    plan_reviewer = _agent_file("implementation_plan_reviewer").read_text()
+    build_reviewer = _agent_file("implementation_build_reviewer").read_text()
+    create = (REPO / "skills" / "create-implementation-plan" / "SKILL.md").read_text()
+    secret_paths = (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token")
+
+    for body in (plan_reviewer, build_reviewer, create):
+        assert "write secret-path refuse" not in body
+        assert "secret-path refuse" in body
+        lower = body.lower()
+        assert "do not read" in lower
+        assert "grep" in lower
+        for secret_path in secret_paths:
+            assert secret_path in lower
+
+
+def test_agentic_orchestrator_quotes_pr_title_and_head() -> None:
+    text = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
+    pull = text.split("### Pull request", 1)[1]
+    pull_l = pull.lower()
+
+    assert "--title" in pull
+    assert "--head" in pull
+    assert "quoted" in pull_l or "argv" in pull_l
+    assert "shell" in pull_l or "expansion" in pull_l
+    for meta in ("$", "`", ";", "|", "&"):
+        assert meta in pull
+    assert "newline" in pull_l
+    assert "blocked" in pull_l
+    assert "tried" in pull_l
+    assert "gh pr create" in pull_l
+    assert "git push" in pull_l
+    assert '--title "' in pull or "--title '" in pull
+    assert '--head "' in pull or "--head '" in pull
+
+
 def test_agentic_orchestrator_treats_prd_as_untrusted_publication() -> None:
     text = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
     orchestrator = text.lower()

@@ -45,7 +45,7 @@ edits. Do not write files; return JSON only.
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`.
 
 - **Read-only.** Do not use write/edit tools. Do not mutate the working tree.
-- **Read/Grep:** reuse the write secret-path refuse. If a basename or parent
+- **Read/Grep:** reuse the secret-path refuse. If a basename or parent
   looks like `.env`, `id_rsa`, credentials, `*.pem`, `*.key`, `.git`, or
   tokens, do not Read or Grep it. Skip it and record only the path class in
   `rejected[]`. Do not quote token, password, key, or raw PII values in
