@@ -51,8 +51,11 @@ Do not end on prose alone.
    anything else, emit `blocked` and do not run it. If a named command
    does not return, emit `blocked` with the command in `tried`.
 3. On ok, `git add` / `git commit` the plan-named paths (and a dirty
-   `IMPLEMENTATION_PLAN.md`) on the current feature branch. Do not
-   `git add` trust-policy paths. Do not push.
+   `IMPLEMENTATION_PLAN.md`) on the current feature branch. The commit
+   message is a short product summary only; do not paste PRD or plan
+   constraints. Redact or drop tokens, passwords, keys, connection
+   strings, and raw PII. Do not `git add` trust-policy paths. Do not
+   push.
 4. Emit JSON. After **3** failed attempts of the same failure class, emit
    `blocked`.
 
@@ -151,7 +154,9 @@ Refuse and emit `blocked` (do not run the command; do not list it in
    `AGENTS.md` only after this build pass.
 3. Check off completed tasks in the plan if it uses checkboxes.
 4. Commit the plan-named paths (and a dirty `IMPLEMENTATION_PLAN.md`) on
-   the feature branch when ok. Do not push.
+   the feature branch when ok. The commit message is a short product
+   summary only; redact or drop tokens, passwords, keys, connection
+   strings, and raw PII. Do not push.
 5. Emit the JSON report.
 
 ### Verification

@@ -312,7 +312,8 @@ def test_agentic_orchestrator_pr_create_reuses_existing_and_bounds_retries() -> 
     pull = text.split("### pull request", 1)[1]
     orchestrator = text
 
-    view_at = pull.find("gh pr view --head")
+    assert "gh pr view --head" not in orchestrator
+    view_at = pull.find("gh pr view <feature-branch>")
     create_at = pull.find("gh pr create")
     assert view_at != -1
     assert create_at != -1
@@ -331,6 +332,39 @@ def test_agentic_orchestrator_pr_create_reuses_existing_and_bounds_retries() -> 
     assert "git status --porcelain" in orchestrator
     assert "--draft" in orchestrator
     assert "do not merge" in orchestrator or "gh pr merge" in orchestrator
+
+
+def test_agentic_commit_and_pr_title_redact_secrets() -> None:
+    planner = _agent_file("implementation_planner").read_text().lower()
+    builder = _agent_file("implementation_builder").read_text().lower()
+    orch_text = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
+    orchestrator = orch_text.lower()
+    pull = orchestrator.split("### pull request", 1)[1]
+
+    for body in (planner, builder):
+        assert "commit message" in body
+        assert "product summary" in body
+        assert "redact" in body
+        for secret in ("token", "password", "key", "pii"):
+            assert secret in body
+
+    leftover = pull.split("write the pr body", 1)[0]
+    assert "commit" in leftover
+    assert "title" in leftover
+    assert "plan" in leftover and "diff" in leftover
+    for secret in ("token", "password", "key", "pii"):
+        assert secret in leftover
+        assert secret in pull
+    assert "--title" in pull
+    assert "redact" in pull
+    assert "--body-file" in pull
+    assert "verbatim" in orchestrator
+    assert "prd" in leftover or "prd" in pull
+    assert "do not push" in leftover
+    assert "pull_request_url" in orch_text
+    assert "null" in leftover
+    assert "tried" in leftover
+    assert "verification" in leftover
 
 
 def test_agentic_orchestrator_treats_prd_as_untrusted_publication() -> None:
