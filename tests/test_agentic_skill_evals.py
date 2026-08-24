@@ -72,21 +72,29 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
     assert "implementation_build_reviewer" in review_build
     assert "do not fix" in review_build.lower()
     assert "substantial" in review_build.lower()
+    assert "untrusted" in review_build.lower()
 
 
 def test_agentic_skills_bound_dispatch_wait() -> None:
     create = (SKILLS / "create-implementation-plan" / "SKILL.md").read_text().lower()
     build = (SKILLS / "build-implementation-plan" / "SKILL.md").read_text().lower()
+    review_plan = (SKILLS / "review-implementation-plan" / "SKILL.md").read_text().lower()
+    review_build = (SKILLS / "review-build" / "SKILL.md").read_text().lower()
     wait_bound = re.compile(r"\b\d+\s*(s|sec|second|m|min|minute)s?\b")
 
-    for body in (create, build):
+    for body in (create, build, review_plan, review_build):
         assert wait_bound.search(body)
         assert "missing" in body
         assert "does not return" in body
         assert "one retry" in body
         assert "finished" in body
-        assert "changes" in body
         assert "status" in body
+
+    for body in (create, build):
+        assert "changes" in body
+
+    for body in (review_plan, review_build):
+        assert "issue" in body
 
     builder = (REPO / "agents" / "implementation_builder" / "implementation_builder.md").read_text().lower()
     assert "deadline" in builder or "timeout" in builder
