@@ -30,6 +30,7 @@ from review_eval_score import (
     score_dimension_report,
     score_orchestrator_report,
 )
+from test_playwright_loadout import _assert_closes_playwright_cli_sessions
 
 REPO = _TESTS.parent
 AGENTS = REPO / "agents"
@@ -210,6 +211,11 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     assert "`mcp__playwright`" in lowered
     assert "`task`" in lowered
     assert "playwright-cli" in lowered or "npx playwright-cli" in lowered
+    assert "stop immediately" in lowered
+    assert "retrying `open`" in lowered
+    _assert_closes_playwright_cli_sessions(filename, text)
+    if filename == VERIFIER:
+        assert "continue remaining" in lowered
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:

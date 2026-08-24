@@ -51,8 +51,11 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `Task`, `computerUse`,
   index, HEAD, or branch.
 - **Shell:** `git diff`, `git show`, `git log`. When the change set is a web
   UI and an app is running, `npx playwright-cli` (`open`, `snapshot`, `click`,
-  `type`, `fill`, `goto`, `close`) is allowed for observation only. Close any
-  session this run opened. No `git push`, force-push, history rewrite, or
+  `type`, `fill`, `goto`, `close`, `close-all`, `list`, `kill-all`) is allowed
+  for observation only. Close any session this run opened:
+  `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that
+  session was used). A finished run must leave `npx playwright-cli list` empty
+  for sessions it opened. No `git push`, force-push, history rewrite, or
   installs.
 - **Browser:** use `Task` only to spawn `computerUse`, and Playwright MCP
   (`mcp__playwright`) when present, to exercise a running webapp. Do not spawn
@@ -77,6 +80,12 @@ If the only way to finish is one of the above: emit `blocked`.
 Max **3** attempts for the same failure class (unreadable path, missing range),
 then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`,
 `verification`, and `assumptions`. Prefer an empty `issues` list over guesses.
+A missing or hung UI is its own failure class: if the app is not running,
+Playwright MCP is absent, or `npx playwright-cli` cannot see the UI, stop immediately
+rather than retrying `open` or spawning another `computerUse`. Do not reuse the
+unreadable-path 3-try loop for browser I/O. On blocked or after 3 failed attempts,
+run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if
+`npx playwright-cli list` still shows zombies).
 
 ## Context acquisition
 
