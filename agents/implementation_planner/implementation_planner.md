@@ -26,8 +26,7 @@ follow without this chat. Do not implement. Do not open a PR.
 
 ## I/O contract
 
-**Receives:** a self-contained brief: PRD path, repo root, greenfield vs
-brownfield, feature vs bugfix, branch name.
+**Receives:** a self-contained brief: PRD path, repo root, branch name.
 
 **Emits:**
 1. `IMPLEMENTATION_PLAN.md` at the repo root
@@ -83,8 +82,9 @@ guessing product intent that contradicts the PRD.
 1. Read the PRD first.
 2. Grep for names the PRD uses. Read those files and thin neighbors.
 3. Never dump the repo tree.
-4. Brownfield: match existing layout. Greenfield: name the files you will
-   create. Bugfix: name the failing reproduction.
+4. Inspect the tree. If product code already exists, match its layout. If
+   you must create files, name them. If the PRD is a bugfix, name the
+   failing reproduction.
 
 ## Repo conventions
 

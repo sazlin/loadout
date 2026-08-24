@@ -69,6 +69,11 @@ def _agent_text(name: str) -> str:
     return (AGENTS_DIR / name / f"{name}.md").read_text()
 
 
+def _io_contract(text: str) -> str:
+    after = text.split("## I/O contract", 1)[1]
+    return after.split("## ", 1)[0].lower()
+
+
 def _blocked_plan_report(kind: str) -> dict:
     root = evals_root("implementation_orchestrator")
     return json.loads((root / kind / "implementation_orchestrator_blocked_plan.json").read_text())
@@ -114,6 +119,20 @@ def test_implementation_harness_skill_bodies_dispatch_named_agents() -> None:
     build_review = (SKILLS_DIR / "review-implementation-build" / "SKILL.md").read_text()
     assert "implementation_build_reviewer" in build_review
     assert "do not edit" in build_review.lower() or "do not write" in build_review.lower()
+
+
+@pytest.mark.parametrize("name", IMPLEMENTATION_HARNESS_AGENTS)
+def test_harness_agent_io_does_not_require_greenfield_or_brownfield(name: str) -> None:
+    io = _io_contract(_agent_text(name))
+    assert "greenfield" not in io
+    assert "brownfield" not in io
+
+
+@pytest.mark.parametrize("skill", IMPLEMENTATION_HARNESS_SKILLS)
+def test_harness_skill_brief_does_not_classify_greenfield_or_brownfield(skill: str) -> None:
+    body = (SKILLS_DIR / skill / "SKILL.md").read_text().lower()
+    assert "greenfield" not in body
+    assert "brownfield" not in body
 
 
 @pytest.mark.parametrize("name", IMPLEMENTATION_HARNESS_AGENTS)

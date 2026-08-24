@@ -23,7 +23,7 @@ Dispatch `implementation_plan_reviewer` on a **fresh** subagent to critique
 1. Confirm the PRD path, the plan path (`IMPLEMENTATION_PLAN.md`), and the
    git range or repo state the planner named.
 2. Dispatch **one** isolated `implementation_plan_reviewer` subagent with a
-   self-contained brief: PRD path, plan path, greenfield vs brownfield, and
+   self-contained brief: PRD path, plan path, and
    "Follow `.claude/agents/implementation_plan_reviewer.md`. Return only your
    JSON issue schema. Do not edit files."
 3. Wait for the JSON report. If the issue schema is missing, one retry, then

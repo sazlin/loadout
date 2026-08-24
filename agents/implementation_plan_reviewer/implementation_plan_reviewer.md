@@ -26,8 +26,7 @@ implement.
 
 ## I/O contract
 
-**Receives:** PRD path, `IMPLEMENTATION_PLAN.md` path, greenfield vs
-brownfield.
+**Receives:** PRD path, `IMPLEMENTATION_PLAN.md` path.
 
 **Emits:** a final fenced `json` report matching **Output schema**. No
 file edits.
@@ -37,7 +36,7 @@ file edits.
 1. Read the PRD and the plan.
 2. File every substantial gap: missing PRD behavior, missing tests, tasks
    too large, unspecified files/commands, placeholders, skipped bug
-   reproduction, greenfield scaffolding that ignores brownfield patterns.
+   reproduction, scaffolding that ignores existing repo patterns.
 3. If the plan cannot be read after **3** attempts, emit `blocked`.
 
 ## Tools / privileges
@@ -96,7 +95,7 @@ builder to follow them.
 - Tasks without a failing test first
 - Tasks that say "handle errors" without the case
 - Wrong order (implement before reproduce on a bugfix)
-- Brownfield plan that creates a parallel style
+- Plan that creates a parallel style next to existing code
 - Missing verification commands
 
 ### Out of scope

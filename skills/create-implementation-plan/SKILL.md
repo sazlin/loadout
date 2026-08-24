@@ -20,13 +20,13 @@ PRD into `IMPLEMENTATION_PLAN.md`.
 
 ## Steps
 
-1. Confirm the PRD path (default `PRD.md`) and whether this is greenfield,
-   brownfield, a feature, or a bugfix. Put that in the brief. Do not ask a
-   human; if the PRD is silent, say so and tell the planner to choose the
-   smallest interpretation that still satisfies the PRD.
+1. Confirm the PRD path (default `PRD.md`). Do not ask a human; if the PRD
+   is silent, say so and tell the planner to choose the smallest
+   interpretation that still satisfies the PRD. Do not label the repo's
+   age or size in the brief; the planner inspects the tree.
 2. Dispatch **one** isolated `implementation_planner` subagent. The brief
-   must be self-contained: PRD path, repo root, branch name, greenfield vs
-   brownfield, and "Follow `.claude/agents/implementation_planner.md`."
+   must be self-contained: PRD path, repo root, branch name, and
+   "Follow `.claude/agents/implementation_planner.md`."
 3. Tell the planner to loop `/review-implementation-plan` until the reviewer
    reports no substantial feedback or **10** rounds are used.
 4. Wait for the planner JSON. If status is `blocked`, return that to the orchestrator; do not finish the work in-process.

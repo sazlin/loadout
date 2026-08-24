@@ -20,9 +20,10 @@ Dispatch `implementation_builder` on a **fresh** subagent to implement
 
 ## Steps
 
-1. Confirm `IMPLEMENTATION_PLAN.md`, the feature branch, and greenfield vs
-   brownfield. The brief must include the PRD path and "quality over speed;
-   loop `/review-implementation-build` up to **10** times."
+1. Confirm `IMPLEMENTATION_PLAN.md` and the feature branch. The brief must
+   include the PRD path and "quality over speed; loop
+   `/review-implementation-build` up to **10** times." Do not label the
+   repo's age or size; the builder inspects the tree.
 2. Dispatch **one** isolated `implementation_builder` subagent. Do not inherit
    this session's history. Tell it: "Follow
    `.claude/agents/implementation_builder.md`. Commit on the feature branch.

@@ -8,6 +8,8 @@
   PR ready for the separate `pr_review_harness`.
 - Allow new agents `WebSearch` and `WebFetch` (agent template plus
   `implementation_harness`) so they can look up current docs and APIs.
+- Stop treating repo age or size as an `implementation_harness` brief
+  field; agents inspect the tree.
 
 ## 0.15.0
 

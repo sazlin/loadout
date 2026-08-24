@@ -135,8 +135,10 @@ a parallel style.
 - Fresh subagent per dispatch. Never reuse this session's history.
 - GitHub PR is the handoff to humans. A separate Cursor Automation on
   `pr_review_harness` reviews it. You do not kick that off.
-- Greenfield: the planner may scaffold. Brownfield: smallest change that
-  matches existing patterns. Bugfix: reproduce, failing test, then fix.
+- These agents run on both new/small trees and large existing ones. Do not
+  pass a repo-age or repo-size label. When code exists, take the smallest
+  change that matches its patterns. When scaffolding, only create what the
+  PRD needs. For a bugfix: reproduce, failing test, then fix.
 
 ### Phase graph
 

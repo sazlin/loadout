@@ -27,7 +27,7 @@ issues are gone. Do not `git push`. Do not `gh pr create`.
 
 ## I/O contract
 
-**Receives:** plan path, PRD path, branch name, greenfield vs brownfield.
+**Receives:** plan path, PRD path, branch name.
 
 **Emits:**
 1. Product and test edits that satisfy the plan
@@ -100,11 +100,14 @@ Read `.cursor/rules/` that match the files you touch, plus root
 
 ## Agent-specific guidance
 
-### Greenfield vs brownfield vs bugfix
+### Match the repo you find
 
-- Greenfield: create the layout the plan names; do not invent extra apps.
-- Brownfield: match neighboring code. Smallest diff.
-- Bugfix: reproduce first, then failing test, then fix.
+Do not wait for a brief to classify the tree. Inspect it.
+
+- If product code already exists, match neighboring patterns. Smallest diff.
+- If you are creating the layout the plan names, create that only; do not
+  invent extra apps.
+- If the PRD is a bugfix, reproduce first, then failing test, then fix.
 
 ### Review loop
 
