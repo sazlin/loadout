@@ -108,7 +108,7 @@ Max **3** attempts for the same failure class (missing PRD, dispatch failure,
 `gh` auth, hung `git push` / `gh`), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
 A specialist dispatch that does not return JSON within 5 minutes
-(the create/build wait) is a dispatch failure (same class, max **3**):
+(the 5-minute specialist wait) is a dispatch failure (same class, max **3**):
 record that specialist as `missing` and stop that phase. If a specialist is
 `blocked`, stop that phase rather than impersonating them. If the plan
 still has substantial issues after **10** loops, do not start the
@@ -172,7 +172,7 @@ Each specialist brief must include:
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
 session history into a specialist. If a specialist does not return JSON
-within 5 minutes (the create/build wait), treat it as a dispatch
+within 5 minutes (the 5-minute specialist wait), treat it as a dispatch
 failure (max **3**) and stop that phase. One retry only for a finished report that lacks
 `changes` or a usable `status`.
 

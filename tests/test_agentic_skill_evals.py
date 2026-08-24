@@ -121,6 +121,7 @@ def test_agentic_skills_bound_dispatch_wait() -> None:
     assert "dispatch failure" in orchestrator
     assert "does not return" in orchestrator
     assert "5 minutes" in orchestrator
+    assert "create/build wait" not in orchestrator
     assert "skill wait bound" not in orchestrator
     assert "3" in orchestrator
     assert "10" in orchestrator
