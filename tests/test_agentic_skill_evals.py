@@ -32,9 +32,18 @@ def test_agentic_skills_have_colocated_evals() -> None:
 
 def test_agentic_skill_bodies_encode_harness_contracts() -> None:
     create = (SKILLS / "create-implementation-plan" / "SKILL.md").read_text()
+    create_l = create.lower()
     assert "implementation_planner" in create
-    assert "in-process" in create.lower() or "in process" in create.lower()
-    assert "untrusted" in create.lower()
+    assert "in-process" in create_l or "in process" in create_l
+    assert "untrusted" in create_l
+    assert "do not read" in create_l
+    assert "repo-relative" in create_l or "repo relative" in create_l
+    assert "absolute" in create_l
+    assert ".." in create
+    for secret_path in (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token"):
+        assert secret_path in create_l
+    assert "do not quote" in create_l
+    assert "class" in create_l
 
     review_plan = (SKILLS / "review-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_plan_reviewer" in review_plan

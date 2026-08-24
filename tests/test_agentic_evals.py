@@ -397,6 +397,31 @@ def test_agentic_orchestrator_treats_prd_as_untrusted_publication() -> None:
     assert "git status --porcelain" in orchestrator
 
 
+def test_agentic_specialists_refuse_secret_path_reads() -> None:
+    planner = _agent_file("implementation_planner").read_text()
+    builder = _agent_file("implementation_builder").read_text()
+    plan_reviewer = _agent_file("implementation_plan_reviewer").read_text()
+    build_reviewer = _agent_file("implementation_build_reviewer").read_text()
+    create = (REPO / "skills" / "create-implementation-plan" / "SKILL.md").read_text()
+    secret_paths = (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token")
+
+    for body in (planner, builder, plan_reviewer, build_reviewer, create):
+        lower = body.lower()
+        assert "do not read" in lower
+        assert "grep" in lower
+        for secret_path in secret_paths:
+            assert secret_path in lower
+        assert ".." in body
+        assert "absolute" in lower
+        assert "repo-relative" in lower or "repo relative" in lower
+        assert "rejected" in lower
+        assert "class" in lower
+        assert "do not quote" in lower
+        for secret in ("token", "password", "key", "pii"):
+            assert secret in lower
+        assert "blocked" in lower
+
+
 def test_agentic_plan_reviewer_files_privilege_expanding_tasks() -> None:
     reviewer = _agent_file("implementation_plan_reviewer").read_text().lower()
 
