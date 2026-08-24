@@ -23,7 +23,7 @@ The loadout catalog is generated. Hand-editing generated rows is a bug.
 - A loadout YAML was added, removed, renamed, or its artifacts changed
 - User asks to generate a README with this skill (including a test clone)
 
-**Skip:** Unrelated docs (`loadout-spec.md`, changelogs). Do not vendor this
+**Skip:** Unrelated docs and changelogs. Do not vendor this
 skill into `skills/` or attach it to `loadouts/*.yaml`.
 
 ## Workflow (this loadout repo)
@@ -32,7 +32,8 @@ skill into `skills/` or attach it to `loadouts/*.yaml`.
 2. Start from [templates/README.md](templates/README.md). Keep the banner
    `docs/assets/loadout-banner.jpg` and existing pitch / quick start unless a
    fact changed.
-3. Run the audit script (fills or drops generated sections):
+3. Run the audit script (fills or drops generated sections). It also
+   replaces `{{VERSION}}` / `{{VERSION_NUMBER}}` with the newest git tag:
 
 ```bash
 uv run python .claude/skills/generating-readme/scripts/audit_loadouts.py \

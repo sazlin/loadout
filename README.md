@@ -28,13 +28,13 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout init --loadouts base,python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
 ```
 
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
@@ -48,14 +48,14 @@ git commit -m "Add loadout-managed agent tooling"
 Pin a release tag instead of `main` once you want a fixed upgrade cadence:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.5.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
 ```
 
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: main
+ref: v0.15.0
 loadouts:
   - base
   - python
@@ -67,7 +67,7 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: main
+ref: v0.15.0
 loadouts:
   - base
   - python
@@ -78,7 +78,7 @@ loadouts:
 Then re-sync and commit the diff:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -86,7 +86,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -106,7 +106,7 @@ When this repo ships new rules/skills (or you want a newer pin), bump the manife
 **Recommended — one command:**
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout update
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout update
 # or: just loadout-update
 ```
 
@@ -116,11 +116,11 @@ uvx --from git+https://github.com/sazlin/loadout@main loadout update
 
 ```yaml
 # .loadout.yaml
-ref: v0.5.0   # was: main or an older tag
+ref: v0.15.0   # was: main or an older tag
 ```
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.5.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
 ```
 
 Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
@@ -130,7 +130,7 @@ Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade i
 Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync --check
 # or: just loadout-check
 ```
 
@@ -145,23 +145,23 @@ Example GitHub Actions step:
 ## Available loadouts
 
 <!-- generated:loadouts-catalog:start -->
-| Loadout | Extends | What you get |
-| --- | --- | --- |
-| `base` | — | Core conventions (including ready-for-review PRs, never drafts), release checklist, anti-sleep, session decision-review and `/learn` skills, deny-dangerous hook, davinci, Context7 and Linear MCPs |
-| `python` | `base` | Python code style + pytest rules, python_coder agent |
-| `python-monorepo` | `python` | UV workspace rules |
-| `db` | `base` | Alembic `db-migrations` skill |
-| `github` | `base` | GitHub PR media attach (`github-upload-media-to-pr`) |
-| `typescript` | `base` | TypeScript code style rules |
-| `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
-| `aws` | `base` | AWS Knowledge MCP |
-| `supabase` | `db` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) plus inherited `db-migrations` |
-| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), `playwright-cli`, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
-| `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
-| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP, refining-evals skill, and agent-descriptions rule |
-| `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
-| `pr_review_harness` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
-| `implementation_harness` | — | Lights-out implementation factory: implementation_orchestrator, planner, plan reviewer, implementation_builder, implementation_build_reviewer, and plan/build slash-command skills that open a ready-for-review PR |
+| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |
+| --- | --- | --- | --- | --- | --- | --- |
+| `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/release-checklist/SKILL.md"><code>release-checklist</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/readme-loadouts.mdc"><code>readme-loadouts</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> |
+| `implementation_harness` | — | <ul><li><a href="agents/implementation_orchestrator/implementation_orchestrator.md"><code>implementation_orchestrator</code></a></li><li><a href="agents/implementation_planner/implementation_planner.md"><code>implementation_planner</code></a></li><li><a href="agents/implementation_plan_reviewer/implementation_plan_reviewer.md"><code>implementation_plan_reviewer</code></a></li><li><a href="agents/implementation_builder/implementation_builder.md"><code>implementation_builder</code></a></li><li><a href="agents/implementation_build_reviewer/implementation_build_reviewer.md"><code>implementation_build_reviewer</code></a></li></ul> | <ul><li><a href="skills/create-implementation-plan/SKILL.md"><code>create-implementation-plan</code></a></li><li><a href="skills/review-implementation-plan/SKILL.md"><code>review-implementation-plan</code></a></li><li><a href="skills/build-implementation-plan/SKILL.md"><code>build-implementation-plan</code></a></li><li><a href="skills/review-implementation-build/SKILL.md"><code>review-implementation-build</code></a></li></ul> | — | — | — |
+| `pr_review_harness` | — | <ul><li><a href="agents/review_correctness/review_correctness.md"><code>review_correctness</code></a></li><li><a href="agents/review_maintainability/review_maintainability.md"><code>review_maintainability</code></a></li><li><a href="agents/review_scale/review_scale.md"><code>review_scale</code></a></li><li><a href="agents/review_security/review_security.md"><code>review_security</code></a></li><li><a href="agents/review_orchestrator/review_orchestrator.md"><code>review_orchestrator</code></a></li><li><a href="agents/issue_resolver/issue_resolver.md"><code>issue_resolver</code></a></li><li><a href="agents/verifier/verifier.md"><code>verifier</code></a></li><li><a href="agents/risk_classifier/risk_classifier.md"><code>risk_classifier</code></a></li></ul> | <ul><li><a href="skills/dispatch-panel-review/SKILL.md"><code>dispatch-panel-review</code></a></li><li><a href="skills/dedupe-and-write-tasks/SKILL.md"><code>dedupe-and-write-tasks</code></a></li><li><a href="skills/resolve-next-task/SKILL.md"><code>resolve-next-task</code></a></li><li><a href="skills/log-progress/SKILL.md"><code>log-progress</code></a></li><li><a href="skills/dispatch-verifiers/SKILL.md"><code>dispatch-verifiers</code></a></li></ul> | <ul><li><a href="rules/core/honor-check-intent.mdc"><code>honor-check-intent</code></a></li></ul> | — | — |
+| `superpowers` | — | — | <ul><li><a href="skills/brainstorming/SKILL.md"><code>brainstorming</code></a></li><li><a href="skills/dispatching-parallel-agents/SKILL.md"><code>dispatching-parallel-agents</code></a></li><li><a href="skills/executing-plans/SKILL.md"><code>executing-plans</code></a></li><li><a href="skills/finishing-a-development-branch/SKILL.md"><code>finishing-a-development-branch</code></a></li><li><a href="skills/receiving-code-review/SKILL.md"><code>receiving-code-review</code></a></li><li><a href="skills/requesting-code-review/SKILL.md"><code>requesting-code-review</code></a></li><li><a href="skills/subagent-driven-development/SKILL.md"><code>subagent-driven-development</code></a></li><li><a href="skills/systematic-debugging/SKILL.md"><code>systematic-debugging</code></a></li><li><a href="skills/test-driven-development/SKILL.md"><code>test-driven-development</code></a></li><li><a href="skills/using-git-worktrees/SKILL.md"><code>using-git-worktrees</code></a></li><li><a href="skills/using-superpowers/SKILL.md"><code>using-superpowers</code></a></li><li><a href="skills/verification-before-completion/SKILL.md"><code>verification-before-completion</code></a></li><li><a href="skills/writing-plans/SKILL.md"><code>writing-plans</code></a></li><li><a href="skills/writing-skills/SKILL.md"><code>writing-skills</code></a></li></ul> | — | — | <ul><li><a href="hooks/session-start/SOURCE.md"><code>session-start</code></a></li></ul> |
+| `agents` | `base` | — | <ul><li><a href="skills/refining-evals/SKILL.md"><code>refining-evals</code></a></li></ul> | <ul><li><a href="rules/agents/agent-descriptions.mdc"><code>agent-descriptions</code></a></li></ul> | <ul><li><a href="mcps/langchain-docs/mcp.yaml"><code>langchain-docs</code></a></li></ul> | — |
+| `aws` | `base` | — | — | — | <ul><li><a href="mcps/aws-knowledge/mcp.yaml"><code>aws-knowledge</code></a></li></ul> | — |
+| `db` | `base` | — | <ul><li><a href="skills/db-migrations/SKILL.md"><code>db-migrations</code></a></li></ul> | — | — | — |
+| `github` | `base` | — | <ul><li><a href="skills/github-upload-media-to-pr/SKILL.md"><code>github-upload-media-to-pr</code></a></li></ul> | — | — | — |
+| `playwright` | `base` | <ul><li><a href="agents/playwright_planner/playwright_planner.md"><code>playwright_planner</code></a></li><li><a href="agents/playwright_generator/playwright_generator.md"><code>playwright_generator</code></a></li><li><a href="agents/playwright_healer/playwright_healer.md"><code>playwright_healer</code></a></li></ul> | <ul><li><a href="skills/playwright-agents/SKILL.md"><code>playwright-agents</code></a></li></ul> | <ul><li><a href="rules/playwright/test-agents.mdc"><code>test-agents</code></a></li><li><a href="rules/playwright/e2e-conventions.mdc"><code>e2e-conventions</code></a></li></ul> | — | <ul><li><code>playwright-cli</code></li></ul> |
+| `python` | `base` | <ul><li><a href="agents/python_coder/python_coder.md"><code>python_coder</code></a></li></ul> | — | <ul><li><a href="rules/python/python-code-style.mdc"><code>python-code-style</code></a></li><li><a href="rules/python/pytest.mdc"><code>pytest</code></a></li></ul> | — | — |
+| `terraform` | `base` | — | <ul><li><a href="skills/terraform-plan-review/SKILL.md"><code>terraform-plan-review</code></a></li></ul> | <ul><li><a href="rules/terraform/aws-conventions.mdc"><code>aws-conventions</code></a></li></ul> | — | — |
+| `typescript` | `base` | — | — | <ul><li><a href="rules/typescript/typescript-code-style.mdc"><code>typescript-code-style</code></a></li></ul> | — | — |
+| `playwright-e2e` | `playwright` | — | — | — | — | — |
+| `python-monorepo` | `python` | — | — | <ul><li><a href="rules/python/uv-workspace.mdc"><code>uv-workspace</code></a></li></ul> | — | — |
+| `supabase` | `db` | — | <ul><li><a href="skills/supabase-postgres-best-practices/SKILL.md"><code>supabase-postgres-best-practices</code></a></li></ul> | — | — | — |
 <!-- generated:loadouts-catalog:end -->
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
@@ -208,9 +208,7 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP, the vendored `refining-evals` skill, and
-`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
-agent `description` fields):
+the LangChain docs MCP plus the vendored `refining-evals` skill:
 
 ```yaml
 loadouts: [agents]
@@ -221,12 +219,10 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Branch or tag pin (`main`, `v0.5.0`, …) |
+| `ref` | yes | Release tag or branch pin (`v0.15.0`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
-
-Full format: [loadout-spec.md](loadout-spec.md).
 
 ## CLI tools
 
@@ -298,7 +294,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on merge
+just release 0.15.0   # on release/v0.15.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me
@@ -312,7 +308,6 @@ this README from its template and loadout YAML (also not a consumer skill).
 
 ## Documentation
 
-- [loadout-spec.md](loadout-spec.md) — full specification (agents: section 5.10)
 - [agents/_agent_template.md](agents/_agent_template.md) — authoring skeleton
 - [agents/](agents/) — agent definitions plus colocated `evals/`
 - [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract

@@ -22,8 +22,12 @@ EVALS = SKILL_ROOT / "evals" / "evals.json"
 MINI = REPO / "tests" / "fixtures" / "mini_loadout"
 BANNER = "docs/assets/loadout-banner.jpg"
 HEADING = "## Available loadouts"
+EM_DASH = "\u2014"
+CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "etc")
 _NAME_RE = re.compile(r"`([^`]+)`")
-_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+_LI_RE = re.compile(r"<li>(.*?)</li>")
+_HREF_RE = re.compile(r'<a href="([^"]+)">(?:<code>)?([^<]+)(?:</code>)?</a>')
+_CODE_RE = re.compile(r"<code>([^<]+)</code>")
 CATALOG_START = "<!-- generated:loadouts-catalog:start -->"
 CATALOG_END = "<!-- generated:loadouts-catalog:end -->"
 OPTIONAL_START = "<!-- generated:optional:loadouts-section:start -->"
@@ -40,40 +44,78 @@ def _audit():
     return module
 
 
-def _collapsed(text: str) -> str:
-    return _NON_ALNUM.sub("", text.lower())
-
-
-def _own_artifact_names(loadout: LoadoutDef) -> list[str]:
-    names: list[str] = []
-    for group in (loadout.rules, loadout.skills, loadout.hooks, loadout.agents, loadout.mcps):
-        for entry in group:
-            src = entry.get("src")
-            if not isinstance(src, str):
-                continue
-            path = Path(src)
-            names.append(path.stem if path.suffix else path.name)
-    names.extend(tool.name for tool in loadout.cli_tools)
-    return names
-
-
-def _catalog_rows(markdown: str) -> dict[str, tuple[str, str]]:
+def _catalog_rows(markdown: str) -> dict[str, dict[str, str]]:
     start = markdown.find(HEADING)
     assert start != -1, markdown
     rest = markdown[start + len(HEADING) :]
     next_heading = re.search(r"^## ", rest, re.MULTILINE)
     section = rest[: next_heading.start()] if next_heading else rest
-    rows: dict[str, tuple[str, str]] = {}
+    rows: dict[str, dict[str, str]] = {}
     for line in section.splitlines():
         if not line.startswith("|"):
             continue
         cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if len(cells) < 3 or cells[0] in {"Loadout", ""} or set(cells[0]) <= {"-"}:
+        if len(cells) < 7 or cells[0] in {"Loadout", ""} or set(cells[0]) <= {"-"}:
             continue
         names = _NAME_RE.findall(cells[0])
         assert names, line
-        rows[names[0]] = (cells[1], cells[2])
+        rows[names[0]] = dict(zip(CATALOG_COLUMNS, cells[1:7], strict=True))
     return rows
+
+
+def _listed_items(cell: str) -> list[tuple[str, str | None]]:
+    if cell in {EM_DASH, "-", "–", ""}:
+        return []
+    items: list[tuple[str, str | None]] = []
+    for inner in _LI_RE.findall(cell):
+        linked = _HREF_RE.search(inner)
+        if linked:
+            items.append((linked.group(2), linked.group(1)))
+            continue
+        code = _CODE_RE.search(inner)
+        assert code, inner
+        items.append((code.group(1), None))
+    return items
+
+
+def _src_entries(loadout: LoadoutDef, kind: str) -> list[str]:
+    return [entry["src"] for entry in getattr(loadout, kind) if isinstance(entry.get("src"), str)]
+
+
+def _src_label(src: str) -> str:
+    path = Path(src)
+    return path.stem if path.suffix else path.name
+
+
+def _primary_href(src: str, kind: str, root: Path) -> str:
+    path = Path(src)
+    if path.suffix:
+        return path.as_posix()
+    if kind == "skills":
+        return (path / "SKILL.md").as_posix()
+    if kind == "mcps":
+        readme = path / "README.md"
+        return (readme if (root / readme).is_file() else path / "mcp.yaml").as_posix()
+    if kind == "hooks":
+        source = path / "SOURCE.md"
+        return (source if (root / source).is_file() else path / "hook.yaml").as_posix()
+    if kind == "agents":
+        return (path / f"{path.name}.md").as_posix()
+    return path.as_posix()
+
+
+def _expected_kind(loadout: LoadoutDef, kind: str, root: Path) -> list[tuple[str, str | None]]:
+    return [(_src_label(src), _primary_href(src, kind, root)) for src in _src_entries(loadout, kind)]
+
+
+def _expected_etc(loadout: LoadoutDef, root: Path) -> list[tuple[str, str | None]]:
+    items = _expected_kind(loadout, "hooks", root)
+    items.extend((tool.name, None) for tool in loadout.cli_tools)
+    return items
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
 
 
 def _loadout_names(root: Path) -> set[str]:
@@ -133,25 +175,29 @@ def test_evals_json_lists_fixture_files() -> None:
 
 def test_mini_catalog_lists_every_loadout() -> None:
     markdown = _audit().catalog_markdown(MINI)
+    assert "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |" in markdown
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
     assert set(rows) == _loadout_names(MINI)
 
 
-def test_mini_catalog_extends_and_artifacts_match_yaml() -> None:
+def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
     markdown = _audit().catalog_markdown(MINI)
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
-    for name, (extends_cell, summary) in rows.items():
+    for name, cells in rows.items():
         loadout = load_loadout(MINI / "loadouts" / f"{name}.yaml")
-        listed = _NAME_RE.findall(extends_cell)
-        if not listed:
-            assert loadout.extends == []
-        else:
-            assert listed == loadout.extends
-        artifacts = _own_artifact_names(loadout)
-        if not artifacts:
-            continue
-        collapsed_summary = _collapsed(summary)
-        assert any(_collapsed(artifact) in collapsed_summary for artifact in artifacts), summary
+        listed = _NAME_RE.findall(cells["extends"])
+        assert listed == loadout.extends
+        expected = {
+            "agents": _expected_kind(loadout, "agents", MINI),
+            "skills": _expected_kind(loadout, "skills", MINI),
+            "rules": _expected_kind(loadout, "rules", MINI),
+            "mcps": _expected_kind(loadout, "mcps", MINI),
+            "etc": _expected_etc(loadout, MINI),
+        }
+        for kind, items in expected.items():
+            assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
+            if not items:
+                assert cells[kind] == EM_DASH, f"{name} {kind} should be an em dash"
 
 
 def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
@@ -200,17 +246,21 @@ def test_this_repo_catalog_satisfies_readme_contracts() -> None:
     assert set(rows) == names
     for name in names:
         loadout = load_loadout(REPO / "loadouts" / f"{name}.yaml")
-        extends_cell, summary = rows[name]
-        listed = _NAME_RE.findall(extends_cell)
-        assert listed == loadout.extends
-        artifacts = _own_artifact_names(loadout)
-        if artifacts:
-            collapsed_summary = _collapsed(summary)
-            assert any(_collapsed(artifact) in collapsed_summary for artifact in artifacts), (
-                name,
-                summary,
-                artifacts,
-            )
+        cells = rows[name]
+        assert _NAME_RE.findall(cells["extends"]) == loadout.extends
+        expected = {
+            "agents": _expected_kind(loadout, "agents", REPO),
+            "skills": _expected_kind(loadout, "skills", REPO),
+            "rules": _expected_kind(loadout, "rules", REPO),
+            "mcps": _expected_kind(loadout, "mcps", REPO),
+            "etc": _expected_etc(loadout, REPO),
+        }
+        for kind, items in expected.items():
+            assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
+            for item_name, href in items:
+                if href is None:
+                    continue
+                assert (REPO / href).is_file(), f"{name} {kind} {item_name} -> {href}"
 
 
 def test_cli_writes_filled_readme(tmp_path: Path) -> None:
@@ -218,9 +268,13 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
     completed = _run_cli("--repo-root", str(MINI), "--template", str(TEMPLATE), "--output", str(out))
     assert completed.returncode == 0, completed.stderr
     text = out.read_text()
+    version = _audit().latest_tag(MINI)
     assert "`base`" in text
     assert BANNER not in text
     assert CATALOG_START in text
+    assert "{{VERSION}}" not in text
+    assert f"loadout@{version}" in text
+    assert "loadout-spec.md" not in text
 
 
 def test_fill_template_drops_banner_when_asset_missing() -> None:
@@ -250,3 +304,56 @@ def test_catalog_is_deterministic() -> None:
     audit = _audit()
     assert audit.catalog_markdown(MINI) == audit.catalog_markdown(MINI)
     assert audit.catalog_markdown(REPO) == audit.catalog_markdown(REPO)
+
+
+def test_latest_tag_returns_newest_version_tag(tmp_path: Path) -> None:
+    repo = tmp_path / "tagged"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "dev@example.com")
+    _git(repo, "config", "user.name", "Dev")
+    (repo / "marker.txt").write_text("ok\n")
+    _git(repo, "add", "marker.txt")
+    _git(repo, "commit", "-m", "init")
+    _git(repo, "tag", "v0.9.0")
+    _git(repo, "tag", "v0.10.0")
+    _git(repo, "tag", "v0.2.0")
+    assert _audit().latest_tag(repo) == "v0.10.0"
+
+
+def test_latest_tag_falls_back_to_pyproject_version(tmp_path: Path) -> None:
+    repo = tmp_path / "untagged"
+    repo.mkdir()
+    (repo / "pyproject.toml").write_text('[project]\nname = "demo"\nversion = "1.2.3"\n')
+    assert _audit().latest_tag(repo) == "v1.2.3"
+
+
+def test_template_examples_use_version_placeholder_not_stale_pins() -> None:
+    text = TEMPLATE.read_text()
+    assert "{{VERSION}}" in text
+    assert "v0.5.0" not in text
+    assert "loadout@main" not in text
+    assert "loadout-spec.md" not in text
+    assert "ref: {{VERSION}}" in text
+
+
+def test_fill_template_substitutes_version_placeholders() -> None:
+    audit = _audit()
+    template = "uvx --from git+https://example@{{VERSION}} just release {{VERSION_NUMBER}}\n"
+    filled = audit.fill_template(
+        template,
+        catalog="",
+        has_loadouts=False,
+        has_banner=True,
+        version="v9.9.9",
+    )
+    assert filled == "uvx --from git+https://example@v9.9.9 just release 9.9.9\n"
+    assert "{{VERSION}}" not in filled
+
+
+def test_skill_and_evals_omit_loadout_spec() -> None:
+    skill = SKILL_MD.read_text()
+    evals = EVALS.read_text()
+    assert "loadout-spec" not in skill
+    assert "loadout-spec" not in evals
+    assert "What you get" not in evals

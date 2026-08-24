@@ -20,11 +20,17 @@ The table must list every top-level `loadouts/*.yaml` file:
 | --- | --- |
 | Loadout | Exact loadout name in backticks |
 | Extends | Parent loadout(s) in backticks, in YAML `extends` order, or — if none |
-| What you get | Short summary of distinctive rules, skills, agents, hooks, and MCPs |
+| Agents | Own agents as a bulleted list, each name linked to `agents/<name>/<name>.md` |
+| Skills | Own skills as a bulleted list, each name linked to `skills/<name>/SKILL.md` |
+| Rules | Own rules as a bulleted list, each name linked to the `.mdc` source |
+| MCPs | Own MCPs as a bulleted list, each name linked to `mcps/<name>/mcp.yaml` |
+| Etc. | Own hooks (linked to `hook.yaml` or `SOURCE.md`) and `cli_tools` names |
+
+Empty kind cells use —. Run `.claude/skills/generating-readme/scripts/audit_loadouts.py`
+rather than hand-editing rows.
 
 Do not ship the catalog update in a later commit or follow-up PR. Do not
-leave the summary as "close enough" when a loadout's unique artifacts
-changed.
+leave a kind cell stale when a loadout's unique artifacts changed.
 
 | Excuse | Reality |
 | --- | --- |

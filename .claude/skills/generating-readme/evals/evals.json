@@ -4,7 +4,7 @@
     {
       "id": 1,
       "prompt": "Refresh README.md after adding a loadout YAML. Use the generating-readme skill. Repo has loadouts/*.yaml and docs/assets/loadout-banner.jpg.",
-      "expected_output": "Ran audit_loadouts.py against the template. Available loadouts table lists every loadout YAML name, Extends matches YAML, What you get names an own artifact. Banner path docs/assets/loadout-banner.jpg is unchanged. Skill was not added to any loadout YAML.",
+      "expected_output": "Ran audit_loadouts.py against the template. Available loadouts table lists every loadout YAML name, Extends matches YAML, and Agents/Skills/Rules/MCPs/Etc. cells list own artifacts as linked names. Examples pin the newest git tag. Banner path docs/assets/loadout-banner.jpg is unchanged. Skill was not added to any loadout YAML.",
       "files": ["evals/files/tiny-readme.template.md"],
       "expectations": [
         "Runs scripts/audit_loadouts.py rather than hand-writing the catalog",

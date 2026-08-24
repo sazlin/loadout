@@ -28,13 +28,13 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout init --loadouts base,python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
 ```
 
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
@@ -48,14 +48,14 @@ git commit -m "Add loadout-managed agent tooling"
 Pin a release tag instead of `main` once you want a fixed upgrade cadence:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.5.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
 ```
 
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: main
+ref: {{VERSION}}
 loadouts:
   - base
   - python
@@ -67,7 +67,7 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: main
+ref: {{VERSION}}
 loadouts:
   - base
   - python
@@ -78,7 +78,7 @@ loadouts:
 Then re-sync and commit the diff:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -86,7 +86,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -106,7 +106,7 @@ When this repo ships new rules/skills (or you want a newer pin), bump the manife
 **Recommended — one command:**
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout update
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout update
 # or: just loadout-update
 ```
 
@@ -116,11 +116,11 @@ uvx --from git+https://github.com/sazlin/loadout@main loadout update
 
 ```yaml
 # .loadout.yaml
-ref: v0.5.0   # was: main or an older tag
+ref: {{VERSION}}   # was: main or an older tag
 ```
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.5.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
 ```
 
 Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
@@ -130,7 +130,7 @@ Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade i
 Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@main loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync --check
 # or: just loadout-check
 ```
 
@@ -147,7 +147,7 @@ Example GitHub Actions step:
 <!-- generated:loadouts-catalog:start -->
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
+Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents
@@ -163,16 +163,19 @@ not vendored.
 `agents/<name>/<name>.md` (no leading underscore) and fill every section. The
 Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
 (globs `agents/*/*.md`, shipped on `base`) requires that template for new
-agents and for imported ones. Underscore-prefixed files are templates or notes,
+agents and for imported ones. [`rules/agents/agent-descriptions.mdc`](rules/agents/agent-descriptions.mdc)
+(shipped on `agents`) limits the YAML `description` to when-to-use and
+when-not-to-use signals for other agents. Underscore-prefixed files are templates or notes,
 not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
 is not an agent.
 
-**Two families.**
+**Agent families.**
 
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
-| Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
-| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
+| Scoped implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review_harness` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review_harness]`. |
+| Implementation harness | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `implementation_harness` | Lights-out plan/review and build/review loops from an approved PRD to a GitHub PR ready for `pr_review_harness`. Opt in with `loadouts: [base, implementation_harness]`. Do not start the review harness from this phase. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.
@@ -188,7 +191,9 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP plus the vendored `refining-evals` skill:
+the LangChain docs MCP, the vendored `refining-evals` skill, and
+`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
+agent `description` fields):
 
 ```yaml
 loadouts: [agents]
@@ -199,12 +204,10 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Branch or tag pin (`main`, `v0.5.0`, …) |
+| `ref` | yes | Release tag or branch pin (`{{VERSION}}`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
-
-Full format: [loadout-spec.md](loadout-spec.md).
 
 ## CLI tools
 
@@ -276,7 +279,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.3.0   # on release/v0.3.0: validate, push, open PR; CI tags on merge
+just release {{VERSION_NUMBER}}   # on release/v{{VERSION_NUMBER}}: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me
@@ -290,7 +293,6 @@ this README from its template and loadout YAML (also not a consumer skill).
 
 ## Documentation
 
-- [loadout-spec.md](loadout-spec.md) — full specification (agents: section 5.10)
 - [agents/_agent_template.md](agents/_agent_template.md) — authoring skeleton
 - [agents/](agents/) — agent definitions plus colocated `evals/`
 - [docs/consumer-contract.md](docs/consumer-contract.md) — cookiecutter hook and project `justfile` contract

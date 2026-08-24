@@ -4,7 +4,8 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Mapping
+import re
+import subprocess
 from pathlib import Path
 
 from loadout.models import LoadoutDef, load_loadout
@@ -17,9 +18,13 @@ BANNER_START = "<!-- generated:optional:banner:start -->"
 BANNER_END = "<!-- generated:optional:banner:end -->"
 BANNER_RELATIVE = Path("docs/assets/loadout-banner.jpg")
 EM_DASH = "\u2014"
-KIND_ORDER = ("skills", "agents", "hooks", "mcps", "cli_tools", "rules")
-MAX_HIGHLIGHTS = 5
-TABLE_HEADER = "| Loadout | Extends | What you get |\n| --- | --- | --- |"
+VERSION_TOKEN = "{{VERSION}}"
+VERSION_NUMBER_TOKEN = "{{VERSION_NUMBER}}"
+TABLE_HEADER = (
+    "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |\n| --- | --- | --- | --- | --- | --- | --- |"
+)
+PYPROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"')
+FALLBACK_TAG = "v0.0.0"
 
 
 def has_loadouts(repo_root: Path) -> bool:
@@ -33,14 +38,21 @@ def has_banner(repo_root: Path) -> bool:
     return (repo_root / BANNER_RELATIVE).is_file()
 
 
+def latest_tag(repo_root: Path) -> str:
+    """Return the newest git tag at repo_root, or v{pyproject version}."""
+    tags = _git_version_tags(repo_root)
+    if tags:
+        return tags[0]
+    return _pyproject_tag(repo_root)
+
+
 def catalog_markdown(repo_root: Path) -> str:
     """Return the Available loadouts markdown table for repo_root."""
     loadouts = _load_all(repo_root)
     names = sorted(loadouts, key=lambda name: (_depth(name, loadouts), name))
     rows = [TABLE_HEADER]
     for name in names:
-        loadout = loadouts[name]
-        rows.append(f"| `{name}` | {_extends_cell(loadout)} | {_summary_cell(loadout)} |")
+        rows.append(_row(loadouts[name], repo_root))
     return "\n".join(rows)
 
 
@@ -50,9 +62,10 @@ def fill_template(
     catalog: str,
     has_loadouts: bool,
     has_banner: bool,
+    version: str = "",
 ) -> str:
     """Replace generated markers. Drop optional blocks whose assets are absent."""
-    text = template
+    text = _apply_version(template, version)
     if has_loadouts:
         text = _replace_block(text, CATALOG_START, CATALOG_END, catalog)
     else:
@@ -72,8 +85,16 @@ def generate_readme(*, repo_root: Path, template: Path, output: Path) -> None:
         catalog=catalog,
         has_loadouts=present,
         has_banner=banner,
+        version=latest_tag(repo_root),
     )
     output.write_text(filled)
+
+
+def _apply_version(template: str, version: str) -> str:
+    if not version:
+        return template
+    text = template.replace(VERSION_NUMBER_TOKEN, version.lstrip("v"))
+    return text.replace(VERSION_TOKEN, version)
 
 
 def _load_all(repo_root: Path) -> dict[str, LoadoutDef]:
@@ -98,47 +119,42 @@ def _depth_from(name: str, loadouts: dict[str, LoadoutDef], seen: frozenset[str]
     return 1 + max(parents)
 
 
+def _row(loadout: LoadoutDef, repo_root: Path) -> str:
+    cells = [
+        f"`{loadout.name}`",
+        _extends_cell(loadout),
+        _kind_cell(loadout, "agents", repo_root),
+        _kind_cell(loadout, "skills", repo_root),
+        _kind_cell(loadout, "rules", repo_root),
+        _kind_cell(loadout, "mcps", repo_root),
+        _etc_cell(loadout, repo_root),
+    ]
+    return "| " + " | ".join(cells) + " |"
+
+
 def _extends_cell(loadout: LoadoutDef) -> str:
     if not loadout.extends:
         return EM_DASH
     return ", ".join(f"`{name}`" for name in loadout.extends)
 
 
-def _summary_cell(loadout: LoadoutDef) -> str:
-    description = " ".join(loadout.description.split())
-    highlights = _highlights(loadout)
-    if not highlights:
-        return description
-    listed = ", ".join(f"`{name}`" for name in highlights)
-    return f"{description} ({listed})"
+def _kind_cell(loadout: LoadoutDef, kind: str, repo_root: Path) -> str:
+    items = [_item_from_src(src, kind, repo_root) for src in _srcs(loadout, kind)]
+    return _html_list(items)
 
 
-def _highlights(loadout: LoadoutDef) -> list[str]:
-    grouped = _grouped_names(loadout)
-    picked: list[str] = []
-    _take_one_per_kind(grouped, picked)
-    _fill_remaining(grouped, picked)
-    return picked[:MAX_HIGHLIGHTS]
+def _etc_cell(loadout: LoadoutDef, repo_root: Path) -> str:
+    items = [_item_from_src(src, "hooks", repo_root) for src in _srcs(loadout, "hooks")]
+    items.extend((tool.name, None) for tool in loadout.cli_tools)
+    return _html_list(items)
 
 
-def _grouped_names(loadout: LoadoutDef) -> dict[str, list[str]]:
-    return {
-        "rules": _labels_from_entries(loadout.rules),
-        "skills": _labels_from_entries(loadout.skills),
-        "hooks": _labels_from_entries(loadout.hooks),
-        "agents": _labels_from_entries(loadout.agents),
-        "mcps": _labels_from_entries(loadout.mcps),
-        "cli_tools": [tool.name for tool in loadout.cli_tools],
-    }
+def _srcs(loadout: LoadoutDef, kind: str) -> list[str]:
+    return [entry["src"] for entry in getattr(loadout, kind) if isinstance(entry.get("src"), str)]
 
 
-def _labels_from_entries(entries: list[Mapping[str, object]]) -> list[str]:
-    labels: list[str] = []
-    for entry in entries:
-        src = entry.get("src")
-        if isinstance(src, str) and src:
-            labels.append(_src_label(src))
-    return labels
+def _item_from_src(src: str, kind: str, repo_root: Path) -> tuple[str, str | None]:
+    return _src_label(src), _primary_href(src, kind, repo_root)
 
 
 def _src_label(src: str) -> str:
@@ -146,20 +162,69 @@ def _src_label(src: str) -> str:
     return path.stem if path.suffix else path.name
 
 
-def _take_one_per_kind(grouped: dict[str, list[str]], picked: list[str]) -> None:
-    for kind in KIND_ORDER:
-        unused = [name for name in grouped[kind] if name not in picked]
-        if unused:
-            picked.append(unused[0])
+def _primary_href(src: str, kind: str, repo_root: Path) -> str:
+    path = Path(src)
+    if path.suffix:
+        return path.as_posix()
+    return _directory_href(path, kind, repo_root)
 
 
-def _fill_remaining(grouped: dict[str, list[str]], picked: list[str]) -> None:
-    for kind in KIND_ORDER:
-        for name in grouped[kind]:
-            if name not in picked:
-                picked.append(name)
-            if len(picked) >= MAX_HIGHLIGHTS:
-                return
+def _directory_href(path: Path, kind: str, repo_root: Path) -> str:
+    if kind == "skills":
+        return (path / "SKILL.md").as_posix()
+    if kind == "mcps":
+        return _first_existing(repo_root, path, ("README.md", "mcp.yaml"))
+    if kind == "hooks":
+        return _first_existing(repo_root, path, ("SOURCE.md", "hook.yaml"))
+    if kind == "agents":
+        return (path / f"{path.name}.md").as_posix()
+    return path.as_posix()
+
+
+def _first_existing(repo_root: Path, directory: Path, names: tuple[str, ...]) -> str:
+    for name in names:
+        relative = directory / name
+        if (repo_root / relative).is_file():
+            return relative.as_posix()
+    return (directory / names[-1]).as_posix()
+
+
+def _html_list(items: list[tuple[str, str | None]]) -> str:
+    if not items:
+        return EM_DASH
+    return "<ul>" + "".join(_html_item(item) for item in items) + "</ul>"
+
+
+def _html_item(item: tuple[str, str | None]) -> str:
+    name, href = item
+    label = f"<code>{name}</code>"
+    if href is None:
+        return f"<li>{label}</li>"
+    return f'<li><a href="{href}">{label}</a></li>'
+
+
+def _git_version_tags(repo_root: Path) -> list[str]:
+    result = subprocess.run(
+        ["git", "tag", "--sort=-v:refname"],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def _pyproject_tag(repo_root: Path) -> str:
+    path = repo_root / "pyproject.toml"
+    if not path.is_file():
+        return FALLBACK_TAG
+    match = PYPROJECT_VERSION_RE.search(path.read_text())
+    if match is None:
+        return FALLBACK_TAG
+    version = match.group(1)
+    return version if version.startswith("v") else f"v{version}"
 
 
 def _replace_block(text: str, start: str, end: str, body: str) -> str:
