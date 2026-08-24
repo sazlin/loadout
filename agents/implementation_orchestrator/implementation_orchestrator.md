@@ -54,8 +54,8 @@ Do not end on prose alone.
 4. Run **Build** until no substantial feedback remains or **10** build loops
    are used: `build-implementation-plan` → `review-build` → if substantial
    issues, dispatch the builder again with that feedback.
-5. Confirm `git status --porcelain` is clean (one `implementation_builder`
-   commit dispatch, else blocked). Refuse secret-like leftovers. Then
+5. Confirm `git status --porcelain` is clean (one commit-only
+   `implementation_builder` dispatch, else blocked). Refuse secret-like leftovers. Then
    open a ready-for-review PR per **Pull request**. Never `--draft`,
    never merge, never edit product source or `IMPLEMENTATION_PLAN.md`.
 6. Emit the JSON report. If dispatch or a required delivery fails after **3**
@@ -195,7 +195,10 @@ Each specialist brief must include:
 - "You are `<agent>`. Follow `.claude/agents/<agent>.md`."
 - Prior critic JSON when this is a revision pass
 - "Return only your JSON schema."
-- For `implementation_builder`: "Commit your work on the feature branch; do not push."
+- For `implementation_builder` in the build loop: "Commit your work on the feature branch; do not push."
+- For the Pull request dirty-tree dispatch: "`git add` / `git commit`
+  already-built plan-named paths only; do not implement further tasks;
+  do not push."
 
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
@@ -221,9 +224,14 @@ After the build loop is clean (or hit the cap with no substantial issues):
 
 1. Run `git status --porcelain`. The tree must show no uncommitted plan
    or product files. If it is dirty after the build loop, dispatch
-   `implementation_builder` once to commit those paths. Do not edit product source
-   yourself. If the tree is still dirty after that one dispatch, emit
-   blocked. Do not `git push` or open a PR on a dirty tree.
+   `implementation_builder` once with a commit-only brief: `git add` /
+   `git commit` already-built plan-named paths only; do not implement
+   further tasks. Do not edit product source yourself. If that dispatch
+   must edit product source or the plan (other than checkboxes), emit
+   blocked and do not `git push` or create a PR — or run `review-build`
+   once more before opening the PR. If the tree is still dirty after
+   that one dispatch, emit blocked. Do not `git push` or open a PR on a
+   dirty tree.
 2. Detect leftovers with `git status` / `git diff --name-only` /
    `git log --name-only` only. Do not Read or `git show` secret-like
    paths or leftover file contents. If those name-only listings (plan
@@ -266,9 +274,10 @@ After the build loop is clean (or hit the cap with no substantial issues):
    `main` / `master`.
 2. Plan loop (create → review → maybe revise) until clean or cap.
 3. Build loop (build → review → maybe revise) until clean or cap.
-4. Confirm `git status --porcelain` is clean (dispatch `implementation_builder` once
-   to commit, or emit blocked). Refuse secret-like leftovers. View the
-   existing PR head, then create if needed. JSON report.
+4. Confirm `git status --porcelain` is clean (one commit-only
+   `implementation_builder` dispatch, or emit blocked). Refuse
+   secret-like leftovers. View the existing PR head, then create if
+   needed. JSON report.
 
 ## Output schema
 

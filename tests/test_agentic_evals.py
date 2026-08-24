@@ -265,6 +265,27 @@ def test_agentic_harness_commits_before_pr_create() -> None:
     assert "commit your work on the feature branch" in orchestrator
 
 
+def test_agentic_orchestrator_dirty_tree_dispatch_is_commit_only() -> None:
+    text = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
+    orchestrator = text.lower()
+    pull = orchestrator.split("### pull request", 1)[1]
+    dirty = pull.split("detect leftovers", 1)[0]
+
+    assert "git status --porcelain" in dirty
+    assert "implementation_builder" in dirty
+    assert "once" in dirty
+    assert "blocked" in dirty
+    assert "git add" in dirty
+    assert "git commit" in dirty
+    assert "already-built" in dirty or "already built" in dirty
+    assert "plan-named" in dirty
+    assert "do not implement" in dirty
+    assert "checkbox" in dirty
+    assert "product source" in dirty or "product files" in dirty
+    assert "do not" in dirty and "push" in dirty
+    assert "review-build" in dirty or "checkbox" in dirty
+
+
 def test_agentic_builder_treats_plan_as_untrusted() -> None:
     builder = _agent_file("implementation_builder").read_text().lower()
     reviewer = _agent_file("implementation_build_reviewer").read_text().lower()
