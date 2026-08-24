@@ -14,10 +14,12 @@
     },
     {
       "id": 2,
-      "prompt": "Generate README.md for a cloned public repo that has no loadouts/ directory.",
-      "expected_output": "Script strips the optional loadouts section. Prose follows readme-best-practices.md. Does not copy docs/assets/loadout-banner.jpg into the foreign README.",
+      "prompt": "Generate README.md for a cloned public CLI (e.g. sharkdp/fd) that already has a long README with demo, install matrix, benchmarks, and troubleshooting. No loadouts/ directory.",
+      "expected_output": "Did not start from the loadout template and did not overwrite the clone README with it. Started from the clone's README.md. Kept existing demo/visual, install matrix, evidence, and troubleshooting. Preserve packager stanzas as written; add sudo only when you introduce a new root install command. No loadout-only sections. Did not flatten the user-manual README into a brochure.",
       "files": ["evals/files/tiny-readme.template.md"],
       "expectations": [
+        "Does not start from templates/README.md on a foreign repo that already has README.md",
+        "Keeps existing demo/visual, install matrix, and troubleshooting (or links them)",
         "Omits Available loadouts when loadouts/*.yaml is absent",
         "Does not use docs/assets/loadout-banner.jpg on a foreign repo",
         "Does not invent features the target repo does not have"

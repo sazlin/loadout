@@ -1,6 +1,8 @@
+<!-- generated:optional:banner:start -->
 <p align="center">
   <img src="docs/assets/loadout-banner.jpg" alt="Cute lo-fi beaver in safety goggles packing a LOADOUT toolbox in a busy workshop with clustered hand tools" width="100%" />
 </p>
+<!-- generated:optional:banner:end -->
 
 # Loadout
 

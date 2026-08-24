@@ -13,6 +13,9 @@ CATALOG_START = "<!-- generated:loadouts-catalog:start -->"
 CATALOG_END = "<!-- generated:loadouts-catalog:end -->"
 OPTIONAL_START = "<!-- generated:optional:loadouts-section:start -->"
 OPTIONAL_END = "<!-- generated:optional:loadouts-section:end -->"
+BANNER_START = "<!-- generated:optional:banner:start -->"
+BANNER_END = "<!-- generated:optional:banner:end -->"
+BANNER_RELATIVE = Path("docs/assets/loadout-banner.jpg")
 EM_DASH = "\u2014"
 KIND_ORDER = ("skills", "agents", "hooks", "mcps", "cli_tools", "rules")
 MAX_HIGHLIGHTS = 5
@@ -23,6 +26,11 @@ def has_loadouts(repo_root: Path) -> bool:
     """Return True when repo_root has at least one loadouts/*.yaml file."""
     directory = repo_root / "loadouts"
     return directory.is_dir() and any(directory.glob("*.yaml"))
+
+
+def has_banner(repo_root: Path) -> bool:
+    """Return True when this repo's README banner file exists on disk."""
+    return (repo_root / BANNER_RELATIVE).is_file()
 
 
 def catalog_markdown(repo_root: Path) -> str:
@@ -36,18 +44,35 @@ def catalog_markdown(repo_root: Path) -> str:
     return "\n".join(rows)
 
 
-def fill_template(template: str, *, catalog: str, has_loadouts: bool) -> str:
-    """Replace generated markers in template. Drop the loadout section when absent."""
-    if not has_loadouts:
-        return _drop_optional_section(template)
-    return _replace_block(template, CATALOG_START, CATALOG_END, catalog)
+def fill_template(
+    template: str,
+    *,
+    catalog: str,
+    has_loadouts: bool,
+    has_banner: bool,
+) -> str:
+    """Replace generated markers. Drop optional blocks whose assets are absent."""
+    text = template
+    if has_loadouts:
+        text = _replace_block(text, CATALOG_START, CATALOG_END, catalog)
+    else:
+        text = _drop_marked_section(text, OPTIONAL_START, OPTIONAL_END)
+    if not has_banner:
+        text = _drop_marked_section(text, BANNER_START, BANNER_END)
+    return text
 
 
 def generate_readme(*, repo_root: Path, template: Path, output: Path) -> None:
     """Write output from template with catalog sections filled or removed."""
     present = has_loadouts(repo_root)
+    banner = has_banner(repo_root)
     catalog = catalog_markdown(repo_root) if present else ""
-    filled = fill_template(template.read_text(), catalog=catalog, has_loadouts=present)
+    filled = fill_template(
+        template.read_text(),
+        catalog=catalog,
+        has_loadouts=present,
+        has_banner=banner,
+    )
     output.write_text(filled)
 
 
@@ -146,12 +171,12 @@ def _replace_block(text: str, start: str, end: str, body: str) -> str:
     return text[:inner_from] + "\n" + body.rstrip() + "\n" + text[end_at:]
 
 
-def _drop_optional_section(text: str) -> str:
-    start_at = text.find(OPTIONAL_START)
-    end_at = text.find(OPTIONAL_END)
+def _drop_marked_section(text: str, start: str, end: str) -> str:
+    start_at = text.find(start)
+    end_at = text.find(end)
     if start_at == -1 or end_at == -1 or end_at < start_at:
         return text
-    end_at += len(OPTIONAL_END)
+    end_at += len(end)
     return text[:start_at].rstrip() + "\n\n" + text[end_at:].lstrip()
 
 

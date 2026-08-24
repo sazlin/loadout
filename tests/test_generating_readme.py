@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -27,6 +28,8 @@ CATALOG_START = "<!-- generated:loadouts-catalog:start -->"
 CATALOG_END = "<!-- generated:loadouts-catalog:end -->"
 OPTIONAL_START = "<!-- generated:optional:loadouts-section:start -->"
 OPTIONAL_END = "<!-- generated:optional:loadouts-section:end -->"
+BANNER_START = "<!-- generated:optional:banner:start -->"
+BANNER_END = "<!-- generated:optional:banner:end -->"
 
 
 def _audit():
@@ -117,6 +120,8 @@ def test_template_keeps_banner_and_catalog_markers() -> None:
     assert CATALOG_END in text
     assert OPTIONAL_START in text
     assert OPTIONAL_END in text
+    assert BANNER_START in text
+    assert BANNER_END in text
     assert HEADING in text
 
 
@@ -156,7 +161,12 @@ def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
         f"{OPTIONAL_START}\n{HEADING}\n\n{CATALOG_START}\nOLD\n{CATALOG_END}\n"
         f"{OPTIONAL_END}\n"
     )
-    filled = audit.fill_template(template, catalog=audit.catalog_markdown(MINI), has_loadouts=True)
+    filled = audit.fill_template(
+        template,
+        catalog=audit.catalog_markdown(MINI),
+        has_loadouts=True,
+        has_banner=True,
+    )
     assert BANNER in filled
     assert "OLD" not in filled
     assert "`base`" in filled
@@ -167,7 +177,12 @@ def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
 def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -> None:
     audit = _audit()
     template = f"intro\n{OPTIONAL_START}\n{HEADING}\n{OPTIONAL_END}\nlicense\n"
-    filled = audit.fill_template(template, catalog="", has_loadouts=False)
+    filled = audit.fill_template(
+        template,
+        catalog="",
+        has_loadouts=False,
+        has_banner=True,
+    )
     assert HEADING not in filled
     assert OPTIONAL_START not in filled
     assert "intro" in filled
@@ -175,6 +190,7 @@ def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -
     empty = tmp_path / "empty-repo"
     empty.mkdir()
     assert audit.has_loadouts(empty) is False
+    assert audit.has_banner(empty) is False
 
 
 def test_this_repo_catalog_satisfies_readme_contracts() -> None:
@@ -203,8 +219,31 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
     assert completed.returncode == 0, completed.stderr
     text = out.read_text()
     assert "`base`" in text
-    assert BANNER in text
+    assert BANNER not in text
     assert CATALOG_START in text
+
+
+def test_fill_template_drops_banner_when_asset_missing() -> None:
+    audit = _audit()
+    template = f'{BANNER_START}\n<img src="{BANNER}" alt="banner" />\n{BANNER_END}\n# Title\n'
+    filled = audit.fill_template(template, catalog="", has_loadouts=False, has_banner=False)
+    assert BANNER not in filled
+    assert BANNER_START not in filled
+    assert "# Title" in filled
+
+
+def test_cli_keeps_banner_when_asset_exists(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    shutil.copytree(MINI, repo)
+    banner = repo / BANNER
+    banner.parent.mkdir(parents=True, exist_ok=True)
+    banner.write_bytes(b"fake-image")
+    out = tmp_path / "README.md"
+    completed = _run_cli("--repo-root", str(repo), "--template", str(TEMPLATE), "--output", str(out))
+    assert completed.returncode == 0, completed.stderr
+    text = out.read_text()
+    assert BANNER in text
+    assert BANNER_START in text
 
 
 def test_catalog_is_deterministic() -> None:

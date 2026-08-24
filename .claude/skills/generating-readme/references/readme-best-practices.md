@@ -16,7 +16,11 @@ answer, in order:
 5. Who maintains it, and under what license?
 
 Keep the README as the on-ramp. Put long references in `docs/`, a wiki, or
-linked guides. GitHub truncates rendered READMEs past 500 KiB.
+linked guides **unless the README already is the user manual** (demo + install
+matrix + evidence + footguns, typical of CLIs like ripgrep/fd). In that case
+keep those sections in the README; fold packager lists into `<details>` if you
+must shorten, do not delete them. GitHub truncates rendered READMEs past
+500 KiB.
 
 ## Section order (decreasing urgency)
 
@@ -96,6 +100,7 @@ get" to one line that names distinctive artifacts.
 | Screenshots without alt text | Useless when images fail | Describe the image |
 | Stale version numbers in prose | Trust decays faster than silence | Badges and tags, not hardcoded versions in sentences |
 | Copying this repo's banner into another project | Identity theft, broken path | Only use that project's own visual |
+| Flattening a CLI README that already is the manual | Drops demo, install matrix, evidence, footguns | Start from the existing README; fold, don't delete |
 | Invented features / loadouts | README lies | Only facts from YAML, code, or tests |
 
 ## Sources
