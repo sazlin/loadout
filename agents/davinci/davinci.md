@@ -1,10 +1,10 @@
 ---
 name: davinci
 description: >-
-  Code simplification specialist that detects and removes AI-generated code
-  smells. Use proactively after AI-assisted edits, when reviewing a diff for
-  overengineering, verbosity, or speculative abstractions, or when the user
-  asks to simplify, deslop, declutter, or refine generated code.
+  Use proactively after AI-assisted edits, when reviewing a diff for
+  overengineering, verbosity, or speculative abstractions, or when asked to
+  simplify, deslop, declutter, or refine generated code. Do not add features
+  or expand scope.
 model: inherit
 tools:
   - Read

@@ -1,9 +1,8 @@
 ---
 name: implementation_plan_reviewer
 description: >-
-  Read-only critic of IMPLEMENTATION_PLAN.md against an approved PRD. Use
-  when review-implementation-plan dispatches you. Do not edit the plan or
-  implement code.
+  Use when review-implementation-plan dispatches you. Do not edit the plan
+  or implement code.
 model: inherit
 readonly: true
 tools:

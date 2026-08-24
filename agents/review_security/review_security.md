@@ -1,10 +1,9 @@
 ---
 name: review_security
 description: >-
-  Reviews a change set for security and privacy: unsafe data entering the
-  system and accidental leaks of private user data. Use when the review
-  orchestrator dispatches a security pass, or when the user asks for a
-  security, privacy, injection, auth, or PII-leak review.
+  Use when the review orchestrator dispatches a security pass, or when
+  asked for a security, privacy, injection, auth, or PII-leak review. Do
+  not fix the code. Do not review other dimensions.
 model: inherit
 readonly: true
 tools:

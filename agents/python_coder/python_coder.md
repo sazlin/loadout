@@ -1,8 +1,9 @@
 ---
 name: python_coder
 description: >-
-  Expert Python implementation agent. Use proactively when writing, editing,
-  refactoring, or debugging Python code, tests, or packaging in this repo.
+  Use proactively when writing, editing, refactoring, or debugging Python
+  code, tests, or packaging in this repo. Do not use for other languages or
+  for PR-review harness work.
 model: inherit
 tools:
   - Read

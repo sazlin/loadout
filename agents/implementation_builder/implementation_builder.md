@@ -1,9 +1,9 @@
 ---
 name: implementation_builder
 description: >-
-  Autonomous builder that implements IMPLEMENTATION_PLAN.md with tests first
-  and loops a fresh build reviewer until the tree matches the plan. Use when
-  build-implementation-plan dispatches you. Do not open a GitHub PR.
+  Use when build-implementation-plan dispatches you, or when
+  IMPLEMENTATION_PLAN.md should be implemented with tests first. Do not
+  open a GitHub PR.
 model: inherit
 tools:
   - Read

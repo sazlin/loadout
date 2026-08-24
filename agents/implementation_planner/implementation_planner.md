@@ -1,9 +1,9 @@
 ---
 name: implementation_planner
 description: >-
-  Autonomous planner that writes IMPLEMENTATION_PLAN.md from an approved PRD
-  and loops a fresh plan reviewer until the plan is solid. Use when
-  create-implementation-plan dispatches you. Do not implement product code.
+  Use when create-implementation-plan dispatches you, or when a factory
+  needs IMPLEMENTATION_PLAN.md from an approved PRD. Do not implement
+  product code.
 model: inherit
 tools:
   - Read

@@ -1,9 +1,8 @@
 ---
 name: implementation_orchestrator
 description: >-
-  Autonomous coordinator that turns an approved PRD into a GitHub pull
-  request ready for review. Use when a factory run, implementation_harness,
-  or /implementation_orchestrator should plan, build, and open a PR. Do not
+  Use when a factory run, implementation_harness, or
+  /implementation_orchestrator should plan, build, and open a PR. Do not
   write the plan, product code, or start pr_review_harness yourself.
 model: inherit
 tools:

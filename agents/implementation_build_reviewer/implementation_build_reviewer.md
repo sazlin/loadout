@@ -1,8 +1,7 @@
 ---
 name: implementation_build_reviewer
 description: >-
-  Read-only critic of an autonomous build against IMPLEMENTATION_PLAN.md and
-  the PRD. Use when review-implementation-build dispatches you. Do not fix the code.
+  Use when review-implementation-build dispatches you. Do not fix the code.
 model: inherit
 readonly: true
 tools:

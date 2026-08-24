@@ -1,9 +1,9 @@
 ---
 name: playwright_generator
 description: >-
-  Turn a reviewed Markdown plan in specs/ into Playwright tests. Use when
-  asked to generate E2E specs from a plan, Playwright Test Agent generation,
-  or playwright-test-generator.
+  Use when asked to generate E2E specs from a plan, Playwright Test Agent
+  generation, or playwright-test-generator. Do not write the plan or heal
+  failing tests.
 model: inherit
 tools:
   - Read
