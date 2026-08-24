@@ -178,11 +178,11 @@ agents and for imported ones. Underscore-prefixed files are templates or notes,
 not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
 is not an agent.
 
-**Two families.**
+**Agent families.**
 
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
-| Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| Scoped implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
 | PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review_harness` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review_harness]`. |
 | Implementation harness | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `implementation_harness` | Lights-out plan/review and build/review loops from an approved PRD to a GitHub PR ready for `pr_review_harness`. Opt in with `loadouts: [base, implementation_harness]`. Do not start the review harness from this phase. |
 
