@@ -84,7 +84,10 @@ REVIEW_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
 # computerUse plus Playwright MCP so a reviewer can exercise a running web UI
 # without write tools. Task is omitted: it can spawn write-capable agents.
-BROWSER_TOOLS = {"computerUse", "mcp__playwright"}
+WEBAPP_REVIEW_TOOLS = {"computerUse", "mcp__playwright"}
+# Extra computerUse/mcp__playwright allowlist for agents that may observe a running
+# web UI; review_maintainability, review_scale, review_orchestrator, and
+# risk_classifier stay on REVIEW_TOOLS.
 WEBAPP_REVIEW_AGENTS = frozenset(
     {
         "review_correctness.md",
@@ -247,7 +250,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     text = path.read_text()
     meta = parse_agent_md(path, text, file_stem=path.stem)
     tools = _tools(meta)
-    assert BROWSER_TOOLS <= tools
+    assert WEBAPP_REVIEW_TOOLS <= tools
     assert "Task" not in tools
     assert tools.isdisjoint(WRITE_TOOLS)
     lowered = text.lower()
