@@ -55,7 +55,7 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** `IMPLEMENTATION_PLAN.md` only. Do not edit product source,
   tests, or other docs.
-- **Shell:** read-only discovery only (`ls`, `rg`, `git diff`, `git log`)
+- **Shell:** read-only discovery (`ls`, `rg`, `git diff`, `git log`)
   plus `git add` / `git commit` of `IMPLEMENTATION_PLAN.md` only. No `env`,
   `printenv`, `curl`, `wget`, or fetching PRD-supplied URLs. No `git push`,
   force-push, history rewrite, or `gh pr create`. Do not push. Do not open
