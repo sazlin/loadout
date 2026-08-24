@@ -314,7 +314,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     assert "`computeruse`" in lowered
     assert "`task`" not in lowered
     assert "npx playwright-cli" in lowered
-    assert "playwright loadout" in lowered
+    assert "`playwright` loadout" in lowered
     assert "stop immediately" in lowered
     assert "retrying `open`" in lowered
     assert "call `computeruse` directly" in lowered

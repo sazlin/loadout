@@ -62,8 +62,8 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `computerUse`.
   JSON report. A finished run must leave `npx playwright-cli list` empty for
   the `verifier` session it opened. No `git push`, force-push, history rewrite,
   or `gh pr merge`.
-- **Browser:** Call `computerUse` directly, and `npx playwright-cli`, to check
-  UI claims against a running webapp. Point `npx playwright-cli` and
+- **Browser:** Call `computerUse` directly, and `npx playwright-cli`, to
+  check UI claims against a running webapp. Point `npx playwright-cli` and
   `computerUse` only at the running local app origin; do not explore production
   or other URLs from the change set. `computerUse` may only focus and observe
   the running local app window; do not use the IDE, terminals, OS chrome, other

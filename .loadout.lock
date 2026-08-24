@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-24T22:19:32Z",
+  "synced_at": "2026-08-24T22:20:38Z",
   "tool_version": "0.15.0",
   "files": [
     {
@@ -39,7 +39,7 @@
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "e9fae50584c19499e6dcdde94629a83fc3c105795b5ee0d3bc83f6465229577b"
+      "sha256": "88601a8c01517cc7253b08e85fde6e50c6c12eeca488f564ce838acbf70c4dc6"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
@@ -59,7 +59,7 @@
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "de418d5b5fe11853bef29f5b4ff54536b1aefbdd416ebf81aa534e136f7158df"
+      "sha256": "8288c91fa8d725cafe23f6ebeb6dcf9d640cb0a0e1781bc88699159cce2618e3"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",
@@ -69,7 +69,7 @@
     {
       "dest": ".claude/agents/verifier.md",
       "src": "agents/verifier/verifier.md",
-      "sha256": "5d63973220846c5247559645482c7746aa3859f9d5a89bb6be131955169e7516"
+      "sha256": "7544054b6388818216299e2847368e6a15def628501b1153e9816803d047e709"
     },
     {
       "dest": ".claude/settings.json",
