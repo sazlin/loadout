@@ -1,7 +1,7 @@
 {
   "status": "blocked",
   "agent": "implementation_orchestrator",
-  "charter": "Coordinate lights-out planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
+  "charter": "Coordinate autonomous planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
   "inputs": {
     "summary": "Planner report was blocked; stop before build.",
     "paths": ["evals/files/prd.md", "evals/files/planner-blocked.json"],

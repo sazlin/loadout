@@ -1,7 +1,7 @@
 ---
 name: build-implementation-plan
 description: >-
-  Use when implementation_orchestrator starts building, or when a lights-out
+  Use when implementation_orchestrator starts building, or when an autonomous
   factory needs a fresh implementation_builder to implement
   IMPLEMENTATION_PLAN.md. Do not write product code in-process.
 ---

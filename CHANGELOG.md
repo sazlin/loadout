@@ -10,6 +10,8 @@
   `implementation_harness`) so they can look up current docs and APIs.
 - Stop treating repo age or size as an `implementation_harness` brief
   field; agents inspect the tree.
+- Use `autonomous` in `implementation_harness` agent and skill
+  descriptions; keep `lights-out` in README and loadout catalog copy.
 
 ## 0.15.0
 

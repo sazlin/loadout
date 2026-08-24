@@ -136,6 +136,20 @@ def test_harness_skill_brief_does_not_classify_greenfield_or_brownfield(skill: s
 
 
 @pytest.mark.parametrize("name", IMPLEMENTATION_HARNESS_AGENTS)
+def test_harness_agent_does_not_use_lights_out(name: str) -> None:
+    text = _agent_text(name).lower()
+    assert "lights-out" not in text
+    assert "lights out" not in text
+
+
+@pytest.mark.parametrize("skill", IMPLEMENTATION_HARNESS_SKILLS)
+def test_harness_skill_does_not_use_lights_out(skill: str) -> None:
+    body = (SKILLS_DIR / skill / "SKILL.md").read_text().lower()
+    assert "lights-out" not in body
+    assert "lights out" not in body
+
+
+@pytest.mark.parametrize("name", IMPLEMENTATION_HARNESS_AGENTS)
 def test_harness_agent_follows_template_and_lights_out_contract(name: str) -> None:
     path = AGENTS_DIR / name / f"{name}.md"
     text = path.read_text()

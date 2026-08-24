@@ -1,7 +1,7 @@
 ---
 name: implementation_builder
 description: >-
-  Lights-out builder that implements IMPLEMENTATION_PLAN.md with tests first
+  Autonomous builder that implements IMPLEMENTATION_PLAN.md with tests first
   and loops a fresh build reviewer until the tree matches the plan. Use when
   build-implementation-plan dispatches you. Do not open a GitHub PR.
 model: inherit

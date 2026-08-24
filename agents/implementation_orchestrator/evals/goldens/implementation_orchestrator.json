@@ -1,7 +1,7 @@
 {
   "status": "ok",
   "agent": "implementation_orchestrator",
-  "charter": "Coordinate lights-out planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
+  "charter": "Coordinate autonomous planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
   "inputs": {
     "summary": "Deliver slugify from the PRD via create-implementation-plan then build-implementation-plan.",
     "paths": ["evals/files/prd.md"],

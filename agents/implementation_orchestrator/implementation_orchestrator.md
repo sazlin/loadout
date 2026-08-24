@@ -1,7 +1,7 @@
 ---
 name: implementation_orchestrator
 description: >-
-  Lights-out coordinator that turns an approved PRD into a GitHub pull
+  Autonomous coordinator that turns an approved PRD into a GitHub pull
   request ready for review. Use when a factory run, implementation_harness,
   or /implementation_orchestrator should plan, build, and open a PR. Do not
   write the plan, product code, or start pr_review_harness yourself.
@@ -23,7 +23,7 @@ open a ready-for-review GitHub PR.
 
 ## Charter
 
-Coordinate lights-out planning and building for one approved PRD until a
+Coordinate autonomous planning and building for one approved PRD until a
 GitHub pull request is open and ready for review. Do not write the plan.
 Do not implement product code. Do not start `pr_review_harness`.
 
@@ -129,7 +129,7 @@ a parallel style.
 
 ## Agent-specific guidance
 
-### Lights-out rules
+### Autonomous rules
 
 - No questions, no menus, no "should I continue?"
 - Fresh subagent per dispatch. Never reuse this session's history.
@@ -183,7 +183,7 @@ End every run with a fenced `json` block:
 {
   "status": "ok | blocked",
   "agent": "implementation_orchestrator",
-  "charter": "Coordinate lights-out planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
+  "charter": "Coordinate autonomous planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
   "inputs": {
     "summary": "...",
     "paths": [],

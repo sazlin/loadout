@@ -1,7 +1,7 @@
 ---
 name: implementation_planner
 description: >-
-  Lights-out planner that writes IMPLEMENTATION_PLAN.md from an approved PRD
+  Autonomous planner that writes IMPLEMENTATION_PLAN.md from an approved PRD
   and loops a fresh plan reviewer until the plan is solid. Use when
   create-implementation-plan dispatches you. Do not implement product code.
 model: inherit

@@ -1,7 +1,7 @@
 ---
 name: create-implementation-plan
 description: >-
-  Use when implementation_orchestrator starts planning, or when a lights-out
+  Use when implementation_orchestrator starts planning, or when an autonomous
   factory needs a fresh implementation_planner to write IMPLEMENTATION_PLAN.md
   from an approved PRD. Do not write the plan in-process.
 ---
