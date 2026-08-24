@@ -1,0 +1,16 @@
+{
+  "skill_name": "review-implementation-plan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Critique IMPLEMENTATION_PLAN.md using review-implementation-plan.",
+      "expected_output": "One fresh implementation_plan_reviewer dispatch, no plan edits",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches implementation_plan_reviewer",
+        "Does not edit IMPLEMENTATION_PLAN.md",
+        "Returns the reviewer JSON to the planner"
+      ]
+    }
+  ]
+}

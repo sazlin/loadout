@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Rename the `pr_review` loadout to `pr_review_harness`.
+- Add `implementation_harness`: lights-out planner/builder factory with
+  nested plan-review and build-review loops (max 10) that opens a GitHub
+  PR ready for the separate `pr_review_harness`.
+- Allow new agents `WebSearch` and `WebFetch` (agent template plus
+  `implementation_harness`) so they can look up current docs and APIs.
+- Stop treating repo age or size as an `implementation_harness` brief
+  field; agents inspect the tree.
+- Use `autonomous` in `implementation_harness` agent and skill
+  descriptions; keep `lights-out` in README and loadout catalog copy.
+- Add `rules/agents/agent-descriptions.mdc` to the `agents` loadout:
+  agent YAML `description` fields are when-to-use / when-not-to-use
+  dispatch signals for other agents.
+
 ## 0.15.0
 
 - Replace the `playwright` loadout's `playwright-test` MCP

@@ -1,0 +1,30 @@
+{
+  "status": "ok",
+  "agent": "implementation_planner",
+  "charter": "Produce a bite-sized, test-first IMPLEMENTATION_PLAN.md that a builder can follow without this chat.",
+  "inputs": {
+    "summary": "Plan slugify helper from the PRD with tests first.",
+    "paths": ["evals/files/prd.md"]
+  },
+  "plan_path": "IMPLEMENTATION_PLAN.md",
+  "review_rounds": 2,
+  "changes": [
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "action": "create",
+      "rationale": "Test-first tasks for slugify lowercase, hyphens, and punctuation stripping."
+    }
+  ],
+  "verification": [
+    {
+      "command": "test -s IMPLEMENTATION_PLAN.md",
+      "result": "pass",
+      "notes": "Plan lists the failing slugify test before implementation."
+    }
+  ],
+  "assumptions": ["ASCII letters and digits are enough for this PRD."],
+  "tried": ["Drafted three TDD tasks covering spaces and punctuation."],
+  "rejected": ["Asking a human about Unicode; recorded an ASCII assumption instead."],
+  "attempts": 1,
+  "blocked_reason": null
+}

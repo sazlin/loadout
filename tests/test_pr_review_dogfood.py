@@ -1,4 +1,4 @@
-"""Dogfood install of base + pr_review on this repository."""
+"""Dogfood install of base + pr_review_harness on this repository."""
 
 from __future__ import annotations
 
@@ -10,12 +10,12 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 
 
-def test_this_repo_manifest_includes_base_and_pr_review() -> None:
+def test_this_repo_manifest_includes_base_and_pr_review_harness() -> None:
     data = yaml.safe_load((REPO / ".loadout.yaml").read_text())
     assert data["source"] == "https://github.com/sazlin/loadout"
     assert data["ref"] == "v0.7.0"
     assert "base" in data["loadouts"]
-    assert "pr_review" in data["loadouts"]
+    assert "pr_review_harness" in data["loadouts"]
 
 
 def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
@@ -28,9 +28,9 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "CURSOR_API_KEY" in text
 
 
-def test_ci_matrix_includes_pr_review() -> None:
+def test_ci_matrix_includes_pr_review_harness() -> None:
     text = (REPO / ".github/workflows/ci.yml").read_text()
-    assert "pr_review" in text
+    assert "pr_review_harness" in text
 
 
 def test_verifiers_md_contains_required_claims() -> None:

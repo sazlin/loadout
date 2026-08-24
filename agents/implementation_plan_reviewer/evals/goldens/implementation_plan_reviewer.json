@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "agent": "implementation_plan_reviewer",
+  "charter": "Find defects that would make the plan fail the PRD, skip tests, or send a builder the wrong work.",
+  "inputs": {
+    "summary": "Plan skips tests for slugify.",
+    "paths": ["evals/files/IMPLEMENTATION_PLAN.md"]
+  },
+  "issues": [
+    {
+      "id": "P-001",
+      "title": "Plan skips tests for slugify",
+      "severity": "critical",
+      "file": "IMPLEMENTATION_PLAN.md",
+      "line": 3,
+      "symbol": "Task",
+      "whats_wrong": "The plan says to skip tests while the PRD requires unit tests for slugify.",
+      "why_it_matters": "A builder would ship slugify with no failing-first coverage.",
+      "how_to_fix": ["Add a TDD task that asserts slugify('Hello World!') == 'hello-world'."],
+      "acceptance_criteria": ["Plan names a failing test command before implementation."],
+      "suggested_test": "test_slugify_hello_world",
+      "do_not_change": "The slugify behavior itself"
+    }
+  ],
+  "verification": [
+    { "command": "test -f IMPLEMENTATION_PLAN.md", "result": "pass", "notes": "Read-only review." }
+  ],
+  "assumptions": [],
+  "tried": ["Read PRD and plan."],
+  "rejected": ["Implementing slugify during plan review."],
+  "attempts": 1,
+  "blocked_reason": null
+}

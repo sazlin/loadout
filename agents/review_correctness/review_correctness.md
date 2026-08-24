@@ -1,10 +1,9 @@
 ---
 name: review_correctness
 description: >-
-  Reviews a change set for correctness and data integrity: logic mistakes,
-  edge cases, and data being lost, overwritten, or copied by accident. Use
-  when the review orchestrator dispatches a correctness pass, or when the
-  user asks for a correctness, logic, data-loss, or data-integrity review.
+  Use when the review orchestrator dispatches a correctness pass, or when
+  asked for a correctness, logic, data-loss, or data-integrity review. Do
+  not fix the code. Do not review other dimensions.
 model: inherit
 readonly: true
 tools:

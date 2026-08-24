@@ -1,10 +1,8 @@
 ---
 name: risk_classifier
 description: >-
-  Classifies a GitHub PR diff as low risk or not, then squash-merges only
-  when low risk and required checks are green. Use when the review
-  orchestrator asks to measure risk, or when the user asks whether a PR is
-  safe to auto-merge. Never pass --admin. Do not fix code.
+  Use when the review orchestrator asks to measure risk, or when asked
+  whether a PR is safe to auto-merge. Never pass --admin. Do not fix code.
 model: inherit
 tools:
   - Read

@@ -1,0 +1,13 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Write a short plan.",
+  "inputs": { "summary": "slugify", "paths": [] },
+  "changes": [],
+  "verification": [],
+  "assumptions": [],
+  "tried": ["I will ask the user whether Unicode should fold to ASCII before writing any tests."],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

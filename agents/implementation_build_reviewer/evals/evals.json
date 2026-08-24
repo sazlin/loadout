@@ -1,0 +1,23 @@
+{
+  "agent": "implementation_build_reviewer",
+  "evals": [
+    {
+      "id": "implementation-build-reviewer-punctuation",
+      "agent": "implementation_build_reviewer",
+      "prompt": "You are implementation_build_reviewer. Follow agents/implementation_build_reviewer/implementation_build_reviewer.md. Review evals/files/slug.py against evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Return JSON.",
+      "files": ["evals/files/IMPLEMENTATION_PLAN.md", "evals/files/slug.py"],
+      "expected_output": "JSON issues for slugify that keeps punctuation",
+      "expectations": [
+        "Flags punctuation that should be stripped",
+        "Does not rename the function"
+      ],
+      "must_find": [
+        { "id": "punct", "keywords": ["punctuat", "slugify"] }
+      ],
+      "must_not_find": [
+        { "id": "rename", "keywords": ["rename the function"] },
+        { "id": "review-harness", "keywords": ["review_orchestrator"] }
+      ]
+    }
+  ]
+}

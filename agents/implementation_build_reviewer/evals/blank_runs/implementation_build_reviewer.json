@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Review code.",
+  "inputs": { "summary": "slug", "paths": [] },
+  "issues": [
+    {
+      "id": "NIT-1",
+      "title": "Name is short",
+      "severity": "minor",
+      "file": "slug.py",
+      "line": 1,
+      "symbol": "slugify",
+      "whats_wrong": "Could rename the function to make_slug.",
+      "why_it_matters": "Taste.",
+      "how_to_fix": ["Rename the function."],
+      "acceptance_criteria": ["Longer name"],
+      "suggested_test": "none",
+      "do_not_change": "n/a"
+    }
+  ],
+  "verification": [],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

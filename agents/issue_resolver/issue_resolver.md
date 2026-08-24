@@ -1,10 +1,9 @@
 ---
 name: issue_resolver
 description: >-
-  Implements the next open task from TASKS_TO_RESOLVE.md on the current PR
-  branch: fix, verify, commit, and push. Use when the review orchestrator
-  dispatches resolve-next-task, or when the user asks to resolve the next PR
-  review task. Do not merge. Do not start extra tasks.
+  Use when the review orchestrator dispatches resolve-next-task, or when
+  asked to resolve the next PR review task. Do not merge. Do not start extra
+  tasks.
 model: inherit
 tools:
   - Read

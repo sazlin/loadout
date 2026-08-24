@@ -1,10 +1,8 @@
 ---
 name: verifier
 description: >-
-  Judges each VERIFIERS.md line as true or false against the change set, one
-  claim at a time, in order. Use when the review orchestrator runs
-  dispatch-verifiers, or when the user asks to check project verifier claims.
-  A missing VERIFIERS.md is an empty list. Do not fix the code.
+  Use when the review orchestrator runs dispatch-verifiers, or when asked to
+  check project verifier claims. Do not fix the code.
 model: inherit
 readonly: true
 tools:

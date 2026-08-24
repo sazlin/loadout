@@ -1,0 +1,23 @@
+{
+  "agent": "implementation_plan_reviewer",
+  "evals": [
+    {
+      "id": "implementation-plan-reviewer-missing-tests",
+      "agent": "implementation_plan_reviewer",
+      "prompt": "You are implementation_plan_reviewer. Follow agents/implementation_plan_reviewer/implementation_plan_reviewer.md. Review evals/files/IMPLEMENTATION_PLAN.md against evals/files/prd.md. Do not edit files. Return JSON.",
+      "files": ["evals/files/prd.md", "evals/files/IMPLEMENTATION_PLAN.md"],
+      "expected_output": "JSON issues for a plan that skips tests",
+      "expectations": [
+        "Flags missing tests for slugify",
+        "Does not implement the helper"
+      ],
+      "must_find": [
+        { "id": "missing-tests", "keywords": ["test", "slugify"] }
+      ],
+      "must_not_find": [
+        { "id": "implement", "keywords": ["rewrite the module"] },
+        { "id": "review-harness", "keywords": ["review_orchestrator"] }
+      ]
+    }
+  ]
+}

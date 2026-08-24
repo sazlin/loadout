@@ -1,0 +1,19 @@
+{
+  "status": "blocked",
+  "agent": "implementation_planner",
+  "charter": "Produce a bite-sized, test-first IMPLEMENTATION_PLAN.md that a builder can follow without this chat.",
+  "inputs": { "summary": "slugify plan rejected after 10 review rounds", "paths": ["evals/files/prd.md"] },
+  "plan_path": "IMPLEMENTATION_PLAN.md",
+  "review_rounds": 10,
+  "changes": [
+    { "path": "IMPLEMENTATION_PLAN.md", "action": "create", "rationale": "Draft only; substantial issues remain." }
+  ],
+  "verification": [
+    { "command": "test -s IMPLEMENTATION_PLAN.md", "result": "fail", "notes": "Plan still has substantial issues." }
+  ],
+  "assumptions": [],
+  "tried": ["Looped review-implementation-plan for 10 rounds."],
+  "rejected": ["Shipping a plan with open substantial issues."],
+  "attempts": 1,
+  "blocked_reason": "Substantial plan issues remain after 10 review rounds."
+}

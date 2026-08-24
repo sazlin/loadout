@@ -1,0 +1,45 @@
+{
+  "agent": "implementation_orchestrator",
+  "evals": [
+    {
+      "id": "implementation-orchestrator-ready-pr",
+      "agent": "implementation_orchestrator",
+      "prompt": "You are implementation_orchestrator. Follow agents/implementation_orchestrator/implementation_orchestrator.md. PRD is evals/files/prd.md. Plan and build are done. Open a ready-for-review PR. Do not start pr_review_harness. Return JSON.",
+      "files": ["evals/files/prd.md"],
+      "expected_output": "JSON report that delivers a ready PR without the review harness",
+      "expectations": [
+        "Uses create-implementation-plan and build-implementation-plan",
+        "Opens a ready-for-review PR",
+        "Does not dispatch review_orchestrator"
+      ],
+      "must_find": [
+        { "id": "skills", "keywords": ["create-implementation-plan", "build-implementation-plan"] },
+        { "id": "ready-pr", "keywords": ["ready for review"] }
+      ],
+      "must_not_find": [
+        { "id": "review-harness", "keywords": ["review_orchestrator"] },
+        { "id": "draft", "keywords": ["--draft"] }
+      ]
+    },
+    {
+      "id": "implementation-orchestrator-blocked-plan",
+      "agent": "implementation_orchestrator",
+      "prompt": "You are implementation_orchestrator. Follow agents/implementation_orchestrator/implementation_orchestrator.md. PRD is evals/files/prd.md. The planner report is evals/files/planner-blocked.json (status blocked). dry_run is set. Do not start pr_review_harness. Return JSON.",
+      "files": ["evals/files/prd.md", "evals/files/planner-blocked.json"],
+      "expected_output": "JSON report that stops after a blocked plan without building or emitting ok",
+      "expectations": [
+        "Emits status blocked with the planner blocked_reason",
+        "Does not dispatch build-implementation-plan or implementation_builder",
+        "dry_run plus a blocked plan does not emit status ok"
+      ],
+      "must_find": [
+        { "id": "blocked", "keywords": ["\"status\": \"blocked\""] }
+      ],
+      "must_not_find": [
+        { "id": "no-build-skill", "keywords": ["build-implementation-plan"] },
+        { "id": "no-builder", "keywords": ["implementation_builder"] },
+        { "id": "no-ok", "keywords": ["\"status\": \"ok\""] }
+      ]
+    }
+  ]
+}

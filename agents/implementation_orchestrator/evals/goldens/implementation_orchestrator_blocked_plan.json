@@ -1,0 +1,37 @@
+{
+  "status": "blocked",
+  "agent": "implementation_orchestrator",
+  "charter": "Coordinate autonomous planning and building for one approved PRD until a GitHub pull request is open and ready for review.",
+  "inputs": {
+    "summary": "Planner report was blocked; stop before build.",
+    "paths": ["evals/files/prd.md", "evals/files/planner-blocked.json"],
+    "prd_path": "evals/files/prd.md",
+    "dry_run": true
+  },
+  "phase": "plan",
+  "loops": { "plan_review": 10, "build_review": 0 },
+  "plan_path": "IMPLEMENTATION_PLAN.md",
+  "changes": [
+    {
+      "path": "IMPLEMENTATION_LOG.md",
+      "action": "create",
+      "rationale": "Ledger for the blocked planning phase."
+    }
+  ],
+  "delivery": {
+    "branch": "impl/slugify",
+    "github_pr": null
+  },
+  "verification": [
+    {
+      "command": "create-implementation-plan",
+      "result": "fail",
+      "notes": "Planner status blocked. Did not start the build phase."
+    }
+  ],
+  "assumptions": [],
+  "tried": ["Dispatched create-implementation-plan."],
+  "rejected": ["Continuing to build after the planner reported blocked."],
+  "attempts": 1,
+  "blocked_reason": "Substantial plan issues remain after 10 review rounds."
+}

@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Code the helper.",
+  "inputs": { "summary": "slugify", "paths": [] },
+  "changes": [
+    {
+      "path": "slug.py",
+      "action": "modify",
+      "rationale": "Quick implementation; gh pr create next."
+    }
+  ],
+  "verification": [],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

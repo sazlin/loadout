@@ -1,0 +1,19 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Ship it.",
+  "inputs": { "summary": "prd", "paths": [] },
+  "changes": [],
+  "verification": [
+    {
+      "command": "gh pr create --draft && dispatch review_orchestrator",
+      "result": "pass",
+      "notes": "Draft PR plus review harness."
+    }
+  ],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

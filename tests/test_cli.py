@@ -119,11 +119,11 @@ def test_init_writes_manifest_with_defaults(runner: CliRunner) -> None:
 
 def test_init_keeps_every_comma_separated_name(runner: CliRunner) -> None:
     with runner.isolated_filesystem():
-        result = runner.invoke(main, ["init", "--loadouts", "base,python,pr_review"])
+        result = runner.invoke(main, ["init", "--loadouts", "base,python,pr_review_harness"])
 
         assert result.exit_code == 0, result.output
         manifest = yaml.safe_load(Path(".loadout.yaml").read_text())
-        assert manifest["loadouts"] == ["base", "python", "pr_review"]
+        assert manifest["loadouts"] == ["base", "python", "pr_review_harness"]
 
 
 def test_init_strips_whitespace_around_loadout_names(runner: CliRunner) -> None:

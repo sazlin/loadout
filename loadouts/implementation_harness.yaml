@@ -1,0 +1,16 @@
+name: implementation_harness
+description: >-
+  Lights-out implementation factory: plan/review and build/review loops that
+  turn an approved PRD into a GitHub pull request ready for the separate
+  pr_review_harness.
+skills:
+  - src: skills/create-implementation-plan
+  - src: skills/review-implementation-plan
+  - src: skills/build-implementation-plan
+  - src: skills/review-implementation-build
+agents:
+  - src: agents/implementation_orchestrator/implementation_orchestrator.md
+  - src: agents/implementation_planner/implementation_planner.md
+  - src: agents/implementation_plan_reviewer/implementation_plan_reviewer.md
+  - src: agents/implementation_builder/implementation_builder.md
+  - src: agents/implementation_build_reviewer/implementation_build_reviewer.md

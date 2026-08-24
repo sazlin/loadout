@@ -159,7 +159,8 @@ loadout/
     playwright-e2e.yaml
     playwright.yaml
     superpowers.yaml
-    pr_review.yaml
+    pr_review_harness.yaml
+    implementation_harness.yaml
   tests/
   CHANGELOG.md
 ```
@@ -561,13 +562,13 @@ Custom subagents are markdown files with YAML frontmatter. Discovery:
 
 **One directory: `.claude/agents/`.** Same intersection logic as skills (5.7.1): Claude Code reads one location; Cursor reads it as a compatibility path. Choosing the intersection means a single copy and no drift between harnesses. Preferring Cursor's native `.cursor/agents/` would force a second copy (or omit Claude Code).
 
-Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras): `name`, `description`, `model`, `readonly`, `is_background`, `tools`, `metadata`. `name` and `description` are required; `name` must equal the file stem.
+Allowed frontmatter keys (shared Cursor + Claude subset plus both harness extras): `name`, `description`, `model`, `readonly`, `is_background`, `tools`, `metadata`. `name` and `description` are required; `name` must equal the file stem. `description` is a dispatch signal for other agents: write only when to use this agent and when not to. Omit role titles and body-section content.
 
 Each agent is a directory `agents/<name>/` containing `agents/<name>/<name>.md`. Optional `evals/` next to that file is test infrastructure for the agent author (same exclusion idea as skill evals in 5.2.4). Sync copies only the markdown definition to `.claude/agents/<name>.md`; it does not vendor `evals/`.
 
 Markdown files under `agents/` whose names start with `_` are templates or notes, not agents. `agents/_agent_template.md` is the authoring skeleton. Markdown under `evals/` is fixtures and docs, not agents. Lint and orphan checks skip both. A loadout `agents:` entry or manifest `include` that points at a non-agent file fails validation. Templates must not be synced to `.claude/agents/`.
 
-New and imported agents follow the template headings (Charter through Output schema). The `rules/agents/agent-authoring.mdc` rule (globs `agents/*/*.md`) is the reminder.
+New and imported agents follow the template headings (Charter through Output schema). The `rules/agents/agent-authoring.mdc` rule (globs `agents/*/*.md`) is the reminder. `rules/agents/agent-descriptions.mdc` (shipped on the `agents` loadout) is the reminder that `description` is when/when-not only.
 
 Sync injects loadout provenance into `metadata` like rules and `SKILL.md`.
 
