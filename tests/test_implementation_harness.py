@@ -49,7 +49,8 @@ HEADINGS = [
 ]
 READ_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
-LIGHTS_OUT_MARKERS = ("do not ask", "prd", "no human")
+LIGHTS_OUT_MARKERS = ("do not ask", "no human")
+PRD_MARKERS = ("prd",)
 LOOP_MARKERS = ("10", "substantial")
 BLOCKED_PLAN_EVAL_ID = "implementation-orchestrator-blocked-plan"
 
@@ -124,7 +125,8 @@ def test_harness_agent_follows_template_and_lights_out_contract(name: str) -> No
         assert heading in text, heading
     lowered = text.lower()
     assert "git push" in lowered
-    assert any(marker in lowered for marker in LIGHTS_OUT_MARKERS)
+    assert all(marker in lowered for marker in LIGHTS_OUT_MARKERS)
+    assert all(marker in lowered for marker in PRD_MARKERS)
     assert "pr_review" in lowered or "pr_review_harness" in lowered
     assert "do not" in lowered and "review_orchestrator" in lowered
     tools = _tools(meta)

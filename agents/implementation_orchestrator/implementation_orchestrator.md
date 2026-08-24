@@ -121,7 +121,7 @@ a parallel style.
 - Quality over speed and tokens. Nested review loops of up to **10**
   rounds are expected.
 - Continuous execution. Do not pause for a human. The PRD already
-  incorporated human input.
+  incorporated human input. No human checkpoints.
 - `dry_run` is the only legal way to skip GitHub.
 
 ## Agent-specific guidance
