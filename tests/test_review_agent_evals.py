@@ -261,6 +261,14 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     assert "stop immediately" in lowered
     assert "retrying `open`" in lowered
     assert "call `computeruse` directly" in lowered
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0].lower()
+    assert "stop immediately" in blocked
+    assert "retrying `open`" in blocked
+    assert "playwright mcp is absent" not in blocked
+    assert "spawning another `computeruse`" not in blocked
+    assert "calling `computeruse` again" in blocked
+    stop_sentence = next(part for part in blocked.replace("\n", " ").split(".") if "stop immediately" in part)
+    assert "mcp" not in stop_sentence
     if filename == VERIFIER:
         assert "check ui claims against a running webapp" in lowered
     else:

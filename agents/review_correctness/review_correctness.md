@@ -88,10 +88,13 @@ If the only way to finish is one of the above: emit `blocked`.
 Max **3** attempts for the same failure class (unreadable path, missing range),
 then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`,
 `verification`, and `assumptions`. Prefer an empty `issues` list over guesses.
-A missing or hung UI is its own failure class: if the app is not running,
-Playwright MCP is absent, or `npx playwright-cli` cannot see the UI, stop immediately
-rather than retrying `open` or spawning another `computerUse`. Do not reuse the
-unreadable-path 3-try loop for browser I/O. On blocked or after 3 failed attempts,
+A missing or hung UI is its own failure class: if the running app is missing
+or hung, or `computerUse` / `npx playwright-cli` cannot see the UI, stop immediately
+rather than retrying `open` or calling `computerUse` again. If
+`mcp__playwright` is not present, fall through to `computerUse` and
+`npx playwright-cli`; do not emit `blocked` for MCP absence alone. Do not
+reuse the unreadable-path 3-try loop for browser I/O. If the git diff is
+readable, still file code findings; only stop further browser I/O. On blocked or after 3 failed attempts,
 run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if
 `npx playwright-cli list` still shows zombies).
 
