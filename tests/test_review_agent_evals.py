@@ -81,6 +81,16 @@ REVIEW_HEADINGS = [
 ]
 REVIEW_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
+# Cursor Task + computerUse, plus Playwright MCP, so a reviewer can exercise a
+# running web UI without write tools.
+BROWSER_TOOLS = {"Task", "computerUse", "mcp__playwright"}
+WEBAPP_REVIEW_AGENTS = frozenset(
+    {
+        "review_correctness.md",
+        "review_security.md",
+        "verifier.md",
+    }
+)
 ISSUE_SCHEMA_FIELDS = (
     '"id"',
     '"title"',
@@ -185,6 +195,21 @@ def test_dimension_reviewer_is_readonly_and_schema_complete(filename: str) -> No
     lowered = text.lower()
     for marker in DIMENSION_MARKERS[filename]:
         assert marker in lowered
+
+
+@pytest.mark.parametrize("filename", sorted(WEBAPP_REVIEW_AGENTS))
+def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> None:
+    path = _agent_file(filename)
+    text = path.read_text()
+    meta = parse_agent_md(path, text, file_stem=path.stem)
+    tools = _tools(meta)
+    assert BROWSER_TOOLS <= tools
+    assert tools.isdisjoint(WRITE_TOOLS)
+    lowered = text.lower()
+    assert "`computeruse`" in lowered
+    assert "`mcp__playwright`" in lowered
+    assert "`task`" in lowered
+    assert "playwright-cli" in lowered or "npx playwright-cli" in lowered
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
