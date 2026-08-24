@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright-e2e, playwright, superpowers, pr_review]
+        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright-e2e, playwright, superpowers, pr_review, agentic]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright-e2e, playwright, superpowers, pr_review]
+        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright-e2e, playwright, superpowers, pr_review, agentic]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5

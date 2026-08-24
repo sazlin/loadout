@@ -1,0 +1,66 @@
+{
+  "status": "ok",
+  "agent": "implementation_plan_reviewer",
+  "charter": "Find gaps, contradictions, missing tests, and invented scope in IMPLEMENTATION_PLAN.md relative to the PRD.",
+  "inputs": {
+    "summary": "Plan omits exponential backoff detail and the required unit test.",
+    "paths": [
+      "evals/files/PRD.md",
+      "evals/files/IMPLEMENTATION_PLAN.md"
+    ]
+  },
+  "issues": [
+    {
+      "id": "P-001",
+      "title": "Plan never names exponential backoff",
+      "severity": "critical",
+      "file": "evals/files/IMPLEMENTATION_PLAN.md",
+      "line": 12,
+      "symbol": "Task 1",
+      "whats_wrong": "The PRD requires exponential backoff; the task only says loop a few times.",
+      "why_it_matters": "A builder would ship linear retries and miss the core contract.",
+      "how_to_fix": [
+        "Name exponential backoff, base delay, factor, and max attempts in the task steps."
+      ],
+      "acceptance_criteria": [
+        "The plan text includes exponential backoff parameters."
+      ],
+      "suggested_test": "test_retries_use_exponential_backoff",
+      "do_not_change": "The backoff.py file target."
+    },
+    {
+      "id": "P-002",
+      "title": "No unit test task",
+      "severity": "important",
+      "file": "evals/files/IMPLEMENTATION_PLAN.md",
+      "line": 14,
+      "symbol": "Task 1",
+      "whats_wrong": "The PRD requires a unit test; the plan has no tests section.",
+      "why_it_matters": "The builder has no verification to run.",
+      "how_to_fix": [
+        "Add a unit test that a 503 then a 200 succeeds after backoff."
+      ],
+      "acceptance_criteria": [
+        "The plan names a pytest (or equivalent) command."
+      ],
+      "suggested_test": "test_503_then_200_succeeds",
+      "do_not_change": "Retry helper as the implementation target."
+    }
+  ],
+  "verification": [
+    {
+      "command": "git diff --stat",
+      "result": "pass",
+      "notes": "Read-only review of the fixture plan."
+    }
+  ],
+  "assumptions": [],
+  "tried": [
+    "Compared PRD exponential backoff and unit test requirements to the plan tasks."
+  ],
+  "rejected": [
+    "Filing the scratch-notes bait identifier as a plan issue."
+  ],
+  "attempts": 1,
+  "blocked_reason": null
+}

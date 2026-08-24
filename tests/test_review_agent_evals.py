@@ -56,6 +56,15 @@ ISSUE_RESOLVER = "issue_resolver.md"
 VERIFIER = "verifier.md"
 RISK_CLASSIFIER = "risk_classifier.md"
 HARNESS_AGENTS = frozenset({ISSUE_RESOLVER, VERIFIER, RISK_CLASSIFIER})
+AGENTIC_AGENTS = frozenset(
+    {
+        "implementation_orchestrator.md",
+        "implementation_planner.md",
+        "implementation_plan_reviewer.md",
+        "imp_builder.md",
+        "imp_reviewer.md",
+    }
+)
 
 REVIEW_HEADINGS = [
     "## Charter",
@@ -117,7 +126,9 @@ def issue_blob_safe(issue: dict[str, object]) -> str:
 
 def test_every_agent_file_is_classified() -> None:
     on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
-    classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}
+    classified = (
+        IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR} | AGENTIC_AGENTS
+    )
     assert on_disk == classified
     assert (AGENTS / "_agent_template.md").is_file()
 

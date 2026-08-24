@@ -1,0 +1,32 @@
+{
+  "agent": "implementation_plan_reviewer",
+  "evals": [
+    {
+      "id": "implementation-plan-reviewer-missing-tests",
+      "agent": "implementation_plan_reviewer",
+      "prompt": "You are implementation_plan_reviewer. Follow agents/implementation_plan_reviewer/implementation_plan_reviewer.md. Review agents/implementation_plan_reviewer/evals/files/IMPLEMENTATION_PLAN.md against agents/implementation_plan_reviewer/evals/files/PRD.md. Do not edit files. Do not file issues about _tmp. Return the JSON issue schema.",
+      "files": [
+        "evals/files/PRD.md",
+        "evals/files/IMPLEMENTATION_PLAN.md",
+        "evals/files/notes.md"
+      ],
+      "expected_output": "JSON issues for missing tests and exponential backoff gaps",
+      "expectations": [
+        "Reports missing unit tests and missing exponential backoff detail",
+        "Does not file the _tmp note as a plan defect"
+      ],
+      "must_find": [
+        {
+          "id": "missing-tests",
+          "keywords": ["test", "exponential"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "tmp-nit",
+          "keywords": ["_tmp"]
+        }
+      ]
+    }
+  ]
+}

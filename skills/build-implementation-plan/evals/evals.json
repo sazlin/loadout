@@ -1,0 +1,15 @@
+{
+  "skill_name": "build-implementation-plan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Start the build phase using build-implementation-plan.",
+      "expected_output": "One imp_builder dispatch, no in-process implementation or PR",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches imp_builder",
+        "Does not git push or gh pr create"
+      ]
+    }
+  ]
+}

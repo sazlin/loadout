@@ -1,0 +1,38 @@
+{
+  "status": "ok",
+  "agent": "imp_builder",
+  "charter": "Build the current IMPLEMENTATION_PLAN.md into working code and tests.",
+  "inputs": {
+    "summary": "Implement exponential backoff retries in backoff.py. Leave helpers.py alone.",
+    "paths": [
+      "evals/files/IMPLEMENTATION_PLAN.md",
+      "evals/files/backoff.py"
+    ]
+  },
+  "changes": [
+    {
+      "path": "evals/files/backoff.py",
+      "action": "modify",
+      "rationale": "Retry 429/503 with exponential backoff (base 0.1s, factor 2, max 3 attempts)."
+    }
+  ],
+  "verification": [
+    {
+      "command": "uv run pytest -q evals/files/test_backoff.py",
+      "result": "pass",
+      "notes": "503 then 200 succeeds; delays double."
+    }
+  ],
+  "assumptions": [
+    "No git push or pull request in this charter."
+  ],
+  "tried": [
+    "Replaced the single-call stub with exponential backoff retries."
+  ],
+  "rejected": [
+    "Editing the out-of-scope helpers module.",
+    "Opening a pull request."
+  ],
+  "attempts": 1,
+  "blocked_reason": null
+}

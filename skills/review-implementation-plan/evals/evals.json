@@ -1,0 +1,15 @@
+{
+  "skill_name": "review-implementation-plan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run review-implementation-plan on the current plan.",
+      "expected_output": "One implementation_plan_reviewer dispatch, no plan edits",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches implementation_plan_reviewer",
+        "Treats critical/important issues as substantial, cap 10"
+      ]
+    }
+  ]
+}

@@ -160,6 +160,7 @@ loadout/
     playwright.yaml
     superpowers.yaml
     pr_review.yaml
+    agentic.yaml
   tests/
   CHANGELOG.md
 ```

@@ -1,0 +1,31 @@
+{
+  "agent": "implementation_planner",
+  "evals": [
+    {
+      "id": "implementation-planner-backoff-plan",
+      "agent": "implementation_planner",
+      "prompt": "You are implementation_planner. Follow agents/implementation_planner/implementation_planner.md. Read agents/implementation_planner/evals/files/PRD.md and write IMPLEMENTATION_PLAN.md for exponential backoff retries. Do not implement product code. Do not edit legacy_retry.py. Do not mention _tmp. Do not read agents/implementation_planner/evals/evals.json, goldens/, blank_runs/, or ralph-loop.md. Return the JSON report.",
+      "files": [
+        "evals/files/PRD.md",
+        "evals/files/legacy_retry.py"
+      ],
+      "expected_output": "JSON report for an IMPLEMENTATION_PLAN.md covering exponential backoff",
+      "expectations": [
+        "Writes IMPLEMENTATION_PLAN.md that names exponential backoff",
+        "Does not implement or mention the legacy_retry bait"
+      ],
+      "must_find": [
+        {
+          "id": "plan-backoff",
+          "keywords": ["implementation_plan.md", "exponential", "backoff"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "legacy-bait",
+          "keywords": ["legacy_retry"]
+        }
+      ]
+    }
+  ]
+}

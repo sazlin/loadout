@@ -1,0 +1,15 @@
+name: agentic
+description: >-
+  Agentic implementation harness: PRD to plan to build to PR, with critic
+  loops on the plan and the build.
+skills:
+  - src: skills/create-implementation-plan
+  - src: skills/review-implementation-plan
+  - src: skills/build-implementation-plan
+  - src: skills/review-build
+agents:
+  - src: agents/implementation_orchestrator/implementation_orchestrator.md
+  - src: agents/implementation_planner/implementation_planner.md
+  - src: agents/implementation_plan_reviewer/implementation_plan_reviewer.md
+  - src: agents/imp_builder/imp_builder.md
+  - src: agents/imp_reviewer/imp_reviewer.md

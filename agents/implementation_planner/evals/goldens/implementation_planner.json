@@ -1,0 +1,35 @@
+{
+  "status": "ok",
+  "agent": "implementation_planner",
+  "charter": "Turn a product requirements document into a concrete IMPLEMENTATION_PLAN.md.",
+  "inputs": {
+    "summary": "Plan exponential backoff retries from the eval PRD. Do not edit the out-of-scope helper.",
+    "paths": ["evals/files/PRD.md"]
+  },
+  "changes": [
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "action": "create",
+      "rationale": "Map PRD retries to a backoff helper, tests, and verification commands."
+    }
+  ],
+  "verification": [
+    {
+      "command": "test -f IMPLEMENTATION_PLAN.md",
+      "result": "pass",
+      "notes": "Plan file written with exponential backoff task and a 503-then-200 unit test."
+    }
+  ],
+  "assumptions": [
+    "Project-root IMPLEMENTATION_PLAN.md is the required artifact even when the PRD lives under evals/files/."
+  ],
+  "tried": [
+    "Read the PRD. Named exponential backoff, 429/503, max 3 attempts, and a unit test in IMPLEMENTATION_PLAN.md."
+  ],
+  "rejected": [
+    "Implementing the HTTP helper in this pass.",
+    "Touching the out-of-scope legacy helper."
+  ],
+  "attempts": 1,
+  "blocked_reason": null
+}

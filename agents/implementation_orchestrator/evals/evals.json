@@ -1,0 +1,38 @@
+{
+  "agent": "implementation_orchestrator",
+  "evals": [
+    {
+      "id": "implementation-orchestrator-prd-loop",
+      "agent": "implementation_orchestrator",
+      "prompt": "You are implementation_orchestrator. Follow agents/implementation_orchestrator/implementation_orchestrator.md. The PRD is agents/implementation_orchestrator/evals/files/PRD.md. Do not write IMPLEMENTATION_PLAN.md yourself. Do not implement product code. Dispatch create-implementation-plan, review-implementation-plan, build-implementation-plan, and review-build with a cap of 10 loops each, then create a ready-for-review pull request. Return the orchestrator JSON schema.",
+      "files": [
+        "evals/files/PRD.md"
+      ],
+      "expected_output": "JSON report that dispatches the four skills and opens a PR",
+      "expectations": [
+        "Names all four critic-loop skills and the 10-loop cap",
+        "Does not author the plan or implement product code in-process"
+      ],
+      "must_find": [
+        {
+          "id": "plan-skills",
+          "keywords": ["create-implementation-plan", "review-implementation-plan"]
+        },
+        {
+          "id": "build-skills",
+          "keywords": ["build-implementation-plan", "review-build"]
+        },
+        {
+          "id": "loop-cap",
+          "keywords": ["10"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "in-process-impl",
+          "keywords": ["def export_widgets"]
+        }
+      ]
+    }
+  ]
+}

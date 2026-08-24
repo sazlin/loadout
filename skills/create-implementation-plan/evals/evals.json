@@ -1,0 +1,15 @@
+{
+  "skill_name": "create-implementation-plan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Start the plan phase using create-implementation-plan.",
+      "expected_output": "One implementation_planner dispatch, no in-process plan writing",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches implementation_planner",
+        "Does not write IMPLEMENTATION_PLAN.md in-process"
+      ]
+    }
+  ]
+}

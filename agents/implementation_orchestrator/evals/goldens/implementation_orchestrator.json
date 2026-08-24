@@ -1,0 +1,52 @@
+{
+  "status": "ok",
+  "agent": "implementation_orchestrator",
+  "charter": "Coordinate planning and building from a product requirements document through an open GitHub pull request.",
+  "inputs": {
+    "summary": "Run the agentic loop on the widget-export PRD.",
+    "paths": ["evals/files/PRD.md"],
+    "prd_path": "evals/files/PRD.md"
+  },
+  "phase": "pr",
+  "loops": { "plan": 2, "build": 2 },
+  "plan_path": "IMPLEMENTATION_PLAN.md",
+  "specialists": [
+    { "agent": "implementation_planner", "status": "ok", "loop": 1 },
+    { "agent": "implementation_plan_reviewer", "status": "ok", "loop": 1 },
+    { "agent": "implementation_planner", "status": "ok", "loop": 2 },
+    { "agent": "implementation_plan_reviewer", "status": "ok", "loop": 2 },
+    { "agent": "imp_builder", "status": "ok", "loop": 1 },
+    { "agent": "imp_reviewer", "status": "ok", "loop": 1 },
+    { "agent": "imp_builder", "status": "ok", "loop": 2 },
+    { "agent": "imp_reviewer", "status": "ok", "loop": 2 }
+  ],
+  "delivery": {
+    "pull_request_url": "https://github.com/example/repo/pull/1"
+  },
+  "changes": [
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "action": "create",
+      "rationale": "Planner artifact after create-implementation-plan / review-implementation-plan (cap 10)."
+    }
+  ],
+  "verification": [
+    {
+      "command": "gh pr view 1 --json url,isDraft",
+      "result": "pass",
+      "notes": "Ready for review after build-implementation-plan / review-build (cap 10)."
+    }
+  ],
+  "assumptions": [],
+  "tried": [
+    "Dispatched create-implementation-plan, review-implementation-plan, build-implementation-plan, and review-build instead of writing code.",
+    "Opened a ready-for-review pull request after both loops were clean of substantial issues."
+  ],
+  "rejected": [
+    "Authoring the plan in-process.",
+    "Implementing CSV export in this process.",
+    "Opening a draft PR."
+  ],
+  "attempts": 1,
+  "blocked_reason": null
+}

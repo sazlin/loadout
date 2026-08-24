@@ -1,0 +1,31 @@
+{
+  "agent": "imp_reviewer",
+  "evals": [
+    {
+      "id": "imp-reviewer-linear-delay",
+      "agent": "imp_reviewer",
+      "prompt": "You are imp_reviewer. Follow agents/imp_reviewer/imp_reviewer.md. Review agents/imp_reviewer/evals/files/backoff.py against agents/imp_reviewer/evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Do not file issues about _tmp. Return the JSON issue schema.",
+      "files": [
+        "evals/files/IMPLEMENTATION_PLAN.md",
+        "evals/files/backoff.py"
+      ],
+      "expected_output": "JSON issues for linear sleep vs exponential backoff",
+      "expectations": [
+        "Reports linear sleep(1) instead of exponential backoff",
+        "Does not file _tmp as a defect"
+      ],
+      "must_find": [
+        {
+          "id": "linear-vs-exponential",
+          "keywords": ["exponential", "linear"]
+        }
+      ],
+      "must_not_find": [
+        {
+          "id": "tmp-nit",
+          "keywords": ["_tmp"]
+        }
+      ]
+    }
+  ]
+}

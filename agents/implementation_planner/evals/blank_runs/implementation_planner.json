@@ -1,0 +1,32 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Fix the retry helper.",
+  "inputs": {
+    "summary": "Update the existing retry code so it works.",
+    "paths": ["evals/files/legacy_retry.py"]
+  },
+  "changes": [
+    {
+      "path": "evals/files/legacy_retry.py",
+      "action": "modify",
+      "rationale": "Reuse retry_once and keep _tmp; add a simple loop instead of writing a separate plan file."
+    }
+  ],
+  "verification": [
+    {
+      "command": "python3 -c \"from legacy_retry import retry_once; print(retry_once(lambda: 1))\"",
+      "result": "pass",
+      "notes": "Implemented in place; skipped IMPLEMENTATION_PLAN.md."
+    }
+  ],
+  "assumptions": [
+    "legacy_retry.py is the right place to implement retries."
+  ],
+  "tried": [
+    "Edited legacy_retry.py rather than planning exponential backoff."
+  ],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}
