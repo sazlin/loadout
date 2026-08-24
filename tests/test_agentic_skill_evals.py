@@ -127,6 +127,21 @@ def test_agentic_skills_bound_dispatch_wait() -> None:
     assert "10" in orchestrator
     assert "stop that phase" in orchestrator or "stop the phase" in orchestrator
 
+    dispatch = re.sub(
+        r"\s+", " ", orchestrator.split("### dispatch", 1)[1].split("###", 1)[0]
+    )
+    assert "5 minutes" in dispatch
+    assert "dispatch failure" in dispatch
+    assert "implementation_planner" in dispatch
+    assert "implementation_builder" in dispatch
+    assert "lacks" in dispatch and "changes" in dispatch
+    assert "implementation_plan_reviewer" in dispatch
+    assert "implementation_build_reviewer" in dispatch
+    assert "issue schema" in dispatch
+    assert "do not treat" in dispatch
+    assert "omitting" in dispatch
+    assert "reviewer" in dispatch and "changes" in dispatch
+
 
 def test_agentic_skills_are_not_orphans() -> None:
     loadout = load_loadout(REPO / "loadouts" / "agentic.yaml")

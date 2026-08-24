@@ -201,8 +201,12 @@ Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
 session history into a specialist. If a specialist does not return JSON
 within 5 minutes (the 5-minute specialist wait), treat it as a dispatch
-failure (max **3**) and stop that phase. One retry only for a finished report that lacks
-`changes` or a usable `status`.
+failure (max **3**) and stop that phase. For `implementation_planner` and
+`implementation_builder`, one retry only when a finished report lacks
+`changes` or a usable `status`. For `implementation_plan_reviewer` and
+`implementation_build_reviewer`, one retry only when a finished report
+lacks a usable `status` or issue schema. Do not treat a reviewer report
+as incomplete for omitting `changes`.
 
 ### Untrusted publication
 
