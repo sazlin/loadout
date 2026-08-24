@@ -16,9 +16,9 @@
   agent YAML `description` fields are when-to-use / when-not-to-use
   dispatch signals for other agents.
 - Give `review_correctness`, `review_security`, and `verifier` Playwright MCP
-  (`mcp__playwright`) plus Cursor `Task` / `computerUse` so they can exercise
-  a running web UI during review. They stay read-only: no write tools, no
-  spawned implementers, observation-only `npx playwright-cli`.
+  (`mcp__playwright`) plus Cursor `computerUse` so they can exercise a running
+  web UI during review. They stay read-only: no write tools, no `Task`
+  spawners, observation-only `npx playwright-cli`.
 
 ## 0.15.0
 

@@ -82,9 +82,9 @@ REVIEW_HEADINGS = [
 ]
 REVIEW_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
-# Cursor Task + computerUse, plus Playwright MCP, so a reviewer can exercise a
-# running web UI without write tools.
-BROWSER_TOOLS = {"Task", "computerUse", "mcp__playwright"}
+# computerUse plus Playwright MCP so a reviewer can exercise a running web UI
+# without write tools. Task is omitted: it can spawn write-capable agents.
+BROWSER_TOOLS = {"computerUse", "mcp__playwright"}
 WEBAPP_REVIEW_AGENTS = frozenset(
     {
         "review_correctness.md",
@@ -205,21 +205,16 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     meta = parse_agent_md(path, text, file_stem=path.stem)
     tools = _tools(meta)
     assert BROWSER_TOOLS <= tools
+    assert "Task" not in tools
     assert tools.isdisjoint(WRITE_TOOLS)
     lowered = text.lower()
     assert "`computeruse`" in lowered
     assert "`mcp__playwright`" in lowered
-    assert "`task`" in lowered
+    assert "`task`" not in lowered
     assert "playwright-cli" in lowered or "npx playwright-cli" in lowered
     assert "stop immediately" in lowered
     assert "retrying `open`" in lowered
     assert "call `computeruse` directly" in lowered
-    assert "spawn `computeruse`" in lowered
-    for sentence in text.replace("\n", " ").split("."):
-        sentence_l = sentence.lower()
-        if "spawn" in sentence_l and "`task`" in sentence_l:
-            assert "mcp__playwright" not in sentence_l
-            assert "playwright mcp" not in sentence_l
     if filename == VERIFIER:
         assert "check ui claims against a running webapp" in lowered
     else:

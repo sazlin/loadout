@@ -11,7 +11,6 @@ tools:
   - Grep
   - Glob
   - Bash
-  - Task
   - computerUse
   - mcp__playwright
 ---
@@ -44,7 +43,7 @@ edits. Do not write `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `Task`, `computerUse`,
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `computerUse`,
 `mcp__playwright`.
 
 - **Read-only.** Do not use write/edit tools. Do not mutate the working tree,
@@ -58,9 +57,8 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `Task`, `computerUse`,
   for sessions it opened. No `git push`, force-push, history rewrite, or
   installs. Do not run exploits or attack payloads.
 - **Browser:** Call `computerUse` directly, and `mcp__playwright` when that MCP
-  is present, to observe a running webapp. Use `Task` only to spawn `computerUse`.
-  Do not spawn implementers or other reviewers. Do not write specs, traces, or
-  app source.
+  is present, to observe a running webapp. Do not spawn implementers or other
+  reviewers. Do not write specs, traces, or app source.
 - You are not the fixer and not the orchestrator.
 
 ## Anti-reward-hacking
