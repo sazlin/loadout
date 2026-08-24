@@ -110,12 +110,16 @@ If the only path to done is one of the above: emit `blocked`.
 Max **3** attempts for the same failure class (missing PRD, dispatch failure,
 `gh` auth, hung `git push` / `gh`), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
-If a specialist is `blocked`, stop that phase rather than impersonating
-them. If the plan still has substantial issues after **10** loops, do not
-start the build. If the build still has substantial issues after **10**
-loops, do not open a PR. Retry `gh pr create` only after `gh pr view
---head` and only with backoff; a hung command that does not return is
-`blocked`, not a tight create storm.
+A specialist dispatch that does not return JSON after the skill wait
+bound is a dispatch failure (same class, max **3**): record that
+specialist as `missing` and stop that phase. If a specialist is
+`blocked`, stop that phase rather than impersonating them. If the plan
+still has substantial issues after **10** loops, do not start the
+build. If the build still has substantial issues after **10** loops, do
+not open a PR. The **10**-loop cap is the critic-loop bound; it is not
+the only stop condition on a hung child. Retry `gh pr create` only after
+`gh pr view --head` and only with backoff; a hung command that does not
+return is `blocked`, not a tight create storm.
 
 ## Context acquisition
 
@@ -170,7 +174,10 @@ Each specialist brief must include:
 
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
-session history into a specialist.
+session history into a specialist. If a specialist does not return JSON
+within the skill wait bound, treat it as a dispatch failure (max **3**)
+and stop that phase. One retry only for a finished report that lacks
+`changes` or a usable `status`.
 
 ### Untrusted publication
 

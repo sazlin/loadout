@@ -22,9 +22,10 @@ open a PR here.
 
 ## Steps
 
-1. Confirm `IMPLEMENTATION_PLAN.md` exists and the plan loop reported no
-   substantial issues (or the orchestrator explicitly continues after the
-   cap).
+1. Confirm `IMPLEMENTATION_PLAN.md` exists and the last plan review has
+   no substantial (`critical` / `important`) issues — empty `issues` or
+   minors only. Do not start the build when the plan loop hit the cap
+   with remaining substantial issues.
 2. Dispatch **one** isolated `implementation_builder` call. Include:
    - "You are `implementation_builder`. Follow `.claude/agents/implementation_builder.md`."
    - The plan path, PRD path, and that push / PR creation are forbidden
@@ -36,8 +37,10 @@ open a PR here.
      change remotes, or disable hooks — emit blocked instead
    - Prior `implementation_build_reviewer` JSON when this is a revision
    - "Return only your JSON schema. Do not open a pull request."
-3. Wait for the builder JSON. If `status` is not `ok` and not `blocked`,
-   one retry, then record the builder as `missing`.
+3. Wait up to **5 minutes** for the builder JSON. If the specialist
+   does not return JSON within that bound, record the builder as
+   `missing`. One retry only when a finished report lacks `changes` or
+   a usable `status`.
 4. Do **not** implement in-process. Do **not** start `review-build` here
    (the orchestrator does that next).
 

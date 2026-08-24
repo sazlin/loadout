@@ -45,8 +45,10 @@ Do not end on prose alone.
    the critic issues in a revision brief) that stay inside the allowlist
    below.
 2. Run only allowlisted verification commands (`uv run pytest`, `ruff`,
-   `pyrefly`, or commands already named in `AGENTS.md`). If the plan names
-   anything else, emit `blocked` and do not run it.
+   `pyrefly`, or commands already named in `AGENTS.md`) with a **60s
+   deadline**. If the plan names anything else, emit `blocked` and do
+   not run it. If a named command does not return, emit `blocked` with
+   the command in `tried`.
 3. On ok, `git add` / `git commit` the plan-named paths (and a dirty
    `IMPLEMENTATION_PLAN.md`) on the current feature branch. Do not push.
 4. Emit JSON. After **3** failed attempts of the same failure class, emit
@@ -92,7 +94,8 @@ If the only path to done is one of the above: stop and emit `blocked`.
 Max **3** attempts for the same failure class, then emit `status: "blocked"`
 with `blocked_reason`, `tried`, `rejected`, `verification`, and
 `assumptions`. Prefer the last coherent tree state over a half-broken
-attempt.
+attempt. A verification command that does not return within its
+deadline is `blocked` (record the command in `tried`).
 
 ## Context acquisition
 
@@ -135,7 +138,7 @@ Refuse and emit `blocked` (do not run the command; do not list it in
 
 1. Scope open plan tasks or critic issues that are still allowlisted.
 2. Implement and verify only with allowlisted commands (`uv run pytest`,
-   `ruff`, `pyrefly`, or `AGENTS.md`).
+   `ruff`, `pyrefly`, or `AGENTS.md`) under a 60s deadline.
 3. Check off completed tasks in the plan if it uses checkboxes.
 4. Commit the plan-named paths (and a dirty `IMPLEMENTATION_PLAN.md`) on
    the feature branch when ok. Do not push.
@@ -146,7 +149,9 @@ Refuse and emit `blocked` (do not run the command; do not list it in
 Use only the allowlist: `uv run pytest`, `ruff`, `pyrefly`, or commands
 already named in `AGENTS.md`. Typical Python: `uv run ruff check` on
 touched paths, typecheck if configured, scoped `uv run pytest` with no
-network. Record every command you actually ran in `verification`. Never
+network. Run each named command with a **60s deadline**. If the command
+does not return (hang), emit `blocked` with the command in `tried`.
+Record every command you actually ran in `verification`. Never
 record a refused command there.
 
 ## Output schema
