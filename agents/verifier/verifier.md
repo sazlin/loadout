@@ -67,9 +67,14 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `computerUse`,
   is present, to check UI claims against a running webapp. Point
   `npx playwright-cli`, `mcp__playwright`, and `computerUse` only at the
   running local app origin; do not explore production or other URLs from the
-  change set. MCP must not call page evaluate / cookie / storage helpers even
-  if the server exposes them. Do not spawn implementers or other reviewers.
-  Do not write specs, traces, or app source.
+  change set. `computerUse` may only focus and observe the running local app
+  window; do not use the IDE, terminals, OS chrome, other browsers, or
+  password managers. Do not open DevTools Application/Storage/Network panels
+  and do not capture cookie, token, or Authorization values via screenshot or
+  UI; the CLI secret-dump forbids apply to `computerUse` as well. MCP must not
+  call page evaluate / cookie / storage helpers even if the server exposes
+  them. Do not spawn implementers or other reviewers. Do not write specs,
+  traces, or app source.
 - You are not the fixer, orchestrator, or classifier.
 
 ## Anti-reward-hacking

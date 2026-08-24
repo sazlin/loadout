@@ -212,6 +212,27 @@ def _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(label: str, text:
     assert "cookie" in tools and "storage" in tools, label
 
 
+def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
+    """computerUse may only observe the running local app window, not OS chrome."""
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0].lower()
+    browser = " ".join(tools.split("**browser:**", 1)[1].split())
+    assert "running local app window" in browser, label
+    window_scope = _forbid_window(browser, "running local app window")
+    assert "`computeruse`" in window_scope, label
+    assert "ide" in window_scope, label
+    assert "terminals" in window_scope, label
+    assert "os chrome" in window_scope, label
+    assert "password managers" in window_scope, label
+    assert "devtools" in browser, label
+    assert "application/storage/network" in browser, label
+    assert "screenshot" in browser, label
+    assert "authorization" in browser, label
+    assert "secret-dump" in browser, label
+    secret_dump = _forbid_window(browser, "secret-dump")
+    assert "`computeruse`" in secret_dump, label
+    assert "cookie" in secret_dump or "token" in secret_dump, label
+
+
 def test_every_agent_file_is_classified() -> None:
     on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
     classified = (
@@ -281,6 +302,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     text = path.read_text()
     meta = parse_agent_md(path, text, file_stem=path.stem)
     tools = _tools(meta)
+    assert meta.readonly is True
     assert WEBAPP_REVIEW_TOOLS <= tools
     assert "Task" not in tools
     assert tools.isdisjoint(WRITE_TOOLS)
@@ -308,6 +330,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     if filename == VERIFIER:
         assert "continue remaining" in lowered
     _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(filename, text)
+    _assert_computer_use_stays_in_app_window(filename, text)
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
