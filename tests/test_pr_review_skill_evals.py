@@ -1,4 +1,4 @@
-"""Contracts and colocated evals for pr_review skills."""
+"""Contracts and colocated evals for pr_review_harness skills."""
 
 from __future__ import annotations
 
@@ -57,6 +57,6 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
 
 
 def test_pr_review_skills_are_not_orphans() -> None:
-    loadout = load_loadout(REPO / "loadouts" / "pr_review.yaml")
+    loadout = load_loadout(REPO / "loadouts" / "pr_review_harness.yaml")
     srcs = {entry["src"] for entry in loadout.skills}
     assert {f"skills/{name}" for name in PR_REVIEW_SKILLS} == srcs

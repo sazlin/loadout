@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Rename the `pr_review` loadout to `pr_review_harness`.
+
 ## 0.15.0
 
 - Replace the `playwright` loadout's `playwright-test` MCP

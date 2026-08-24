@@ -1,4 +1,4 @@
-name: pr_review
+name: pr_review_harness
 description: >-
   Agentic PR review harness: dimensional panel, sequential verifiers, issue
   resolution, and low-risk squash merge.

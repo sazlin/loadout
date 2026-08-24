@@ -156,9 +156,9 @@ Example GitHub Actions step:
 | `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
-| `pr_review` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
+| `pr_review_harness` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
+Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
 
 ## Agents
 
@@ -182,7 +182,7 @@ is not an agent.
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
 | Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
-| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
+| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review_harness` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review_harness]`. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.

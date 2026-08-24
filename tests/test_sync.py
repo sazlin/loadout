@@ -697,11 +697,11 @@ def test_real_agents_loadout_writes_langchain_docs_mcp(tmp_path: Path, monkeypat
     assert not any(path.is_dir() and path.name == "evals" for path in project.rglob("*"))
 
 
-def test_real_pr_review_loadout_vendors_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_pr_review_harness_loadout_vendors_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     repository = Path(__file__).parent.parent
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
     project = tmp_path / "project"
-    write_manifest(project, manifest_body("[base, pr_review]"))
+    write_manifest(project, manifest_body("[base, pr_review_harness]"))
 
     sync(project)
 

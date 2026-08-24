@@ -27,7 +27,7 @@ jobs:
             exit 0
           fi
           prompt="$(cat <<EOF
-          You are review_orchestrator. Follow .claude/agents/review_orchestrator.md and the pr_review skills.
+          You are review_orchestrator. Follow .claude/agents/review_orchestrator.md and the pr_review_harness skills.
 
           This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}).
 

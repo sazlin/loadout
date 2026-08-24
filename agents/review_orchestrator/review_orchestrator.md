@@ -5,7 +5,7 @@ description: >-
   scale, and security reviewers in parallel, dedupes into TASKS_TO_RESOLVE.md,
   loops issue_resolver, runs sequential VERIFIERS.md checks, then dispatches
   risk_classifier. Use when the user asks for a dimensional review, PR review
-  harness, review orchestrator, or to run the pr_review loop on a GitHub pull
+  harness, review orchestrator, or to run the pr_review_harness loop on a GitHub pull
   request. Do not start the four reviewers, the fixer, or the classifier
   yourself — this agent dispatches them.
 model: inherit
