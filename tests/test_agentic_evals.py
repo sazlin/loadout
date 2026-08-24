@@ -115,6 +115,18 @@ def test_golden_agentic_implementer_report_passes_eval(eval_id: str, agent: str)
     assert result.ok, result.failures
 
 
+def test_orchestrator_eval_fails_without_pull_request_url() -> None:
+    spec = _eval_entry("implementation_orchestrator")
+    ready = next(item for item in spec["must_find"] if item["id"] == "ready-pr")
+    assert "pull_request_url" in ready["keywords"]
+
+    report = json.loads(json.dumps(load_impl_golden("implementation_orchestrator")))
+    report["delivery"].pop("pull_request_url", None)
+    result = score_implementation_report(report, spec)
+    assert not result.ok
+    assert any("ready-pr" in failure for failure in result.failures)
+
+
 @pytest.mark.parametrize(
     "eval_id,agent",
     [
