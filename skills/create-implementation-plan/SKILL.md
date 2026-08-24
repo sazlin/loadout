@@ -29,7 +29,8 @@ PRD into `IMPLEMENTATION_PLAN.md`.
    brownfield, and "Follow `.claude/agents/implementation_planner.md`."
 3. Tell the planner to loop `/review-implementation-plan` until the reviewer
    reports no substantial feedback or **10** rounds are used.
-4. Do **not** write `IMPLEMENTATION_PLAN.md` in-process. Do **not** inherit
+4. Wait for the planner JSON. If status is `blocked`, return that to the orchestrator; do not finish the work in-process.
+5. Do **not** write `IMPLEMENTATION_PLAN.md` in-process. Do **not** inherit
    this session's history into the planner.
 
 ## Harness

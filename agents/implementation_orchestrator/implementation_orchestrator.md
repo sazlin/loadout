@@ -46,12 +46,22 @@ GitHub PR" flag.
 2. Create a feature branch from the default base (`main` / `master`).
    Never commit on the default branch.
 3. Run `/create-implementation-plan`. Wait until the planner reports plan
-   ready or `blocked`.
+   ready or `blocked`. If the planner JSON `status` is `blocked`, do not run `/build-implementation-plan`,
+   do not `git push`, do not `gh pr create`, and do not emit `ok`.
+   Emit `blocked` with the planner `blocked_reason` and
+   `delivery.github_pr` null. Stop. This applies even when `dry_run` is set.
 4. Run `/build-implementation-plan`. Wait until the builder reports build
-   ready or `blocked`.
+   ready or `blocked`. If the builder JSON `status` is `blocked` or
+   verification is red, do not `git push`, do not `gh pr create`, and
+   do not emit `ok` — including when `dry_run` is set. Emit `blocked`
+   with the builder `blocked_reason` (or a verification-failure reason)
+   and `delivery.github_pr` null. Stop.
 5. Verify the project's test/lint commands yourself before opening a PR.
-6. If `dry_run` is set: do not `git push`, do not `gh pr create`, emit
-   `ok` with `delivery.github_pr` null.
+   If verification is red, follow step 4's blocked path: do not push, do
+   not open a PR, and do not emit `ok`, including when `dry_run` is set.
+6. If `dry_run` is set and plan, build, and verification succeeded: do
+   not `git push`, do not `gh pr create`, emit `ok` with
+   `delivery.github_pr` null.
 7. Otherwise push the branch and `gh pr create` **without** `--draft`.
    Mark it ready for review. Do not merge. Do not dispatch
    `review_orchestrator` or any `pr_review_harness` agent or skill.
@@ -134,7 +144,9 @@ a parallel style.
 3. **Deliver** — verify, then PR ready for review (or stop on `dry_run`).
 
 If planning or building is `blocked` with substantial issues still open
-after 10 inner loops, do **not** open a PR. Emit `blocked`.
+after 10 inner loops, or verification is red, do **not** open a PR and
+do not emit `ok`. Emit `blocked`. This gate applies to the numbered
+Definition of done and to When invoked, including when `dry_run` is set.
 
 ### GitHub PR
 
@@ -149,9 +161,14 @@ is expected to review next; do not trigger it.
 ### When invoked
 
 1. Confirm PRD and `dry_run`.
-2. Branch. Log. Dispatch plan. Log. Dispatch build. Log.
-3. Verify. Push and open a ready PR unless `dry_run`.
-4. JSON report.
+2. Branch. Log. Dispatch plan. Log.
+3. If the planner report status is `blocked`, emit `blocked` and stop.
+   Do not dispatch build. Do not emit `ok`.
+4. Dispatch build. Log.
+5. If the builder report status is `blocked` or verification is red,
+   emit `blocked` and stop. Do not push or open a PR. Do not emit `ok`.
+6. Verify. Push and open a ready PR unless `dry_run`.
+7. JSON report.
 
 ## Output schema
 

@@ -51,6 +51,7 @@ READ_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
 LIGHTS_OUT_MARKERS = ("do not ask", "prd", "no human")
 LOOP_MARKERS = ("10", "substantial")
+BLOCKED_PLAN_EVAL_ID = "implementation-orchestrator-blocked-plan"
 
 
 def _tools(meta: object) -> set[str]:
@@ -64,6 +65,11 @@ def _tools(meta: object) -> set[str]:
 
 def _agent_text(name: str) -> str:
     return (AGENTS_DIR / name / f"{name}.md").read_text()
+
+
+def _blocked_plan_report(kind: str) -> dict:
+    root = evals_root("implementation_orchestrator")
+    return json.loads((root / kind / "implementation_orchestrator_blocked_plan.json").read_text())
 
 
 def test_implementation_harness_loadout_lists_agents_and_skills() -> None:
@@ -92,6 +98,8 @@ def test_implementation_harness_skill_bodies_dispatch_named_agents() -> None:
     assert "implementation_planner" in create
     assert "in-process" in create.lower() or "in process" in create.lower()
     assert "fresh" in create.lower()
+    assert "if status is `blocked`" in create.lower()
+    assert "return that to the orchestrator" in create.lower()
 
     plan_review = (SKILLS_DIR / "review-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_plan_reviewer" in plan_review
@@ -144,6 +152,17 @@ def test_orchestrator_runs_plan_then_build_then_ready_pr() -> None:
     assert "10" in text
 
 
+def test_orchestrator_stops_on_blocked_plan_and_does_not_emit_ok() -> None:
+    text = _agent_text("implementation_orchestrator")
+    lowered = text.lower()
+    assert "do not run `/build-implementation-plan`" in lowered
+    assert "including when `dry_run`" in lowered
+    when_invoked = lowered.split("### when invoked")[1].split("## ")[0]
+    assert "blocked" in when_invoked
+    assert "do not dispatch build" in when_invoked
+    assert "do not emit `ok`" in lowered
+
+
 def test_planner_and_builder_own_the_review_loops() -> None:
     planner = _agent_text("implementation_planner").lower()
     assert "review-implementation-plan" in planner
@@ -182,6 +201,20 @@ def test_blank_harness_transcript_fails_behavior_score(agent: str) -> None:
     spec = next(entry for entry in load_evals()["evals"] if entry["agent"] == agent)
     result = score_behavior(load_blank_run(agent), spec)
     assert not result.ok, f"blank agent unexpectedly passed {spec['id']}"
+
+
+def test_blocked_plan_eval_rejects_ready_pr_golden() -> None:
+    spec = eval_by_id(BLOCKED_PLAN_EVAL_ID)
+    result = score_behavior(load_golden("implementation_orchestrator"), spec)
+    assert not result.ok
+
+
+def test_blocked_plan_golden_passes_behavior_and_blank_fails() -> None:
+    spec = eval_by_id(BLOCKED_PLAN_EVAL_ID)
+    golden = score_behavior(_blocked_plan_report("goldens"), spec)
+    blank = score_behavior(_blocked_plan_report("blank_runs"), spec)
+    assert golden.ok, golden.failures
+    assert not blank.ok
 
 
 def test_harness_scorer_fails_when_a_must_find_is_removed() -> None:

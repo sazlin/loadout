@@ -9,7 +9,8 @@
       "expectations": [
         "Dispatches implementation_planner",
         "Requires a fresh subagent",
-        "Does not write IMPLEMENTATION_PLAN.md in-process"
+        "Does not write IMPLEMENTATION_PLAN.md in-process",
+        "Returns a blocked planner report to the orchestrator"
       ]
     }
   ]
