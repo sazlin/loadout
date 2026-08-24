@@ -143,26 +143,9 @@ Example GitHub Actions step:
 ## Available loadouts
 
 <!-- generated:loadouts-catalog:start -->
-| Loadout | Extends | What you get |
-| --- | --- | --- |
-| `base` | — | Core conventions (including ready-for-review PRs, never drafts), release checklist, anti-sleep, session decision-review and `/learn` skills, deny-dangerous hook, davinci, Context7 and Linear MCPs |
-| `python` | `base` | Python code style + pytest rules, python_coder agent |
-| `python-monorepo` | `python` | UV workspace rules |
-| `db` | `base` | Alembic `db-migrations` skill |
-| `github` | `base` | GitHub PR media attach (`github-upload-media-to-pr`) |
-| `typescript` | `base` | TypeScript code style rules |
-| `terraform` | `base` | Terraform/AWS conventions (scoped under `infra/`) + plan-review skill |
-| `aws` | `base` | AWS Knowledge MCP |
-| `supabase` | `db` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) plus inherited `db-migrations` |
-| `playwright` | `base` | Playwright Test Agents (planner, generator, healer), `playwright-cli`, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
-| `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
-| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP, refining-evals skill, and agent-descriptions rule |
-| `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
-| `pr_review_harness` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
-| `implementation_harness` | — | Lights-out implementation factory: implementation_orchestrator, planner, plan reviewer, implementation_builder, implementation_build_reviewer, and plan/build slash-command skills that open a ready-for-review PR |
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
+Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents
@@ -178,19 +161,16 @@ not vendored.
 `agents/<name>/<name>.md` (no leading underscore) and fill every section. The
 Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
 (globs `agents/*/*.md`, shipped on `base`) requires that template for new
-agents and for imported ones. [`rules/agents/agent-descriptions.mdc`](rules/agents/agent-descriptions.mdc)
-(shipped on `agents`) limits the YAML `description` to when-to-use and
-when-not-to-use signals for other agents. Underscore-prefixed files are templates or notes,
+agents and for imported ones. Underscore-prefixed files are templates or notes,
 not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
 is not an agent.
 
-**Agent families.**
+**Two families.**
 
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
-| Scoped implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
-| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review_harness` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review_harness]`. |
-| Implementation harness | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `implementation_harness` | Lights-out plan/review and build/review loops from an approved PRD to a GitHub PR ready for `pr_review_harness`. Opt in with `loadouts: [base, implementation_harness]`. Do not start the review harness from this phase. |
+| Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.
@@ -206,9 +186,7 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP, the vendored `refining-evals` skill, and
-`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
-agent `description` fields):
+the LangChain docs MCP plus the vendored `refining-evals` skill:
 
 ```yaml
 loadouts: [agents]
