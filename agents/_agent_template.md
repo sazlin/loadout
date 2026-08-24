@@ -11,8 +11,8 @@ angle-style placeholders as you fill the body.
 ---
 name: your_agent_name
 description: >-
-  One or two sentences on what this agent does and when to use it.
-  Include trigger phrases. Do not use < or > in this field.
+  Use when this agent should run. Do not use when another agent owns the job.
+  Include trigger phrases. Do not use angle brackets in this field.
 model: inherit
 # readonly: true          # reviewers only; omit for implementers
 # is_background: false    # optional

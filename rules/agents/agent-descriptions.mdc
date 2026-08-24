@@ -1,0 +1,28 @@
+---
+description: >-
+  Write agent frontmatter descriptions only as when-to-use and when-not-to-use
+  signals for other agents. Applies when editing agents/.
+globs:
+  - agents/*/*.md
+  - agents/_agent_template.md
+---
+
+# Agent descriptions
+
+The YAML `description` field is how other agents decide to dispatch this
+one. Write only:
+
+- **When to use** — trigger phrases, slash commands, and situations
+- **When not to use** — jobs this agent must not take
+
+Start with `Use when` or `Use proactively when`. Follow with `Do not` or
+`Never` for the negative.
+
+Omit everything else from `description`: role titles, architecture, tool
+lists, I/O, loop counts, and body-section content. Those belong in Charter
+and later headings.
+
+| Excuse | Reality |
+| --- | --- |
+| "Lead with what the agent is" | Other agents route on when/when-not, not job titles. |
+| "A one-line summary helps humans" | Humans read the agent file. Description is a dispatch signal. |

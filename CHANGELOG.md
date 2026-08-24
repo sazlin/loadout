@@ -12,6 +12,9 @@
   field; agents inspect the tree.
 - Use `autonomous` in `implementation_harness` agent and skill
   descriptions; keep `lights-out` in README and loadout catalog copy.
+- Add `rules/agents/agent-descriptions.mdc` to the `agents` loadout:
+  agent YAML `description` fields are when-to-use / when-not-to-use
+  dispatch signals for other agents.
 
 ## 0.15.0
 

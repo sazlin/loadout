@@ -154,7 +154,7 @@ Example GitHub Actions step:
 | `supabase` | `db` | Vendored Supabase `postgres-best-practices` skill (query, connections, RLS, schema) plus inherited `db-migrations` |
 | `playwright` | `base` | Playwright Test Agents (planner, generator, healer), `playwright-cli`, plan-generate-heal skill, and dest-scoped `e2e/` conventions |
 | `playwright-e2e` | `playwright` | Compatibility alias of `playwright` |
-| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
+| `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP, refining-evals skill, and agent-descriptions rule |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 | `pr_review_harness` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
 | `implementation_harness` | — | Lights-out implementation factory: implementation_orchestrator, planner, plan reviewer, implementation_builder, implementation_build_reviewer, and plan/build slash-command skills that open a ready-for-review PR |
@@ -174,7 +174,9 @@ not vendored.
 `agents/<name>/<name>.md` (no leading underscore) and fill every section. The
 Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
 (globs `agents/*/*.md`, shipped on `base`) requires that template for new
-agents and for imported ones. Underscore-prefixed files are templates or notes,
+agents and for imported ones. [`rules/agents/agent-descriptions.mdc`](rules/agents/agent-descriptions.mdc)
+(shipped on `agents`) limits the YAML `description` to when-to-use and
+when-not-to-use signals for other agents. Underscore-prefixed files are templates or notes,
 not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
 is not an agent.
 
@@ -200,7 +202,9 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP plus the vendored `refining-evals` skill:
+the LangChain docs MCP, the vendored `refining-evals` skill, and
+`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
+agent `description` fields):
 
 ```yaml
 loadouts: [agents]
