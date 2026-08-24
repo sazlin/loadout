@@ -120,12 +120,23 @@ def test_orchestrator_eval_fails_without_pull_request_url() -> None:
     spec = _eval_entry("implementation_orchestrator")
     ready = next(item for item in spec["must_find"] if item["id"] == "ready-pr")
     assert "pull_request_url" in ready["keywords"]
+    assert "https" in ready["keywords"]
+    assert "/pull/" in ready["keywords"]
 
-    report = json.loads(json.dumps(load_impl_golden("implementation_orchestrator")))
-    report["delivery"].pop("pull_request_url", None)
-    result = score_implementation_report(report, spec)
-    assert not result.ok
-    assert any("ready-pr" in failure for failure in result.failures)
+    golden = load_impl_golden("implementation_orchestrator")
+    assert score_implementation_report(golden, spec).ok
+
+    missing = json.loads(json.dumps(golden))
+    missing["delivery"].pop("pull_request_url", None)
+    missing_result = score_implementation_report(missing, spec)
+    assert not missing_result.ok
+    assert any("ready-pr" in failure for failure in missing_result.failures)
+
+    null_url = json.loads(json.dumps(golden))
+    null_url["delivery"]["pull_request_url"] = None
+    null_result = score_implementation_report(null_url, spec)
+    assert not null_result.ok
+    assert any("ready-pr" in failure for failure in null_result.failures)
 
 
 @pytest.mark.parametrize(

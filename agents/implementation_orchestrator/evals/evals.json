@@ -29,13 +29,17 @@
         },
         {
           "id": "ready-pr",
-          "keywords": ["pull_request_url"]
+          "keywords": ["pull_request_url", "https", "/pull/"]
         }
       ],
       "must_not_find": [
         {
           "id": "in-process-impl",
           "keywords": ["def export_widgets"]
+        },
+        {
+          "id": "null-pr-url",
+          "keywords": ["\"pull_request_url\": null"]
         }
       ]
     }
