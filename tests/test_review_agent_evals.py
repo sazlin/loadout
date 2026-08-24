@@ -213,6 +213,17 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     assert "playwright-cli" in lowered or "npx playwright-cli" in lowered
     assert "stop immediately" in lowered
     assert "retrying `open`" in lowered
+    assert "call `computeruse` directly" in lowered
+    assert "spawn `computeruse`" in lowered
+    for sentence in text.replace("\n", " ").split("."):
+        sentence_l = sentence.lower()
+        if "spawn" in sentence_l and "`task`" in sentence_l:
+            assert "mcp__playwright" not in sentence_l
+            assert "playwright mcp" not in sentence_l
+    if filename == VERIFIER:
+        assert "check ui claims against a running webapp" in lowered
+    else:
+        assert "observe a running webapp" in lowered
     _assert_closes_playwright_cli_sessions(filename, text)
     if filename == VERIFIER:
         assert "continue remaining" in lowered

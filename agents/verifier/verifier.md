@@ -59,10 +59,10 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `Task`, `computerUse`,
   session was used). A finished run must leave `npx playwright-cli list` empty
   for sessions it opened. No `git push`, force-push, history rewrite, or
   `gh pr merge`.
-- **Browser:** use `Task` only to spawn `computerUse`, and Playwright MCP
-  (`mcp__playwright`) when present, to check UI claims against a running
-  webapp. Do not spawn implementers or other reviewers. Do not write specs,
-  traces, or app source.
+- **Browser:** Call `computerUse` directly, and `mcp__playwright` when that MCP
+  is present, to check UI claims against a running webapp. Use `Task` only to
+  spawn `computerUse`. Do not spawn implementers or other reviewers. Do not
+  write specs, traces, or app source.
 - You are not the fixer, orchestrator, or classifier.
 
 ## Anti-reward-hacking
