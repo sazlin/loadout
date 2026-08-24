@@ -4,6 +4,12 @@
 
 ## 0.15.0
 
+- Replace the `playwright` loadout's `playwright-test` MCP
+  (`npx --no-install playwright run-test-mcp-server`) with a `cli_tools`
+  install of `@playwright/cli@0.1.18`. Planner, generator, and healer
+  explore the live app with `npx playwright-cli` and run specs with
+  `npx playwright test` (no Playwright MCP).
+
 ## 0.14.0
 
 ## 0.13.0
