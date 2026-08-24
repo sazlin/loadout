@@ -178,11 +178,11 @@ agents and for imported ones. Underscore-prefixed files are templates or notes,
 not agents: lint, orphan checks, and sync skip them. Markdown under `evals/`
 is not an agent.
 
-**Two families.**
+**Agent families.**
 
 | Family | Files | Loadout | Role |
 | --- | --- | --- | --- |
-| Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
+| Scoped implementers | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
 | PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review]`. |
 | Agentic implementation | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `agentic` | PRD → plan critic loop (max 10) → build critic loop (max 10) → ready-for-review PR. Opt in with `loadouts: [base, agentic]`. |
 
