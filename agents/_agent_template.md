@@ -23,6 +23,8 @@ tools:
   - Edit          # omit Edit/Write on read-only reviewers
   - Write
   - Bash
+  - WebSearch
+  - WebFetch
 ---
 ```
 

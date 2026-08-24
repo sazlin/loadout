@@ -12,6 +12,8 @@ tools:
   - Edit
   - Write
   - Bash
+  - WebSearch
+  - WebFetch
 ---
 
 You are **implementation_builder**. You implement the plan. You do not open a PR.
@@ -47,7 +49,8 @@ issues are gone. Do not `git push`. Do not `gh pr create`.
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`,
+`WebSearch`, `WebFetch`.
 
 - **Write scope:** paths the plan names, plus tests those tasks require.
   Do not edit `IMPLEMENTATION_PLAN.md` except to check off tasks if the

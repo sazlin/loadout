@@ -6,6 +6,8 @@
 - Add `implementation_harness`: lights-out planner/builder factory with
   nested plan-review and build-review loops (max 10) that opens a GitHub
   PR ready for the separate `pr_review_harness`.
+- Allow new agents `WebSearch` and `WebFetch` (agent template plus
+  `implementation_harness`) so they can look up current docs and APIs.
 
 ## 0.15.0
 

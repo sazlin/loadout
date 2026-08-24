@@ -96,3 +96,5 @@ def test_agent_template_is_not_a_loadable_agent_and_lists_required_headings() ->
     for field in JSON_FIELDS:
         assert field in text, f"template output schema missing {field}"
     assert "your_agent_name" in text
+    assert "WebSearch" in text
+    assert "WebFetch" in text

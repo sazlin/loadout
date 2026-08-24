@@ -12,6 +12,8 @@ tools:
   - Edit
   - Write
   - Bash
+  - WebSearch
+  - WebFetch
 ---
 
 You are **implementation_planner**. You write the plan. You do not implement
@@ -46,7 +48,8 @@ brownfield, feature vs bugfix, branch name.
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`,
+`WebSearch`, `WebFetch`.
 
 - **Write scope:** `IMPLEMENTATION_PLAN.md` only. No product code, no tests
   except as described in the plan.

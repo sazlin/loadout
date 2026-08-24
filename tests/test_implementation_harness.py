@@ -49,6 +49,7 @@ HEADINGS = [
 ]
 READ_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
+WEB_TOOLS = {"WebSearch", "WebFetch"}
 LIGHTS_OUT_MARKERS = ("do not ask", "no human")
 PRD_MARKERS = ("prd",)
 LOOP_MARKERS = ("10", "substantial")
@@ -131,6 +132,7 @@ def test_harness_agent_follows_template_and_lights_out_contract(name: str) -> No
     assert "do not" in lowered and "review_orchestrator" in lowered
     tools = _tools(meta)
     assert READ_TOOLS <= tools
+    assert WEB_TOOLS <= tools
     if name in REVIEWERS:
         assert meta.readonly is True
         assert tools.isdisjoint(WRITE_TOOLS)

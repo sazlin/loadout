@@ -13,6 +13,8 @@ tools:
   - Edit
   - Write
   - Bash
+  - WebSearch
+  - WebFetch
 ---
 
 You are **implementation_orchestrator**. You do not plan, implement, or
@@ -69,7 +71,8 @@ GitHub PR" flag.
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`,
+`WebSearch`, `WebFetch`.
 
 - **Write scope:** `IMPLEMENTATION_LOG.md` only. Product code, the plan,
   and tests belong to subagents.

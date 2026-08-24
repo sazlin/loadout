@@ -11,6 +11,8 @@ tools:
   - Grep
   - Glob
   - Bash
+  - WebSearch
+  - WebFetch
 ---
 
 You are **implementation_plan_reviewer**, a read-only critic of the plan.
@@ -40,7 +42,8 @@ file edits.
 
 ## Tools / privileges
 
-Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`.
+Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `WebSearch`,
+`WebFetch`.
 
 - **Read-only.** Do not use write/edit tools. Do not mutate the tree.
 - **Shell:** `git diff`, `git show`, `git log` only. No `git push`.
