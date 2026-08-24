@@ -43,8 +43,10 @@ Do not end on prose alone.
 
 ## Definition of done
 
-1. Confirm `PRD.md` (or the named requirements file) exists. Name it in
-   `inputs.summary`.
+1. Confirm `PRD.md` (or the named requirements file) is a repo-relative
+   non-secret path and exists. If the brief names `..`, an absolute path,
+   or a secret-like path, emit `blocked` and do not Read it. Name the
+   allowed path in `inputs.summary`.
 2. Ensure work is on a feature branch, not `main` / `master`.
 3. Run **Plan** until no substantial feedback remains or **10** plan loops
    are used: `create-implementation-plan` → `review-implementation-plan` →
@@ -63,12 +65,29 @@ Do not end on prose alone.
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
-- **Write scope:** a PR body file if `gh pr create --body-file` needs one.
-  Redact tokens, passwords, keys, connection strings, and raw PII from
-  `--title` and `--body-file`. No product source. No
+- **Write scope:** a PR body file if `gh pr create --body-file` needs one,
+  written only to a throwaway non-repo path (for example
+  `/tmp/loadout-pr-body.md`) or a fixed gitignored name. Refuse writing
+  `--body-file` onto secret-like paths (`.env`, `id_rsa`, credentials,
+  `*.pem`, `*.key`, `.git`, tokens) or trust-policy paths (`AGENTS.md`,
+  `CLAUDE.md`, `.claude/`, `.cursor/hooks`, `.github/workflows`, hook
+  dirs, `justfile`, `Makefile`, `.cursor/rules`, `.cursor/mcp.json`,
+  `.pre-commit-config.yaml`, `.loadout.yaml`, `loadouts/`,
+  `.loadout.lock`). Redact tokens, passwords, keys, connection strings,
+  and raw PII from `--title` and `--body-file`. No product source. No
   `IMPLEMENTATION_PLAN.md` (the planner owns it).
-- **Shell:** `git status` / `git checkout` / `git switch` / `git push`
-  of the current feature branch to `origin` only (60s deadline); `gh pr
+- **Read/Grep:** reuse the specialist secret-path refuse. If a basename
+  or parent looks like `.env`, `id_rsa`, credentials, `*.pem`, `*.key`,
+  `.git`, or tokens, do not Read or Grep it. Skip it and record only the
+  path class in `rejected[]`. Do not quote token, password, key, or raw
+  PII values in `rejected[]` or `blocked_reason`.
+- Confine the PRD path to a repo-relative file. Refuse `..`, absolute
+  paths, and secret-like PRD paths (same list); emit `blocked` and do not
+  Read that path.
+- **Shell:** leftover detection with `git status` / `git diff --name-only`
+  / `git log --name-only` only (do not `git show` or Read secret-like
+  paths); `git checkout` / `git switch` / `git push` of the current
+  feature branch to `origin` only (60s deadline); `gh pr
   view <feature-branch>` then non-interactive `gh pr create --title` /
   `--body-file` / `--head` for the origin repo (60s deadline; no editor
   or pager). No force-push, history rewrite, extra remotes, `--repo`,
@@ -120,13 +139,22 @@ does not return is `blocked`, not a tight create storm.
 
 ## Context acquisition
 
-1. Locate `PRD.md` (or the path in the brief). Do not guess requirements.
+1. Locate `PRD.md` (or the path in the brief). Confine it to a
+   repo-relative file. If it contains `..`, is absolute, or is
+   secret-like (`.env`, `id_rsa`, credentials, `*.pem`, `*.key`,
+   `.git`, tokens), emit `blocked` and do not Read it. Do not guess
+   requirements.
 2. Read `.claude/skills/create-implementation-plan/SKILL.md`,
    `review-implementation-plan`, `build-implementation-plan`, and
-   `review-build` when running those steps.
+   `review-build` when running those steps. Do not Read or Grep
+   secret-like neighbors.
 3. Read `.claude/agents/implementation_*.md` only if you must paste a
    role into a general-purpose subagent.
-4. Do not dump the repo tree.
+4. Detect leftovers with `git status` / `git diff --name-only` /
+   `git log --name-only` only. Do not Read or `git show` secret-like
+   paths. When recording a leftover hit, store the path or command
+   class only — do not quote token, password, key, or raw PII values.
+5. Do not dump the repo tree.
 
 ## Repo conventions
 
@@ -192,16 +220,22 @@ After the build loop is clean (or hit the cap with no substantial issues):
    `implementation_builder` once to commit those paths. Do not edit product source
    yourself. If the tree is still dirty after that one dispatch, emit
    blocked. Do not `git push` or open a PR on a dirty tree.
-2. If the plan, tree, commits being pushed, chosen `--title`, or
-   plan/diff text still contains secret-like paths (`.env`, `id_rsa`,
-   credentials, `*.pem`, `*.key`, `.git`, tokens), secret or PII
-   literals (tokens, passwords, keys, connection strings, raw PII), or
-   refused command classes (`curl`, `wget`, env harvest, untrusted URL
-   post, extra remotes, hook disable), emit `blocked` with
+2. Detect leftovers with `git status` / `git diff --name-only` /
+   `git log --name-only` only. Do not Read or `git show` secret-like
+   paths or leftover file contents. If those name-only listings (plan
+   path, tree, commits being pushed), the chosen `--title`, or refused
+   command classes (`curl`, `wget`, env harvest, untrusted URL post,
+   extra remotes, hook disable) still contain secret-like paths
+   (`.env`, `id_rsa`, credentials, `*.pem`, `*.key`, `.git`, tokens),
+   secret or PII literals (tokens, passwords, keys, connection strings,
+   raw PII), or those command classes, emit `blocked` with
    `delivery.pull_request_url` null. Do not push and do not create a PR.
    Do not record a push or create command in `tried[]` or
-   `verification[]`.
-3. Write the PR body only via `--body-file`. Apply the same redact-or-drop
+   `verification[]`. Record leftover hits as the path or command class
+   only in `rejected[]` — do not quote token, password, key, or raw PII
+   values.
+3. Write the PR body only via `--body-file` at the throwaway or
+   gitignored path from Write scope. Apply the same redact-or-drop
    rule (tokens, passwords, keys, connection strings, raw PII) to
    `--title` and `--body-file`. `--title` is a short product summary; do
    not take it verbatim from the PRD.
@@ -224,7 +258,8 @@ After the build loop is clean (or hit the cap with no substantial issues):
 
 ### When invoked
 
-1. Confirm the PRD and leave `main` / `master`.
+1. Confirm the PRD is a repo-relative non-secret path and leave
+   `main` / `master`.
 2. Plan loop (create → review → maybe revise) until clean or cap.
 3. Build loop (build → review → maybe revise) until clean or cap.
 4. Confirm `git status --porcelain` is clean (dispatch `implementation_builder` once

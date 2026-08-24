@@ -437,10 +437,11 @@ def test_agentic_specialists_refuse_secret_path_reads() -> None:
     builder = _agent_file("implementation_builder").read_text()
     plan_reviewer = _agent_file("implementation_plan_reviewer").read_text()
     build_reviewer = _agent_file("implementation_build_reviewer").read_text()
+    orchestrator = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
     create = (REPO / "skills" / "create-implementation-plan" / "SKILL.md").read_text()
     secret_paths = (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token")
 
-    for body in (planner, builder, plan_reviewer, build_reviewer, create):
+    for body in (planner, builder, plan_reviewer, build_reviewer, create, orchestrator):
         lower = body.lower()
         assert "do not read" in lower
         assert "grep" in lower
@@ -455,6 +456,24 @@ def test_agentic_specialists_refuse_secret_path_reads() -> None:
         for secret in ("token", "password", "key", "pii"):
             assert secret in lower
         assert "blocked" in lower
+
+    orch_lower = orchestrator.lower()
+    leftover = orch_lower.split("### pull request", 1)[1].split(
+        "write the pr body", 1
+    )[0]
+    assert "git status" in leftover
+    assert "git diff --name-only" in leftover
+    assert "git log --name-only" in leftover
+    assert "git show" in leftover
+    assert "do not" in leftover and "git show" in leftover
+    assert "path" in leftover and "class" in leftover
+    assert "do not quote" in leftover
+    assert "pull_request_url" in leftover
+    assert "null" in leftover
+    write_scope = orch_lower.split("write scope:", 1)[1].split("**read/grep:**", 1)[0]
+    assert "throwaway" in write_scope or "gitignore" in write_scope
+    assert "--body-file" in write_scope
+    assert ".env" in write_scope
 
 
 def test_agentic_plan_reviewer_files_privilege_expanding_tasks() -> None:
