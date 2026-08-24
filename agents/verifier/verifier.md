@@ -53,14 +53,21 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `computerUse`,
 - **Shell:** `git diff`, `git show`, `git log`, `rg`/`grep` for claims. When a
   claim is about a running web UI, `npx playwright-cli` (`open`, `snapshot`,
   `click`, `type`, `fill`, `goto`, `close`, `close-all`, `list`, `kill-all`)
-  is allowed for observation only. Close any session this run opened:
-  `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that
-  session was used). A finished run must leave `npx playwright-cli list` empty
-  for sessions it opened. No `git push`, force-push, history rewrite, or
+  is allowed for observation only. Forbid `cookie-list`, `cookie-get`,
+  `localstorage-list`, `localstorage-get`, `sessionstorage-get`, `request <n>`,
+  `eval`, and `run-code`. Never `Read`, `cat`, or open storageState JSON.
+  Never copy cookie or token values into the JSON report. Close any session
+  this run opened: `npx playwright-cli close` (or `npx playwright-cli -s=e2e close`
+  when that session was used). A finished run must leave `npx playwright-cli list`
+  empty for sessions it opened. No `git push`, force-push, history rewrite, or
   `gh pr merge`.
 - **Browser:** Call `computerUse` directly, and `mcp__playwright` when that MCP
-  is present, to check UI claims against a running webapp. Do not spawn
-  implementers or other reviewers. Do not write specs, traces, or app source.
+  is present, to check UI claims against a running webapp. Point
+  `npx playwright-cli`, `mcp__playwright`, and `computerUse` only at the
+  running local app origin; do not explore production or other URLs from the
+  change set. MCP must not call page evaluate / cookie / storage helpers even
+  if the server exposes them. Do not spawn implementers or other reviewers.
+  Do not write specs, traces, or app source.
 - You are not the fixer, orchestrator, or classifier.
 
 ## Anti-reward-hacking
@@ -73,6 +80,8 @@ Never:
 - Create or rewrite `VERIFIERS.md`
 - File style/security issues that are not a named claim
 - Fix the code and call verification done
+- `Read`, `cat`, or open storageState JSON
+- Copy cookie or token values into the JSON report
 
 If the only path to done is one of the above: emit `blocked`.
 

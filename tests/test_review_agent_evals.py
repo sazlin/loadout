@@ -92,6 +92,16 @@ WEBAPP_REVIEW_AGENTS = frozenset(
         "verifier.md",
     }
 )
+_FORBID_WORDS = ("forbid", "never", "do not")
+_SECRET_DUMP_CLI = (
+    "cookie-list",
+    "cookie-get",
+    "localstorage-list",
+    "localstorage-get",
+    "sessionstorage-get",
+    "eval",
+    "run-code",
+)
 ISSUE_SCHEMA_FIELDS = (
     '"id"',
     '"title"',
@@ -133,6 +143,39 @@ def _tools(meta: AgentMeta) -> set[str]:
 def issue_blob_safe(issue: dict[str, object]) -> str:
     """Lowercased issue text for test mutations; mirrors the scorer."""
     return " ".join(str(value) for value in issue.values()).lower()
+
+
+def _forbid_window(text: str, needle: str) -> str:
+    at = text.find(needle)
+    return text[max(0, at - 160) : at + 160]
+
+
+def _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(label: str, text: str) -> None:
+    """Browser I/O must not dump session secrets or leave the local app origin."""
+    lowered = text.lower()
+    for command in _SECRET_DUMP_CLI:
+        assert command in lowered, f"{label}: missing {command}"
+    assert "request <n>" in lowered, label
+    cookie_window = _forbid_window(lowered, "cookie-get")
+    assert any(word in cookie_window for word in _FORBID_WORDS), label
+    run_window = _forbid_window(lowered, "run-code")
+    assert any(word in run_window for word in _FORBID_WORDS), label
+    assert "eval" in run_window, label
+    assert "storagestate" in lowered, label
+    forbids_read = (
+        "never `read`" in lowered
+        or "never read" in lowered
+        or ("never" in lowered and "`cat`" in lowered)
+        or "do not read" in lowered
+        or "do not `read`" in lowered
+    )
+    assert forbids_read, label
+    assert "cookie or token" in lowered, label
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0].lower()
+    assert "running local app origin" in tools, label
+    assert "do not explore production" in tools, label
+    assert "evaluate" in tools, label
+    assert "cookie" in tools and "storage" in tools, label
 
 
 def test_every_agent_file_is_classified() -> None:
@@ -222,6 +265,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     _assert_closes_playwright_cli_sessions(filename, text)
     if filename == VERIFIER:
         assert "continue remaining" in lowered
+    _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(filename, text)
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
