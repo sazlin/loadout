@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "agent": "general-purpose",
+  "charter": "Review a markdown plan.",
+  "inputs": { "summary": "plan review", "paths": [] },
+  "issues": [
+    {
+      "id": "NIT-1",
+      "title": "Heading is short",
+      "severity": "minor",
+      "file": "IMPLEMENTATION_PLAN.md",
+      "line": 1,
+      "symbol": "heading",
+      "whats_wrong": "The heading is only one word.",
+      "why_it_matters": "Style.",
+      "how_to_fix": ["Rewrite the module later."],
+      "acceptance_criteria": ["Longer title"],
+      "suggested_test": "none",
+      "do_not_change": "n/a"
+    }
+  ],
+  "verification": [],
+  "assumptions": [],
+  "tried": [],
+  "rejected": [],
+  "attempts": 1,
+  "blocked_reason": null
+}

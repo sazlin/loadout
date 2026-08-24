@@ -1,0 +1,16 @@
+{
+  "skill_name": "review-build",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review the build using review-build.",
+      "expected_output": "One fresh imp_reviewer dispatch, no code edits",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches imp_reviewer",
+        "Does not edit product code",
+        "Returns JSON issues to the builder"
+      ]
+    }
+  ]
+}

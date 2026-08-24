@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "agent": "imp_reviewer",
+  "charter": "Find defects that make the build miss the plan or the PRD, skip tests, or ship incorrect behavior.",
+  "inputs": {
+    "summary": "slugify keeps punctuation.",
+    "paths": ["evals/files/slug.py"]
+  },
+  "issues": [
+    {
+      "id": "B-001",
+      "title": "slugify leaves punctuation in the slug",
+      "severity": "critical",
+      "file": "evals/files/slug.py",
+      "line": 2,
+      "symbol": "slugify",
+      "whats_wrong": "Hello World! becomes hello-world! because punctuation is not stripped.",
+      "why_it_matters": "The plan requires hello-world with punctuation removed.",
+      "how_to_fix": ["Drop characters that are not letters, digits, or hyphens."],
+      "acceptance_criteria": ["slugify('Hello World!') == 'hello-world'"],
+      "suggested_test": "test_slugify_strips_punctuation",
+      "do_not_change": "Lowercasing and space-to-hyphen behavior"
+    }
+  ],
+  "verification": [
+    { "command": "git diff --stat", "result": "pass", "notes": "Read-only review." }
+  ],
+  "assumptions": [],
+  "tried": ["Compared slug.py to the plan."],
+  "rejected": ["Renaming the function; the defect is punctuation handling."],
+  "attempts": 1,
+  "blocked_reason": null
+}

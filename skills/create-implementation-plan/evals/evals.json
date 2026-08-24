@@ -1,0 +1,16 @@
+{
+  "skill_name": "create-implementation-plan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Start planning from PRD.md using create-implementation-plan.",
+      "expected_output": "One fresh implementation_planner dispatch, no in-process plan",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Dispatches implementation_planner",
+        "Requires a fresh subagent",
+        "Does not write IMPLEMENTATION_PLAN.md in-process"
+      ]
+    }
+  ]
+}

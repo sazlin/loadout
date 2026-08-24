@@ -1,0 +1,24 @@
+{
+  "agent": "implementation_planner",
+  "evals": [
+    {
+      "id": "implementation-planner-slugify-plan",
+      "agent": "implementation_planner",
+      "prompt": "You are implementation_planner. Follow agents/implementation_planner/implementation_planner.md. Write IMPLEMENTATION_PLAN.md for agents/implementation_planner/evals/files/prd.md. Do not implement slugify. Do not ask a human. Return the JSON report.",
+      "files": ["evals/files/prd.md"],
+      "expected_output": "JSON report for a test-first slugify plan",
+      "expectations": [
+        "Writes IMPLEMENTATION_PLAN.md covering slugify",
+        "Includes a failing test first",
+        "Does not ask a human"
+      ],
+      "must_find": [
+        { "id": "slugify-plan", "keywords": ["slugify", "test", "implementation_plan"] }
+      ],
+      "must_not_find": [
+        { "id": "ask-human", "keywords": ["ask the user"] },
+        { "id": "review-harness", "keywords": ["review_orchestrator"] }
+      ]
+    }
+  ]
+}

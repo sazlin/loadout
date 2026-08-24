@@ -160,6 +160,7 @@ loadout/
     playwright.yaml
     superpowers.yaml
     pr_review_harness.yaml
+    implementation_harness.yaml
   tests/
   CHANGELOG.md
 ```

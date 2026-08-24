@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Rename the `pr_review` loadout to `pr_review_harness`.
+- Add `implementation_harness`: lights-out planner/builder factory with
+  nested plan-review and build-review loops (max 10) that opens a GitHub
+  PR ready for the separate `pr_review_harness`.
 
 ## 0.15.0
 

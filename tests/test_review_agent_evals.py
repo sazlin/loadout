@@ -56,6 +56,15 @@ ISSUE_RESOLVER = "issue_resolver.md"
 VERIFIER = "verifier.md"
 RISK_CLASSIFIER = "risk_classifier.md"
 HARNESS_AGENTS = frozenset({ISSUE_RESOLVER, VERIFIER, RISK_CLASSIFIER})
+IMPLEMENTATION_HARNESS_AGENTS = frozenset(
+    {
+        "implementation_orchestrator.md",
+        "implementation_planner.md",
+        "implementation_plan_reviewer.md",
+        "imp_builder.md",
+        "imp_reviewer.md",
+    }
+)
 
 REVIEW_HEADINGS = [
     "## Charter",
@@ -117,7 +126,13 @@ def issue_blob_safe(issue: dict[str, object]) -> str:
 
 def test_every_agent_file_is_classified() -> None:
     on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
-    classified = IMPLEMENTATION_AGENTS | REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}
+    classified = (
+        IMPLEMENTATION_AGENTS
+        | REVIEW_DIMENSION_AGENTS
+        | HARNESS_AGENTS
+        | IMPLEMENTATION_HARNESS_AGENTS
+        | {REVIEW_ORCHESTRATOR}
+    )
     assert on_disk == classified
     assert (AGENTS / "_agent_template.md").is_file()
 
@@ -132,8 +147,8 @@ def test_base_loadout_does_not_include_dimensional_review_agents() -> None:
     assert "rules/core/colocated-evals.mdc" in {entry["src"] for entry in loadout.rules}
 
 
-def test_pr_review_loadout_includes_harness_agents_and_skills() -> None:
-    loadout = load_loadout(REPO / "loadouts" / "pr_review.yaml")
+def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "pr_review_harness.yaml")
     srcs = {entry["src"] for entry in loadout.agents}
     expected_agents = {
         f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}

@@ -1,0 +1,23 @@
+{
+  "agent": "imp_builder",
+  "evals": [
+    {
+      "id": "imp-builder-slugify-tdd",
+      "agent": "imp_builder",
+      "prompt": "You are imp_builder. Follow agents/imp_builder/imp_builder.md. Implement evals/files/IMPLEMENTATION_PLAN.md. Do not open a GitHub PR. Return JSON.",
+      "files": ["evals/files/IMPLEMENTATION_PLAN.md", "evals/files/slug.py"],
+      "expected_output": "JSON report for a test-first slugify implementation",
+      "expectations": [
+        "Implements slugify with tests",
+        "Does not create a GitHub PR"
+      ],
+      "must_find": [
+        { "id": "tdd-slugify", "keywords": ["slugify", "test"] }
+      ],
+      "must_not_find": [
+        { "id": "open-pr", "keywords": ["gh pr create"] },
+        { "id": "review-harness", "keywords": ["review_orchestrator"] }
+      ]
+    }
+  ]
+}

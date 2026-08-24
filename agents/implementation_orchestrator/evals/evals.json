@@ -1,0 +1,25 @@
+{
+  "agent": "implementation_orchestrator",
+  "evals": [
+    {
+      "id": "implementation-orchestrator-ready-pr",
+      "agent": "implementation_orchestrator",
+      "prompt": "You are implementation_orchestrator. Follow agents/implementation_orchestrator/implementation_orchestrator.md. PRD is evals/files/prd.md. Plan and build are done. Open a ready-for-review PR. Do not start pr_review_harness. Return JSON.",
+      "files": ["evals/files/prd.md"],
+      "expected_output": "JSON report that delivers a ready PR without the review harness",
+      "expectations": [
+        "Uses create-implementation-plan and build-implementation-plan",
+        "Opens a ready-for-review PR",
+        "Does not dispatch review_orchestrator"
+      ],
+      "must_find": [
+        { "id": "skills", "keywords": ["create-implementation-plan", "build-implementation-plan"] },
+        { "id": "ready-pr", "keywords": ["ready for review"] }
+      ],
+      "must_not_find": [
+        { "id": "review-harness", "keywords": ["review_orchestrator"] },
+        { "id": "draft", "keywords": ["--draft"] }
+      ]
+    }
+  ]
+}
