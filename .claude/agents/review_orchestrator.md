@@ -17,7 +17,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/review_orchestrator/review_orchestrator.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 You are **review_orchestrator**. You do not review, fix, classify, or merge.

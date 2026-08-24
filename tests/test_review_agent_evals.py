@@ -81,11 +81,12 @@ REVIEW_HEADINGS = [
 ]
 REVIEW_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
-# computerUse plus Playwright MCP so a reviewer can exercise a running web UI
-# without write tools. Task is omitted: it can spawn write-capable agents.
-WEBAPP_REVIEW_TOOLS = {"computerUse", "mcp__playwright"}
-# Extra computerUse/mcp__playwright allowlist for agents that may observe a running
-# web UI; review_maintainability, review_scale, review_orchestrator, and
+# Extra computerUse allowlist so a reviewer can observe a running web UI.
+# Live exploration uses npx playwright-cli via Bash (the browser CLI the
+# playwright loadout installs). Task is omitted: it can spawn write-capable
+# agents. No Playwright MCP.
+WEBAPP_REVIEW_TOOLS = {"computerUse"}
+# review_maintainability, review_scale, review_orchestrator, and
 # risk_classifier stay on REVIEW_TOOLS.
 WEBAPP_REVIEW_AGENTS = frozenset(
     {
@@ -306,11 +307,14 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
     assert WEBAPP_REVIEW_TOOLS <= tools
     assert "Task" not in tools
     assert tools.isdisjoint(WRITE_TOOLS)
+    assert "mcp__playwright" not in tools
+    assert "mcp__playwright" not in text
+    assert "@playwright/mcp" not in text
     lowered = text.lower()
     assert "`computeruse`" in lowered
-    assert "`mcp__playwright`" in lowered
     assert "`task`" not in lowered
-    assert "playwright-cli" in lowered or "npx playwright-cli" in lowered
+    assert "npx playwright-cli" in lowered
+    assert "playwright loadout" in lowered
     assert "stop immediately" in lowered
     assert "retrying `open`" in lowered
     assert "call `computeruse` directly" in lowered

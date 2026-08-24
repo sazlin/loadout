@@ -5,7 +5,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/colocated-evals.mdc
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Colocated evals

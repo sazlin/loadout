@@ -5,7 +5,7 @@ description: Use when creating new skills, editing existing skills, or verifying
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/writing-skills/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Writing Skills

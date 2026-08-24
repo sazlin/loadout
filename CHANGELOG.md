@@ -15,10 +15,11 @@
 - Add `rules/agents/agent-descriptions.mdc` to the `agents` loadout:
   agent YAML `description` fields are when-to-use / when-not-to-use
   dispatch signals for other agents.
-- Give `review_correctness`, `review_security`, and `verifier` Playwright MCP
-  (`mcp__playwright`) plus Cursor `computerUse` so they can exercise a running
-  web UI during review. They stay read-only: no write tools, no `Task`
-  spawners, observation-only `npx playwright-cli`.
+- Give `review_correctness`, `review_security`, and `verifier` Cursor
+  `computerUse` plus observation-only `npx playwright-cli` (the browser CLI
+  the `playwright` loadout installs) so they can exercise a running web UI.
+  They stay read-only: no write tools, no `Task` spawners, no Playwright MCP.
+- Dogfood the `playwright` loadout on this repo; `.loadout.yaml` pins `main`.
 
 ## 0.15.0
 

@@ -1,0 +1,38 @@
+---
+description: Keep README.md Available loadouts in sync when adding, removing, or changing
+  a loadout. Applies when editing loadouts/.
+globs:
+- loadouts/*.yaml
+metadata:
+  loadout.managed: 'true'
+  loadout.source: rules/core/readme-loadouts.mdc
+  loadout.sha: local
+---
+
+# README loadout catalog
+
+This rule applies only in a loadout source repo (a tree with `loadouts/*.yaml`).
+In a consumer project without that directory, ignore it.
+
+When a loadout is added, removed, renamed, or its distinctive contents
+change, update `README.md` **Available loadouts** in the same change.
+
+The table must list every top-level `loadouts/*.yaml` file:
+
+| Column | Content |
+| --- | --- |
+| Loadout | Exact loadout name in backticks |
+| Extends | Parent loadout(s) in backticks, in YAML `extends` order, or — if none |
+| What you get | Short summary of distinctive rules, skills, agents, hooks, and MCPs |
+
+Do not ship the catalog update in a later commit or follow-up PR. Do not
+leave the summary as "close enough" when a loadout's unique artifacts
+changed.
+
+| Excuse | Reality |
+| --- | --- |
+| "I'll update the README later" | Later means drift. Same change. |
+| "The summary is still roughly right" | Readers use this table to choose loadouts. Name what landed. |
+| "It's only an internal rule/skill" | If a loadout ships it, the catalog says so. |
+
+When you add this kind of change, also run the README catalog tests.

@@ -242,3 +242,6 @@ agents/davinci/evals/results/
 .agents/
 skills-lock.json
 .skills.json
+
+# Playwright loadout cli_tools
+node_modules/

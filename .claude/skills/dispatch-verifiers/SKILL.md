@@ -7,7 +7,7 @@ description: Run project VERIFIERS.md claims sequentially as true/false checks v
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/dispatch-verifiers/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Dispatch verifiers

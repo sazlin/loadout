@@ -1,60 +1,75 @@
 {
   "lockfile_version": 1,
   "source": "https://github.com/sazlin/loadout",
-  "ref": "v0.7.0",
-  "resolved_sha": "8dad2b62c294422c49fe29d47f42f07729daeb48",
-  "synced_at": "2026-08-18T05:58:01Z",
-  "tool_version": "0.7.0",
+  "ref": "main",
+  "resolved_sha": "local",
+  "synced_at": "2026-08-24T22:19:32Z",
+  "tool_version": "0.15.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
       "src": "agents/davinci/davinci.md",
-      "sha256": "2601c8ff07aa33fd9392f2de39cf3afeb5c9febe9a6bb1aa8d9e1e314b9a4700"
+      "sha256": "6946d67d666d0078117a703f9b2f9299bf0c65b3b2db69ff9125ea26421a2a67"
     },
     {
       "dest": ".claude/agents/issue_resolver.md",
       "src": "agents/issue_resolver/issue_resolver.md",
-      "sha256": "ef49066b12ab528a98afec261fd926e70fafdd5eb1ea7feb0870c651f3796e30"
+      "sha256": "221fcc8164890cb2e046e878c965fc3b885137b9338e75859906e6dd89037cdb"
+    },
+    {
+      "dest": ".claude/agents/playwright_generator.md",
+      "src": "agents/playwright_generator/playwright_generator.md",
+      "sha256": "6f2a19199b14bfdf8bdd206fa96ed06fe765687e130d77b217557d264c36f132"
+    },
+    {
+      "dest": ".claude/agents/playwright_healer.md",
+      "src": "agents/playwright_healer/playwright_healer.md",
+      "sha256": "d75c8166de039f8e9d3693fd9dea111aa8b2e70ddb2e0dc114ca318bc056740b"
+    },
+    {
+      "dest": ".claude/agents/playwright_planner.md",
+      "src": "agents/playwright_planner/playwright_planner.md",
+      "sha256": "c7d6392ed481a3ce8bb9956dcaa47221e8ac735918bb46866b6c10b3363cdad3"
     },
     {
       "dest": ".claude/agents/python_coder.md",
       "src": "agents/python_coder/python_coder.md",
-      "sha256": "18631adb9ce7b0eb6489426f76a452105265e721872971086abc6b6cf3b46ec6"
+      "sha256": "2966835e0cab4f0d3b39ecd5989a8dd41a9d9436dc15dd2a08a052ba7c236dca"
     },
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "47a680c041c413be0b94025600429498200b189c65471ac38ea9d6cb31508b19"
+      "sha256": "e9fae50584c19499e6dcdde94629a83fc3c105795b5ee0d3bc83f6465229577b"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
       "src": "agents/review_maintainability/review_maintainability.md",
-      "sha256": "93e27d628a44b7dd464d1298988cfe43deb238327c1ea55ec855dc77e1fba018"
+      "sha256": "ef81c4808b7995c6e7cc3feef3b22c89fc19f1ddf7eabd5d322b911dbb03ae8f"
     },
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "4e6a00aeedb066e3fa0c480bd5a77addd4d4e2f85b58399e6882aa5728ba962c"
+      "sha256": "bd7af74818df36d15a69c6fdaf157446a203571e837aaa8cf0f7807074f71494"
     },
     {
       "dest": ".claude/agents/review_scale.md",
       "src": "agents/review_scale/review_scale.md",
-      "sha256": "65f6e3065f7edb5edc3069fb2bb6d55d31f415324ebb03d8f8ae2f692f5c336f"
+      "sha256": "33a4e3df8f42c8ca1f03638f5a6cabf001d162079252f94ad398da23b0d7c6e8"
     },
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "fc54281f5520b0abe112e08321430a929d8d8b37e80095a31d3bf5e54d7b86c5"
+      "sha256": "de418d5b5fe11853bef29f5b4ff54536b1aefbdd416ebf81aa534e136f7158df"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",
       "src": "agents/risk_classifier/risk_classifier.md",
-      "sha256": "2e5fbe6a4a7783312ab52c60dfc3b5b17ef7cd795407e7094043aeadf1f6c0d5"
+      "sha256": "34cbf2c4c6b5eadec96e97cc1eb15a6a345cf266ead2eac2347b8917a1310c0f"
     },
     {
       "dest": ".claude/agents/verifier.md",
       "src": "agents/verifier/verifier.md",
-      "sha256": "3e01f2d265748fa07e6ecaf935d2a858323cba6a523884d06ff69ebbec975686"
+      "sha256": "5d63973220846c5247559645482c7746aa3859f9d5a89bb6be131955169e7516"
     },
     {
       "dest": ".claude/settings.json",
@@ -62,9 +77,20 @@
       "sha256": "2359bc7293b18cd149dc38dcd047d3c1bd4fa0163d99a3eaaa6885c3dd5cd353"
     },
     {
+      "dest": ".claude/skills/anti-sleep/SKILL.md",
+      "src": "skills/anti-sleep/SKILL.md",
+      "sha256": "2cff892568dbeea047499f3a5b06155de185b69602c97cc6b3a3540bfa1d7e23"
+    },
+    {
+      "dest": ".claude/skills/anti-sleep/scripts/keep-awake",
+      "src": "skills/anti-sleep/scripts/keep-awake",
+      "sha256": "71e6b575e890fe49479f9f26f79b907b48ec861a787cf160ee9fe3813042aa0e",
+      "mode": "755"
+    },
+    {
       "dest": ".claude/skills/brainstorming/SKILL.md",
       "src": "skills/brainstorming/SKILL.md",
-      "sha256": "6834a3c72f3b9da09a453cf5600dd5d07f01a508101eef8424f1913aa40a199a"
+      "sha256": "ee844ccca86388b2c44b608d42fcd58cab6a1eece73052338c4666b67a00d8e2"
     },
     {
       "dest": ".claude/skills/brainstorming/SOURCE.md",
@@ -112,9 +138,14 @@
       "sha256": "60cbad29b9dd7eaf08da020e301c498a72230b2e13c1813fa967a135ffcc1d71"
     },
     {
+      "dest": ".claude/skills/decisions/SKILL.md",
+      "src": "skills/decisions/SKILL.md",
+      "sha256": "a9d27427e81f60cefa527ce54df979eeca67f65a6bdbc0719d343cbce4b114fb"
+    },
+    {
       "dest": ".claude/skills/dedupe-and-write-tasks/SKILL.md",
       "src": "skills/dedupe-and-write-tasks/SKILL.md",
-      "sha256": "62e576dd49eaa11025efde1960fd64a9eee1d5c9aa5c24b6665dcd544e864d48"
+      "sha256": "eb7dc08482f13850da8612e8b064558edf4114eff68fa9d50b83df249c6df2e0"
     },
     {
       "dest": ".claude/skills/dedupe-and-write-tasks/references/tasks-to-resolve-template.md",
@@ -124,32 +155,37 @@
     {
       "dest": ".claude/skills/dispatch-panel-review/SKILL.md",
       "src": "skills/dispatch-panel-review/SKILL.md",
-      "sha256": "a00b909601d5566ab18209371d0e1359e06ec0dae369c141ccd113c07b5f2959"
+      "sha256": "2f63dd39d04919e9f0c756e0e8351c9162c72a9d7165adb7b9ef31b1ba1c3948"
     },
     {
       "dest": ".claude/skills/dispatch-verifiers/SKILL.md",
       "src": "skills/dispatch-verifiers/SKILL.md",
-      "sha256": "015772043a3aa1cebdb3f8aa25274a4e0bfe7073127a48408655757389030b20"
+      "sha256": "d715f15dc572aa17cb15abbf95ec149af6a4b7bfe2595b6fbf5cc4bf1c0aa4f7"
     },
     {
       "dest": ".claude/skills/dispatching-parallel-agents/SKILL.md",
       "src": "skills/dispatching-parallel-agents/SKILL.md",
-      "sha256": "e06c53d5b537bfe59f4087e5a825e51347403b3a6e546a3126fe62116961597e"
+      "sha256": "59f9d475ed505af03e7200a03d76be4c5ecfe930583013fdd34ab43ceee9ebe4"
     },
     {
       "dest": ".claude/skills/executing-plans/SKILL.md",
       "src": "skills/executing-plans/SKILL.md",
-      "sha256": "350531cc9f46f56a7c9bf55eded1c57451da6d259a995db137666fb222de8322"
+      "sha256": "2458b1343a68e36376ed4d9b0608523126243838eb1e468f0958f1dd50eb887b"
     },
     {
       "dest": ".claude/skills/finishing-a-development-branch/SKILL.md",
       "src": "skills/finishing-a-development-branch/SKILL.md",
-      "sha256": "ebccad117fca423947ea7e60d424eb6e45449edbbf0bf540d63ee482ce4eb3e0"
+      "sha256": "80ca766bef15a0affca47c36020ba647e2a4bdf517bdd14a8979d89e4cbd9b68"
+    },
+    {
+      "dest": ".claude/skills/learn/SKILL.md",
+      "src": "skills/learn/SKILL.md",
+      "sha256": "d656842d6ace3a5ea07d76b481f054610fb903dfb801475f37cbc0279632d6d8"
     },
     {
       "dest": ".claude/skills/log-progress/SKILL.md",
       "src": "skills/log-progress/SKILL.md",
-      "sha256": "e5f9ad5d08b3f461982c5d3ab1e152fc9f286ff749e72071103eaf9194aba1b5"
+      "sha256": "c3a2d1d061bcc59a230548568618680eb9a06d090a8bda56270be63124021ed8"
     },
     {
       "dest": ".claude/skills/log-progress/references/review-history-template.md",
@@ -157,19 +193,54 @@
       "sha256": "696a3651f246f5977c206096878be9366ba22b8d64775abc3021dd035b0f29f8"
     },
     {
+      "dest": ".claude/skills/next-decision/SKILL.md",
+      "src": "skills/next-decision/SKILL.md",
+      "sha256": "c3e26eca14d8675652abae5716ba892bc60e1398427502ce3e5e1264a6353fcd"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/SKILL.md",
+      "src": "skills/playwright-agents/SKILL.md",
+      "sha256": "4e238bbd694e66a2982e88f934b0a156aa8049638e02f694170a8107f7952a10"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/references/ci.md",
+      "src": "skills/playwright-agents/references/ci.md",
+      "sha256": "2409bbc9ccbbb16883f2f971b78c777b48928bed232d5fc1dd6898975bddac07"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/references/cursor-cloud.md",
+      "src": "skills/playwright-agents/references/cursor-cloud.md",
+      "sha256": "a9c5e415d1d2b57524cc1bf3741f55c9be44abd309748acd049e82dbfdff34ff"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/references/package-scripts.md",
+      "src": "skills/playwright-agents/references/package-scripts.md",
+      "sha256": "d61f5ab5be7d62919aed0ae8be3659c39dc85e4f092764e5301d9f45e3adb71c"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/references/prompts.md",
+      "src": "skills/playwright-agents/references/prompts.md",
+      "sha256": "10ce60285232f2552bbbee58ad2220f7cd414c2bd4a61fad8a3d620ea7924939"
+    },
+    {
+      "dest": ".claude/skills/playwright-agents/references/seed.spec.ts",
+      "src": "skills/playwright-agents/references/seed.spec.ts",
+      "sha256": "7aa21afa5b843acad6e265fb34859c8a06f0e0197ac5f108cf4b2404447a113f"
+    },
+    {
       "dest": ".claude/skills/receiving-code-review/SKILL.md",
       "src": "skills/receiving-code-review/SKILL.md",
-      "sha256": "35d2b6f9115d98097f29c071caf48fbe760ab27c55722577b03f444da215598f"
+      "sha256": "2d2948136e7877ac61d73b3e832cd5fb29f49f527cf779918e528268e7db2ab8"
     },
     {
       "dest": ".claude/skills/release-checklist/SKILL.md",
       "src": "skills/release-checklist/SKILL.md",
-      "sha256": "509742665a93ccb4fadb1e5a08d215d6440ec7036b0a6f527339b93e1a5a1eb7"
+      "sha256": "00ce684e1588c58e5c6499505f386da4deee98babfe4c7233ff2e379cf0b2d07"
     },
     {
       "dest": ".claude/skills/requesting-code-review/SKILL.md",
       "src": "skills/requesting-code-review/SKILL.md",
-      "sha256": "d2a5877f9b3bddc8f9ef7ae36d14cfad32f56782a59057db95a72560a6e2a88e"
+      "sha256": "d9ab3f244d80899a483bb307256ed6152a7f6936ee4f9a125996a6dd03f58c7f"
     },
     {
       "dest": ".claude/skills/requesting-code-review/code-reviewer.md",
@@ -179,12 +250,12 @@
     {
       "dest": ".claude/skills/resolve-next-task/SKILL.md",
       "src": "skills/resolve-next-task/SKILL.md",
-      "sha256": "f7986cd8fea109418c635d9b0d89557c063eb2bc6f68346812b849f86825fb01"
+      "sha256": "960a1d435e5f56433ed7bd9c6f649f4da627e000d540a70de6ccb00ae4b94d40"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/SKILL.md",
       "src": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "fe885513c9b0b87c00ef02173ab660e103dd56158228b75ffc04bcc1c741b915"
+      "sha256": "e5ef72f29b5708d92e6700fbb471c289941a685db09662293062e378da6a3f0b"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/implementer-prompt.md",
@@ -227,7 +298,7 @@
     {
       "dest": ".claude/skills/systematic-debugging/SKILL.md",
       "src": "skills/systematic-debugging/SKILL.md",
-      "sha256": "dedb6d96cc000ca2d1a5a8176490028f093ae855de6e5ccd5eb06651a64c9d26"
+      "sha256": "55af14a04e672bbf169a032ca38d91f0597ad962b0d58085fe54e1bf0f884291"
     },
     {
       "dest": ".claude/skills/systematic-debugging/condition-based-waiting-example.ts",
@@ -278,7 +349,7 @@
     {
       "dest": ".claude/skills/test-driven-development/SKILL.md",
       "src": "skills/test-driven-development/SKILL.md",
-      "sha256": "f625a48810de15a8f3cd8cdd98a59620cfba3a34ed8ec281f58daa3cfa4df63c"
+      "sha256": "5304c35308978d46881dff2d4b436aeb68318ac6065e62e4521dd0c0952b301a"
     },
     {
       "dest": ".claude/skills/test-driven-development/writing-good-tests.md",
@@ -288,12 +359,12 @@
     {
       "dest": ".claude/skills/using-git-worktrees/SKILL.md",
       "src": "skills/using-git-worktrees/SKILL.md",
-      "sha256": "ff249d8eabe9b2bd2b4e931f597a7f1691ffaad42992c307d1c295a13f692c9e"
+      "sha256": "487998f948b16dfdbc3edc285c3365e9c5cc4245a4231254cb0afc0afc235f61"
     },
     {
       "dest": ".claude/skills/using-superpowers/SKILL.md",
       "src": "skills/using-superpowers/SKILL.md",
-      "sha256": "29197a0eed2c10216d69991eb758a310c62bb7384482e524f7b64cd27b053826"
+      "sha256": "509b94852f283e348c23e1a3f2fd5e9c4c1b6e2b094b61a259c1038207170f24"
     },
     {
       "dest": ".claude/skills/using-superpowers/references/antigravity-tools.md",
@@ -318,12 +389,12 @@
     {
       "dest": ".claude/skills/verification-before-completion/SKILL.md",
       "src": "skills/verification-before-completion/SKILL.md",
-      "sha256": "74f1db36e2154da8fa949c54f0216d30b64e0c024257fd63af7ce4ba6f599a25"
+      "sha256": "7805587386e46575e49770dadc3596b82f12db6d839a4d4aea7dd26d38cf8eb0"
     },
     {
       "dest": ".claude/skills/writing-plans/SKILL.md",
       "src": "skills/writing-plans/SKILL.md",
-      "sha256": "6be4e434deb15035c7ce3b817df1fdfb74f12c846c2fef4e705e66b7040290ac"
+      "sha256": "6c44e799a7321baeb1bd990cb0c0936e1085e3ae0a0ebc8ddc057e7e5c3b204b"
     },
     {
       "dest": ".claude/skills/writing-plans/plan-document-reviewer-prompt.md",
@@ -333,7 +404,7 @@
     {
       "dest": ".claude/skills/writing-skills/SKILL.md",
       "src": "skills/writing-skills/SKILL.md",
-      "sha256": "9f48e9cc5d3ef643ef12922bb977314da0db0ec14307342a2b0cd0c118c5ebff"
+      "sha256": "fb309f1c65d19a74ebb86e0decf8fa24461d40aafed8363348028136dc93f2f0"
     },
     {
       "dest": ".claude/skills/writing-skills/anthropic-best-practices.md",
@@ -407,44 +478,74 @@
     {
       "dest": ".cursor/rules/agent-authoring.mdc",
       "src": "rules/agents/agent-authoring.mdc",
-      "sha256": "b6e92a51d31a435db866f36a77e1ec22f7488d143dabbd114f1166bbd4e172d1"
+      "sha256": "220a39437c73a7efc1745ed0b1483a6e2aab723762d129834d8315df97579f56"
     },
     {
       "dest": ".cursor/rules/colocated-evals.mdc",
       "src": "rules/core/colocated-evals.mdc",
-      "sha256": "2494b61d98d6b9f78a8ddf3c191ae23fba7f8cd95ac19142784e065d6a0fc734"
+      "sha256": "1f5ceb31e5c74b51d25c4a4acdd13397ee3c5144785e1cdf9564d51fb778d961"
     },
     {
       "dest": ".cursor/rules/commit-style.mdc",
       "src": "rules/core/commit-style.mdc",
-      "sha256": "dd615c780c1142b866f4fafd359e28df237d14d78217873de269e7a5307078b5"
+      "sha256": "1d2ed2dc2698b2ce56049e56e3be2a66869c7ffa06d1f7631daa283342383f56"
+    },
+    {
+      "dest": ".cursor/rules/honor-check-intent.mdc",
+      "src": "rules/core/honor-check-intent.mdc",
+      "sha256": "4ffed0dad6413baa9dd5db16d1a01d392cdb280120d913aa0694a2da23198384"
+    },
+    {
+      "dest": ".cursor/rules/no-cursor-coauthor.mdc",
+      "src": "rules/core/no-cursor-coauthor.mdc",
+      "sha256": "a99c120af657866c420f4f7309909771bb68f05d1941e610d92c5a74fe106652"
+    },
+    {
+      "dest": ".cursor/rules/pr-ready-for-review.mdc",
+      "src": "rules/core/pr-ready-for-review.mdc",
+      "sha256": "fbc885c882065ee39045894a60914c596a9ec6e8a1a18951909c5839aca5e2e2"
     },
     {
       "dest": ".cursor/rules/pytest.mdc",
       "src": "rules/python/pytest.mdc",
-      "sha256": "9660a15396aa4fe687918b9cd9818eaef61bf2e09f9ab4a66a5380a9f912bc3c"
+      "sha256": "8eff4f47882226993ae593a44147d7709e03fa1e61adff93f0188e3a11e92e7e"
     },
     {
       "dest": ".cursor/rules/python-code-style.mdc",
       "src": "rules/python/python-code-style.mdc",
-      "sha256": "770096bdbe5e1f7b16690a6403245df3cabf4d62b920a5e766173bb937bc40ea"
+      "sha256": "006044b980df7b73b8f177e5ac6c39833a9f1979d995f364fafe91a244eea6f7"
+    },
+    {
+      "dest": ".cursor/rules/readme-loadouts.mdc",
+      "src": "rules/core/readme-loadouts.mdc",
+      "sha256": "f3d32d303ba308a11ba5b7b70ede0eb73ee5d31accd08b17a9c3287b72903f79"
     },
     {
       "dest": ".cursor/rules/repo-conventions.mdc",
       "src": "rules/core/repo-conventions.mdc",
-      "sha256": "8595482b7aa06074c634b44c8a186398cf28915a070de28e0c4ed3e037ba1899"
+      "sha256": "5fb5ca1def5eb9ae39ac64e5aa06e653c24820fffff542d4692c775a282470d7"
+    },
+    {
+      "dest": ".cursor/rules/test-agents.mdc",
+      "src": "rules/playwright/test-agents.mdc",
+      "sha256": "9c588397f40cf125fde18bacfa49d7475838c47b7366631df99b67152632b31d"
     },
     {
       "dest": ".mcp.json",
       "src": "__generated__/claude/mcp.json",
       "sha256": "e14b3dc073dddf751dce5ea5fb3007be05cf12629678485a9868d33c63e39c25"
+    },
+    {
+      "dest": "e2e/.cursor/rules/e2e-conventions.mdc",
+      "src": "rules/playwright/e2e-conventions.mdc",
+      "sha256": "ab9b05b9fdacf60364ef0f2019de4221ad9245575873dfa39577f349d4b6a59d"
     }
   ],
   "managed_blocks": [
     {
       "file": "AGENTS.md",
       "block": "agent-rules",
-      "sha256": "05a211c292ef827d447b73b3f7992b8ba92a813592151e6c7f588ca8cdaf624b"
+      "sha256": "f6a4acf96f8d7af1bcb4234364bd1a551a4a8d9f6753b4f2b77f2121fbc84a5a"
     },
     {
       "file": "CLAUDE.md",
