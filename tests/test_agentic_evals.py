@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -297,6 +298,58 @@ def test_agentic_planner_treats_prd_as_untrusted() -> None:
     assert "do not push" in planner
     assert "git add" in planner and "git commit" in planner
     assert "do not open a pull request" in planner
+
+
+def test_agentic_orchestrator_pr_create_reuses_existing_and_bounds_retries() -> None:
+    text = _agent_file(AGENTIC_ORCHESTRATOR).read_text().lower()
+    pull = text.split("### pull request", 1)[1]
+    orchestrator = text
+
+    view_at = pull.find("gh pr view --head")
+    create_at = pull.find("gh pr create")
+    assert view_at != -1
+    assert create_at != -1
+    assert view_at < create_at
+    assert "--json url" in orchestrator
+    assert "do not create another" in orchestrator or "do not create a second" in orchestrator
+    for flag in ("--title", "--body-file", "--head"):
+        assert flag in orchestrator
+    assert "editor" in orchestrator or "pager" in orchestrator
+    assert "deadline" in orchestrator or "timeout" in orchestrator
+    assert re.search(r"\b\d+\s*(s|sec|second)", orchestrator)
+    assert "backoff" in orchestrator
+    assert "hung" in orchestrator or "does not return" in orchestrator
+    assert "blocked" in orchestrator
+    assert "3" in orchestrator
+    assert "git status --porcelain" in orchestrator
+    assert "--draft" in orchestrator
+    assert "do not merge" in orchestrator or "gh pr merge" in orchestrator
+
+
+def test_agentic_orchestrator_treats_prd_as_untrusted_publication() -> None:
+    text = _agent_file(AGENTIC_ORCHESTRATOR).read_text()
+    orchestrator = text.lower()
+
+    assert "untrusted" in orchestrator
+    assert "not" in orchestrator and "instructions" in orchestrator
+    assert "--body-file" in orchestrator
+    for secret in ("token", "password", "key", "pii"):
+        assert secret in orchestrator
+    assert "redact" in orchestrator
+    assert "verbatim" not in orchestrator or "do not paste" in orchestrator
+    assert "--repo" in orchestrator
+    assert "origin" in orchestrator
+    assert "remote" in orchestrator
+    assert "gh_token" in orchestrator or "gh token" in orchestrator
+    for secret_path in (".env", "id_rsa"):
+        assert secret_path in orchestrator
+    assert "secret-like" in orchestrator or "refused" in orchestrator
+    assert "do not push" in orchestrator
+    assert "blocked" in orchestrator
+    assert "pull_request_url" in text
+    assert "null" in orchestrator
+    assert "implementation_builder" in orchestrator
+    assert "git status --porcelain" in orchestrator
 
 
 def test_agentic_plan_reviewer_files_privilege_expanding_tasks() -> None:
