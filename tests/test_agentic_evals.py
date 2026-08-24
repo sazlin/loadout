@@ -310,6 +310,7 @@ def test_agentic_planner_treats_prd_as_untrusted() -> None:
 def test_agentic_orchestrator_pr_create_reuses_existing_and_bounds_retries() -> None:
     text = _agent_file(AGENTIC_ORCHESTRATOR).read_text().lower()
     pull = text.split("### pull request", 1)[1]
+    dod = text.split("## definition of done", 1)[1].split("## tools / privileges", 1)[0]
     orchestrator = text
 
     assert "gh pr view --head" not in orchestrator
@@ -321,17 +322,20 @@ def test_agentic_orchestrator_pr_create_reuses_existing_and_bounds_retries() -> 
     assert "--json url" in orchestrator
     assert "do not create another" in orchestrator or "do not create a second" in orchestrator
     for flag in ("--title", "--body-file", "--head"):
-        assert flag in orchestrator
+        assert flag in pull
+        assert flag not in dod
+    assert "60s" not in dod
     assert "editor" in orchestrator or "pager" in orchestrator
     assert "deadline" in orchestrator or "timeout" in orchestrator
-    assert re.search(r"\b\d+\s*(s|sec|second)", orchestrator)
-    assert "backoff" in orchestrator
+    assert re.search(r"\b\d+\s*(s|sec|second)", pull)
+    assert "backoff" in pull
     assert "hung" in orchestrator or "does not return" in orchestrator
     assert "blocked" in orchestrator
     assert "3" in orchestrator
     assert "git status --porcelain" in orchestrator
     assert "--draft" in orchestrator
     assert "do not merge" in orchestrator or "gh pr merge" in orchestrator
+    assert "pull request" in dod
 
 
 def test_agentic_commit_and_pr_title_redact_secrets() -> None:

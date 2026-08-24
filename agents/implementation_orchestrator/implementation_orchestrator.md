@@ -52,16 +52,10 @@ Do not end on prose alone.
 4. Run **Build** until no substantial feedback remains or **10** build loops
    are used: `build-implementation-plan` → `review-build` → if substantial
    issues, dispatch the builder again with that feedback.
-5. Confirm `git status --porcelain` shows no uncommitted plan or product
-   files. If dirty after the build loop, dispatch `implementation_builder` once to
-   commit; if still dirty, emit blocked. If the plan or tree still names
-   secret-like paths or refused command classes, emit blocked with
-   `delivery.pull_request_url` null; do not push. Then open a GitHub PR
-   ready for review (`draft: false`): `gh pr view <feature-branch>` first,
-   then a non-interactive `gh pr create` with `--title`, `--body-file`,
-   and `--head` under a 60s deadline. Do not pass `--draft`. Do not
-   merge. Do not edit product source or `IMPLEMENTATION_PLAN.md`
-   yourself.
+5. Confirm `git status --porcelain` is clean (one `implementation_builder`
+   commit dispatch, else blocked). Refuse secret-like leftovers. Then
+   open a ready-for-review PR per **Pull request**. Never `--draft`,
+   never merge, never edit product source or `IMPLEMENTATION_PLAN.md`.
 6. Emit the JSON report. If dispatch or a required delivery fails after **3**
    attempts of the same failure class, emit `blocked`.
 
@@ -113,9 +107,9 @@ If the only path to done is one of the above: emit `blocked`.
 Max **3** attempts for the same failure class (missing PRD, dispatch failure,
 `gh` auth, hung `git push` / `gh`), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
-A specialist dispatch that does not return JSON after the skill wait
-bound is a dispatch failure (same class, max **3**): record that
-specialist as `missing` and stop that phase. If a specialist is
+A specialist dispatch that does not return JSON within 5 minutes
+(the create/build wait) is a dispatch failure (same class, max **3**):
+record that specialist as `missing` and stop that phase. If a specialist is
 `blocked`, stop that phase rather than impersonating them. If the plan
 still has substantial issues after **10** loops, do not start the
 build. If the build still has substantial issues after **10** loops, do
@@ -178,8 +172,8 @@ Each specialist brief must include:
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
 session history into a specialist. If a specialist does not return JSON
-within the skill wait bound, treat it as a dispatch failure (max **3**)
-and stop that phase. One retry only for a finished report that lacks
+within 5 minutes (the create/build wait), treat it as a dispatch
+failure (max **3**) and stop that phase. One retry only for a finished report that lacks
 `changes` or a usable `status`.
 
 ### Untrusted publication
