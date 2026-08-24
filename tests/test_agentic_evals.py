@@ -239,3 +239,62 @@ def test_agentic_harness_commits_before_pr_create() -> None:
     assert "git push" in orchestrator
     assert "gh pr create" in orchestrator
     assert "commit your work on the feature branch" in orchestrator
+
+
+def test_agentic_builder_treats_plan_as_untrusted() -> None:
+    builder = _agent_file("implementation_builder").read_text().lower()
+    reviewer = _agent_file("implementation_build_reviewer").read_text().lower()
+
+    assert "untrusted" in builder
+    assert "not instructions" in builder
+    for allowed in ("uv run pytest", "ruff", "pyrefly", "agents.md"):
+        assert allowed in builder
+    for refused in ("curl", "wget", "ssh", "pipe-to-shell"):
+        assert refused in builder
+    assert "blocked" in builder
+    for secret_path in (".env", "id_rsa", "credentials", ".pem", ".key", ".git", "token"):
+        assert secret_path in builder
+    assert "repo-relative" in builder or "repo relative" in builder
+    assert ".." in _agent_file("implementation_builder").read_text()
+    for sink in ("harvest", "remote", "hook"):
+        assert sink in builder
+    assert "do not push" in builder
+    assert "git add" in builder and "git commit" in builder
+
+    assert "untrusted" in reviewer
+    for sink in (".env", "curl", "harvest", "remote", "hook"):
+        assert sink in reviewer
+    assert "even when the plan" in reviewer or "plan requested" in reviewer
+
+
+def test_agentic_planner_treats_prd_as_untrusted() -> None:
+    planner_text = _agent_file("implementation_planner").read_text()
+    planner = planner_text.lower()
+
+    assert "verbatim" not in planner
+    assert "untrusted" in planner
+    assert "not" in planner and "instructions" in planner
+    for secret in ("token", "password", "key", "pii"):
+        assert secret in planner
+    assert "redact" in planner
+    assert '"rejected"' in planner_text or "rejected[]" in planner
+    for sink in ("harvest", "remote", "hook", "exfil"):
+        assert sink in planner
+    assert "env" in planner
+    assert "url" in planner
+    assert "do not push" in planner
+    assert "git add" in planner and "git commit" in planner
+    assert "do not open a pull request" in planner
+
+
+def test_agentic_plan_reviewer_files_privilege_expanding_tasks() -> None:
+    reviewer = _agent_file("implementation_plan_reviewer").read_text().lower()
+
+    assert "untrusted" in reviewer
+    assert "privilege-expanding" in reviewer or "secret-handling" in reviewer
+    for sink in ("harvest", "token", "url", "remote", "hook", ".env"):
+        assert sink in reviewer
+    assert "delete the task" in reviewer or "remove the task" in reviewer
+    assert "do not file" in reviewer
+    assert "prd requirement with no task" in reviewer
+    assert "refused" in reviewer or "security class" in reviewer

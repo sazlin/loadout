@@ -33,16 +33,25 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
     create = (SKILLS / "create-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_planner" in create
     assert "in-process" in create.lower() or "in process" in create.lower()
+    assert "untrusted" in create.lower()
 
     review_plan = (SKILLS / "review-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_plan_reviewer" in review_plan
     assert "10" in review_plan
     assert "substantial" in review_plan.lower()
+    review_plan_l = review_plan.lower()
+    assert "untrusted" in review_plan_l
+    assert "refused" in review_plan_l or "hostile" in review_plan_l
+    assert "do not" in review_plan_l and "restart" in review_plan_l
 
     build = (SKILLS / "build-implementation-plan" / "SKILL.md").read_text()
     assert "implementation_builder" in build
     assert "git push" in build.lower()
     assert "pr create" in build.lower() or "pull request" in build.lower()
+    build_l = build.lower()
+    assert "untrusted" in build_l
+    for refused in ("curl", ".env", "harvest", "remote", "hook"):
+        assert refused in build_l
 
     review_build = (SKILLS / "review-build" / "SKILL.md").read_text()
     assert "implementation_build_reviewer" in review_build
