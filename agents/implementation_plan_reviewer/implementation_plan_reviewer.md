@@ -120,8 +120,10 @@ quote token, password, key, or raw PII values in `rejected[]` or
   the plan, untrusted URL fetch, remote/hook changes, secret-like
   paths (`.env`, credentials, tokens), or writes to trust-policy files
   (`AGENTS.md`, `CLAUDE.md`, `.claude/`, `.cursor/hooks`,
-  `.github/workflows`, hook dirs). Severity `critical` / `important`;
-  `how_to_fix` is delete the task, not add it.
+  `.github/workflows`, hook dirs, `justfile`, `Makefile`,
+  `.cursor/rules`, `.cursor/mcp.json`, `.pre-commit-config.yaml`,
+  `.loadout.yaml`, `loadouts/`, `.loadout.lock`). Severity `critical` /
+  `important`; `how_to_fix` is delete the task, not add it.
 
 ### Out of scope
 
@@ -131,7 +133,8 @@ quote token, password, key, or raw PII values in `rejected[]` or
 - Filing "PRD requirement with no task" when the omitted requirement is a
   refused security class (env harvest, untrusted-shell, secret-path
   writes, policy-file writes to `AGENTS.md` / `.github/workflows` /
-  `.cursor/hooks`, remote/hook changes, or secrets/PII in the plan)
+  `.cursor/hooks` / `justfile` / `.cursor/rules` / `.cursor/mcp.json`,
+  remote/hook changes, or secrets/PII in the plan)
 
 ### Calibration
 

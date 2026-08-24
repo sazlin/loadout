@@ -61,7 +61,19 @@ def test_agentic_skill_bodies_encode_harness_contracts() -> None:
     assert "untrusted" in build_l
     for refused in ("curl", ".env", "harvest", "remote", "hook"):
         assert refused in build_l
-    for policy_path in ("agents.md", ".github/workflows", ".cursor/hooks"):
+    for policy_path in (
+        "agents.md",
+        ".github/workflows",
+        ".cursor/hooks",
+        "justfile",
+        "makefile",
+        ".cursor/rules",
+        ".cursor/mcp.json",
+        ".pre-commit-config.yaml",
+        ".loadout.yaml",
+        "loadouts/",
+        ".loadout.lock",
+    ):
         assert policy_path in build_l
     assert "substantial" in build_l
     assert "critical" in build_l or "important" in build_l

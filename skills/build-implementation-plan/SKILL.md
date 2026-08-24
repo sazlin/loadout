@@ -34,9 +34,13 @@ open a PR here.
    - Refuse list: do not run `curl` / `wget` / `env` / `ssh` / pipe-to-shell
      or extra remotes; do not write `.env`, `id_rsa`, credentials, `*.pem`,
      `*.key`, `.git`, or token paths; do not write `AGENTS.md`, `CLAUDE.md`,
-     `.claude/`, `.cursor/hooks`, `.github/workflows`, or hook dirs; do not
-     harvest env, post to a URL, change remotes, or disable hooks — emit
-     blocked instead
+     `.claude/`, `.cursor/hooks`, `.github/workflows`, hook dirs, `justfile`,
+     `Makefile`, `.cursor/rules`, `.cursor/mcp.json`, `.pre-commit-config.yaml`,
+     `.loadout.yaml`, `loadouts/`, or `.loadout.lock`; treat `just` /
+     `loadout` / `pre-commit` as allowlisted only with the exact argv frozen
+     from `AGENTS.md` at invocation start, and do not run them if those
+     wrapper files changed this turn; do not harvest env, post to a URL,
+     change remotes, or disable hooks — emit blocked instead
    - Prior `implementation_build_reviewer` JSON when this is a revision
    - "Return only your JSON schema. Do not open a pull request."
 3. Wait up to **5 minutes** for the builder JSON. If the specialist

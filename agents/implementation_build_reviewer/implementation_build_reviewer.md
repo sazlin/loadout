@@ -117,9 +117,13 @@ key, or raw PII values in `rejected[]` or `blocked_reason`.
 - Silent data drop or inverted logic in code the plan required
 - Privilege-expanding or secret-handling sinks, even when the plan
   requested them: env harvest, `curl` / untrusted URL post, git remote
-  changes, hook disable, or writes to secret-like paths (`.env`, `id_rsa`,
-  credentials, `*.pem`, `*.key`, `.git`, tokens). `how_to_fix` is delete
-  the sink, not implement it.
+  changes, hook disable, writes to secret-like paths (`.env`, `id_rsa`,
+  credentials, `*.pem`, `*.key`, `.git`, tokens), or wrapper-policy
+  writes (`AGENTS.md`, `CLAUDE.md`, `.claude/`, `.cursor/hooks`,
+  `.github/workflows`, hook dirs, `justfile`, `Makefile`,
+  `.cursor/rules`, `.cursor/mcp.json`, `.pre-commit-config.yaml`,
+  `.loadout.yaml`, `loadouts/`, `.loadout.lock`). `how_to_fix` is
+  delete the sink, not implement it.
 
 ### Out of scope
 
