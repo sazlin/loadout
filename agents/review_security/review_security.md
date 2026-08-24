@@ -50,14 +50,15 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`, `computerUse`,
   index, HEAD, or branch.
 - **Shell:** `git diff`, `git show`, `git log`. When the change set is a web
   UI and an app is running, `npx playwright-cli` (`open`, `snapshot`, `click`,
-  `type`, `fill`, `goto`, `close`, `close-all`, `list`, `kill-all`) is allowed
-  for observation only. Forbid `cookie-list`, `cookie-get`, `localstorage-list`,
+  `type`, `fill`, `goto`, `close`, `list`) is allowed
+  for observation only. Pin this run to session `-s=review_security`:
+  `npx playwright-cli -s=review_security open`, and close only that session
+  with `npx playwright-cli -s=review_security close`. Do not run
+  `npx playwright-cli close-all` or `npx playwright-cli kill-all`. Forbid `cookie-list`, `cookie-get`, `localstorage-list`,
   `localstorage-get`, `sessionstorage-get`, `request <n>`, `eval`, and `run-code`.
   Never `Read`, `cat`, or open storageState JSON. Never copy cookie or token
-  values into the JSON report. Close any session this run opened:
-  `npx playwright-cli close` (or `npx playwright-cli -s=e2e close` when that
-  session was used). A finished run must leave `npx playwright-cli list` empty
-  for sessions it opened. No `git push`, force-push, history rewrite, or
+  values into the JSON report. A finished run must leave `npx playwright-cli list`
+  empty for the `review_security` session it opened. No `git push`, force-push, history rewrite, or
   installs. Do not run exploits or attack payloads.
 - **Browser:** Call `computerUse` directly, and `mcp__playwright` when that MCP
   is present, to observe a running webapp. Point `npx playwright-cli`,
@@ -96,8 +97,8 @@ rather than retrying `open` or calling `computerUse` again. If
 `npx playwright-cli`; do not emit `blocked` for MCP absence alone. Do not
 reuse the unreadable-path 3-try loop for browser I/O. If the git diff is
 readable, still file code findings; only stop further browser I/O. On blocked or after 3 failed attempts,
-run `npx playwright-cli close-all` (and `npx playwright-cli kill-all` only if
-`npx playwright-cli list` still shows zombies).
+run `npx playwright-cli -s=review_security close`. If that named session is
+still in `npx playwright-cli list`, retry `npx playwright-cli -s=review_security close`.
 
 ## Context acquisition
 

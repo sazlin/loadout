@@ -30,7 +30,6 @@ from review_eval_score import (
     score_dimension_report,
     score_orchestrator_report,
 )
-from test_playwright_loadout import _assert_closes_playwright_cli_sessions
 
 REPO = _TESTS.parent
 AGENTS = REPO / "agents"
@@ -153,6 +152,38 @@ def _forbid_window(text: str, needle: str) -> str:
     return text[max(0, at - 160) : at + 160]
 
 
+def _assert_closes_own_playwright_cli_session(filename: str, text: str) -> None:
+    """Webapp reviewers close only their named session, never host-wide close-all."""
+    session = Path(filename).stem
+    pin = f"-s={session}"
+    named_open = f"npx playwright-cli {pin} open"
+    named_close = f"npx playwright-cli {pin} close"
+    assert named_open in text, filename
+    assert named_close in text, filename
+    assert "npx playwright-cli list" in text, filename
+    lowered = text.lower()
+    assert "empty" in lowered, filename
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0]
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+    assert pin in tools, filename
+    assert named_open in tools, filename
+    assert named_close in tools, filename
+    assert named_close in blocked, filename
+    blocked_lower = blocked.lower()
+    assert "close-all" not in blocked_lower, filename
+    assert "kill-all" not in blocked_lower, filename
+    tools_lower = tools.lower()
+    for host_wide in ("close-all", "kill-all"):
+        start = 0
+        while True:
+            at = tools_lower.find(host_wide, start)
+            if at == -1:
+                break
+            window = tools_lower[max(0, at - 160) : at + 160]
+            assert any(word in window for word in _FORBID_WORDS), filename
+            start = at + len(host_wide)
+
+
 def _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(label: str, text: str) -> None:
     """Browser I/O must not dump session secrets or leave the local app origin."""
     lowered = text.lower()
@@ -273,7 +304,7 @@ def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> 
         assert "check ui claims against a running webapp" in lowered
     else:
         assert "observe a running webapp" in lowered
-    _assert_closes_playwright_cli_sessions(filename, text)
+    _assert_closes_own_playwright_cli_session(filename, text)
     if filename == VERIFIER:
         assert "continue remaining" in lowered
     _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(filename, text)
