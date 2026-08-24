@@ -4,10 +4,10 @@
     {
       "id": 1,
       "prompt": "Implement IMPLEMENTATION_PLAN.md using build-implementation-plan.",
-      "expected_output": "One fresh imp_builder dispatch, no in-process coding",
+      "expected_output": "One fresh implementation_builder dispatch, no in-process coding",
       "files": ["evals/files/brief.md"],
       "expectations": [
-        "Dispatches imp_builder",
+        "Dispatches implementation_builder",
         "Requires a fresh subagent",
         "Does not edit product code in-process",
         "Forbids gh pr create in the builder brief"

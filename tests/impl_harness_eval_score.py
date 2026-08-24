@@ -19,14 +19,14 @@ HARNESS_AGENTS = (
     "implementation_orchestrator",
     "implementation_planner",
     "implementation_plan_reviewer",
-    "imp_builder",
-    "imp_reviewer",
+    "implementation_builder",
+    "implementation_build_reviewer",
 )
 SKILLS = (
     "create-implementation-plan",
     "review-implementation-plan",
     "build-implementation-plan",
-    "review-build",
+    "review-implementation-build",
 )
 
 _SHARED_KEYS = (
@@ -43,7 +43,7 @@ _SHARED_KEYS = (
 )
 _WRITER_KEYS = (*_SHARED_KEYS, "changes")
 _REVIEWER_KEYS = (*_SHARED_KEYS, "issues")
-_REVIEWERS = frozenset({"implementation_plan_reviewer", "imp_reviewer"})
+_REVIEWERS = frozenset({"implementation_plan_reviewer", "implementation_build_reviewer"})
 
 
 def evals_root(agent: str) -> Path:

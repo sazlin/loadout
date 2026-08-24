@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "agent": "imp_reviewer",
+  "agent": "implementation_build_reviewer",
   "charter": "Find defects that make the build miss the plan or the PRD, skip tests, or ship incorrect behavior.",
   "inputs": {
     "summary": "slugify keeps punctuation.",

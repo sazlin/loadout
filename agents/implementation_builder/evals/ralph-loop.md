@@ -1,4 +1,4 @@
-# Ralph loop: imp_builder
+# Ralph loop: implementation_builder
 
 Goal: fail a blank agent that opens a PR without tests and pass this builder.
 

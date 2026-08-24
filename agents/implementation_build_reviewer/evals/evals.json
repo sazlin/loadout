@@ -1,10 +1,10 @@
 {
-  "agent": "imp_reviewer",
+  "agent": "implementation_build_reviewer",
   "evals": [
     {
-      "id": "imp-reviewer-punctuation",
-      "agent": "imp_reviewer",
-      "prompt": "You are imp_reviewer. Follow agents/imp_reviewer/imp_reviewer.md. Review evals/files/slug.py against evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Return JSON.",
+      "id": "implementation-build-reviewer-punctuation",
+      "agent": "implementation_build_reviewer",
+      "prompt": "You are implementation_build_reviewer. Follow agents/implementation_build_reviewer/implementation_build_reviewer.md. Review evals/files/slug.py against evals/files/IMPLEMENTATION_PLAN.md. Do not edit files. Return JSON.",
       "files": ["evals/files/IMPLEMENTATION_PLAN.md", "evals/files/slug.py"],
       "expected_output": "JSON issues for slugify that keeps punctuation",
       "expectations": [

@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "agent": "imp_builder",
+  "agent": "implementation_builder",
   "charter": "Implement IMPLEMENTATION_PLAN.md with test-first tasks, verify, and commit on the current feature branch.",
   "inputs": {
     "summary": "TDD slugify so Hello World! becomes hello-world.",

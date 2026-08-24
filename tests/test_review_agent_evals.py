@@ -61,8 +61,8 @@ IMPLEMENTATION_HARNESS_AGENTS = frozenset(
         "implementation_orchestrator.md",
         "implementation_planner.md",
         "implementation_plan_reviewer.md",
-        "imp_builder.md",
-        "imp_reviewer.md",
+        "implementation_builder.md",
+        "implementation_build_reviewer.md",
     }
 )
 

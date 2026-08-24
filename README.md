@@ -157,7 +157,7 @@ Example GitHub Actions step:
 | `agents` | `base` | Named loadout (not the `agents/` directory): LangChain docs MCP + refining-evals skill |
 | `superpowers` | — | Opt-in Superpowers skills + SessionStart hook (see [warnings](#notes-and-warnings)) |
 | `pr_review_harness` | — | PR-review harness: dimensional reviewers, orchestrator, issue_resolver, verifier, risk_classifier, slash-command skills, and honor-check-intent rule |
-| `implementation_harness` | — | Lights-out implementation factory: implementation_orchestrator, planner, plan reviewer, imp_builder, imp_reviewer, and plan/build slash-command skills that open a ready-for-review PR |
+| `implementation_harness` | — | Lights-out implementation factory: implementation_orchestrator, planner, plan reviewer, implementation_builder, implementation_build_reviewer, and plan/build slash-command skills that open a ready-for-review PR |
 
 Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
 
@@ -184,7 +184,7 @@ is not an agent.
 | --- | --- | --- | --- |
 | Implementation | `python_coder`, `davinci`, `playwright_planner`, `playwright_generator`, `playwright_healer` | `python`, `base`, `playwright` | Edit a scoped change set and emit a JSON report with `changes` / `verification` |
 | PR review harness | `review_correctness`, `review_maintainability`, `review_scale`, `review_security`, `review_orchestrator`, `issue_resolver`, `verifier`, `risk_classifier` | `pr_review_harness` | Panel review, task resolution, sequential `VERIFIERS.md` claims, and low-risk squash merge. Opt in with `loadouts: [base, pr_review_harness]`. |
-| Implementation harness | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `imp_builder`, `imp_reviewer` | `implementation_harness` | Lights-out plan/review and build/review loops from an approved PRD to a GitHub PR ready for `pr_review_harness`. Opt in with `loadouts: [base, implementation_harness]`. Do not start the review harness from this phase. |
+| Implementation harness | `implementation_orchestrator`, `implementation_planner`, `implementation_plan_reviewer`, `implementation_builder`, `implementation_build_reviewer` | `implementation_harness` | Lights-out plan/review and build/review loops from an approved PRD to a GitHub PR ready for `pr_review_harness`. Opt in with `loadouts: [base, implementation_harness]`. Do not start the review harness from this phase. |
 
 Every agent uses the same heading spine (Charter through Output schema) and a
 fenced JSON report. Reviewers set `readonly: true` and omit write tools.

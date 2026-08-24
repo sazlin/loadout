@@ -1,4 +1,4 @@
-# Ralph loop: imp_reviewer
+# Ralph loop: implementation_build_reviewer
 
 Goal: fail a blank reviewer that bikesheds the name and pass this agent on punctuation.
 

@@ -29,7 +29,7 @@
       "expected_output": "JSON report that stops after a blocked plan without building or emitting ok",
       "expectations": [
         "Emits status blocked with the planner blocked_reason",
-        "Does not dispatch build-implementation-plan or imp_builder",
+        "Does not dispatch build-implementation-plan or implementation_builder",
         "dry_run plus a blocked plan does not emit status ok"
       ],
       "must_find": [
@@ -37,7 +37,7 @@
       ],
       "must_not_find": [
         { "id": "no-build-skill", "keywords": ["build-implementation-plan"] },
-        { "id": "no-builder", "keywords": ["imp_builder"] },
+        { "id": "no-builder", "keywords": ["implementation_builder"] },
         { "id": "no-ok", "keywords": ["\"status\": \"ok\""] }
       ]
     }

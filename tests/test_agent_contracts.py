@@ -69,7 +69,7 @@ def assert_agent_contract(path: Path) -> None:
         "issue_resolver.md",
         "implementation_orchestrator.md",
         "implementation_planner.md",
-        "imp_builder.md",
+        "implementation_builder.md",
     ],
 )
 def test_production_agent_best_practices_contract(filename: str) -> None:

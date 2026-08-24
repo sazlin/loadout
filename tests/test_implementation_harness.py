@@ -33,7 +33,7 @@ from impl_harness_eval_score import (
 REPO = _TESTS.parent
 LOADOUT = REPO / "loadouts" / "implementation_harness.yaml"
 SKILLS_DIR = REPO / "skills"
-REVIEWERS = frozenset({"implementation_plan_reviewer", "imp_reviewer"})
+REVIEWERS = frozenset({"implementation_plan_reviewer", "implementation_build_reviewer"})
 HEADINGS = [
     "## Charter",
     "## I/O contract",
@@ -106,11 +106,11 @@ def test_implementation_harness_skill_bodies_dispatch_named_agents() -> None:
     assert "do not edit" in plan_review.lower() or "do not write" in plan_review.lower()
 
     build = (SKILLS_DIR / "build-implementation-plan" / "SKILL.md").read_text()
-    assert "imp_builder" in build
+    assert "implementation_builder" in build
     assert "fresh" in build.lower()
 
-    build_review = (SKILLS_DIR / "review-build" / "SKILL.md").read_text()
-    assert "imp_reviewer" in build_review
+    build_review = (SKILLS_DIR / "review-implementation-build" / "SKILL.md").read_text()
+    assert "implementation_build_reviewer" in build_review
     assert "do not edit" in build_review.lower() or "do not write" in build_review.lower()
 
 
@@ -168,8 +168,8 @@ def test_planner_and_builder_own_the_review_loops() -> None:
     assert "review-implementation-plan" in planner
     assert any(marker in planner for marker in LOOP_MARKERS)
     assert "implementation_plan.md" in planner
-    builder = _agent_text("imp_builder").lower()
-    assert "review-build" in builder
+    builder = _agent_text("implementation_builder").lower()
+    assert "review-implementation-build" in builder
     assert any(marker in builder for marker in LOOP_MARKERS)
     assert "test" in builder
     assert "do not" in builder and "pr" in builder

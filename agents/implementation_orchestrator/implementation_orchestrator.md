@@ -83,8 +83,8 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 Never:
 
 - Write the plan or product code in-process instead of dispatching
-- Skip `/review-implementation-plan` or `/review-build` loops the
-  subagents own
+- Skip `/review-implementation-plan` or `/review-implementation-build`
+  loops the subagents own
 - Open a draft PR, or open a PR when verification failed
 - Dispatch `review_orchestrator`, `review_correctness`, or any
   `pr_review` / `pr_review_harness` skill
@@ -139,8 +139,8 @@ a parallel style.
 
 1. **Plan** — `/create-implementation-plan` → `implementation_planner`
    (that agent loops `/review-implementation-plan` up to 10).
-2. **Build** — `/build-implementation-plan` → `imp_builder` (that agent
-   loops `/review-build` up to 10).
+2. **Build** — `/build-implementation-plan` → `implementation_builder`
+   (that agent loops `/review-implementation-build` up to 10).
 3. **Deliver** — verify, then PR ready for review (or stop on `dry_run`).
 
 If planning or building is `blocked` with substantial issues still open

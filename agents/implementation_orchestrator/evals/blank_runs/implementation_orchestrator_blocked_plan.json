@@ -7,7 +7,7 @@
   "delivery": { "branch": "impl/slugify", "github_pr": null },
   "verification": [
     {
-      "command": "build-implementation-plan via imp_builder",
+      "command": "build-implementation-plan via implementation_builder",
       "result": "pass",
       "notes": "Planner was blocked; built anyway and reported ok because dry_run."
     }

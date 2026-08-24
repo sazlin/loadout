@@ -2,13 +2,13 @@
 name: build-implementation-plan
 description: >-
   Use when implementation_orchestrator starts building, or when a lights-out
-  factory needs a fresh imp_builder to implement IMPLEMENTATION_PLAN.md. Do
-  not write product code in-process.
+  factory needs a fresh implementation_builder to implement
+  IMPLEMENTATION_PLAN.md. Do not write product code in-process.
 ---
 
 # Build implementation plan
 
-Dispatch `imp_builder` on a **fresh** subagent to implement
+Dispatch `implementation_builder` on a **fresh** subagent to implement
 `IMPLEMENTATION_PLAN.md`.
 
 ## When to use
@@ -22,18 +22,19 @@ Dispatch `imp_builder` on a **fresh** subagent to implement
 
 1. Confirm `IMPLEMENTATION_PLAN.md`, the feature branch, and greenfield vs
    brownfield. The brief must include the PRD path and "quality over speed;
-   loop `/review-build` up to **10** times."
-2. Dispatch **one** isolated `imp_builder` subagent. Do not inherit this
-   session's history. Tell it: "Follow `.claude/agents/imp_builder.md`.
-   Commit on the feature branch. Do not `git push`. Do not `gh pr create`."
+   loop `/review-implementation-build` up to **10** times."
+2. Dispatch **one** isolated `implementation_builder` subagent. Do not inherit
+   this session's history. Tell it: "Follow
+   `.claude/agents/implementation_builder.md`. Commit on the feature branch.
+   Do not `git push`. Do not `gh pr create`."
 3. Wait for the builder JSON. If status is `blocked`, return that to the
    orchestrator; do not finish the work in-process.
 4. Do **not** edit product code in-process.
 
 ## Harness
 
-- Cursor: one `Task` call with named `imp_builder` if available.
-- Claude Code: one Agent call using `imp_builder`.
+- Cursor: one `Task` call with named `implementation_builder` if available.
+- Claude Code: one Agent call using `implementation_builder`.
 
 ## Guardrails
 
