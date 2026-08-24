@@ -32,7 +32,8 @@ context.
 **Emits:**
 1. Working-tree edits required by the plan (or by the critic issues)
 2. Optional checkboxes updated in `IMPLEMENTATION_PLAN.md`
-3. Focused local commits when the plan calls for them
+3. A commit of the plan-named paths (and a dirty `IMPLEMENTATION_PLAN.md`)
+   on the current feature branch when status is ok
 4. A final fenced `json` report matching **Output schema**
 
 Do not end on prose alone.
@@ -43,7 +44,8 @@ Do not end on prose alone.
    revision brief).
 2. Run the plan's verification commands (project lint, typecheck, and
    scoped tests).
-3. Commit only if the plan or invoker asks. Do not push.
+3. On ok, `git add` / `git commit` the plan-named paths (and a dirty
+   `IMPLEMENTATION_PLAN.md`) on the current feature branch. Do not push.
 4. Emit JSON. After **3** failed attempts of the same failure class, emit
    `blocked`.
 
@@ -107,7 +109,9 @@ Follow local patterns; do not invent a parallel style.
 1. Scope open plan tasks or critic issues.
 2. Implement and verify with the commands the plan names.
 3. Check off completed tasks in the plan if it uses checkboxes.
-4. Emit the JSON report.
+4. Commit the plan-named paths (and a dirty `IMPLEMENTATION_PLAN.md`) on
+   the feature branch when ok. Do not push.
+5. Emit the JSON report.
 
 ### Verification
 

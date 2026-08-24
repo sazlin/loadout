@@ -32,9 +32,10 @@ implement product code. Do not review the plan or the build in-process.
 requirements path) and optionally a git base branch.
 
 **Emits:**
-1. A completed `IMPLEMENTATION_PLAN.md` produced by `implementation_planner`
+1. A committed `IMPLEMENTATION_PLAN.md` produced by `implementation_planner`
    after the plan critic loop
-2. Source changes produced by `imp_builder` after the build critic loop
+2. Committed source changes produced by `imp_builder` after the build
+   critic loop
 3. A GitHub pull request that is ready for review (never a draft)
 4. A final fenced `json` report matching **Output schema**
 
@@ -51,8 +52,11 @@ Do not end on prose alone.
 4. Run **Build** until no substantial feedback remains or **10** build loops
    are used: `build-implementation-plan` → `review-build` → if substantial
    issues, dispatch the builder again with that feedback.
-5. Open a GitHub PR ready for review (`draft: false`). Do not pass `--draft`.
-   Do not merge.
+5. Confirm `git status --porcelain` shows no uncommitted plan or product
+   files. If dirty after the build loop, dispatch `imp_builder` once to
+   commit; if still dirty, emit blocked. Then open a GitHub PR ready for
+   review (`draft: false`). Do not pass `--draft`. Do not merge. Do not
+   edit product source or `IMPLEMENTATION_PLAN.md` yourself.
 6. Emit the JSON report. If dispatch or a required delivery fails after **3**
    attempts of the same failure class, emit `blocked`.
 
@@ -143,6 +147,7 @@ Each specialist brief must include:
 - "You are `<agent>`. Follow `.claude/agents/<agent>.md`."
 - Prior critic JSON when this is a revision pass
 - "Return only your JSON schema."
+- For `imp_builder`: "Commit your work on the feature branch; do not push."
 
 Harness notes: Cursor — `Task` with the named agent type when available.
 Claude Code — Agent calls using the custom agent names. Do not inherit
@@ -152,16 +157,22 @@ session history into a specialist.
 
 After the build loop is clean (or hit the cap with no substantial issues):
 
-1. `git push -u origin <feature-branch>` if needed (no force).
-2. `gh pr create` ready for review. Do not pass `--draft`.
-3. Record the URL in `delivery.pull_request_url`.
+1. Run `git status --porcelain`. The tree must show no uncommitted plan
+   or product files. If it is dirty after the build loop, dispatch
+   `imp_builder` once to commit those paths. Do not edit product source
+   yourself. If the tree is still dirty after that one dispatch, emit
+   blocked. Do not `git push` or `gh pr create` on a dirty tree.
+2. `git push -u origin <feature-branch>` if needed (no force).
+3. `gh pr create` ready for review. Do not pass `--draft`.
+4. Record the URL in `delivery.pull_request_url`.
 
 ### When invoked
 
 1. Confirm the PRD and leave `main` / `master`.
 2. Plan loop (create → review → maybe revise) until clean or cap.
 3. Build loop (build → review → maybe revise) until clean or cap.
-4. Create the PR. JSON report.
+4. Confirm `git status --porcelain` is clean (dispatch `imp_builder` once
+   to commit, or emit blocked). Create the PR. JSON report.
 
 ## Output schema
 

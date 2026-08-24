@@ -189,17 +189,53 @@ def test_agentic_orchestrator_dispatches_specialists_and_creates_pr() -> None:
     assert "pull_request_url" in text
     assert '"specialists"' in text
     assert "do not author" in lowered or "do not write the plan" in lowered
+    assert "git status --porcelain" in lowered
+    assert "commit your work on the feature branch" in lowered
+    assert "do not push" in lowered
 
 
 def test_agentic_planner_and_builder_forbid_prs() -> None:
     planner = _agent_file("implementation_planner").read_text().lower()
     assert "implementation_plan.md" in planner
     assert "prd" in planner
+    assert "git add" in planner
+    assert "git commit" in planner
     assert "git push" in planner
+    assert "do not push" in planner
+    assert "do not open a pull request" in planner
     assert "do not implement" in planner
 
     builder = _agent_file("imp_builder").read_text().lower()
     assert "implementation_plan.md" in builder
+    assert "git add" in builder
+    assert "git commit" in builder
+    assert "plan-named" in builder
     assert "git push" in builder
+    assert "do not push" in builder
     assert "pr create" in builder or "pull request" in builder
+    assert "do not open a pull request" in builder
     assert "_tmp" in builder
+
+
+def test_agentic_harness_commits_before_pr_create() -> None:
+    planner = _agent_file("implementation_planner").read_text().lower()
+    builder = _agent_file("imp_builder").read_text().lower()
+    orchestrator = _agent_file(AGENTIC_ORCHESTRATOR).read_text().lower()
+
+    assert "git add" in planner and "git commit" in planner
+    assert "implementation_plan.md" in planner
+    assert "do not push" in planner
+    assert "do not open a pull request" in planner
+
+    assert "git add" in builder and "git commit" in builder
+    assert "plan-named" in builder
+    assert "do not push" in builder
+    assert "do not open a pull request" in builder
+
+    assert "git status --porcelain" in orchestrator
+    assert "uncommitted" in orchestrator
+    assert "imp_builder" in orchestrator
+    assert "blocked" in orchestrator
+    assert "git push" in orchestrator
+    assert "gh pr create" in orchestrator
+    assert "commit your work on the feature branch" in orchestrator

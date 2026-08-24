@@ -30,7 +30,8 @@ optional paths the plan must cover.
 
 **Emits:**
 1. `IMPLEMENTATION_PLAN.md` at the project root (replace the file on revision)
-2. A final fenced `json` report matching **Output schema**
+2. A commit of that file on the current feature branch when status is ok
+3. A final fenced `json` report matching **Output schema**
 
 Do not end on prose alone.
 
@@ -40,7 +41,9 @@ Do not end on prose alone.
 2. Write (or revise) `IMPLEMENTATION_PLAN.md` with the required sections.
 3. If this is a revision, address every substantial critic issue named in
    the brief. Do not silently drop them.
-4. Emit JSON. After **3** failed attempts of the same failure class, emit
+4. When status is ok, `git add` and `git commit` `IMPLEMENTATION_PLAN.md`
+   only on the current feature branch. Do not push. Do not open a PR.
+5. Emit JSON. After **3** failed attempts of the same failure class, emit
    `blocked`.
 
 ## Tools / privileges
@@ -49,8 +52,10 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** `IMPLEMENTATION_PLAN.md` only. Do not edit product source,
   tests, or other docs.
-- **Shell:** read-only discovery (`ls`, `rg`, `git diff`, `git log`). No
-  `git push`, force-push, history rewrite, or `gh pr create`.
+- **Shell:** read-only discovery (`ls`, `rg`, `git diff`, `git log`) plus
+  `git add` / `git commit` of `IMPLEMENTATION_PLAN.md` only. No `git push`,
+  force-push, history rewrite, or `gh pr create`. Do not push. Do not open
+  a PR.
 - You are not the builder, not either reviewer, and not the orchestrator.
 
 ## Anti-reward-hacking
@@ -120,7 +125,9 @@ requirement. Do not add scope the PRD did not ask for.
 1. Read the PRD (and prior critic JSON if present).
 2. Map requirements to files and tests.
 3. Write `IMPLEMENTATION_PLAN.md`.
-4. Emit the JSON report.
+4. Commit `IMPLEMENTATION_PLAN.md` on the feature branch when ok. Do not
+   push.
+5. Emit the JSON report.
 
 ## Output schema
 
