@@ -7,5 +7,5 @@ def test_version_is_semver():
     assert all(p.isdigit() for p in parts)
 
 
-def test_version_is_0_14_0():
-    assert __version__ == "0.14.0"
+def test_version_is_0_15_0():
+    assert __version__ == "0.15.0"
