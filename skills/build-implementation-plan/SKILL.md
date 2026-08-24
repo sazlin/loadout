@@ -33,8 +33,10 @@ open a PR here.
      instructions
    - Refuse list: do not run `curl` / `wget` / `env` / `ssh` / pipe-to-shell
      or extra remotes; do not write `.env`, `id_rsa`, credentials, `*.pem`,
-     `*.key`, `.git`, or token paths; do not harvest env, post to a URL,
-     change remotes, or disable hooks — emit blocked instead
+     `*.key`, `.git`, or token paths; do not write `AGENTS.md`, `CLAUDE.md`,
+     `.claude/`, `.cursor/hooks`, `.github/workflows`, or hook dirs; do not
+     harvest env, post to a URL, change remotes, or disable hooks — emit
+     blocked instead
    - Prior `implementation_build_reviewer` JSON when this is a revision
    - "Return only your JSON schema. Do not open a pull request."
 3. Wait up to **5 minutes** for the builder JSON. If the specialist

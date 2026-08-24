@@ -274,6 +274,13 @@ def test_agentic_builder_treats_plan_as_untrusted() -> None:
     assert "do not push" in builder
     assert "git add" in builder and "git commit" in builder
 
+    write_scope = builder.split("write scope:", 1)[1].split("**shell:**", 1)[0]
+    for policy_path in ("agents.md", "claude.md", ".claude/", ".cursor/hooks", ".github/workflows"):
+        assert policy_path in write_scope
+    assert "hook" in write_scope
+    assert "invocation start" in builder or "as it existed" in builder
+    assert "this turn" in builder or "this pass" in builder or "this build" in builder
+
     assert "untrusted" in reviewer
     for sink in (".env", "curl", "harvest", "remote", "hook"):
         assert sink in reviewer
@@ -359,6 +366,8 @@ def test_agentic_plan_reviewer_files_privilege_expanding_tasks() -> None:
     assert "privilege-expanding" in reviewer or "secret-handling" in reviewer
     for sink in ("harvest", "token", "url", "remote", "hook", ".env"):
         assert sink in reviewer
+    for policy_path in ("agents.md", ".github/workflows", ".cursor/hooks"):
+        assert policy_path in reviewer
     assert "delete the task" in reviewer or "remove the task" in reviewer
     assert "do not file" in reviewer
     assert "prd requirement with no task" in reviewer
