@@ -23,8 +23,8 @@ The table must list every top-level `loadouts/*.yaml` file:
 | Agents | Own agents as a bulleted list, each name linked to `agents/<name>/<name>.md` |
 | Skills | Own skills as a bulleted list, each name linked to `skills/<name>/SKILL.md` |
 | Rules | Own rules as a bulleted list, each name linked to the `.mdc` source |
-| MCPs | Own MCPs as a bulleted list, each name linked to `mcps/<name>/mcp.yaml` |
-| Etc. | Own hooks (linked to `hook.yaml` or `SOURCE.md`) and `cli_tools` names |
+| MCPs | Own MCPs as a bulleted list, each name linked to `mcps/<name>/README.md` if present, else `mcps/<name>/mcp.yaml` |
+| Etc. | Own hooks (linked to `SOURCE.md` if present, else `hook.yaml`) and `cli_tools` names |
 
 Empty kind cells use —. Run `.claude/skills/generating-readme/scripts/generate_readme.py`
 rather than hand-editing rows.
