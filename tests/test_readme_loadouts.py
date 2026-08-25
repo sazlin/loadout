@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from readme_catalog import EM_DASH, NAME_RE, catalog_rows, expected_etc, expected_kind, listed_items
+from readme_catalog import EM_DASH, NAME_RE, catalog_rows, expected_columns, listed_items
 
 from loadout.frontmatter import parse_rule
 from loadout.models import load_loadout
@@ -80,13 +80,7 @@ def test_readme_catalog_lists_own_artifacts_as_linked_names() -> None:
     for name in sorted(_loadout_names()):
         loadout = load_loadout(LOADOUTS_DIR / f"{name}.yaml")
         cells = rows[name]
-        expected = {
-            "agents": expected_kind(loadout, "agents", REPO),
-            "skills": expected_kind(loadout, "skills", REPO),
-            "rules": expected_kind(loadout, "rules", REPO),
-            "mcps": expected_kind(loadout, "mcps", REPO),
-            "etc": expected_etc(loadout, REPO),
-        }
+        expected = expected_columns(loadout, REPO)
         for kind, items in expected.items():
             listed = listed_items(cells[kind])
             assert listed == items, f"{name} {kind}: {cells[kind]!r}"

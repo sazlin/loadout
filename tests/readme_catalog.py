@@ -95,3 +95,10 @@ def expected_etc(loadout: LoadoutDef, root: Path) -> list[tuple[str, str | None]
     items = expected_kind(loadout, "hooks", root)
     items.extend((tool.name, None) for tool in loadout.cli_tools)
     return items
+
+
+def expected_columns(loadout: LoadoutDef, root: Path) -> dict[str, list[tuple[str, str | None]]]:
+    """Return expected (name, href) pairs for every catalog kind column."""
+    columns = {kind: expected_kind(loadout, kind, root) for kind in ("agents", "skills", "rules", "mcps")}
+    columns["etc"] = expected_etc(loadout, root)
+    return columns

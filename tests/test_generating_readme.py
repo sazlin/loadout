@@ -15,8 +15,7 @@ from readme_catalog import (
     HEADING,
     NAME_RE,
     catalog_rows,
-    expected_etc,
-    expected_kind,
+    expected_columns,
     listed_items,
 )
 
@@ -129,13 +128,7 @@ def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
         loadout = load_loadout(MINI / "loadouts" / f"{name}.yaml")
         listed = NAME_RE.findall(cells["extends"])
         assert listed == loadout.extends
-        expected = {
-            "agents": expected_kind(loadout, "agents", MINI),
-            "skills": expected_kind(loadout, "skills", MINI),
-            "rules": expected_kind(loadout, "rules", MINI),
-            "mcps": expected_kind(loadout, "mcps", MINI),
-            "etc": expected_etc(loadout, MINI),
-        }
+        expected = expected_columns(loadout, MINI)
         for kind, items in expected.items():
             assert listed_items(cells[kind]) == items, (name, kind, cells[kind])
             if not items:
@@ -218,13 +211,7 @@ def test_this_repo_catalog_satisfies_readme_contracts() -> None:
         loadout = load_loadout(REPO / "loadouts" / f"{name}.yaml")
         cells = rows[name]
         assert NAME_RE.findall(cells["extends"]) == loadout.extends
-        expected = {
-            "agents": expected_kind(loadout, "agents", REPO),
-            "skills": expected_kind(loadout, "skills", REPO),
-            "rules": expected_kind(loadout, "rules", REPO),
-            "mcps": expected_kind(loadout, "mcps", REPO),
-            "etc": expected_etc(loadout, REPO),
-        }
+        expected = expected_columns(loadout, REPO)
         for kind, items in expected.items():
             assert listed_items(cells[kind]) == items, (name, kind, cells[kind])
             for item_name, href in items:
