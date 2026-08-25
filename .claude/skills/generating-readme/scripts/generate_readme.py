@@ -234,7 +234,7 @@ def _replace_block(text: str, start: str, end: str, body: str) -> str:
     start_at = text.find(start)
     end_at = text.find(end)
     if start_at == -1 or end_at == -1 or end_at < start_at:
-        raise SystemExit(f"template missing markers {start} / {end}")
+        raise ValueError(f"template missing markers {start} / {end}")
     inner_from = start_at + len(start)
     return text[:inner_from] + "\n" + body.rstrip() + "\n" + text[end_at:]
 
@@ -258,7 +258,10 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    generate_readme(repo_root=args.repo_root, template=args.template, output=args.output)
+    try:
+        generate_readme(repo_root=args.repo_root, template=args.template, output=args.output)
+    except ValueError as err:
+        raise SystemExit(str(err)) from err
 
 
 if __name__ == "__main__":

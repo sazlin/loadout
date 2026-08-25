@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
 from readme_catalog import (
     EM_DASH,
     HEADING,
@@ -159,6 +160,34 @@ def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
     assert "`base`" in filled
     assert "`python`" in filled
     assert CATALOG_START in filled
+
+
+def test_fill_template_missing_catalog_markers_raises_value_error() -> None:
+    generator = _generator()
+    with pytest.raises(ValueError, match="generated:loadouts-catalog"):
+        generator.fill_template(
+            "no catalog markers",
+            catalog="table",
+            has_loadouts=True,
+            has_banner=True,
+        )
+
+
+def test_cli_missing_catalog_markers_exits_nonzero(tmp_path: Path) -> None:
+    template = tmp_path / "broken.md"
+    template.write_text("no catalog markers\n")
+    out = tmp_path / "README.md"
+    completed = _run_cli(
+        "--repo-root",
+        str(MINI),
+        "--template",
+        str(template),
+        "--output",
+        str(out),
+    )
+    assert completed.returncode != 0
+    message = completed.stderr + completed.stdout
+    assert "generated:loadouts-catalog" in message
 
 
 def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -> None:
