@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.16.0
+
 - Split the README Available loadouts `Etc.` column into **Hooks** (hooks
   only) and **CLI Tools** (`cli_tools` names).
 - Rename the `pr_review` loadout to `pr_review_harness`.
