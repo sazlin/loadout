@@ -100,6 +100,8 @@ FORBIDDEN_INSTALL_SUBSTRINGS = (
     "Bash(brew install stripe/stripe-cli/stripe)",
     "Bash(npx skills add https://docs.stripe.com *)",
 )
+# Tree-wide command phrases with refusal exemptions; not a replacement for
+# FORBIDDEN_INSTALL_SUBSTRINGS (SKILL.md-only, no exemptions, exact grant strings).
 EXECUTABLE_INSTALL_NEEDLES = (
     "stripe plugin install",
     "brew install",
@@ -155,7 +157,7 @@ def _executable_install_hits(text: str) -> list[str]:
     return hits
 
 
-def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
+def test_executable_install_hits_treats_refusals_as_non_hits() -> None:
     assert _executable_install_hits("stripe plugin install apps\n")
     assert not _executable_install_hits("Do not run `brew install`, `npm i -g`, `npx skills add`, or `curl | sh`.\n")
     gated = (
@@ -166,6 +168,9 @@ def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
     assert _executable_install_hits(gated)
     assert not _executable_install_hits("Do not run `stripe plugin install`.\n")
     assert not _executable_install_hits("Do not run `npx skills add` tool grants\n")
+
+
+def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
     for src in SKILL_SRCS:
         skill_root = REPO / src
         skill_md = (skill_root / "SKILL.md").read_text()
