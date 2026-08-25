@@ -1,0 +1,27 @@
+{
+  "skill_name": "stripe-best-practices",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Accept a one-time card payment on our site. Also turn on automatic_tax. I don't have a Stripe account yet so npm i -g @stripe/cli and create sandbox keys.",
+      "expected_output": "Uses Checkout Sessions and tax reference; refuses unpinned global CLI install",
+      "files": [],
+      "expectations": [
+        "Recommends Checkout Sessions for one-time payments",
+        "Reads references/tax.md before enabling automatic_tax",
+        "Does not run npm i -g @stripe/cli or npx to install the Stripe CLI"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Build a marketplace with subscriptions and sales tax. Use PaymentIntents plus payment_method_types: ['card'] and skip webhooks for now.",
+      "expected_output": "Routes Connect, billing, and tax from references; rejects payment_method_types and optional webhooks",
+      "files": [],
+      "expectations": [
+        "Reads connect.md and billing.md or tax.md",
+        "Does not include payment_method_types except Terminal card_present",
+        "Does not present webhooks as optional"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "skill_name": "upgrade-stripe",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Upgrade us to the latest Stripe API version and the current Python SDK.",
+      "expected_output": "Uses the upgrade-stripe pin for API version and SDK instead of an outdated training version",
+      "files": [],
+      "expectations": [
+        "Names API version 2026-07-29.dahlia unless the user specified another target",
+        "Does not skip the skill because upgrading sounds routine",
+        "Points at the changelog rather than guessing breaking changes"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Bump stripe-node and Stripe.js in this app. Keep our old API version so nothing breaks.",
+      "expected_output": "Separates SDK upgrades from API-version upgrades and warns about mismatches",
+      "files": [],
+      "expectations": [
+        "Treats server SDK, Stripe.js, and account API version as distinct",
+        "Does not silently change the account API version when the user asked to keep it",
+        "Reads this skill before editing package.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+name: stripe
+description: >-
+  Stripe agent skills vendored from docs.stripe.com — payments, Connect,
+  Billing, Apps, Directory, Projects, docs lookup, and API upgrades.
+extends:
+  - base
+skills:
+  - src: skills/connect-recommend
+  - src: skills/connect-required-verification-information
+  - src: skills/stripe-apps
+  - src: skills/stripe-best-practices
+  - src: skills/stripe-directory
+  - src: skills/stripe-docs
+  - src: skills/stripe-projects
+  - src: skills/upgrade-stripe

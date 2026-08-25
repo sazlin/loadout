@@ -1,0 +1,27 @@
+{
+  "skill_name": "connect-required-verification-information",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What KYC fields does a US individual connected account need to provide for payouts?",
+      "expected_output": "Looks up Connect required verification information instead of guessing KYC fields",
+      "files": [],
+      "expectations": [
+        "Uses this skill before listing identity documents",
+        "Does not invent a document list from memory",
+        "Considers platform country, account country, and business type"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Compare verification requirements for a company connected account in FR vs US with card_payments capability.",
+      "expected_output": "Compares required verification information from the skill rather than a generic KYC checklist",
+      "files": [],
+      "expectations": [
+        "Treats capability, country, and business type as inputs",
+        "Does not copy a US-only checklist onto the FR account",
+        "Does not skip the skill because the user asked for a comparison"
+      ]
+    }
+  ]
+}

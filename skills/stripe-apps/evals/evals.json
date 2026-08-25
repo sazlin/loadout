@@ -1,0 +1,27 @@
+{
+  "skill_name": "stripe-apps",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a panel to the customer page in my Stripe Dashboard that shows our internal order id.",
+      "expected_output": "Loads Stripe Apps discovery and scaffolds a UI extension instead of a standalone web app",
+      "files": [],
+      "expectations": [
+        "Reads references/discovery.md before writing files",
+        "Uses stripe generate app rather than stripe apps create",
+        "Does not skip the skill because the user never said Stripe Apps"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Connect my service to Stripe without sharing API keys, and react to Stripe events from the app.",
+      "expected_output": "Follows Stripe Apps auth and webhook references",
+      "files": [],
+      "expectations": [
+        "Reads authentication or webhooks references",
+        "Does not recommend embedding a secret key in the Dashboard UI",
+        "Mentions upload-before-Secret-Store when fetchStripeSignature is in play"
+      ]
+    }
+  ]
+}
