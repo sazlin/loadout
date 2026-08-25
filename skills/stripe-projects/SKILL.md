@@ -39,7 +39,7 @@ which stripe && stripe --version
 
 If not installed or below version 1.40.0, stop. Tell the user to install the Stripe CLI from https://docs.stripe.com/stripe-cli/install. Do not run `brew install`, `brew upgrade`, `npm i -g`, `npx`, or `curl | sh`.
 
-If `stripe projects` is missing after the CLI is present, tell the user to install the Projects plugin themselves (`stripe plugin install projects`). Do not run plugin install without explicit user approval.
+If `stripe projects` is missing after the CLI is present, stop. Tell the user to install the Stripe CLI from https://docs.stripe.com/stripe-cli. Do not run `brew install`, `npm i -g`, `npx`, `curl | sh`, or `stripe plugin install` unless the user installs them themselves.
 
 ### Step 2: Search the Catalog
 

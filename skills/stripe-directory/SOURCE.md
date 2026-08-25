@@ -18,6 +18,7 @@ On a bump, treat files as:
 
 1. **First-party** — `SOURCE.md` and `evals/` are loadout-repo owned and must
    survive a bump.
-2. **Adapted** — `SKILL.md` drops Homebrew / `npx skills add` tool grants and
-   install steps. Missing CLI: tell the user to install it. Missing
-   `stripe-projects`: sync this loadout; do not fetch skills from GitHub.
+2. **Adapted** — `SKILL.md` does not Homebrew/npm-install. Do not run
+   `brew install` or `npx skills add` tool grants. Missing CLI: tell the user
+   to install it. Missing `stripe-projects`: sync this loadout; do not fetch
+   skills from GitHub.

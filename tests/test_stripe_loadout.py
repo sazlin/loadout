@@ -127,12 +127,19 @@ def _iter_skill_text_files(skill_src: Path) -> list[Path]:
     return files
 
 
-def _line_allows_install_phrase(previous: str, line: str) -> bool:
+def _install_phrase_is_refusal(previous: str, line: str) -> bool:
+    """True when the current/previous line is a Do-not-run mention, so the caller skips it."""
     window = " ".join(f"{previous} {line}".split()).lower()
-    if any(marker in window for marker in _REFUSAL_MARKERS):
-        return True
-    # SOURCE.md notes that list dropped Homebrew / `npx skills add` tool grants.
-    return "drops" in window and "grant" in window
+    if not any(marker in window for marker in _REFUSAL_MARKERS):
+        return False
+    gated = (
+        "without approval" in window
+        or "without explicit user approval" in window
+        or "until they confirm" in window
+        or "until they agree" in window
+    )
+    has_install_command = any(needle in window for needle in EXECUTABLE_INSTALL_NEEDLES)
+    return not (gated and has_install_command)
 
 
 def _executable_install_hits(text: str) -> list[str]:
@@ -140,7 +147,7 @@ def _executable_install_hits(text: str) -> list[str]:
     lines = text.splitlines()
     for index, line in enumerate(lines):
         previous = lines[index - 1] if index else ""
-        if _line_allows_install_phrase(previous, line):
+        if _install_phrase_is_refusal(previous, line):
             continue
         for needle in EXECUTABLE_INSTALL_NEEDLES:
             if needle in line:
@@ -150,9 +157,15 @@ def _executable_install_hits(text: str) -> list[str]:
 
 def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
     assert _executable_install_hits("stripe plugin install apps\n")
-    assert not _executable_install_hits(
-        "Do not run `brew install`, `npm i -g`, `npx skills add`, or `curl | sh`.\n"
+    assert not _executable_install_hits("Do not run `brew install`, `npm i -g`, `npx skills add`, or `curl | sh`.\n")
+    gated = (
+        "tell the user to install the Projects plugin themselves "
+        "(`stripe plugin install projects`). Do not run plugin install "
+        "without explicit user approval.\n"
     )
+    assert _executable_install_hits(gated)
+    assert not _executable_install_hits("Do not run `stripe plugin install`.\n")
+    assert not _executable_install_hits("Do not run `npx skills add` tool grants\n")
     for src in SKILL_SRCS:
         skill_root = REPO / src
         skill_md = (skill_root / "SKILL.md").read_text()
