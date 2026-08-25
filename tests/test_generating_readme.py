@@ -152,8 +152,8 @@ def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
     filled = generator.fill_template(
         template,
         catalog=generator.catalog_markdown(MINI),
-        has_loadouts=True,
-        has_banner=True,
+        loadouts_present=True,
+        banner_present=True,
     )
     assert BANNER in filled
     assert "OLD" not in filled
@@ -168,8 +168,8 @@ def test_fill_template_missing_catalog_markers_raises_value_error() -> None:
         generator.fill_template(
             "no catalog markers",
             catalog="table",
-            has_loadouts=True,
-            has_banner=True,
+            loadouts_present=True,
+            banner_present=True,
         )
 
 
@@ -196,8 +196,8 @@ def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -
     filled = generator.fill_template(
         template,
         catalog="",
-        has_loadouts=False,
-        has_banner=True,
+        loadouts_present=False,
+        banner_present=True,
     )
     assert HEADING not in filled
     assert OPTIONAL_START not in filled
@@ -250,7 +250,7 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
 def test_fill_template_drops_banner_when_asset_missing() -> None:
     generator = _generator()
     template = f'{BANNER_START}\n<img src="{BANNER}" alt="banner" />\n{BANNER_END}\n# Title\n'
-    filled = generator.fill_template(template, catalog="", has_loadouts=False, has_banner=False)
+    filled = generator.fill_template(template, catalog="", loadouts_present=False, banner_present=False)
     assert BANNER not in filled
     assert BANNER_START not in filled
     assert "# Title" in filled
@@ -313,8 +313,8 @@ def test_fill_template_substitutes_version_placeholders() -> None:
     filled = generator.fill_template(
         template,
         catalog="",
-        has_loadouts=False,
-        has_banner=True,
+        loadouts_present=False,
+        banner_present=True,
         version="v9.9.9",
     )
     assert filled == "uvx --from git+https://example@v9.9.9 just release 9.9.9\n"

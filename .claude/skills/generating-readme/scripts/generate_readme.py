@@ -60,31 +60,31 @@ def fill_template(
     template: str,
     *,
     catalog: str,
-    has_loadouts: bool,
-    has_banner: bool,
+    loadouts_present: bool,
+    banner_present: bool,
     version: str = "",
 ) -> str:
     """Replace generated markers. Drop optional blocks whose assets are absent."""
     text = _apply_version(template, version)
-    if has_loadouts:
+    if loadouts_present:
         text = _replace_block(text, CATALOG_START, CATALOG_END, catalog)
     else:
         text = _drop_marked_section(text, OPTIONAL_START, OPTIONAL_END)
-    if not has_banner:
+    if not banner_present:
         text = _drop_marked_section(text, BANNER_START, BANNER_END)
     return text
 
 
 def generate_readme(*, repo_root: Path, template: Path, output: Path) -> None:
     """Write output from template with catalog sections filled or removed."""
-    present = has_loadouts(repo_root)
-    banner = has_banner(repo_root)
-    catalog = catalog_markdown(repo_root) if present else ""
+    loadouts_present = has_loadouts(repo_root)
+    banner_present = has_banner(repo_root)
+    catalog = catalog_markdown(repo_root) if loadouts_present else ""
     filled = fill_template(
         template.read_text(),
         catalog=catalog,
-        has_loadouts=present,
-        has_banner=banner,
+        loadouts_present=loadouts_present,
+        banner_present=banner_present,
         version=latest_tag(repo_root),
     )
     output.write_text(filled)
