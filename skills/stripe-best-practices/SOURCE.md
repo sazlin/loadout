@@ -5,9 +5,12 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/stripe-best-practices` |
 | Imported | 2026-08-25 |
-| SKILL.md sha256 | `a5d1b7dd1fe9f7dea29a868f9fffb9190c9566d1c81c64ea990271bdecb0d2fe` |
+| Current SKILL.md sha256 | `a5d1b7dd1fe9f7dea29a868f9fffb9190c9566d1c81c64ea990271bdecb0d2fe` |
 
-Imported with `just add_skill https://docs.stripe.com`.
+Imported with `just add_skill https://docs.stripe.com`. This hash is the
+adapted tree, not the upstream blob. On a bump, re-copy SKILL.md from the
+Stripe index, then re-apply the Adapted bullet; do not merge by section.
+Then replace this hash with `sha256sum` of the adapted SKILL.md.
 
 ## Adaptations from upstream
 

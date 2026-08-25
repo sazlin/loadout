@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -106,6 +107,9 @@ EXECUTABLE_INSTALL_NEEDLES = (
 )
 _SKILL_TEXT_SUFFIXES = {".md", ".txt", ".yaml", ".yml"}
 _REFUSAL_MARKERS = ("do not run", "does not auto-run", "do not execute")
+IMPORTED_SKILL_HASH_LABEL = "Imported SKILL.md sha256"
+CURRENT_SKILL_HASH_LABEL = "Current SKILL.md sha256"
+UNLABELED_SKILL_HASH_ROW = "| SKILL.md sha256 |"
 
 
 def _iter_skill_text_files(skill_src: Path) -> list[Path]:
@@ -165,6 +169,29 @@ def test_stripe_projects_does_not_handoff_to_generated_skill() -> None:
     assert "--accept-tos --yes" not in text
 
 
+def _assert_adapted_source_hash_label(src: str, text: str) -> None:
+    if "**Adapted**" not in text:
+        return
+    has_imported = f"| {IMPORTED_SKILL_HASH_LABEL} |" in text
+    has_current = f"| {CURRENT_SKILL_HASH_LABEL} |" in text
+    assert has_imported or has_current, f"{src} adapted SOURCE.md must label the SKILL.md hash as Imported or Current"
+    assert UNLABELED_SKILL_HASH_ROW not in text, f"{src} adapted SOURCE.md still has unlabeled SKILL.md sha256"
+    if has_current:
+        digest = hashlib.sha256((REPO / src / "SKILL.md").read_bytes()).hexdigest()
+        assert digest in text, f"{src} Current SKILL.md sha256 does not match SKILL.md"
+    _assert_no_remaining_verbatim_leftover(src, text)
+
+
+def _assert_no_remaining_verbatim_leftover(src: str, text: str) -> None:
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        chunk = line
+        if index + 1 < len(lines) and lines[index + 1].startswith("   "):
+            chunk = f"{line} {lines[index + 1]}"
+        if "Upstream-verbatim" in chunk:
+            assert "remaining" not in chunk.lower(), f"{src} Upstream-verbatim leftover names remaining copy: {chunk}"
+
+
 def test_stripe_skill_source_pins_exist() -> None:
     for src in SKILL_SRCS:
         source = REPO / src / "SOURCE.md"
@@ -172,3 +199,4 @@ def test_stripe_skill_source_pins_exist() -> None:
         assert "docs.stripe.com/.well-known/skills/index.json" in text
         assert "just add_skill" in text
         assert "evals/" in text
+        _assert_adapted_source_hash_label(src, text)
