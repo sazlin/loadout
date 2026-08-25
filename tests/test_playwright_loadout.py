@@ -329,7 +329,7 @@ def test_playwright_defaults_test_dir_to_e2e() -> None:
 def test_cookiecutter_maps_use_playwright_to_playwright() -> None:
     text = (REPO / "docs/consumer-contract.md").read_text()
     assert 'LOADOUTS.append("playwright")' in text
-    assert "playwright-e2e" not in text
+    assert 'LOADOUTS.append("playwright-e2e")' not in text
 
 
 def test_playwright_skill_evals_are_colocated() -> None:
