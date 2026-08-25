@@ -52,8 +52,6 @@ if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright")
 ```
 
-`use_playwright` maps to `playwright`.
-
 ### Hook must never hard-fail
 
 Cookiecutter deletes the entire output directory if a post-gen hook exits nonzero. Network errors, expired tokens, or proxy issues must not destroy a freshly generated project.
