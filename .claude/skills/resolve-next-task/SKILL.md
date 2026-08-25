@@ -6,7 +6,7 @@ description: Implement the first open TASKS_TO_RESOLVE.md task, commit, and push
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/resolve-next-task/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Resolve next task

@@ -81,6 +81,30 @@ REVIEW_HEADINGS = [
 ]
 REVIEW_TOOLS = {"Read", "Grep", "Glob", "Bash"}
 WRITE_TOOLS = {"Edit", "Write"}
+# Extra computerUse allowlist so a reviewer can observe a running web UI.
+# Live exploration uses npx playwright-cli via Bash (the browser CLI the
+# playwright loadout installs). Task is omitted: it can spawn write-capable
+# agents. No Playwright MCP.
+WEBAPP_REVIEW_TOOLS = {"computerUse"}
+# review_maintainability, review_scale, review_orchestrator, and
+# risk_classifier stay on REVIEW_TOOLS.
+WEBAPP_REVIEW_AGENTS = frozenset(
+    {
+        "review_correctness.md",
+        "review_security.md",
+        "verifier.md",
+    }
+)
+_FORBID_WORDS = ("forbid", "never", "do not")
+_SECRET_DUMP_CLI = (
+    "cookie-list",
+    "cookie-get",
+    "localstorage-list",
+    "localstorage-get",
+    "sessionstorage-get",
+    "eval",
+    "run-code",
+)
 ISSUE_SCHEMA_FIELDS = (
     '"id"',
     '"title"',
@@ -122,6 +146,92 @@ def _tools(meta: AgentMeta) -> set[str]:
 def issue_blob_safe(issue: dict[str, object]) -> str:
     """Lowercased issue text for test mutations; mirrors the scorer."""
     return " ".join(str(value) for value in issue.values()).lower()
+
+
+def _forbid_window(text: str, needle: str) -> str:
+    at = text.find(needle)
+    return text[max(0, at - 160) : at + 160]
+
+
+def _assert_closes_own_playwright_cli_session(filename: str, text: str) -> None:
+    """Webapp reviewers close only their named session, never host-wide close-all."""
+    session = Path(filename).stem
+    pin = f"-s={session}"
+    named_open = f"npx playwright-cli {pin} open"
+    named_close = f"npx playwright-cli {pin} close"
+    assert named_open in text, filename
+    assert named_close in text, filename
+    assert "npx playwright-cli list" in text, filename
+    lowered = text.lower()
+    assert "empty" in lowered, filename
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0]
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+    assert pin in tools, filename
+    assert named_open in tools, filename
+    assert named_close in tools, filename
+    assert named_close in blocked, filename
+    blocked_lower = blocked.lower()
+    assert "close-all" not in blocked_lower, filename
+    assert "kill-all" not in blocked_lower, filename
+    tools_lower = tools.lower()
+    for host_wide in ("close-all", "kill-all"):
+        start = 0
+        while True:
+            at = tools_lower.find(host_wide, start)
+            if at == -1:
+                break
+            window = tools_lower[max(0, at - 160) : at + 160]
+            assert any(word in window for word in _FORBID_WORDS), filename
+            start = at + len(host_wide)
+
+
+def _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(label: str, text: str) -> None:
+    """Browser I/O must not dump session secrets or leave the local app origin."""
+    lowered = text.lower()
+    for command in _SECRET_DUMP_CLI:
+        assert command in lowered, f"{label}: missing {command}"
+    assert "request <n>" in lowered, label
+    cookie_window = _forbid_window(lowered, "cookie-get")
+    assert any(word in cookie_window for word in _FORBID_WORDS), label
+    run_window = _forbid_window(lowered, "run-code")
+    assert any(word in run_window for word in _FORBID_WORDS), label
+    assert "eval" in run_window, label
+    assert "storagestate" in lowered, label
+    forbids_read = (
+        "never `read`" in lowered
+        or "never read" in lowered
+        or ("never" in lowered and "`cat`" in lowered)
+        or "do not read" in lowered
+        or "do not `read`" in lowered
+    )
+    assert forbids_read, label
+    assert "cookie or token" in lowered, label
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0].lower()
+    assert "running local app origin" in tools, label
+    assert "do not explore production" in tools, label
+    assert "evaluate" in tools, label
+    assert "cookie" in tools and "storage" in tools, label
+
+
+def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
+    """computerUse may only observe the running local app window, not OS chrome."""
+    tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0].lower()
+    browser = " ".join(tools.split("**browser:**", 1)[1].split())
+    assert "running local app window" in browser, label
+    window_scope = _forbid_window(browser, "running local app window")
+    assert "`computeruse`" in window_scope, label
+    assert "ide" in window_scope, label
+    assert "terminals" in window_scope, label
+    assert "os chrome" in window_scope, label
+    assert "password managers" in window_scope, label
+    assert "devtools" in browser, label
+    assert "application/storage/network" in browser, label
+    assert "screenshot" in browser, label
+    assert "authorization" in browser, label
+    assert "secret-dump" in browser, label
+    secret_dump = _forbid_window(browser, "secret-dump")
+    assert "`computeruse`" in secret_dump, label
+    assert "cookie" in secret_dump or "token" in secret_dump, label
 
 
 def test_every_agent_file_is_classified() -> None:
@@ -185,6 +295,46 @@ def test_dimension_reviewer_is_readonly_and_schema_complete(filename: str) -> No
     lowered = text.lower()
     for marker in DIMENSION_MARKERS[filename]:
         assert marker in lowered
+
+
+@pytest.mark.parametrize("filename", sorted(WEBAPP_REVIEW_AGENTS))
+def test_webapp_reviewers_can_use_playwright_and_computer_use(filename: str) -> None:
+    path = _agent_file(filename)
+    text = path.read_text()
+    meta = parse_agent_md(path, text, file_stem=path.stem)
+    tools = _tools(meta)
+    assert meta.readonly is True
+    assert WEBAPP_REVIEW_TOOLS <= tools
+    assert "Task" not in tools
+    assert tools.isdisjoint(WRITE_TOOLS)
+    assert "mcp__playwright" not in tools
+    assert "mcp__playwright" not in text
+    assert "@playwright/mcp" not in text
+    lowered = text.lower()
+    assert "`computeruse`" in lowered
+    assert "`task`" not in lowered
+    assert "npx playwright-cli" in lowered
+    assert "`playwright` loadout" in lowered
+    assert "stop immediately" in lowered
+    assert "retrying `open`" in lowered
+    assert "call `computeruse` directly" in lowered
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0].lower()
+    assert "stop immediately" in blocked
+    assert "retrying `open`" in blocked
+    assert "playwright mcp is absent" not in blocked
+    assert "spawning another `computeruse`" not in blocked
+    assert "calling `computeruse` again" in blocked
+    stop_sentence = next(part for part in blocked.replace("\n", " ").split(".") if "stop immediately" in part)
+    assert "mcp" not in stop_sentence
+    if filename == VERIFIER:
+        assert "check ui claims against a running webapp" in lowered
+    else:
+        assert "observe a running webapp" in lowered
+    _assert_closes_own_playwright_cli_session(filename, text)
+    if filename == VERIFIER:
+        assert "continue remaining" in lowered
+    _assert_webapp_reviewer_forbids_secret_dump_and_off_origin(filename, text)
+    _assert_computer_use_stays_in_app_window(filename, text)
 
 
 def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:

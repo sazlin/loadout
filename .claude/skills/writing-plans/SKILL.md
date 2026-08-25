@@ -5,7 +5,7 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/writing-plans/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Writing Plans

@@ -51,10 +51,16 @@ repo, so read them at the start of a session.
 | --- | --- | --- |
 | `.cursor/rules/colocated-evals.mdc` | Always | Keep agent and skill eval fixtures next to the artifact they test. Applies when adding or moving evals. |
 | `.cursor/rules/commit-style.mdc` | Always | Write focused, reviewable commits with clear intent. |
+| `.cursor/rules/honor-check-intent.mdc` | Always | Do not rename, change a file extension, or move files to bypass a failing check. Honor the intent of the rule, verifier, test, or CI check. Applies to all work. |
+| `.cursor/rules/no-cursor-coauthor.mdc` | Always | Never include Cursor as a git commit co-author. |
+| `.cursor/rules/pr-ready-for-review.mdc` | Always | Open GitHub PRs ready for review, never as drafts. If the change is not ready, do not open a PR; ask the user what is blocking. |
 | `.cursor/rules/repo-conventions.mdc` | Always | Preserve repository conventions and verify scoped changes. |
 | `.cursor/rules/agent-authoring.mdc` | `agents/*/*.md`, `agents/_agent_template.md` | Author and import agents from agents/_agent_template.md. Applies only when working on files under agents/. |
 | `.cursor/rules/pytest.mdc` | `**/test_*.py`, `**/*_test.py`, `tests/**/*.py` | Write reliable, focused pytest coverage for Python behavior. |
 | `.cursor/rules/python-code-style.mdc` | `**/*.py`, `**/*.pyi` | Write simple, readable, maintainable Python that a reviewer can quickly read and understand in one pass. |
+| `.cursor/rules/readme-loadouts.mdc` | `loadouts/*.yaml` | Keep README.md Available loadouts in sync when adding, removing, or changing a loadout. Applies when editing loadouts/. |
+| `.cursor/rules/test-agents.mdc` | `specs/**/*.md`, `e2e/**/*.spec.ts`, `e2e/**/*.spec.js`, `playwright.config.*` | Playwright Test Agent conventions for specs/, seed tests, and generated specs. |
+| `e2e/.cursor/rules/e2e-conventions.mdc` | `e2e/**/*.ts`, `e2e/**/*.tsx`, `e2e/**/*.js`, `e2e/**/*.jsx` | Keep Playwright end-to-end tests deterministic and user-focused under /e2e. |
 
 Skills are installed at `.claude/skills/`, which both Cursor and Claude Code load
 automatically. You do not need to read those manually.

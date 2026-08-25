@@ -7,7 +7,7 @@ globs:
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/agents/agent-authoring.mdc
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Agent authoring
@@ -37,7 +37,8 @@ Required headings, in this order:
 Frontmatter must parse as an agent: `name` equals the file stem, `description`
 is non-empty and has no `<` / `>`, and only allowed keys are present
 (`name`, `description`, `model`, `readonly`, `is_background`, `tools`,
-`metadata`).
+`metadata`). Write `description` only as when-to-use and when-not-to-use
+signals for other agents (see `rules/agents/agent-descriptions.mdc`).
 
 ## Imported agents
 

@@ -1,9 +1,7 @@
 ---
 name: issue_resolver
-description: 'Implements the next open task from TASKS_TO_RESOLVE.md on the current
-  PR branch: fix, verify, commit, and push. Use when the review orchestrator dispatches
-  resolve-next-task, or when the user asks to resolve the next PR review task. Do
-  not merge. Do not start extra tasks.'
+description: Use when the review orchestrator dispatches resolve-next-task, or when
+  asked to resolve the next PR review task. Do not merge. Do not start extra tasks.
 model: inherit
 tools:
 - Read
@@ -15,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/issue_resolver/issue_resolver.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 You are **issue_resolver**, a focused fixer for one open PR-review task.

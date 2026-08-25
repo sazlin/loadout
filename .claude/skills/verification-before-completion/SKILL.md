@@ -6,7 +6,7 @@ description: Use when about to claim work is complete, fixed, or passing, before
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/verification-before-completion/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Verification Before Completion

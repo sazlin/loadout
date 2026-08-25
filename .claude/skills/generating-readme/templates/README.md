@@ -147,7 +147,7 @@ Example GitHub Actions step:
 <!-- generated:loadouts-catalog:start -->
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base` and `pr_review_harness` (see `.loadout.yaml`).
+Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents

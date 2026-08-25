@@ -6,7 +6,7 @@ description: Append one entry to REVIEW_HISTORY.md. Use after a panel, task, ver
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/log-progress/SKILL.md
-  loadout.sha: 8dad2b6
+  loadout.sha: local
 ---
 
 # Log progress

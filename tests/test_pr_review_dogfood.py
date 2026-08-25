@@ -10,12 +10,22 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 
 
-def test_this_repo_manifest_includes_base_and_pr_review_harness() -> None:
+def test_this_repo_manifest_includes_base_pr_review_harness_and_playwright() -> None:
     data = yaml.safe_load((REPO / ".loadout.yaml").read_text())
     assert data["source"] == "https://github.com/sazlin/loadout"
-    assert data["ref"] == "v0.7.0"
+    assert data["ref"] == "main"
     assert "base" in data["loadouts"]
     assert "pr_review_harness" in data["loadouts"]
+    assert "playwright" in data["loadouts"]
+
+
+def test_this_repo_vendors_playwright_agents_and_cli() -> None:
+    for name in ("playwright_planner", "playwright_generator", "playwright_healer"):
+        assert (REPO / ".claude" / "agents" / f"{name}.md").is_file()
+    assert (REPO / ".claude" / "skills" / "playwright-agents" / "SKILL.md").is_file()
+    assert (REPO / "e2e" / ".cursor" / "rules" / "e2e-conventions.mdc").is_file()
+    package = (REPO / "package.json").read_text()
+    assert "@playwright/cli" in package
 
 
 def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
@@ -39,8 +49,7 @@ def test_verifiers_md_contains_required_claims() -> None:
     ]
     assert "no use of any in TypeScript files" in lines
     assert (
-        "files were not renamed or given a different extension to bypass "
-        "verifiers, rules, evals, or other CI checks"
+        "files were not renamed or given a different extension to bypass verifiers, rules, evals, or other CI checks"
     ) in lines
     assert (
         "meaningful tests: newly added tests that explicitly target newly implemented behavior "
