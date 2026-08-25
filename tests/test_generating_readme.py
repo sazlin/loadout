@@ -1,4 +1,4 @@
-"""Contracts for the repo-local generating-readme skill and audit script."""
+"""Contracts for the repo-local generating-readme skill and generator script."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from loadout.models import LoadoutDef, load_loadout
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / ".claude" / "skills" / "generating-readme"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
-SCRIPT = SKILL_ROOT / "scripts" / "audit_loadouts.py"
+SCRIPT = SKILL_ROOT / "scripts" / "generate_readme.py"
 TEMPLATE = SKILL_ROOT / "templates" / "README.md"
 BEST_PRACTICES = SKILL_ROOT / "references" / "readme-best-practices.md"
 EVALS = SKILL_ROOT / "evals" / "evals.json"
@@ -36,8 +36,8 @@ BANNER_START = "<!-- generated:optional:banner:start -->"
 BANNER_END = "<!-- generated:optional:banner:end -->"
 
 
-def _audit():
-    spec = importlib.util.spec_from_file_location("audit_loadouts", SCRIPT)
+def _generator():
+    spec = importlib.util.spec_from_file_location("generate_readme", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -174,14 +174,14 @@ def test_evals_json_lists_fixture_files() -> None:
 
 
 def test_mini_catalog_lists_every_loadout() -> None:
-    markdown = _audit().catalog_markdown(MINI)
+    markdown = _generator().catalog_markdown(MINI)
     assert "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |" in markdown
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
     assert set(rows) == _loadout_names(MINI)
 
 
 def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
-    markdown = _audit().catalog_markdown(MINI)
+    markdown = _generator().catalog_markdown(MINI)
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
     for name, cells in rows.items():
         loadout = load_loadout(MINI / "loadouts" / f"{name}.yaml")
@@ -201,15 +201,15 @@ def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
 
 
 def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
-    audit = _audit()
+    generator = _generator()
     template = (
         f'<img src="{BANNER}" alt="banner" />\n\n'
         f"{OPTIONAL_START}\n{HEADING}\n\n{CATALOG_START}\nOLD\n{CATALOG_END}\n"
         f"{OPTIONAL_END}\n"
     )
-    filled = audit.fill_template(
+    filled = generator.fill_template(
         template,
-        catalog=audit.catalog_markdown(MINI),
+        catalog=generator.catalog_markdown(MINI),
         has_loadouts=True,
         has_banner=True,
     )
@@ -221,9 +221,9 @@ def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
 
 
 def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -> None:
-    audit = _audit()
+    generator = _generator()
     template = f"intro\n{OPTIONAL_START}\n{HEADING}\n{OPTIONAL_END}\nlicense\n"
-    filled = audit.fill_template(
+    filled = generator.fill_template(
         template,
         catalog="",
         has_loadouts=False,
@@ -235,12 +235,12 @@ def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -
     assert "license" in filled
     empty = tmp_path / "empty-repo"
     empty.mkdir()
-    assert audit.has_loadouts(empty) is False
-    assert audit.has_banner(empty) is False
+    assert generator.has_loadouts(empty) is False
+    assert generator.has_banner(empty) is False
 
 
 def test_this_repo_catalog_satisfies_readme_contracts() -> None:
-    markdown = _audit().catalog_markdown(REPO)
+    markdown = _generator().catalog_markdown(REPO)
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
     names = _loadout_names(REPO)
     assert set(rows) == names
@@ -268,7 +268,7 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
     completed = _run_cli("--repo-root", str(MINI), "--template", str(TEMPLATE), "--output", str(out))
     assert completed.returncode == 0, completed.stderr
     text = out.read_text()
-    version = _audit().latest_tag(MINI)
+    version = _generator().latest_tag(MINI)
     assert "`base`" in text
     assert BANNER not in text
     assert CATALOG_START in text
@@ -278,9 +278,9 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
 
 
 def test_fill_template_drops_banner_when_asset_missing() -> None:
-    audit = _audit()
+    generator = _generator()
     template = f'{BANNER_START}\n<img src="{BANNER}" alt="banner" />\n{BANNER_END}\n# Title\n'
-    filled = audit.fill_template(template, catalog="", has_loadouts=False, has_banner=False)
+    filled = generator.fill_template(template, catalog="", has_loadouts=False, has_banner=False)
     assert BANNER not in filled
     assert BANNER_START not in filled
     assert "# Title" in filled
@@ -301,9 +301,9 @@ def test_cli_keeps_banner_when_asset_exists(tmp_path: Path) -> None:
 
 
 def test_catalog_is_deterministic() -> None:
-    audit = _audit()
-    assert audit.catalog_markdown(MINI) == audit.catalog_markdown(MINI)
-    assert audit.catalog_markdown(REPO) == audit.catalog_markdown(REPO)
+    generator = _generator()
+    assert generator.catalog_markdown(MINI) == generator.catalog_markdown(MINI)
+    assert generator.catalog_markdown(REPO) == generator.catalog_markdown(REPO)
 
 
 def test_latest_tag_returns_newest_version_tag(tmp_path: Path) -> None:
@@ -318,14 +318,14 @@ def test_latest_tag_returns_newest_version_tag(tmp_path: Path) -> None:
     _git(repo, "tag", "v0.9.0")
     _git(repo, "tag", "v0.10.0")
     _git(repo, "tag", "v0.2.0")
-    assert _audit().latest_tag(repo) == "v0.10.0"
+    assert _generator().latest_tag(repo) == "v0.10.0"
 
 
 def test_latest_tag_falls_back_to_pyproject_version(tmp_path: Path) -> None:
     repo = tmp_path / "untagged"
     repo.mkdir()
     (repo / "pyproject.toml").write_text('[project]\nname = "demo"\nversion = "1.2.3"\n')
-    assert _audit().latest_tag(repo) == "v1.2.3"
+    assert _generator().latest_tag(repo) == "v1.2.3"
 
 
 def test_template_examples_use_version_placeholder_not_stale_pins() -> None:
@@ -338,9 +338,9 @@ def test_template_examples_use_version_placeholder_not_stale_pins() -> None:
 
 
 def test_fill_template_substitutes_version_placeholders() -> None:
-    audit = _audit()
+    generator = _generator()
     template = "uvx --from git+https://example@{{VERSION}} just release {{VERSION_NUMBER}}\n"
-    filled = audit.fill_template(
+    filled = generator.fill_template(
         template,
         catalog="",
         has_loadouts=False,

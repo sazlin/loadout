@@ -26,7 +26,7 @@ The table must list every top-level `loadouts/*.yaml` file:
 | MCPs | Own MCPs as a bulleted list, each name linked to `mcps/<name>/mcp.yaml` |
 | Etc. | Own hooks (linked to `hook.yaml` or `SOURCE.md`) and `cli_tools` names |
 
-Empty kind cells use —. Run `.claude/skills/generating-readme/scripts/audit_loadouts.py`
+Empty kind cells use —. Run `.claude/skills/generating-readme/scripts/generate_readme.py`
 rather than hand-editing rows.
 
 Do not ship the catalog update in a later commit or follow-up PR. Do not

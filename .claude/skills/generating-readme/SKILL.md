@@ -32,11 +32,11 @@ skill into `skills/` or attach it to `loadouts/*.yaml`.
 2. Start from [templates/README.md](templates/README.md). Keep the banner
    `docs/assets/loadout-banner.jpg` and existing pitch / quick start unless a
    fact changed.
-3. Run the audit script (fills or drops generated sections). It also
+3. Run the generator script (fills or drops generated sections). It also
    replaces `{{VERSION}}` / `{{VERSION_NUMBER}}` with the newest git tag:
 
 ```bash
-uv run python .claude/skills/generating-readme/scripts/audit_loadouts.py \
+uv run python .claude/skills/generating-readme/scripts/generate_readme.py \
   --repo-root . \
   --template .claude/skills/generating-readme/templates/README.md \
   --output README.md
@@ -64,7 +64,7 @@ foreign clone from `templates/README.md`.
    `<details>` only if you must shorten; never delete them.
 3. **If there is no README**, write one from the best-practices spine using
    only facts in the clone. Not the loadout template.
-4. You may still run `audit_loadouts.py` with `--repo-root` on the clone
+4. You may still run `generate_readme.py` with `--repo-root` on the clone
    **only to inspect/strip generated blocks in a copy**. Never pass
    `--template templates/README.md --output <clone>/README.md` — that
    overwrites a foreign README with loadout identity. No `loadouts/*.yaml`
@@ -87,7 +87,7 @@ demo/logo if it has one (`doc/screencast.svg`, `logo.svg`, etc.).
 
 | Mistake | Fix |
 | --- | --- |
-| Hand-writing the loadout table | Run `audit_loadouts.py` |
+| Hand-writing the loadout table | Run `generate_readme.py` |
 | Adding this skill to `loadouts/*.yaml` | Leave it repo-local under `.claude/skills/` |
 | Inventing loadouts or install commands | Only YAML, tests, and commands you ran |
 | ToC or 15 badges above the pitch | Title → few badges → one sentence |
@@ -100,4 +100,4 @@ demo/logo if it has one (`doc/screencast.svg`, `logo.svg`, etc.).
 
 - [references/readme-best-practices.md](references/readme-best-practices.md)
 - [templates/README.md](templates/README.md)
-- [scripts/audit_loadouts.py](scripts/audit_loadouts.py)
+- [scripts/generate_readme.py](scripts/generate_readme.py)
