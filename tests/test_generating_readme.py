@@ -3,14 +3,24 @@
 from __future__ import annotations
 
 import importlib.util
-import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+from types import ModuleType
+
+from readme_catalog import (
+    EM_DASH,
+    HEADING,
+    NAME_RE,
+    catalog_rows,
+    expected_etc,
+    expected_kind,
+    listed_items,
+)
 
 from loadout.frontmatter import parse_skill_md
-from loadout.models import LoadoutDef, load_loadout
+from loadout.models import load_loadout
 
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / ".claude" / "skills" / "generating-readme"
@@ -21,13 +31,6 @@ BEST_PRACTICES = SKILL_ROOT / "references" / "readme-best-practices.md"
 EVALS = SKILL_ROOT / "evals" / "evals.json"
 MINI = REPO / "tests" / "fixtures" / "mini_loadout"
 BANNER = "docs/assets/loadout-banner.jpg"
-HEADING = "## Available loadouts"
-EM_DASH = "\u2014"
-CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "etc")
-_NAME_RE = re.compile(r"`([^`]+)`")
-_LI_RE = re.compile(r"<li>(.*?)</li>")
-_HREF_RE = re.compile(r'<a href="([^"]+)">(?:<code>)?([^<]+)(?:</code>)?</a>')
-_CODE_RE = re.compile(r"<code>([^<]+)</code>")
 CATALOG_START = "<!-- generated:loadouts-catalog:start -->"
 CATALOG_END = "<!-- generated:loadouts-catalog:end -->"
 OPTIONAL_START = "<!-- generated:optional:loadouts-section:start -->"
@@ -36,7 +39,7 @@ BANNER_START = "<!-- generated:optional:banner:start -->"
 BANNER_END = "<!-- generated:optional:banner:end -->"
 
 
-def _generator():
+def _load_generator() -> ModuleType:
     spec = importlib.util.spec_from_file_location("generate_readme", SCRIPT)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -44,74 +47,12 @@ def _generator():
     return module
 
 
-def _catalog_rows(markdown: str) -> dict[str, dict[str, str]]:
-    start = markdown.find(HEADING)
-    assert start != -1, markdown
-    rest = markdown[start + len(HEADING) :]
-    next_heading = re.search(r"^## ", rest, re.MULTILINE)
-    section = rest[: next_heading.start()] if next_heading else rest
-    rows: dict[str, dict[str, str]] = {}
-    for line in section.splitlines():
-        if not line.startswith("|"):
-            continue
-        cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if len(cells) < 7 or cells[0] in {"Loadout", ""} or set(cells[0]) <= {"-"}:
-            continue
-        names = _NAME_RE.findall(cells[0])
-        assert names, line
-        rows[names[0]] = dict(zip(CATALOG_COLUMNS, cells[1:7], strict=True))
-    return rows
+# Skill scripts are not an installed package; load from path like tests/impl_eval_score.py.
+_GENERATOR = _load_generator()
 
 
-def _listed_items(cell: str) -> list[tuple[str, str | None]]:
-    if cell in {EM_DASH, "-", "–", ""}:
-        return []
-    items: list[tuple[str, str | None]] = []
-    for inner in _LI_RE.findall(cell):
-        linked = _HREF_RE.search(inner)
-        if linked:
-            items.append((linked.group(2), linked.group(1)))
-            continue
-        code = _CODE_RE.search(inner)
-        assert code, inner
-        items.append((code.group(1), None))
-    return items
-
-
-def _src_entries(loadout: LoadoutDef, kind: str) -> list[str]:
-    return [entry["src"] for entry in getattr(loadout, kind) if isinstance(entry.get("src"), str)]
-
-
-def _src_label(src: str) -> str:
-    path = Path(src)
-    return path.stem if path.suffix else path.name
-
-
-def _primary_href(src: str, kind: str, root: Path) -> str:
-    path = Path(src)
-    if path.suffix:
-        return path.as_posix()
-    if kind == "skills":
-        return (path / "SKILL.md").as_posix()
-    if kind == "mcps":
-        readme = path / "README.md"
-        return (readme if (root / readme).is_file() else path / "mcp.yaml").as_posix()
-    if kind == "hooks":
-        source = path / "SOURCE.md"
-        return (source if (root / source).is_file() else path / "hook.yaml").as_posix()
-    if kind == "agents":
-        return (path / f"{path.name}.md").as_posix()
-    return path.as_posix()
-
-
-def _expected_kind(loadout: LoadoutDef, kind: str, root: Path) -> list[tuple[str, str | None]]:
-    return [(_src_label(src), _primary_href(src, kind, root)) for src in _src_entries(loadout, kind)]
-
-
-def _expected_etc(loadout: LoadoutDef, root: Path) -> list[tuple[str, str | None]]:
-    items = _expected_kind(loadout, "hooks", root)
-    items.extend((tool.name, None) for tool in loadout.cli_tools)
-    return items
+def _generator() -> ModuleType:
+    return _GENERATOR
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -176,26 +117,26 @@ def test_evals_json_lists_fixture_files() -> None:
 def test_mini_catalog_lists_every_loadout() -> None:
     markdown = _generator().catalog_markdown(MINI)
     assert "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |" in markdown
-    rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
+    rows = catalog_rows(f"{HEADING}\n\n{markdown}")
     assert set(rows) == _loadout_names(MINI)
 
 
 def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
     markdown = _generator().catalog_markdown(MINI)
-    rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
+    rows = catalog_rows(f"{HEADING}\n\n{markdown}")
     for name, cells in rows.items():
         loadout = load_loadout(MINI / "loadouts" / f"{name}.yaml")
-        listed = _NAME_RE.findall(cells["extends"])
+        listed = NAME_RE.findall(cells["extends"])
         assert listed == loadout.extends
         expected = {
-            "agents": _expected_kind(loadout, "agents", MINI),
-            "skills": _expected_kind(loadout, "skills", MINI),
-            "rules": _expected_kind(loadout, "rules", MINI),
-            "mcps": _expected_kind(loadout, "mcps", MINI),
-            "etc": _expected_etc(loadout, MINI),
+            "agents": expected_kind(loadout, "agents", MINI),
+            "skills": expected_kind(loadout, "skills", MINI),
+            "rules": expected_kind(loadout, "rules", MINI),
+            "mcps": expected_kind(loadout, "mcps", MINI),
+            "etc": expected_etc(loadout, MINI),
         }
         for kind, items in expected.items():
-            assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
+            assert listed_items(cells[kind]) == items, (name, kind, cells[kind])
             if not items:
                 assert cells[kind] == EM_DASH, f"{name} {kind} should be an em dash"
 
@@ -241,22 +182,22 @@ def test_fill_template_drops_optional_section_without_loadouts(tmp_path: Path) -
 
 def test_this_repo_catalog_satisfies_readme_contracts() -> None:
     markdown = _generator().catalog_markdown(REPO)
-    rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
+    rows = catalog_rows(f"{HEADING}\n\n{markdown}")
     names = _loadout_names(REPO)
     assert set(rows) == names
     for name in names:
         loadout = load_loadout(REPO / "loadouts" / f"{name}.yaml")
         cells = rows[name]
-        assert _NAME_RE.findall(cells["extends"]) == loadout.extends
+        assert NAME_RE.findall(cells["extends"]) == loadout.extends
         expected = {
-            "agents": _expected_kind(loadout, "agents", REPO),
-            "skills": _expected_kind(loadout, "skills", REPO),
-            "rules": _expected_kind(loadout, "rules", REPO),
-            "mcps": _expected_kind(loadout, "mcps", REPO),
-            "etc": _expected_etc(loadout, REPO),
+            "agents": expected_kind(loadout, "agents", REPO),
+            "skills": expected_kind(loadout, "skills", REPO),
+            "rules": expected_kind(loadout, "rules", REPO),
+            "mcps": expected_kind(loadout, "mcps", REPO),
+            "etc": expected_etc(loadout, REPO),
         }
         for kind, items in expected.items():
-            assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
+            assert listed_items(cells[kind]) == items, (name, kind, cells[kind])
             for item_name, href in items:
                 if href is None:
                     continue
