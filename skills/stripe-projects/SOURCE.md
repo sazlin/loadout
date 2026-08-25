@@ -18,8 +18,11 @@ On a bump, treat files as:
 
 1. **First-party** — `SOURCE.md` and `evals/` are loadout-repo owned and must
    survive a bump.
-2. **Adapted** — `SKILL.md` does not Homebrew/npm-install the Stripe CLI and
-   does not run `stripe plugin install`. Do not run `stripe plugin install`.
-   Does not invoke a `stripe-projects-cli` skill written by
-   `stripe projects init`, and does not pass `--accept-tos` until the user
-   explicitly agrees.
+2. **Adapted** — `SKILL.md` stops if `stripe` or the Projects plugin is
+   missing and points the user at
+   https://docs.stripe.com/stripe-cli. Do not run `stripe plugin install`,
+   `brew install`, `npm i -g`, `npx skills add`, or `curl | sh` unless the
+   user installs them themselves. Does not invoke a `stripe-projects-cli`
+   skill written by `stripe projects init`, and does not pass `--accept-tos`
+   until the user explicitly agrees. Do not restore upstream CLI/plugin
+   install steps on a bump.

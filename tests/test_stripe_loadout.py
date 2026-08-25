@@ -110,7 +110,7 @@ EXECUTABLE_INSTALL_NEEDLES = (
     "curl | sh",
 )
 _SKILL_TEXT_SUFFIXES = {".md", ".txt", ".yaml", ".yml"}
-_REFUSAL_MARKERS = ("do not run", "does not auto-run", "do not execute")
+_REFUSAL_MARKERS = ("do not run", "does not run", "does not auto-run", "do not execute")
 IMPORTED_SKILL_HASH_LABEL = "Imported SKILL.md sha256"
 CURRENT_SKILL_HASH_LABEL = "Current SKILL.md sha256"
 UNLABELED_SKILL_HASH_ROW = "| SKILL.md sha256 |"
@@ -130,7 +130,7 @@ def _iter_skill_text_files(skill_src: Path) -> list[Path]:
 
 
 def _install_phrase_is_refusal(previous: str, line: str) -> bool:
-    """True when the current/previous line is a Do-not-run mention, so the caller skips it."""
+    """True skips a Do-not-run mention unless the window is gated and also contains an EXECUTABLE_INSTALL_NEEDLES phrase."""
     window = " ".join(f"{previous} {line}".split()).lower()
     if not any(marker in window for marker in _REFUSAL_MARKERS):
         return False
@@ -167,7 +167,8 @@ def test_executable_install_hits_treats_refusals_as_non_hits() -> None:
     )
     assert _executable_install_hits(gated)
     assert not _executable_install_hits("Do not run `stripe plugin install`.\n")
-    assert not _executable_install_hits("Do not run `npx skills add` tool grants\n")
+    assert not _executable_install_hits("does not run `stripe plugin install`.\n")
+    assert not _executable_install_hits("Do not run `npx skills add`.\n")
 
 
 def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
@@ -225,3 +226,6 @@ def test_stripe_skill_source_pins_exist() -> None:
             assert "workflow.md" in bump_prose, (
                 f"{src} Adapted references/workflow.md but bump/import prose does not name it"
             )
+        if src == "skills/stripe-projects" and "**Adapted**" in text:
+            adaptations = text.split("## Adaptations from upstream", 1)[1]
+            assert "docs.stripe.com/stripe-cli" in adaptations
