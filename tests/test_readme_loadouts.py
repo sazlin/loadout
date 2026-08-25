@@ -18,7 +18,9 @@ README = REPO / "README.md"
 LOADOUTS_DIR = REPO / "loadouts"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
-CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "etc")
+CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
+CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "hooks", "cli_tools")
+CATALOG_CELL_COUNT = 1 + len(CATALOG_COLUMNS)
 _NAME_RE = re.compile(r"`([^`]+)`")
 _LI_RE = re.compile(r"<li>(.*?)</li>")
 _HREF_RE = re.compile(r'<a href="([^"]+)">(?:<code>)?([^<]+)(?:</code>)?</a>')
@@ -43,13 +45,13 @@ def _available_loadout_rows(readme: str) -> dict[str, dict[str, str]]:
         cells = [cell.strip() for cell in line.strip("|").split("|")]
         is_header = cells[0] == "Loadout"
         is_separator = cells[0].replace("-", "") == ""
-        if len(cells) < 7 or is_header or is_separator:
+        if len(cells) < CATALOG_CELL_COUNT or is_header or is_separator:
             continue
         names = _NAME_RE.findall(cells[0])
         assert names, f"catalog row has no backticked loadout name: {line}"
         name = names[0]
         assert name not in rows, f"duplicate catalog row for {name}"
-        rows[name] = dict(zip(CATALOG_COLUMNS, cells[1:7], strict=True))
+        rows[name] = dict(zip(CATALOG_COLUMNS, cells[1:CATALOG_CELL_COUNT], strict=True))
     return rows
 
 
@@ -95,10 +97,19 @@ def _expected_kind(loadout: LoadoutDef, kind: str) -> list[tuple[str, str | None
     return [(_src_label(src), _primary_href(src, kind)) for src in srcs]
 
 
-def _expected_etc(loadout: LoadoutDef) -> list[tuple[str, str | None]]:
-    items = _expected_kind(loadout, "hooks")
-    items.extend((tool.name, None) for tool in loadout.cli_tools)
-    return items
+def _expected_cli_tools(loadout: LoadoutDef) -> list[tuple[str, str | None]]:
+    return [(tool.name, None) for tool in loadout.cli_tools]
+
+
+def _expected_kind_cells(loadout: LoadoutDef) -> dict[str, list[tuple[str, str | None]]]:
+    return {
+        "agents": _expected_kind(loadout, "agents"),
+        "skills": _expected_kind(loadout, "skills"),
+        "rules": _expected_kind(loadout, "rules"),
+        "mcps": _expected_kind(loadout, "mcps"),
+        "hooks": _expected_kind(loadout, "hooks"),
+        "cli_tools": _expected_cli_tools(loadout),
+    }
 
 
 def _extends_from_cell(cell: str) -> list[str]:
@@ -134,14 +145,17 @@ def test_readme_loadouts_rule_requires_same_change_catalog_update() -> None:
     assert "skills" in text
     assert "rules" in text
     assert "mcps" in text
-    assert "etc" in text
+    assert "hooks" in text
+    assert "cli tools" in text
+    assert "etc" not in text
     assert "what you get" not in text
     assert any(word in text for word in ("later", "follow-up", "follow up"))
 
 
 def test_readme_available_loadouts_lists_every_loadout() -> None:
     text = README.read_text()
-    assert "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |" in text
+    assert CATALOG_HEADER in text
+    assert "Etc." not in text
     rows = _available_loadout_rows(text)
     on_disk = _loadout_names()
     assert on_disk == set(rows), f"README catalog drift: missing={on_disk - set(rows)} extra={set(rows) - on_disk}"
@@ -159,13 +173,7 @@ def test_readme_catalog_lists_own_artifacts_as_linked_names() -> None:
     for name in sorted(_loadout_names()):
         loadout = load_loadout(LOADOUTS_DIR / f"{name}.yaml")
         cells = rows[name]
-        expected = {
-            "agents": _expected_kind(loadout, "agents"),
-            "skills": _expected_kind(loadout, "skills"),
-            "rules": _expected_kind(loadout, "rules"),
-            "mcps": _expected_kind(loadout, "mcps"),
-            "etc": _expected_etc(loadout),
-        }
+        expected = _expected_kind_cells(loadout)
         for kind, items in expected.items():
             listed = _listed_items(cells[kind])
             assert listed == items, f"{name} {kind}: {cells[kind]!r}"
