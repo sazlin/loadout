@@ -93,6 +93,7 @@ def generate_readme(*, repo_root: Path, template: Path, output: Path) -> None:
 def _apply_version(template: str, version: str) -> str:
     if not version:
         return template
+    # {{VERSION}} is a prefix of {{VERSION_NUMBER}}, so the longer token must be substituted first.
     text = template.replace(VERSION_NUMBER_TOKEN, version.lstrip("v"))
     return text.replace(VERSION_TOKEN, version)
 
@@ -190,6 +191,8 @@ def _first_existing(repo_root: Path, directory: Path, names: tuple[str, ...]) ->
 
 
 def _html_list(items: list[tuple[str, str | None]]) -> str:
+    # GFM table cells do not render nested markdown lists; use a single-line HTML
+    # <ul> so GitHub shows bullets. CLI tools omit href by passing None.
     if not items:
         return EM_DASH
     return "<ul>" + "".join(_html_item(item) for item in items) + "</ul>"
