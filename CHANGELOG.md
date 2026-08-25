@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove the `playwright-e2e` compatibility alias. Use `playwright`.
+
 ## 0.16.0
 
 - Split the README Available loadouts `Etc.` column into **Hooks** (hooks

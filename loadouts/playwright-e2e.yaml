@@ -1,5 +1,0 @@
-name: playwright-e2e
-description: >-
-  Compatibility alias of playwright. Prefer `playwright` in new manifests.
-extends:
-  - playwright
