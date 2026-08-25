@@ -11,9 +11,15 @@ Imported with `just add_skill https://docs.stripe.com`.
 
 ## Adaptations from upstream
 
-Vendored as published. On a bump, treat files as:
+On a bump, treat files as:
 
 1. **First-party** — `SOURCE.md` and `evals/` are loadout-repo owned and must
    survive a bump.
-2. **Upstream-verbatim** — `SKILL.md` and `references/` are copied from
+2. **Adapted** — `SKILL.md` and `references/workflow.md` stop if `stripe` or
+   the apps/generate plugins are missing and point the user at
+   https://docs.stripe.com/stripe-cli. Do not run `stripe plugin install`,
+   `brew install`, `npm i -g`, `npx skills add`, or `curl | sh` unless the
+   user installs them themselves. Do not restore upstream CLI/plugin install
+   steps on a bump.
+3. **Upstream-verbatim** — other files under `references/` are copied from
    upstream unless a later adaptation is listed.

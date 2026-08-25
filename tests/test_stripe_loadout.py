@@ -97,13 +97,64 @@ FORBIDDEN_INSTALLS = (
     "Bash(brew install stripe/stripe-cli/stripe)",
     "Bash(npx skills add https://docs.stripe.com *)",
 )
+EXECUTABLE_INSTALL_NEEDLES = (
+    "stripe plugin install",
+    "brew install",
+    "npm i -g",
+    "npx skills add",
+    "curl | sh",
+)
+_SKILL_TEXT_SUFFIXES = {".md", ".txt", ".yaml", ".yml"}
+_REFUSAL_MARKERS = ("do not run", "does not auto-run", "do not execute")
+
+
+def _iter_skill_text_files(skill_src: Path) -> list[Path]:
+    files: list[Path] = []
+    for path in skill_src.rglob("*"):
+        if not path.is_file():
+            continue
+        if "evals" in path.relative_to(skill_src).parts:
+            continue
+        if path.suffix.lower() not in _SKILL_TEXT_SUFFIXES:
+            continue
+        files.append(path)
+    return files
+
+
+def _line_allows_install_phrase(previous: str, line: str) -> bool:
+    window = " ".join(f"{previous} {line}".split()).lower()
+    if any(marker in window for marker in _REFUSAL_MARKERS):
+        return True
+    # SOURCE.md notes that list dropped Homebrew / `npx skills add` tool grants.
+    return "drops" in window and "grant" in window
+
+
+def _executable_install_hits(text: str) -> list[str]:
+    hits: list[str] = []
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        previous = lines[index - 1] if index else ""
+        if _line_allows_install_phrase(previous, line):
+            continue
+        for needle in EXECUTABLE_INSTALL_NEEDLES:
+            if needle in line:
+                hits.append(f"{needle!r} in {line.strip()!r}")
+    return hits
 
 
 def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
+    assert _executable_install_hits("stripe plugin install apps\n")
+    assert not _executable_install_hits(
+        "Do not run `brew install`, `npm i -g`, `npx skills add`, or `curl | sh`.\n"
+    )
     for src in SKILL_SRCS:
-        text = (REPO / src / "SKILL.md").read_text()
+        skill_root = REPO / src
+        skill_md = (skill_root / "SKILL.md").read_text()
         for needle in FORBIDDEN_INSTALLS:
-            assert needle not in text, f"{src} still instructs {needle!r}"
+            assert needle not in skill_md, f"{src} still instructs {needle!r}"
+        for path in _iter_skill_text_files(skill_root):
+            hits = _executable_install_hits(path.read_text())
+            assert not hits, f"{path.relative_to(REPO)} still instructs {hits}"
 
 
 def test_stripe_projects_does_not_handoff_to_generated_skill() -> None:

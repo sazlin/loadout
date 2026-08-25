@@ -104,6 +104,8 @@ Wait for explicit confirmation before proceeding.
 
 ### Step 2 — Scaffold
 
+If `stripe` or the apps/generate plugins are missing, stop. Tell the user to install the Stripe CLI from https://docs.stripe.com/stripe-cli. Do not run `brew install`, `npm i -g`, `npx`, `curl | sh`, or `stripe plugin install` unless the user installs them themselves.
+
 Run the scaffold command yourself using your Bash tool:
 
 ```bash
