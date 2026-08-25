@@ -1,6 +1,6 @@
 set shell := ["bash", "-uc"]
 
-# Recipes take no extra arguments. For a pytest subset: uv run pytest <paths>
+# Recipes do not take extra file/path arguments. For a pytest subset: uv run pytest <paths>
 
 default:
     @just --list
