@@ -3,73 +3,73 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-24T22:20:38Z",
+  "synced_at": "2026-08-25T00:30:34Z",
   "tool_version": "0.15.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
       "src": "agents/davinci/davinci.md",
-      "sha256": "6946d67d666d0078117a703f9b2f9299bf0c65b3b2db69ff9125ea26421a2a67"
+      "sha256": "a2a6c6b0a20241797716a67c0d1fd83a872dab29e8110770ba9cbaf11b1c11f9"
     },
     {
       "dest": ".claude/agents/issue_resolver.md",
       "src": "agents/issue_resolver/issue_resolver.md",
-      "sha256": "221fcc8164890cb2e046e878c965fc3b885137b9338e75859906e6dd89037cdb"
+      "sha256": "60bde14d03ad10f67b1bd9f7067bc97c62d1cb64f5e7c2946805322bd95c625d"
     },
     {
       "dest": ".claude/agents/playwright_generator.md",
       "src": "agents/playwright_generator/playwright_generator.md",
-      "sha256": "6f2a19199b14bfdf8bdd206fa96ed06fe765687e130d77b217557d264c36f132"
+      "sha256": "8f5e2be75308f271963880e779e086c050741d0365426b54c9d5f66e380530fe"
     },
     {
       "dest": ".claude/agents/playwright_healer.md",
       "src": "agents/playwright_healer/playwright_healer.md",
-      "sha256": "d75c8166de039f8e9d3693fd9dea111aa8b2e70ddb2e0dc114ca318bc056740b"
+      "sha256": "60fb503a92bc0a2bdc6e28620a183795e208398205088a2dfca20c375e395247"
     },
     {
       "dest": ".claude/agents/playwright_planner.md",
       "src": "agents/playwright_planner/playwright_planner.md",
-      "sha256": "c7d6392ed481a3ce8bb9956dcaa47221e8ac735918bb46866b6c10b3363cdad3"
+      "sha256": "a5a231274fd15a6cb1e60cb442780795096834c4361fc7b64c8fc901c4e1c60e"
     },
     {
       "dest": ".claude/agents/python_coder.md",
       "src": "agents/python_coder/python_coder.md",
-      "sha256": "2966835e0cab4f0d3b39ecd5989a8dd41a9d9436dc15dd2a08a052ba7c236dca"
+      "sha256": "6b7d4eecebfc41243c24f9f5d815b1956678262c1e6c2546ae4392a2f280c72e"
     },
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "88601a8c01517cc7253b08e85fde6e50c6c12eeca488f564ce838acbf70c4dc6"
+      "sha256": "bf3cf49f7271877eabe5b0a73daf639880800d57899f8261855d2c1b39e7facb"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
       "src": "agents/review_maintainability/review_maintainability.md",
-      "sha256": "ef81c4808b7995c6e7cc3feef3b22c89fc19f1ddf7eabd5d322b911dbb03ae8f"
+      "sha256": "0b52fadd55ddfb3e63f6e0ed9cd3df73b64041aa9af92c81bbce492157b82a5a"
     },
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "bd7af74818df36d15a69c6fdaf157446a203571e837aaa8cf0f7807074f71494"
+      "sha256": "24224e365ad01080fadd5ef1f121804d55c53c1ceab2632f5255ab33bff0a517"
     },
     {
       "dest": ".claude/agents/review_scale.md",
       "src": "agents/review_scale/review_scale.md",
-      "sha256": "33a4e3df8f42c8ca1f03638f5a6cabf001d162079252f94ad398da23b0d7c6e8"
+      "sha256": "5b8e389f214ef9c41bab3d62c24b2cb9e4cd152533346296682869e26f122abf"
     },
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "8288c91fa8d725cafe23f6ebeb6dcf9d640cb0a0e1781bc88699159cce2618e3"
+      "sha256": "d481427e7e8df6e94e8900f9f2407f9db09cfb0f5b84ca6995e72f85e4adfceb"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",
       "src": "agents/risk_classifier/risk_classifier.md",
-      "sha256": "34cbf2c4c6b5eadec96e97cc1eb15a6a345cf266ead2eac2347b8917a1310c0f"
+      "sha256": "25796786c0c69045aa2c40d000856391bc10f1585c3248d396b453087438c801"
     },
     {
       "dest": ".claude/agents/verifier.md",
       "src": "agents/verifier/verifier.md",
-      "sha256": "7544054b6388818216299e2847368e6a15def628501b1153e9816803d047e709"
+      "sha256": "b977434b59a049e986b12f4f7dbe915ec835333e49cf85a2a01507bc5f628b2f"
     },
     {
       "dest": ".claude/settings.json",
@@ -478,7 +478,7 @@
     {
       "dest": ".cursor/rules/agent-authoring.mdc",
       "src": "rules/agents/agent-authoring.mdc",
-      "sha256": "220a39437c73a7efc1745ed0b1483a6e2aab723762d129834d8315df97579f56"
+      "sha256": "057ce2cd1e12a1b877d934c8b7df894fd92fea8118716a1c1da80e64fd6b9214"
     },
     {
       "dest": ".cursor/rules/colocated-evals.mdc",
@@ -518,7 +518,7 @@
     {
       "dest": ".cursor/rules/readme-loadouts.mdc",
       "src": "rules/core/readme-loadouts.mdc",
-      "sha256": "f3d32d303ba308a11ba5b7b70ede0eb73ee5d31accd08b17a9c3287b72903f79"
+      "sha256": "873a4a083b26037e367758f010f67d5d2f2e5eefb4e129f580e546bfa536ddf8"
     },
     {
       "dest": ".cursor/rules/repo-conventions.mdc",

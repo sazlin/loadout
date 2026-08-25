@@ -1,9 +1,8 @@
 ---
 name: review_scale
-description: 'Reviews a change set for scale and resilience: heavy traffic, dependency
-  failure, and behavior during updates. Use when the review orchestrator dispatches
-  a scale pass, or when the user asks for a performance, load, timeout, retry, or
-  resilience review.'
+description: Use when the review orchestrator dispatches a scale pass, or when asked
+  for a performance, load, timeout, retry, or resilience review. Do not fix the code.
+  Do not review other dimensions.
 model: inherit
 readonly: true
 tools:

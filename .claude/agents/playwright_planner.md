@@ -1,8 +1,7 @@
 ---
 name: playwright_planner
-description: Explore the running app and write a Markdown test plan in specs/. Use
-  when asked to plan E2E coverage, Playwright Test Agent planning, guest checkout
-  plans, or playwright-test-planner.
+description: Use when asked to plan E2E coverage, Playwright Test Agent planning,
+  guest checkout plans, or playwright-test-planner. Do not write Playwright tests.
 model: inherit
 tools:
 - Read

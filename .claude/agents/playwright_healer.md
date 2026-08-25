@@ -1,8 +1,7 @@
 ---
 name: playwright_healer
-description: Repair failing Playwright tests with locator, wait, or data fixes. Use
-  when a named spec is red, on a quarantine lane, or when asked for playwright-test-healer.
-  Never auto-merge. Never edit production code.
+description: Use when a named spec is red, on a quarantine lane, or when asked for
+  playwright-test-healer. Never auto-merge. Never edit production code.
 model: inherit
 tools:
 - Read
