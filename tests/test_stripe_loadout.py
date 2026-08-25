@@ -202,3 +202,8 @@ def test_stripe_skill_source_pins_exist() -> None:
         assert "just add_skill" in text
         assert "evals/" in text
         _assert_adapted_source_hash_label(src, text)
+        if "**Adapted**" in text and "references/workflow.md" in text:
+            bump_prose = text.split("## Adaptations from upstream", 1)[0]
+            assert "workflow.md" in bump_prose, (
+                f"{src} Adapted references/workflow.md but bump/import prose does not name it"
+            )
