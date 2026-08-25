@@ -1,5 +1,7 @@
 set shell := ["bash", "-uc"]
 
+# Recipes take no extra arguments. For a pytest subset: uv run pytest <paths>
+
 default:
     @just --list
 
@@ -11,6 +13,7 @@ format:
     uv run ruff check --fix
     uv run ruff format
 
+# Full pytest suite (no path arguments)
 test:
     uv run pytest
 

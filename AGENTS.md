@@ -17,6 +17,10 @@ projects. See [README.md](README.md) for full details.
   - Typecheck: `just typecheck` (runs `uv run pyrefly check`).
   - Format: `just format` (`ruff check --fix` + `ruff format`).
   - Run the CLI directly: `uv run loadout --help`.
+  - `just` recipes take no file arguments. For a pytest subset, run
+    `uv run pytest <paths>`.
+- Shared feature branches: fetch `origin/<branch>` and rebase onto that tip
+  before pushing. Do not push over newer remote commits.
 - There is no long-running service; this is a CLI. To exercise core behavior
   end-to-end, point it at this working copy via `LOADOUT_PATH` and sync into a
   throwaway project (avoids cloning from GitHub):
@@ -35,6 +39,13 @@ projects. See [README.md](README.md) for full details.
   auto-installed; run `uv run pre-commit run --all-files` if you want the ruff
   and pyrefly hooks. CI (`.github/workflows/ci.yml`) runs `uv sync --all-extras`
   then `just lint && just test`, plus a `typecheck` job (`uv run pyrefly check`).
+
+## Learnings
+
+These are dynamic learnings an agent should consider.
+
+1. `just test` and other just recipes take no file arguments; run `uv run pytest <paths>` for a subset.
+2. Before pushing a shared feature branch, fetch that branch and rebase onto the remote tip.
 
 <!-- BEGIN LOADOUT: agent-rules (generated, do not edit) -->
 ## Agent Rules
