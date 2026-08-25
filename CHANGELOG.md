@@ -22,6 +22,8 @@
   the `playwright` loadout installs) so they can exercise a running web UI.
   They stay read-only: no write tools, no `Task` spawners, no Playwright MCP.
 - Dogfood the `playwright` loadout on this repo; `.loadout.yaml` pins `main`.
+- Document that `just` recipes take no file arguments and that shared
+  feature branches must be fetched and rebased before push.
 
 ## 0.15.0
 

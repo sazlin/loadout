@@ -36,6 +36,13 @@ projects. See [README.md](README.md) for full details.
   and pyrefly hooks. CI (`.github/workflows/ci.yml`) runs `uv sync --all-extras`
   then `just lint && just test`, plus a `typecheck` job (`uv run pyrefly check`).
 
+## Learnings
+
+These are dynamic learnings an agent should consider.
+
+1. `just test` and other just recipes take no file arguments; run `uv run pytest <paths>` for a subset.
+2. Before pushing a shared feature branch, fetch `origin/<branch>` and rebase onto that tip. Do not push over newer remote commits.
+
 <!-- BEGIN LOADOUT: agent-rules (generated, do not edit) -->
 ## Agent Rules
 
