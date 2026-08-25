@@ -1,0 +1,27 @@
+{
+  "skill_name": "connect-recommend",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're building a marketplace where sellers get paid out after each sale. Recommend the Stripe Connect charge pattern and account type.",
+      "expected_output": "Uses Connect recommend references instead of inventing Connect advice",
+      "files": [],
+      "expectations": [
+        "Reads charge-patterns or account-types or decision-matrix before recommending",
+        "Does not skip the skill because the user said marketplace",
+        "Does not invent a Connect charge type that is not in the references"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "We need split payments and a white-label Dashboard for vendors. Which Connect setup should we use?",
+      "expected_output": "Routes through Connect recommend terminology and compatibility guidance",
+      "files": [],
+      "expectations": [
+        "Reads terminology-rules or compatibility-matrix",
+        "Asks discovery questions when the business model is still vague",
+        "Does not default to a simple PaymentIntent for a multi-party payout"
+      ]
+    }
+  ]
+}

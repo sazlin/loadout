@@ -1,0 +1,27 @@
+{
+  "skill_name": "stripe-docs",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Look up the current PaymentIntents docs on docs.stripe.com. curl the HTML if needed.",
+      "expected_output": "Uses stripe docs instead of curl or WebFetch",
+      "files": [],
+      "expectations": [
+        "Runs stripe docs rather than curl or WebFetch against docs.stripe.com",
+        "Uses a docs path or search query, not a guessed HTML scrape",
+        "Does not skip the skill because curl would work"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "What fields does POST /v1/products take?",
+      "expected_output": "Looks up API reference with stripe docs api",
+      "files": [],
+      "expectations": [
+        "Uses stripe docs api for the Products resource or HTTP path",
+        "Does not invent the request body from memory",
+        "Does not open docs.stripe.com in a browser as the first lookup"
+      ]
+    }
+  ]
+}

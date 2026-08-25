@@ -28,13 +28,13 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout init --loadouts base,python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
 ```
 
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
@@ -48,14 +48,14 @@ git commit -m "Add loadout-managed agent tooling"
 Pin a release tag instead of `main` once you want a fixed upgrade cadence:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
 ```
 
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.15.0
+ref: v0.16.0
 loadouts:
   - base
   - python
@@ -67,7 +67,7 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.15.0
+ref: v0.16.0
 loadouts:
   - base
   - python
@@ -78,7 +78,7 @@ loadouts:
 Then re-sync and commit the diff:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -86,7 +86,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -106,7 +106,7 @@ When this repo ships new rules/skills (or you want a newer pin), bump the manife
 **Recommended — one command:**
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout update
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout update
 # or: just loadout-update
 ```
 
@@ -116,11 +116,11 @@ uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout update
 
 ```yaml
 # .loadout.yaml
-ref: v0.15.0   # was: main or an older tag
+ref: v0.16.0   # was: main or an older tag
 ```
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
 ```
 
 Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
@@ -130,7 +130,7 @@ Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade i
 Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.15.0 loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync --check
 # or: just loadout-check
 ```
 
@@ -157,6 +157,7 @@ Example GitHub Actions step:
 | `github` | `base` | — | <ul><li><a href="skills/github-upload-media-to-pr/SKILL.md"><code>github-upload-media-to-pr</code></a></li></ul> | — | — | — | — |
 | `playwright` | `base` | <ul><li><a href="agents/playwright_planner/playwright_planner.md"><code>playwright_planner</code></a></li><li><a href="agents/playwright_generator/playwright_generator.md"><code>playwright_generator</code></a></li><li><a href="agents/playwright_healer/playwright_healer.md"><code>playwright_healer</code></a></li></ul> | <ul><li><a href="skills/playwright-agents/SKILL.md"><code>playwright-agents</code></a></li></ul> | <ul><li><a href="rules/playwright/test-agents.mdc"><code>test-agents</code></a></li><li><a href="rules/playwright/e2e-conventions.mdc"><code>e2e-conventions</code></a></li></ul> | — | — | <ul><li><code>playwright-cli</code></li></ul> |
 | `python` | `base` | <ul><li><a href="agents/python_coder/python_coder.md"><code>python_coder</code></a></li></ul> | — | <ul><li><a href="rules/python/python-code-style.mdc"><code>python-code-style</code></a></li><li><a href="rules/python/pytest.mdc"><code>pytest</code></a></li></ul> | — | — | — |
+| `stripe` | `base` | — | <ul><li><a href="skills/connect-recommend/SKILL.md"><code>connect-recommend</code></a></li><li><a href="skills/connect-required-verification-information/SKILL.md"><code>connect-required-verification-information</code></a></li><li><a href="skills/stripe-apps/SKILL.md"><code>stripe-apps</code></a></li><li><a href="skills/stripe-best-practices/SKILL.md"><code>stripe-best-practices</code></a></li><li><a href="skills/stripe-directory/SKILL.md"><code>stripe-directory</code></a></li><li><a href="skills/stripe-docs/SKILL.md"><code>stripe-docs</code></a></li><li><a href="skills/stripe-projects/SKILL.md"><code>stripe-projects</code></a></li><li><a href="skills/upgrade-stripe/SKILL.md"><code>upgrade-stripe</code></a></li></ul> | — | — | — | — |
 | `terraform` | `base` | — | <ul><li><a href="skills/terraform-plan-review/SKILL.md"><code>terraform-plan-review</code></a></li></ul> | <ul><li><a href="rules/terraform/aws-conventions.mdc"><code>aws-conventions</code></a></li></ul> | — | — | — |
 | `typescript` | `base` | — | — | <ul><li><a href="rules/typescript/typescript-code-style.mdc"><code>typescript-code-style</code></a></li></ul> | — | — | — |
 | `python-monorepo` | `python` | — | — | <ul><li><a href="rules/python/uv-workspace.mdc"><code>uv-workspace</code></a></li></ul> | — | — | — |
@@ -220,7 +221,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch pin (`v0.15.0`, …) |
+| `ref` | yes | Release tag or branch pin (`v0.16.0`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
@@ -295,7 +296,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.15.0   # on release/v0.15.0: validate, push, open PR; CI tags on merge
+just release 0.16.0   # on release/v0.16.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me

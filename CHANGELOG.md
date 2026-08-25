@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add `stripe` loadout: vendors Stripe agent skills from
+  [docs.stripe.com](https://docs.stripe.com/.well-known/skills/index.json)
+  (`just add_skill https://docs.stripe.com`) for payments, Connect, Apps,
+  Directory, Projects, docs lookup, and API upgrades. Drops unpinned
+  CLI/skill installs from `stripe-best-practices`, `stripe-directory`,
+  and `stripe-projects`.
 - Remove the `playwright-e2e` compatibility alias. Use `playwright`.
 
 ## 0.16.0
