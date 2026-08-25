@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-25T00:30:34Z",
+  "synced_at": "2026-08-25T00:50:01Z",
   "tool_version": "0.15.0",
   "files": [
     {
@@ -518,7 +518,7 @@
     {
       "dest": ".cursor/rules/readme-loadouts.mdc",
       "src": "rules/core/readme-loadouts.mdc",
-      "sha256": "873a4a083b26037e367758f010f67d5d2f2e5eefb4e129f580e546bfa536ddf8"
+      "sha256": "4298b69605af65e40b5d9d96105d3fff4d1a58b5f795bb0549a1b3489dd66444"
     },
     {
       "dest": ".cursor/rules/repo-conventions.mdc",

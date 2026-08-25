@@ -23,7 +23,9 @@ MINI = REPO / "tests" / "fixtures" / "mini_loadout"
 BANNER = "docs/assets/loadout-banner.jpg"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
-CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "etc")
+CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
+CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "hooks", "cli_tools")
+CATALOG_CELL_COUNT = 1 + len(CATALOG_COLUMNS)
 _NAME_RE = re.compile(r"`([^`]+)`")
 _LI_RE = re.compile(r"<li>(.*?)</li>")
 _HREF_RE = re.compile(r'<a href="([^"]+)">(?:<code>)?([^<]+)(?:</code>)?</a>')
@@ -55,11 +57,11 @@ def _catalog_rows(markdown: str) -> dict[str, dict[str, str]]:
         if not line.startswith("|"):
             continue
         cells = [cell.strip() for cell in line.strip("|").split("|")]
-        if len(cells) < 7 or cells[0] in {"Loadout", ""} or set(cells[0]) <= {"-"}:
+        if len(cells) < CATALOG_CELL_COUNT or cells[0] in {"Loadout", ""} or set(cells[0]) <= {"-"}:
             continue
         names = _NAME_RE.findall(cells[0])
         assert names, line
-        rows[names[0]] = dict(zip(CATALOG_COLUMNS, cells[1:7], strict=True))
+        rows[names[0]] = dict(zip(CATALOG_COLUMNS, cells[1:CATALOG_CELL_COUNT], strict=True))
     return rows
 
 
@@ -108,10 +110,19 @@ def _expected_kind(loadout: LoadoutDef, kind: str, root: Path) -> list[tuple[str
     return [(_src_label(src), _primary_href(src, kind, root)) for src in _src_entries(loadout, kind)]
 
 
-def _expected_etc(loadout: LoadoutDef, root: Path) -> list[tuple[str, str | None]]:
-    items = _expected_kind(loadout, "hooks", root)
-    items.extend((tool.name, None) for tool in loadout.cli_tools)
-    return items
+def _expected_cli_tools(loadout: LoadoutDef) -> list[tuple[str, str | None]]:
+    return [(tool.name, None) for tool in loadout.cli_tools]
+
+
+def _expected_kind_cells(loadout: LoadoutDef, root: Path) -> dict[str, list[tuple[str, str | None]]]:
+    return {
+        "agents": _expected_kind(loadout, "agents", root),
+        "skills": _expected_kind(loadout, "skills", root),
+        "rules": _expected_kind(loadout, "rules", root),
+        "mcps": _expected_kind(loadout, "mcps", root),
+        "hooks": _expected_kind(loadout, "hooks", root),
+        "cli_tools": _expected_cli_tools(loadout),
+    }
 
 
 def _git(cwd: Path, *args: str) -> None:
@@ -175,7 +186,8 @@ def test_evals_json_lists_fixture_files() -> None:
 
 def test_mini_catalog_lists_every_loadout() -> None:
     markdown = _generator().catalog_markdown(MINI)
-    assert "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |" in markdown
+    assert CATALOG_HEADER in markdown
+    assert "Etc." not in markdown
     rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
     assert set(rows) == _loadout_names(MINI)
 
@@ -187,17 +199,29 @@ def test_mini_catalog_extends_and_linked_artifacts_match_yaml() -> None:
         loadout = load_loadout(MINI / "loadouts" / f"{name}.yaml")
         listed = _NAME_RE.findall(cells["extends"])
         assert listed == loadout.extends
-        expected = {
-            "agents": _expected_kind(loadout, "agents", MINI),
-            "skills": _expected_kind(loadout, "skills", MINI),
-            "rules": _expected_kind(loadout, "rules", MINI),
-            "mcps": _expected_kind(loadout, "mcps", MINI),
-            "etc": _expected_etc(loadout, MINI),
-        }
+        expected = _expected_kind_cells(loadout, MINI)
         for kind, items in expected.items():
             assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
             if not items:
                 assert cells[kind] == EM_DASH, f"{name} {kind} should be an em dash"
+
+
+def test_catalog_puts_hooks_and_cli_tools_in_separate_columns(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    (repo / "loadouts").mkdir(parents=True)
+    (repo / "hooks" / "guard").mkdir(parents=True)
+    (repo / "hooks" / "guard" / "hook.yaml").write_text("name: guard\n")
+    (repo / "loadouts" / "demo.yaml").write_text(
+        "name: demo\ndescription: Demo\nhooks:\n  - src: hooks/guard\ncli_tools:\n  - name: jq\n    command: 'true'\n"
+    )
+    markdown = _generator().catalog_markdown(repo)
+    assert CATALOG_HEADER in markdown
+    assert "Etc." not in markdown
+    cells = _catalog_rows(f"{HEADING}\n\n{markdown}")["demo"]
+    assert _listed_items(cells["hooks"]) == [("guard", "hooks/guard/hook.yaml")]
+    assert "jq" not in cells["hooks"]
+    assert _listed_items(cells["cli_tools"]) == [("jq", None)]
+    assert "guard" not in cells["cli_tools"]
 
 
 def test_fill_template_replaces_catalog_and_keeps_banner() -> None:
@@ -248,13 +272,7 @@ def test_this_repo_catalog_satisfies_readme_contracts() -> None:
         loadout = load_loadout(REPO / "loadouts" / f"{name}.yaml")
         cells = rows[name]
         assert _NAME_RE.findall(cells["extends"]) == loadout.extends
-        expected = {
-            "agents": _expected_kind(loadout, "agents", REPO),
-            "skills": _expected_kind(loadout, "skills", REPO),
-            "rules": _expected_kind(loadout, "rules", REPO),
-            "mcps": _expected_kind(loadout, "mcps", REPO),
-            "etc": _expected_etc(loadout, REPO),
-        }
+        expected = _expected_kind_cells(loadout, REPO)
         for kind, items in expected.items():
             assert _listed_items(cells[kind]) == items, (name, kind, cells[kind])
             for item_name, href in items:

@@ -88,6 +88,7 @@ demo/logo if it has one (`doc/screencast.svg`, `logo.svg`, etc.).
 | Mistake | Fix |
 | --- | --- |
 | Hand-writing the loadout table | Run `generate_readme.py` |
+| Mixing CLI tools into Hooks (or a leftover Etc. column) | Hooks lists only hooks; CLI Tools lists only `cli_tools` names |
 | Adding this skill to `loadouts/*.yaml` | Leave it repo-local under `.claude/skills/` |
 | Inventing loadouts or install commands | Only YAML, tests, and commands you ran |
 | ToC or 15 badges above the pitch | Title → few badges → one sentence |

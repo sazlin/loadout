@@ -21,7 +21,8 @@ EM_DASH = "\u2014"
 VERSION_TOKEN = "{{VERSION}}"
 VERSION_NUMBER_TOKEN = "{{VERSION_NUMBER}}"
 TABLE_HEADER = (
-    "| Loadout | Extends | Agents | Skills | Rules | MCPs | Etc. |\n| --- | --- | --- | --- | --- | --- | --- |"
+    "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |\n"
+    "| --- | --- | --- | --- | --- | --- | --- | --- |"
 )
 PYPROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"')
 FALLBACK_TAG = "v0.0.0"
@@ -128,7 +129,8 @@ def _row(loadout: LoadoutDef, repo_root: Path) -> str:
         _kind_cell(loadout, "skills", repo_root),
         _kind_cell(loadout, "rules", repo_root),
         _kind_cell(loadout, "mcps", repo_root),
-        _etc_cell(loadout, repo_root),
+        _kind_cell(loadout, "hooks", repo_root),
+        _cli_tools_cell(loadout),
     ]
     return "| " + " | ".join(cells) + " |"
 
@@ -144,10 +146,8 @@ def _kind_cell(loadout: LoadoutDef, kind: str, repo_root: Path) -> str:
     return _html_list(items)
 
 
-def _etc_cell(loadout: LoadoutDef, repo_root: Path) -> str:
-    items = [_item_from_src(src, "hooks", repo_root) for src in _srcs(loadout, "hooks")]
-    items.extend((tool.name, None) for tool in loadout.cli_tools)
-    return _html_list(items)
+def _cli_tools_cell(loadout: LoadoutDef) -> str:
+    return _html_list([(tool.name, None) for tool in loadout.cli_tools])
 
 
 def _srcs(loadout: LoadoutDef, kind: str) -> list[str]:
