@@ -92,7 +92,9 @@ def test_stripe_skill_evals_are_colocated() -> None:
                 assert path.is_file(), f"{name} evals[{index}] missing {relative}"
 
 
-FORBIDDEN_INSTALLS = (
+# Upstream SKILL.md needles: prose install lines plus Cursor `Bash(...)`
+# allowed-tools grants that SOURCE.md says to strip on bump (not typos).
+FORBIDDEN_INSTALL_SUBSTRINGS = (
     "npm i -g @stripe/cli",
     "npx skills add https://github.com/stripe/ai",
     "Bash(brew install stripe/stripe-cli/stripe)",
@@ -154,7 +156,7 @@ def test_stripe_skills_do_not_instruct_unpinned_installs() -> None:
     for src in SKILL_SRCS:
         skill_root = REPO / src
         skill_md = (skill_root / "SKILL.md").read_text()
-        for needle in FORBIDDEN_INSTALLS:
+        for needle in FORBIDDEN_INSTALL_SUBSTRINGS:
             assert needle not in skill_md, f"{src} still instructs {needle!r}"
         for path in _iter_skill_text_files(skill_root):
             hits = _executable_install_hits(path.read_text())
