@@ -47,7 +47,7 @@ def _load_generator() -> ModuleType:
     return module
 
 
-# Skill scripts are not an installed package; load from path like tests/impl_eval_score.py.
+# The skill script is not on PYTHONPATH, so tests load it once via importlib.util.spec_from_file_location.
 _GENERATOR = _load_generator()
 
 
