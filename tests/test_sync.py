@@ -623,7 +623,7 @@ def test_real_feature_loadouts_scope_rules_and_terraform_skill(tmp_path: Path, m
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
     monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
     project = tmp_path / "project"
-    write_manifest(project, manifest_body("[aws, terraform, playwright-e2e]"))
+    write_manifest(project, manifest_body("[aws, terraform, playwright]"))
 
     sync(project)
 
@@ -655,7 +655,7 @@ def test_real_non_terraform_loadouts_do_not_vendor_terraform_content(
     monkeypatch.setenv("LOADOUT_PATH", str(repository))
     monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
     project = tmp_path / "project"
-    write_manifest(project, manifest_body("[base, python-monorepo, playwright-e2e]"))
+    write_manifest(project, manifest_body("[base, python-monorepo, playwright]"))
 
     sync(project)
 

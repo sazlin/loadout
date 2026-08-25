@@ -159,7 +159,6 @@ Example GitHub Actions step:
 | `python` | `base` | <ul><li><a href="agents/python_coder/python_coder.md"><code>python_coder</code></a></li></ul> | — | <ul><li><a href="rules/python/python-code-style.mdc"><code>python-code-style</code></a></li><li><a href="rules/python/pytest.mdc"><code>pytest</code></a></li></ul> | — | — | — |
 | `terraform` | `base` | — | <ul><li><a href="skills/terraform-plan-review/SKILL.md"><code>terraform-plan-review</code></a></li></ul> | <ul><li><a href="rules/terraform/aws-conventions.mdc"><code>aws-conventions</code></a></li></ul> | — | — | — |
 | `typescript` | `base` | — | — | <ul><li><a href="rules/typescript/typescript-code-style.mdc"><code>typescript-code-style</code></a></li></ul> | — | — | — |
-| `playwright-e2e` | `playwright` | — | — | — | — | — | — |
 | `python-monorepo` | `python` | — | — | <ul><li><a href="rules/python/uv-workspace.mdc"><code>uv-workspace</code></a></li></ul> | — | — | — |
 | `supabase` | `db` | — | <ul><li><a href="skills/supabase-postgres-best-practices/SKILL.md"><code>supabase-postgres-best-practices</code></a></li></ul> | — | — | — | — |
 <!-- generated:loadouts-catalog:end -->

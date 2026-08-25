@@ -52,7 +52,7 @@ if ctx["use_playwright"] == "yes":
     LOADOUTS.append("playwright")
 ```
 
-`use_playwright` maps to `playwright`. `playwright-e2e` remains a compatibility alias of that loadout.
+`use_playwright` maps to `playwright`.
 
 ### Hook must never hard-fail
 

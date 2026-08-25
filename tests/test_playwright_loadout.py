@@ -57,15 +57,12 @@ def test_playwright_loadout_ships_agents_skill_cli_and_e2e_conventions() -> None
     assert "test -x node_modules/.bin/playwright-cli" not in tool.command
 
 
-def test_playwright_e2e_is_an_alias_of_playwright() -> None:
-    loadout = load_loadout(REPO / "loadouts" / "playwright-e2e.yaml")
-    assert loadout.name == "playwright-e2e"
-    assert loadout.extends == ["playwright"]
-    assert loadout.agents == []
-    assert loadout.rules == []
-    assert loadout.skills == []
-    assert loadout.mcps == []
-    assert loadout.cli_tools == []
+def test_playwright_e2e_loadout_is_removed() -> None:
+    assert not (REPO / "loadouts" / "playwright-e2e.yaml").exists()
+    ci = (REPO / ".github" / "workflows" / "ci.yml").read_text()
+    assert "playwright-e2e" not in ci
+    catalog = (REPO / "README.md").read_text()
+    assert "`playwright-e2e`" not in catalog
 
 
 def _assert_no_unpinned_npx_playwright_cli(label: str, text: str) -> None:
@@ -148,32 +145,6 @@ loadouts: [playwright]
     assert "playwright-test" not in cursor_mcp["mcpServers"]
     claude_mcp = json.loads((project / ".mcp.json").read_text())
     assert "playwright-test" not in claude_mcp["mcpServers"]
-
-
-def test_playwright_e2e_alias_syncs_the_same_playwright_payload(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
-    _silence_cli_tools(monkeypatch)
-    project = tmp_path / "project"
-    write_manifest(
-        project,
-        """source: https://github.com/sazlin/loadout
-ref: main
-loadouts: [playwright-e2e]
-""",
-    )
-
-    sync(project)
-
-    assert (project / ".claude/agents/playwright_generator.md").is_file()
-    assert (project / ".claude/agents/playwright_planner.md").is_file()
-    assert (project / ".claude/agents/playwright_healer.md").is_file()
-    assert not (project / ".claude/agents/e2e_test_generator.md").exists()
-    assert (project / "e2e/.cursor/rules/e2e-conventions.mdc").is_file()
-    assert (project / ".cursor/rules/test-agents.mdc").is_file()
-    cursor_mcp = json.loads((project / ".cursor/mcp.json").read_text())
-    assert "playwright-test" not in cursor_mcp["mcpServers"]
 
 
 def test_playwright_skill_encodes_pipeline_and_healer_guardrails() -> None:
@@ -358,7 +329,7 @@ def test_playwright_defaults_test_dir_to_e2e() -> None:
 def test_cookiecutter_maps_use_playwright_to_playwright() -> None:
     text = (REPO / "docs/consumer-contract.md").read_text()
     assert 'LOADOUTS.append("playwright")' in text
-    assert 'LOADOUTS.append("playwright-e2e")' not in text
+    assert "playwright-e2e" not in text
 
 
 def test_playwright_skill_evals_are_colocated() -> None:
