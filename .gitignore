@@ -238,6 +238,7 @@ agents/davinci/evals/results/
 !.claude/agents/**
 !.claude/skills/
 !.claude/skills/**
+.claude/**/__pycache__/
 .agents/
 skills-lock.json
 .skills.json

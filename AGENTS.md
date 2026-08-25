@@ -2,8 +2,7 @@
 
 `loadout` is a Python 3.12 CLI (`click`-based) that centralizes and syncs Cursor
 rules, Claude Code skills, agents, hooks, and MCP server configs into consumer
-projects. See [README.md](README.md) and [loadout-spec.md](loadout-spec.md) for
-full details.
+projects. See [README.md](README.md) for full details.
 
 ## Cursor Cloud specific instructions
 

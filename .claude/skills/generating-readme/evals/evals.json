@@ -1,0 +1,29 @@
+{
+  "skill_name": "generating-readme",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Refresh README.md after adding a loadout YAML. Use the generating-readme skill. Repo has loadouts/*.yaml and docs/assets/loadout-banner.jpg.",
+      "expected_output": "Ran generate_readme.py against the template. Available loadouts table lists every loadout YAML name, Extends matches YAML, and Agents/Skills/Rules/MCPs/Etc. cells list own artifacts as linked names. Examples pin the newest git tag. Banner path docs/assets/loadout-banner.jpg is unchanged. Skill was not added to any loadout YAML.",
+      "files": ["evals/files/tiny-readme.template.md"],
+      "expectations": [
+        "Runs scripts/generate_readme.py rather than hand-writing the catalog",
+        "Keeps docs/assets/loadout-banner.jpg",
+        "Does not add generating-readme to loadouts/*.yaml"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Generate README.md for a cloned public CLI (e.g. sharkdp/fd) that already has a long README with demo, install matrix, benchmarks, and troubleshooting. No loadouts/ directory.",
+      "expected_output": "Did not start from the loadout template and did not overwrite the clone README with it. Started from the clone's README.md. Kept existing demo/visual, install matrix, evidence, and troubleshooting. Preserve packager stanzas as written; add sudo only when you introduce a new root install command. No loadout-only sections. Did not flatten the user-manual README into a brochure.",
+      "files": ["evals/files/tiny-readme.template.md"],
+      "expectations": [
+        "Does not start from templates/README.md on a foreign repo that already has README.md",
+        "Keeps existing demo/visual, install matrix, and troubleshooting (or links them)",
+        "Omits Available loadouts when loadouts/*.yaml is absent",
+        "Does not use docs/assets/loadout-banner.jpg on a foreign repo",
+        "Does not invent features the target repo does not have"
+      ]
+    }
+  ]
+}
