@@ -153,10 +153,26 @@ jobs:
               workOnCurrentBranch: true,
               autoCreatePR: false
             }')"
-          curl --fail-with-body --request POST \
-            --connect-timeout 10 \
-            --max-time 60 \
-            --url https://api.cursor.com/v1/agents \
-            -u "${CURSOR_API_KEY}:" \
-            --header 'Content-Type: application/json' \
-            --data "$body"
+          # BEGIN POST_DISPATCH
+          dispatch_output=""
+          for attempt in 1 2 3; do
+            if dispatch_output="$(curl --silent --show-error --fail-with-body \
+              --connect-timeout 10 \
+              --max-time 60 \
+              --url https://api.cursor.com/v1/agents \
+              -u "${CURSOR_API_KEY}:" \
+              --header 'Content-Type: application/json' \
+              --data "$body" 2>/dev/null)"; then
+              break
+            fi
+            dispatch_output=""
+            if [[ "${attempt}" -lt 3 ]]; then
+              sleep 2
+            fi
+          done
+          if [[ -z "${dispatch_output}" ]]; then
+            echo "Failed to dispatch review_orchestrator after 3 attempts." >&2
+            exit 1
+          fi
+          echo "${dispatch_output}"
+          # END POST_DISPATCH

@@ -100,11 +100,15 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
     script = next(step["run"] for step in job["steps"] if "run" in step)
-    post_pos = script.index("curl --fail-with-body --request POST")
+    post_begin = script.index("# BEGIN POST_DISPATCH")
+    post_end = script.index("# END POST_DISPATCH", post_begin)
+    post_dispatch_block = script[post_begin:post_end]
     list_agents_pos = script.index("api.cursor.com/v1/agents?prUrl=${PR_URL}")
-    list_dedupe_block = script[list_agents_pos:post_pos]
+    list_dedupe_block = script[list_agents_pos:post_begin]
     assert "|| true" not in list_dedupe_block
     assert "could not list agents" in list_dedupe_block
+    assert "for attempt in 1 2 3" in post_dispatch_block
+    assert "Failed to dispatch review_orchestrator after 3 attempts" in post_dispatch_block
     assert job["timeout-minutes"] == 5
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
