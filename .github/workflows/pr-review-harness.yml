@@ -44,10 +44,10 @@ jobs:
 
           $(cat <<'EOF'
           Cloud-run constraints:
+          - Follow `.claude/agents/review_orchestrator.md` for the harness loop and role boundaries (panel, resolve, verify, decision).
           - Work on the current PR branch only. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
           - Do not rewrite git history. No force-push, no rebase, no amend of commits you did not just create.
           - issue_resolver may commit and push to this PR branch only.
-          - You do not review, fix, classify, or merge in-process. Only risk_classifier may merge, and only under its own charter (`gh pr merge <n> --squash`; never --admin, --merge, or --rebase).
           EOF
           )"
           body="$(jq -n \

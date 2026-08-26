@@ -68,7 +68,8 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     prompt = result.stdout
     assert ".claude/agents/review_orchestrator.md" in prompt
     assert ".claude/skills/" in prompt
-    assert "`gh pr merge <n> --squash`" in prompt
+    assert "Cloud-run constraints:" in prompt
+    assert "harness loop and role boundaries" in prompt
     assert "https://github.com/sazlin/loadout/pull/72 (#72)" in prompt
 
 

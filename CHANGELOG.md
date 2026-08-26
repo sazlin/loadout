@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Overhaul .github/workflows/pr-review-harness.yml so it can fully replace the existing Cursor Automation
+- Update the PR review harness GitHub Action prompt to delegate harness steps to
+  `review_orchestrator` and cloud-run constraints instead of an inline numbered
+  checklist.
 - Add `stripe` loadout: vendors Stripe agent skills from
   [docs.stripe.com](https://docs.stripe.com/.well-known/skills/index.json)
   (`just add_skill https://docs.stripe.com`) for payments, Connect, Apps,
