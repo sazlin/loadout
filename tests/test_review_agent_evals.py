@@ -234,6 +234,52 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
     assert "cookie" in secret_dump or "token" in secret_dump, label
 
 
+def _assert_orchestrator_github_comment_spec(text: str) -> None:
+    """Option-G orchestrator PR comment contract: stage table, no alerts, merge outcomes."""
+    lowered = text.lower()
+    assert "### PR review harness" in text
+    assert "| Panel | Resolve | Verify | Risk | Merge |" in text
+    assert "one sentence per bullet" in lowered
+    assert "<br>" in text
+    assert "do not emit github alerts on orchestrator comments" in lowered
+    # Decision-phase merge outcomes (all classifier terminal states)
+    assert "Classifier `risk`" in text and "Classifier `merge`" in text
+    assert "`blocked_by_protection`" in text
+    assert "⛔<br>blocked" in text
+    assert "⏸️<br>skipped" in text
+    assert "✅<br>done" in text or "✅<br>merged" in text
+    assert "⛔<br>token" not in text
+    assert "reuse the classifier table labels verbatim" in lowered
+
+
+def _assert_risk_classifier_github_comment_spec(text: str) -> None:
+    """Option-G risk_classifier PR comment contract: stage table, alerts, redacted errors."""
+    lowered = text.lower()
+    assert "### Risk classifier" in text
+    assert "| Risk | Merge | Checks | Action |" in text
+    assert "[!WARNING]" in text
+    assert "[!CAUTION]" in text
+    assert "<details>" in text
+    assert "one sentence per bullet" in lowered
+    assert "--body-file" in text
+    assert "--edit-last" in text
+    # WARNING only when checks green and merge blocked
+    assert "merge blocked **and** required checks are green" in text
+    assert "required checks pending or failing → no `[!WARNING]`" in text
+    assert "Checks pending or failing" in text
+    assert "table-only" in lowered
+    assert "do not reuse the" in lowered and "merge-blocked" in lowered
+    assert "while ci is red or pending" in lowered
+    # Sanitized merge errors, not raw stderr
+    assert "sanitized merge errors" in lowered
+    assert "never paste raw credentials from `gh`" in lowered
+    assert "stderr in pr comments" in lowered
+    assert "redact tokens, pats, authorization headers" in lowered
+    assert "post a short sanitized summary" in lowered
+    assert "never paste verbatim" in lowered
+    assert "post raw tokens, pats, or credentials from `gh` stderr" in lowered
+
+
 def test_every_agent_file_is_classified() -> None:
     on_disk = {path.name for path in AGENTS.glob("*/*.md") if not path.name.startswith("_")}
     classified = (
@@ -375,63 +421,17 @@ def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
 
 
 def test_orchestrator_github_comments_use_option_g_stage_strip() -> None:
-    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
-    lowered = text.lower()
-    assert "### PR review harness" in text
-    assert "| Panel | Resolve | Verify | Risk | Merge |" in text
-    assert "one sentence per bullet" in lowered
-    assert "<br>" in text
-    assert "do not emit github alerts on orchestrator comments" in lowered
-    # Decision-phase merge outcomes (all classifier terminal states)
-    assert "Classifier `risk`" in text and "Classifier `merge`" in text
-    assert "`blocked_by_protection`" in text
-    assert "⛔<br>blocked" in text
-    assert "⏸️<br>skipped" in text
-    assert "✅<br>done" in text or "✅<br>merged" in text
-    assert "⛔<br>token" not in text
-    assert "reuse the classifier table labels verbatim" in lowered
+    _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
 
 
 def test_risk_classifier_github_comments_use_option_g_alert_and_strip() -> None:
-    text = _agent_file(RISK_CLASSIFIER).read_text()
-    lowered = text.lower()
-    assert "### Risk classifier" in text
-    assert "| Risk | Merge | Checks | Action |" in text
-    assert "[!WARNING]" in text
-    assert "[!CAUTION]" in text
-    assert "<details>" in text
-    assert "one sentence per bullet" in lowered
-    assert "--body-file" in text
-    assert "--edit-last" in lowered
-    # WARNING only when checks green and merge blocked
-    assert "merge blocked **and** required checks are green" in text
-    assert "required checks pending or failing → no `[!WARNING]`" in text
-    assert "Checks pending or failing" in text
-    assert "table-only" in lowered
-    assert "do not reuse the" in lowered and "merge-blocked" in lowered
-    assert "while ci is red or pending" in lowered
-    # Sanitized merge errors, not raw stderr
-    assert "sanitized merge errors" in lowered
-    assert "never paste raw credentials from `gh`" in lowered
-    assert "stderr in pr comments" in lowered
-    assert "redact tokens, pats, authorization headers" in lowered
-    assert "post a short sanitized summary" in lowered
-    assert "never paste verbatim" in lowered
-    assert "post raw tokens, pats, or credentials from `gh` stderr" in lowered
+    _assert_risk_classifier_github_comment_spec(_agent_file(RISK_CLASSIFIER).read_text())
 
 
 def test_vendored_harness_agents_keep_option_g_comment_templates() -> None:
     claude = REPO / ".claude" / "agents"
-    orchestrator = (claude / "review_orchestrator.md").read_text()
-    classifier = (claude / "risk_classifier.md").read_text()
-    assert "| Panel | Resolve | Verify | Risk | Merge |" in orchestrator
-    assert "| Risk | Merge | Checks | Action |" in classifier
-    assert "[!WARNING]" in classifier
-    assert "[!CAUTION]" in classifier
-    assert "⛔<br>blocked" in orchestrator
-    assert "⏸️<br>skipped" in orchestrator
-    assert "✅<br>done" in orchestrator or "✅<br>merged" in orchestrator
-    assert "⛔<br>token" not in orchestrator
+    _assert_orchestrator_github_comment_spec((claude / "review_orchestrator.md").read_text())
+    _assert_risk_classifier_github_comment_spec((claude / "risk_classifier.md").read_text())
 
 
 def test_orchestrator_does_not_use_linear_as_artifact_rally_point() -> None:
