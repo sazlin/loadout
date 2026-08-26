@@ -420,15 +420,15 @@ def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
     assert "inputs.github_pr" in text or '"github_pr"' in text
 
 
-def test_orchestrator_github_comments_use_option_g_stage_strip() -> None:
+def test_orchestrator_github_comments_use_stage_table_and_bullets() -> None:
     _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
 
 
-def test_risk_classifier_github_comments_use_option_g_alert_and_strip() -> None:
+def test_risk_classifier_github_comments_use_stage_table_with_human_action_alerts() -> None:
     _assert_risk_classifier_github_comment_spec(_agent_file(RISK_CLASSIFIER).read_text())
 
 
-def test_vendored_harness_agents_keep_option_g_comment_templates() -> None:
+def test_vendored_harness_agents_match_github_comment_stage_table_contract() -> None:
     claude = REPO / ".claude" / "agents"
     _assert_orchestrator_github_comment_spec((claude / "review_orchestrator.md").read_text())
     _assert_risk_classifier_github_comment_spec((claude / "risk_classifier.md").read_text())
