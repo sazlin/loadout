@@ -37,10 +37,11 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "types: [opened]" in text
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
-    assert 'env: {type: "cloud", name: "loadout-env"}' in text
     assert "workOnCurrentBranch" in text
     assert "CURSOR_API_KEY" in text
-    assert "repos: [{url: $repo, prUrl: $pr}]" not in text
+    assert "REPO_URL:" in text
+    assert "repos: [{url: $repo, prUrl: $pr}]" in text
+    assert 'env: {type: "cloud", name: "loadout-env"}' not in text
 
     workflow = yaml.safe_load(text)
     assert (

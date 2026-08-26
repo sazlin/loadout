@@ -38,6 +38,7 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO_URL: ${{ github.event.repository.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
@@ -96,15 +97,17 @@ jobs:
           EOF
           )"
           # END PROMPT_BUILD
-          # Named Cursor-hosted env is mutually exclusive with explicit repos.
-          # PR context stays in the prompt; loadout-env already binds the repo.
+          # Cursor API: named env (loadout-env) is mutually exclusive with repos[].prUrl.
+          # Explicit repos + prUrl bind workOnCurrentBranch to the PR head and register agents for prUrl dedupe.
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
+            --arg pr "$PR_URL" \
+            --arg repo "$REPO_URL" \
             '{
               name: $name,
               prompt: {text: $prompt},
-              env: {type: "cloud", name: "loadout-env"},
+              repos: [{url: $repo, prUrl: $pr}],
               workOnCurrentBranch: true,
               autoCreatePR: false
             }')"
