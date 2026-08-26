@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": "bc-other-0001",
+      "name": "Other agent",
+      "status": "FINISHED"
+    }
+  ],
+  "nextCursor": "page2-cursor-token"
+}
