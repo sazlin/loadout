@@ -10,6 +10,40 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
+PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
+
+
+def _extract_workflow_script_block(marker: str) -> str:
+    workflow_path = REPO / ".github/workflows/pr-review-harness.yml"
+    text = workflow_path.read_text()
+    script = next(
+        step["run"]
+        for step in yaml.safe_load(text)["jobs"]["dispatch-orchestrator"]["steps"]
+        if "run" in step
+    )
+    begin = f"# BEGIN {marker}"
+    end = f"# END {marker}"
+    start = script.index(begin)
+    stop = script.index(end, start)
+    return script[start:stop]
+
+
+def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    script = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    preamble = (
+        "set -euo pipefail\n"
+        f"{mock_curl_body}\n"
+        "PR_URL=${PR_URL:?}\n"
+        "PR_NUMBER=${PR_NUMBER:?}\n"
+        "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
+    )
+    result = subprocess.run(
+        ["bash", "-c", preamble + script + "\necho DISPATCH_WOULD_RUN"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, **env},
+    )
+    return result
 
 
 def test_this_repo_manifest_includes_base_pr_review_harness_and_playwright() -> None:
@@ -53,8 +87,15 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
     assert "Skipping review_orchestrator dispatch" in text
     assert 'select(.status == "ACTIVE" and .name == $name)' in text
+    assert 'select(.status == "ACTIVE" and .name == $legacy)' in text
+    assert 'legacy_agent_name="PR review harness"' in text
+    assert "nextCursor" in text
+    assert "max_pages=5" in text
+    assert "pagination cap" in text
+    assert "# BEGIN ACTIVE_DEDUPE" in text
     assert 'agent_name="PR review harness #${PR_NUMBER}"' in text
     assert 'active ${agent_name} agent(s) already on' in text
+    assert "rollout migration" in text
     assert "proceeding with dispatch" not in text
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
@@ -95,6 +136,90 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "Cloud-run constraints:" in prompt
     assert "harness loop and role boundaries" in prompt
     assert "https://github.com/sazlin/loadout/pull/72 (#72)" in prompt
+
+
+def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
+    fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
+    mock_curl = f"""
+    curl() {{
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        cat "{fixture}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert "legacy PR review harness agent(s) during rollout migration" in result.stderr
+    assert "active PR review harness #72 agent(s) already on" in result.stderr
+
+
+def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
+    page1 = PR_REVIEW_FIXTURES / "agents_page1.json"
+    page2 = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    mock_curl = f"""
+    curl() {{
+      if [[ "$*" == *"cursor=page2-cursor-token"* ]]; then
+        cat "{page2}"
+        return 0
+      fi
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        cat "{page1}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert "active PR review harness #72 agent(s) already on" in result.stderr
+
+
+def test_dedupe_skips_when_pagination_cap_hit_without_definitive_match() -> None:
+    fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
+    mock_curl = f"""
+    curl() {{
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        cat "{fixture}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "pagination cap (5 pages) reached" in result.stderr
+    assert "dedupe state unknown" in result.stderr
 
 
 def test_ci_matrix_includes_pr_review_harness() -> None:
