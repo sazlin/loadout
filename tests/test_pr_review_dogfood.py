@@ -50,11 +50,18 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
     assert "Skipping review_orchestrator dispatch" in text
     assert "active cloud agent(s) already on" in text
+    assert "proceeding with dispatch" not in text
+    assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
+    script = next(step["run"] for step in job["steps"] if "run" in step)
+    post_pos = script.index("curl --fail-with-body --request POST")
+    list_agents_pos = script.index("api.cursor.com/v1/agents?prUrl=${PR_URL}")
+    list_dedupe_block = script[list_agents_pos:post_pos]
+    assert "|| true" not in list_dedupe_block
+    assert "could not list agents" in list_dedupe_block
     assert job["timeout-minutes"] == 5
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
-    script = next(step["run"] for step in job["steps"] if "run" in step)
     assert "<<'EOF'" in script
     assert "cat <<EOF" not in script.replace("<<'EOF'", "")
 

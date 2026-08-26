@@ -34,20 +34,31 @@ jobs:
             echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
             exit 0
           fi
-          agents_json="$(curl --silent --show-error \
-            --connect-timeout 10 \
-            --max-time 30 \
-            --url "https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false" \
-            -u "${CURSOR_API_KEY}:" || true)"
-          if [[ -n "${agents_json}" ]]; then
-            active_count="$(jq '[.items[]? | select(.status == "ACTIVE")] | length' <<<"${agents_json}")"
-            if [[ "${active_count}" -gt 0 ]]; then
-              echo "Skipping review_orchestrator dispatch: ${active_count} active cloud agent(s) already on ${PR_URL}." >&2
-              echo "Wait for the orchestrator to finish before re-running this workflow." >&2
-              exit 0
+          agents_json=""
+          for attempt in 1 2 3; do
+            if agents_json="$(curl --silent --show-error --fail-with-body \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --url "https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false" \
+              -u "${CURSOR_API_KEY}:" 2>/dev/null)" \
+              && jq -e '.items | type == "array"' <<<"${agents_json}" >/dev/null 2>&1; then
+              break
             fi
-          else
-            echo "Warning: could not list agents for ${PR_URL}; proceeding with dispatch." >&2
+            agents_json=""
+            if [[ "${attempt}" -lt 3 ]]; then
+              sleep 2
+            fi
+          done
+          if [[ -z "${agents_json}" ]]; then
+            echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
+            echo "Re-run this workflow after the agents API is reachable." >&2
+            exit 0
+          fi
+          active_count="$(jq '[.items[]? | select(.status == "ACTIVE")] | length' <<<"${agents_json}")"
+          if [[ "${active_count}" -gt 0 ]]; then
+            echo "Skipping review_orchestrator dispatch: ${active_count} active cloud agent(s) already on ${PR_URL}." >&2
+            echo "Wait for the orchestrator to finish before re-running this workflow." >&2
+            exit 0
           fi
           # BEGIN PROMPT_BUILD
           # Dual-heredoc invariant: both blocks use <<'EOF' (quoted delimiter) so backticks
