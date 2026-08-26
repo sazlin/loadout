@@ -37,8 +37,10 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "types: [opened]" in text
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
+    assert 'env: {type: "cloud", name: "loadout-env"}' in text
     assert "workOnCurrentBranch" in text
     assert "CURSOR_API_KEY" in text
+    assert "repos: [{url: $repo, prUrl: $pr}]" not in text
 
     workflow = yaml.safe_load(text)
     assert (
@@ -49,8 +51,9 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "pull_request.head.ref" in text
     assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
     assert "Skipping review_orchestrator dispatch" in text
-    assert 'select(.status == "ACTIVE" and .name == "PR review harness")' in text
-    assert "active PR review harness agent(s) already on" in text
+    assert 'select(.status == "ACTIVE" and .name == $name)' in text
+    assert 'agent_name="PR review harness #${PR_NUMBER}"' in text
+    assert "agent(s) already on" in text
     assert "proceeding with dispatch" not in text
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
@@ -82,7 +85,6 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
             **os.environ,
             "CURSOR_API_KEY": "test-key",
             "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "REPO_URL": "https://github.com/sazlin/loadout",
             "PR_NUMBER": "72",
         },
     )
