@@ -403,6 +403,21 @@ def test_risk_classifier_github_comments_use_option_g_alert_and_strip() -> None:
     assert "one sentence per bullet" in lowered
     assert "--body-file" in text
     assert "--edit-last" in lowered
+    # WARNING only when checks green and merge blocked
+    assert "merge blocked **and** required checks are green" in text
+    assert "required checks pending or failing → no `[!WARNING]`" in text
+    assert "Checks pending or failing" in text
+    assert "table-only" in lowered
+    assert "do not reuse the" in lowered and "merge-blocked" in lowered
+    assert "while ci is red or pending" in lowered
+    # Sanitized merge errors, not raw stderr
+    assert "sanitized merge errors" in lowered
+    assert "never paste raw credentials from `gh`" in lowered
+    assert "stderr in pr comments" in lowered
+    assert "redact tokens, pats, authorization headers" in lowered
+    assert "post a short sanitized summary" in lowered
+    assert "never paste verbatim" in lowered
+    assert "post raw tokens, pats, or credentials from `gh` stderr" in lowered
 
 
 def test_vendored_harness_agents_keep_option_g_comment_templates() -> None:

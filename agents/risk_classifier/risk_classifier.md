@@ -68,6 +68,7 @@ Never:
 - Merge auth, secrets, migrations/schema, or infra diffs as low risk
 - Pass `--admin` or otherwise bypass branch protection
 - Merge while required checks are pending or failing
+- Post raw tokens, PATs, or credentials from `gh` stderr in PR comments
 - Fix code to make the diff look smaller
 - Classify from chat summary without reading the diff
 
@@ -128,18 +129,24 @@ Post **one new** comment with `gh pr comment <n> --body-file`. Do not pass
 - First block is a four-column table: Risk, Merge, Checks, Action.
 - After the table, bullets only. One sentence per bullet. No multi-sentence
   paragraphs.
-- Put rationale and raw `gh` errors in `<details>`. Never inline a token
-  error in the first screen.
+- Put rationale and sanitized merge errors in `<details>`. Never inline a
+  token error in the first screen. Never paste raw credentials from `gh`
+  stderr in PR comments: redact tokens, PATs, Authorization headers, and
+  cookie values from any posted `gh` output.
 - Emit a GitHub alert **only** when a human must act:
-  - merge blocked → `> [!WARNING]`
+  - merge blocked **and** required checks are green → `> [!WARNING]`
   - risk `not_low` → `> [!CAUTION]`
   - successful squash-merge → no comment required
+  - required checks pending or failing → no `[!WARNING]` or `[!CAUTION]`
 - Do not emit `[!NOTE]` or `[!TIP]`.
 
 Icons: 🟢 low risk, 🔴 not low risk, ✅ checks green / merge done,
 ⛔ merge blocked, ⏸️ merge skipped, 👤 human action.
 
-**Merge blocked** (low risk, token or protection cannot squash-merge)
+**Merge blocked** (low risk, **checks green**, token or protection cannot
+squash-merge). Use this template **only** when required checks are green and
+`gh pr merge` still fails. Do not emit `[!WARNING]` when checks are pending or
+failing.
 
 ````markdown
 ### Risk classifier
@@ -165,10 +172,32 @@ Icons: 🟢 low risk, 🔴 not low risk, ✅ checks green / merge done,
 <details>
 <summary>Merge error</summary>
 
-Paste the `gh` stderr inside a fenced code block.
+Post a short sanitized summary (error type + recommended action). Optionally
+include a redacted excerpt in a fenced code block. Never paste verbatim
+`gh` stderr that may contain tokens, PATs, Authorization headers, or cookie
+values.
 
 </details>
 ````
+
+**Checks pending or failing** (low risk, wait — no alert)
+
+When classification is low risk but required checks are pending or failing,
+either post **no comment** while waiting, or post a **table-only** comment
+with no `[!WARNING]` or `[!CAUTION]`:
+
+````markdown
+### Risk classifier
+
+| Risk | Merge | Checks | Action |
+|:----:|:-----:|:------:|:------:|
+| 🟢<br>`low` | ⏸️<br>waiting | ⏳<br>pending | ⏳<br>wait |
+
+- Waiting for required checks before squash-merge.
+````
+
+Set the Checks cell to ⏳ and `pending` or ⛔ and `failing`. Do not reuse the
+merge-blocked `[!WARNING]` block for this state.
 
 **Not low risk** (do not merge)
 
@@ -188,8 +217,9 @@ Paste the `gh` stderr inside a fenced code block.
   significant issue, or similar).
 ````
 
-If checks are not green, set the Checks cell to ⏳ and `pending` or ⛔ and
-`failing`. Keep the same table shape.
+When checks are not green on a low-risk PR, use the checks-pending/failing
+template above (table only, no alert). Never instruct squash-merge in a
+`[!WARNING]` while CI is red or pending.
 
 ### When invoked
 
