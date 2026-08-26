@@ -6,7 +6,7 @@ on:
 
 # Serialize dispatches per PR head branch (repo + branch name). Overlapping workflow
 # runs on the same branch wait rather than cancel. Re-runs after dispatch completes
-# are skipped when an ACTIVE cloud orchestrator already exists for this PR URL.
+# are skipped when an ACTIVE "PR review harness" orchestrator already exists for this PR URL.
 concurrency:
   group: pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}
   cancel-in-progress: false
@@ -54,9 +54,9 @@ jobs:
             echo "Re-run this workflow after the agents API is reachable." >&2
             exit 0
           fi
-          active_count="$(jq '[.items[]? | select(.status == "ACTIVE")] | length' <<<"${agents_json}")"
+          active_count="$(jq '[.items[]? | select(.status == "ACTIVE" and .name == "PR review harness")] | length' <<<"${agents_json}")"
           if [[ "${active_count}" -gt 0 ]]; then
-            echo "Skipping review_orchestrator dispatch: ${active_count} active cloud agent(s) already on ${PR_URL}." >&2
+            echo "Skipping review_orchestrator dispatch: ${active_count} active PR review harness agent(s) already on ${PR_URL}." >&2
             echo "Wait for the orchestrator to finish before re-running this workflow." >&2
             exit 0
           fi

@@ -49,7 +49,8 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "pull_request.head.ref" in text
     assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
     assert "Skipping review_orchestrator dispatch" in text
-    assert "active cloud agent(s) already on" in text
+    assert 'select(.status == "ACTIVE" and .name == "PR review harness")' in text
+    assert "active PR review harness agent(s) already on" in text
     assert "proceeding with dispatch" not in text
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
