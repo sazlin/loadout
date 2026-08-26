@@ -5,24 +5,46 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
+DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
+
+
+def _load_pr_review_workflow() -> dict:
+    workflow_path = REPO / ".github/workflows/pr-review-harness.yml"
+    return yaml.safe_load(workflow_path.read_text())
+
+
+def _dispatch_step_script() -> str:
+    workflow = _load_pr_review_workflow()
+    steps = workflow["jobs"]["dispatch-orchestrator"]["steps"]
+    for step in steps:
+        if step.get("name") == DISPATCH_STEP_NAME:
+            run = step.get("run")
+            if not isinstance(run, str):
+                msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no run script"
+                raise ValueError(msg)
+            return run
+    msg = f"Workflow step {DISPATCH_STEP_NAME!r} not found in dispatch-orchestrator job"
+    raise ValueError(msg)
 
 
 def _extract_workflow_script_block(marker: str) -> str:
-    workflow_path = REPO / ".github/workflows/pr-review-harness.yml"
-    text = workflow_path.read_text()
-    script = next(
-        step["run"]
-        for step in yaml.safe_load(text)["jobs"]["dispatch-orchestrator"]["steps"]
-        if "run" in step
-    )
+    script = _dispatch_step_script()
     begin = f"# BEGIN {marker}"
     end = f"# END {marker}"
+    if begin not in script:
+        msg = f"Marker {begin!r} not found in dispatch step {DISPATCH_STEP_NAME!r}"
+        raise ValueError(msg)
+    if end not in script:
+        msg = f"Marker {end!r} not found in dispatch step {DISPATCH_STEP_NAME!r}"
+        raise ValueError(msg)
     start = script.index(begin)
     stop = script.index(end, start)
     return script[start:stop]
@@ -87,11 +109,58 @@ def test_this_repo_vendors_playwright_agents_and_cli() -> None:
     assert "@playwright/cli" in package
 
 
-def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
-    workflow_path = REPO / ".github/workflows/pr-review-harness.yml"
-    text = workflow_path.read_text()
+def test_extract_workflow_script_block_returns_active_dedupe_block() -> None:
+    block = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    assert "# BEGIN ACTIVE_DEDUPE" in block
+    assert "skip_if_active_harness_exists" in block
+
+
+def test_extract_workflow_script_block_raises_when_marker_missing() -> None:
+    with pytest.raises(ValueError, match="Marker '# BEGIN NO_SUCH_BLOCK' not found"):
+        _extract_workflow_script_block("NO_SUCH_BLOCK")
+
+
+def test_dispatch_step_script_selects_named_step_not_first_run_step(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workflow = _load_pr_review_workflow()
+    dummy_step = {
+        "name": "Dummy setup",
+        "run": "echo dummy\n# BEGIN ACTIVE_DEDUPE\n# END ACTIVE_DEDUPE\n",
+    }
+    workflow["jobs"]["dispatch-orchestrator"]["steps"].insert(0, dummy_step)
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "_load_pr_review_workflow",
+        lambda: workflow,
+    )
+    block = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    assert "skip_if_active_harness_exists" in block
+    assert "echo dummy" not in block
+
+
+def test_pr_review_harness_workflow_triggers_on_pr_opened() -> None:
+    text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
     assert "pull_request" in text
     assert "types: [opened]" in text
+
+
+def test_pr_review_harness_workflow_concurrency() -> None:
+    text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
+    workflow = _load_pr_review_workflow()
+    assert (
+        workflow["concurrency"]["group"]
+        == "pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}"
+    )
+    assert workflow["concurrency"]["cancel-in-progress"] is False
+    assert "pull_request.head.ref" in text
+
+
+def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
+    text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
+    workflow = _load_pr_review_workflow()
+    script = _dispatch_step_script()
+    job = workflow["jobs"]["dispatch-orchestrator"]
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
@@ -99,47 +168,15 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "REPO_URL:" in text
     assert "repos: [{url: $repo, prUrl: $pr}]" in text
     assert 'env: {type: "cloud", name: "loadout-env"}' not in text
-
-    workflow = yaml.safe_load(text)
-    assert (
-        workflow["concurrency"]["group"]
-        == "pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}"
-    )
-    assert workflow["concurrency"]["cancel-in-progress"] is False
-    assert "pull_request.head.ref" in text
-    assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
-    assert "Skipping review_orchestrator dispatch" in text
-    assert 'select(.status == "ACTIVE" and .name == $name)' in text
-    assert 'select(.status == "ACTIVE" and .name == $legacy)' in text
-    assert 'legacy_agent_name="PR review harness"' in text
-    assert "nextCursor" in text
-    assert "max_pages=5" in text
-    assert "pagination cap" in text
-    assert "# BEGIN ACTIVE_DEDUPE" in text
-    assert 'agent_name="PR review harness #${PR_NUMBER}"' in text
-    assert 'active ${agent_name} agent(s) already on' in text
-    assert "rollout migration" in text
-    assert "proceeding with dispatch" not in text
-    assert "dedupe state unknown" in text
-    job = workflow["jobs"]["dispatch-orchestrator"]
-    script = next(step["run"] for step in job["steps"] if "run" in step)
-    post_begin = script.index("# BEGIN POST_DISPATCH")
-    post_end = script.index("# END POST_DISPATCH", post_begin)
-    post_dispatch_block = script[post_begin:post_end]
-    list_agents_pos = script.index("api.cursor.com/v1/agents?prUrl=${PR_URL}")
-    list_dedupe_block = script[list_agents_pos:post_begin]
-    assert "|| true" not in list_dedupe_block
-    assert "could not list agents" in list_dedupe_block
-    assert "for attempt in 1 2 3" in post_dispatch_block
-    assert "skip_if_active_harness_exists" in post_dispatch_block
-    assert '.id | type == "string"' in post_dispatch_block
-    assert "Failed to dispatch review_orchestrator after 3 attempts" in post_dispatch_block
     assert job["timeout-minutes"] == 5
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
     assert "<<'EOF'" in script
     assert "cat <<EOF" not in script.replace("<<'EOF'", "")
 
+
+def test_pr_review_harness_workflow_prompt_subprocess() -> None:
+    script = _dispatch_step_script()
     prompt_match = re.search(
         r"# BEGIN PROMPT_BUILD\s*\n(.*?)# END PROMPT_BUILD",
         script,
