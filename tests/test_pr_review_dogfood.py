@@ -16,11 +16,14 @@ REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
 SAMPLE_PR_NUMBER = "72"
-SAMPLE_PR_URL = f"https://github.com/sazlin/loadout/pull/{SAMPLE_PR_NUMBER}"
+SAMPLE_GITHUB_REPOSITORY = "sazlin/loadout"
+SAMPLE_PR_URL = f"https://github.com/{SAMPLE_GITHUB_REPOSITORY}/pull/{SAMPLE_PR_NUMBER}"
 SAMPLE_PR_HEAD_REF = "feat/pr-review-harness-loadout-env"
 SAMPLE_CURSOR_CLOUD_ENV = "loadout-env"
+SAMPLE_NUMBERED_AGENT_NAME = f"PR review harness {SAMPLE_GITHUB_REPOSITORY}#{SAMPLE_PR_NUMBER}"
 SAMPLE_HARNESS_ENV = {
     "CURSOR_API_KEY": "test-key",
+    "GITHUB_REPOSITORY": SAMPLE_GITHUB_REPOSITORY,
     "PR_URL": SAMPLE_PR_URL,
     "PR_NUMBER": SAMPLE_PR_NUMBER,
     "PR_HEAD_REF": SAMPLE_PR_HEAD_REF,
@@ -103,6 +106,7 @@ def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -
     preamble = (
         "set -euo pipefail\n"
         f"{mock_curl_body}\n"
+        "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?}\n"
         "PR_URL=${PR_URL:?}\n"
         "PR_NUMBER=${PR_NUMBER:?}\n"
         "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
@@ -128,10 +132,11 @@ def _run_post_dispatch_block_with_mock_curl(
     preamble = (
         "set -euo pipefail\n"
         f"{mock_curl_body}\n"
+        "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?}\n"
         "PR_URL=${PR_URL:?}\n"
         "PR_NUMBER=${PR_NUMBER:?}\n"
         "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
-        f'body=\'{{"name":"PR review harness #{SAMPLE_PR_NUMBER}"}}\'\n'
+        f'body=\'{{"name":"{SAMPLE_NUMBERED_AGENT_NAME}"}}\'\n'
     )
     result = subprocess.run(
         ["bash", "-c", preamble + dedupe_block + "\n" + post_block + trailer],
@@ -272,6 +277,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "REPO_URL:" not in text
     assert "repos: [{url: $repo, prUrl: $pr}]" not in text
     assert step_env["CURSOR_CLOUD_ENV"] == SAMPLE_CURSOR_CLOUD_ENV
+    assert step_env["GITHUB_REPOSITORY"] == "${{ github.repository }}"
     assert "--arg cloud_env" in script
     assert "env: {type: \"cloud\", name: $cloud_env}" in text
     assert step_env["PR_HEAD_REF"] == "${{ github.event.pull_request.head.ref }}"
@@ -316,7 +322,7 @@ def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path
         _extract_workflow_script_block("PROMPT_BUILD")
         + f"""
 body="$(jq -n \\
-  --arg name "PR review harness #{SAMPLE_PR_NUMBER}" \\
+  --arg name "{SAMPLE_NUMBERED_AGENT_NAME}" \\
   --arg cloud_env "{SAMPLE_CURSOR_CLOUD_ENV}" \\
   --arg pr_number "{SAMPLE_PR_NUMBER}" \\
   --rawfile prompt "${{pr_review_prompt_file}}" \\
@@ -376,7 +382,7 @@ def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"0 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 1 legacy (PR review harness)" in result.stderr
+    assert f"0 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 1 legacy (PR review harness)" in result.stderr
 
 
 def test_dedupe_finds_active_agent_created_with_env_only_dispatch_body() -> None:
@@ -388,7 +394,19 @@ def test_dedupe_finds_active_agent_created_with_env_only_dispatch_body() -> None
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
+
+
+def test_dedupe_ignores_active_harness_for_same_pr_number_different_repo() -> None:
+    other_repo = "other-org/other-repo"
+    other_repo_active = PR_REVIEW_FIXTURES / "agents_other_repo_active.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(other_repo_active, pr_url_fixture=no_legacy)
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" in result.stdout
+    assert "Skipping review_orchestrator dispatch" not in result.stderr
+    assert f"PR review harness {other_repo}#{SAMPLE_PR_NUMBER}" in other_repo_active.read_text()
 
 
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
@@ -404,7 +422,7 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
 
 
 def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
@@ -452,7 +470,7 @@ def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure()
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
     assert "unexpected second POST" not in result.stderr
 
 

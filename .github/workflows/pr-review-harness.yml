@@ -29,8 +29,8 @@ on:
 #    Because env-only agents are not indexed under ?prUrl=, dedupe cannot rely on a
 #    single prUrl-filtered list even though PR context lives in the prompt. It uses
 #    two list queries:
-#    - GET .../agents (no prUrl) for numbered "PR review harness #<number>" — unique per
-#      PR and visible for env-only agents.
+#    - GET .../agents (no prUrl) for numbered "PR review harness <repo>#<number>" —
+#      unique per repository and PR and visible for env-only agents.
 #    - GET .../agents?prUrl=${PR_URL} for legacy unnumbered "PR review harness" from older
 #      repos-based dispatches still indexed by pull request URL.
 #
@@ -66,6 +66,7 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           CURSOR_CLOUD_ENV: loadout-env
+          GITHUB_REPOSITORY: ${{ github.repository }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -80,7 +81,7 @@ jobs:
           # ACTIVE dedupe: unfiltered list for numbered harness (env-only agents lack prUrl
           # index); prUrl-filtered list for legacy unnumbered harness from repos-based runs.
           dedupe_negative_scan_done=false
-          agent_name="PR review harness #${PR_NUMBER}"
+          agent_name="PR review harness ${GITHUB_REPOSITORY}#${PR_NUMBER}"
           legacy_agent_name="PR review harness"
           agents_list_failed=false
           dedupe_pagination_warning=""
