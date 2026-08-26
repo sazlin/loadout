@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -29,13 +31,39 @@ def test_this_repo_vendors_playwright_agents_and_cli() -> None:
 
 
 def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
-    text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
+    workflow_path = REPO / ".github/workflows/pr-review-harness.yml"
+    text = workflow_path.read_text()
     assert "pull_request" in text
     assert "types: [opened]" in text
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
     assert "CURSOR_API_KEY" in text
+
+    workflow = yaml.safe_load(text)
+    script = workflow["jobs"]["dispatch-orchestrator"]["steps"][0]["run"]
+    assert "<<'EOF'" in script
+    assert "cat <<EOF" not in script.replace("<<'EOF'", "")
+
+    prompt_script = script.split("body=\"$(jq")[0] + "printf '%s' \"$prompt\""
+    result = subprocess.run(
+        ["bash", "-c", prompt_script],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={
+            **os.environ,
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "REPO_URL": "https://github.com/sazlin/loadout",
+            "PR_NUMBER": "72",
+        },
+    )
+    prompt = result.stdout
+    assert ".claude/agents/review_orchestrator.md" in prompt
+    assert ".claude/skills/" in prompt
+    assert "`gh pr merge <n> --squash`" in prompt
+    assert "https://github.com/sazlin/loadout/pull/72 (#72)" in prompt
 
 
 def test_ci_matrix_includes_pr_review_harness() -> None:

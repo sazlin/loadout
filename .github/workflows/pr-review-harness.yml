@@ -27,11 +27,15 @@ jobs:
             echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
             exit 0
           fi
-          prompt="$(cat <<EOF
+          prompt="$(cat <<'EOF'
           You are review_orchestrator. Follow `.claude/agents/review_orchestrator.md` and the skills it names under `.claude/skills/`. Dispatch those agents; do not become them.
+          EOF
+          )"
+          prompt="${prompt}
 
           This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}). Run the full harness on this existing PR.
 
+          $(cat <<'EOF'
           Cloud-run constraints:
           - Work on the current PR branch only. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
           - Do not rewrite git history. No force-push, no rebase, no amend of commits you did not just create.
