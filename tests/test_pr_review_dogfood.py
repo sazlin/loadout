@@ -41,7 +41,13 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "CURSOR_API_KEY" in text
 
     workflow = yaml.safe_load(text)
-    script = workflow["jobs"]["dispatch-orchestrator"]["steps"][0]["run"]
+    assert workflow["concurrency"]["group"] == "pr-review-${{ github.event.pull_request.number }}"
+    assert workflow["concurrency"]["cancel-in-progress"] is False
+    job = workflow["jobs"]["dispatch-orchestrator"]
+    assert job["timeout-minutes"] == 5
+    assert "--connect-timeout 10" in text
+    assert "--max-time 60" in text
+    script = next(step["run"] for step in job["steps"] if "run" in step)
     assert "<<'EOF'" in script
     assert "cat <<EOF" not in script.replace("<<'EOF'", "")
 
