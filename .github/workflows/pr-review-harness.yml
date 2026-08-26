@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 5
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - uses: actions/checkout@v4
       - name: Launch review_orchestrator on this pull request
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
@@ -51,6 +50,8 @@ jobs:
             echo "Warning: could not list agents for ${PR_URL}; proceeding with dispatch." >&2
           fi
           # BEGIN PROMPT_BUILD
+          # Dual-heredoc invariant: both blocks use <<'EOF' (quoted delimiter) so backticks
+          # in the prompt stay literal; unquoted <<EOF would expand nested `...` substitutions.
           prompt="$(cat <<'EOF'
           You are review_orchestrator. Follow `.claude/agents/review_orchestrator.md` and the skills it names under `.claude/skills/`. Dispatch those agents; do not become them.
           EOF
