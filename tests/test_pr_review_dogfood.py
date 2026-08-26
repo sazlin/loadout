@@ -16,10 +16,12 @@ PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
 SAMPLE_PR_NUMBER = "72"
 SAMPLE_PR_URL = f"https://github.com/sazlin/loadout/pull/{SAMPLE_PR_NUMBER}"
+SAMPLE_PR_HEAD_REF = "feat/pr-review-harness-loadout-env"
 SAMPLE_HARNESS_ENV = {
     "CURSOR_API_KEY": "test-key",
     "PR_URL": SAMPLE_PR_URL,
     "PR_NUMBER": SAMPLE_PR_NUMBER,
+    "PR_HEAD_REF": SAMPLE_PR_HEAD_REF,
 }
 
 
@@ -260,6 +262,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     workflow = _load_pr_review_workflow()
     script = _dispatch_step_script()
     job = workflow["jobs"]["dispatch-orchestrator"]
+    step_env = job["steps"][0]["env"]
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
@@ -267,6 +270,12 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "REPO_URL:" not in text
     assert "repos: [{url: $repo, prUrl: $pr}]" not in text
     assert 'env: {type: "cloud", name: "loadout-env"}' in text
+    assert step_env["PR_HEAD_REF"] == "${{ github.event.pull_request.head.ref }}"
+    assert "github.event.pull_request.head.ref" in text
+    assert "gh pr checkout" in text
+    assert "PR_HEAD_REF:" in text
+    assert "envVars:" in text
+    assert "PR_HEAD_REF: $pr_head_ref" in text
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
@@ -289,6 +298,10 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     assert "Cloud-run constraints:" in prompt
     assert "harness loop and role boundaries" in prompt
     assert f"{SAMPLE_PR_URL} (#{SAMPLE_PR_NUMBER})" in prompt
+    assert "Branch binding (required before any git operation):" in prompt
+    assert f"PR head branch: {SAMPLE_PR_HEAD_REF}" in prompt
+    assert f"gh pr checkout {SAMPLE_PR_NUMBER}" in prompt
+    assert f"origin/{SAMPLE_PR_HEAD_REF}" in prompt
 
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:

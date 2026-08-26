@@ -54,6 +54,7 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           if [[ -z "${CURSOR_API_KEY}" ]]; then
@@ -185,18 +186,33 @@ jobs:
           - issue_resolver may commit and push to this PR branch only.
           EOF
           )"
+          prompt="${prompt}
+
+          Branch binding (required before any git operation):
+          - PR head branch: ${PR_HEAD_REF} (PR #${PR_NUMBER}, ${PR_URL})
+          - At session start run: git symbolic-ref --short HEAD
+          - If the result is not '${PR_HEAD_REF}', run: gh pr checkout ${PR_NUMBER}
+          - Re-run git symbolic-ref --short HEAD and confirm it prints '${PR_HEAD_REF}' before any git read, commit, or push.
+          - Nested issue_resolver briefs must name this branch; pushes must target origin/${PR_HEAD_REF} only."
           # END PROMPT_BUILD
-          # Named cloud env is mutually exclusive with explicit repos. PR context
-          # stays in the prompt; loadout-env already binds the repository.
+          # Named cloud env is mutually exclusive with explicit repos[].prUrl (API rejects
+          # both). loadout-env binds the repository; PR head ref is enforced in the prompt
+          # and envVars because env-only dispatch cannot API-bind workOnCurrentBranch to a PR.
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
+            --arg pr_head_ref "${PR_HEAD_REF}" \
+            --arg pr_number "${PR_NUMBER}" \
             '{
               name: $name,
               prompt: {text: $prompt},
               env: {type: "cloud", name: "loadout-env"},
               workOnCurrentBranch: true,
-              autoCreatePR: false
+              autoCreatePR: false,
+              envVars: {
+                PR_HEAD_REF: $pr_head_ref,
+                PR_NUMBER: $pr_number
+              }
             }')"
           # BEGIN POST_DISPATCH
           dispatch_output=""
