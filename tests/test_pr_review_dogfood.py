@@ -113,8 +113,31 @@ def _bash_mock_curl_from_fixtures(
     return "\n".join(lines) + "\n"
 
 
-def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def _active_dedupe_script_without_list_guard() -> str:
+    """Pre-C-001 snippet: set -e aborts before the soft-skip path on list failure."""
     script = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    return script.replace(
+        "check_active_harness_agents || true",
+        "check_active_harness_agents",
+    )
+
+
+def _pre_repo_qualification_active_dedupe_script() -> str:
+    """Pre-C-002 snippet: unfiltered list with PR-number-only harness name."""
+    script = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    return script.replace(
+        'agent_name="PR review harness ${GITHUB_REPOSITORY}#${PR_NUMBER}"',
+        'agent_name="PR review harness #${PR_NUMBER}"',
+    )
+
+
+def _run_dedupe_block_with_mock_curl(
+    mock_curl_body: str,
+    env: dict[str, str],
+    *,
+    dedupe_script: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    script = dedupe_script if dedupe_script is not None else _extract_workflow_script_block("ACTIVE_DEDUPE")
     preamble = (
         "set -euo pipefail\n"
         f"{mock_curl_body}\n"
@@ -467,6 +490,15 @@ def test_dedupe_skips_dispatch_when_agents_list_unavailable() -> None:
     assert f"could not list agents for {SAMPLE_PR_URL}" in result.stderr
     assert "Re-run this workflow after the agents API is reachable." in result.stderr
 
+    pre_fix = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        SAMPLE_HARNESS_ENV,
+        dedupe_script=_active_dedupe_script_without_list_guard(),
+    )
+    assert pre_fix.returncode != 0
+    assert "Skipping review_orchestrator dispatch" not in pre_fix.stderr
+    assert "DISPATCH_WOULD_RUN" not in pre_fix.stdout
+
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
@@ -492,15 +524,25 @@ def test_dedupe_finds_active_agent_created_with_env_only_dispatch_body() -> None
 
 
 def test_dedupe_ignores_active_harness_for_same_pr_number_different_repo() -> None:
-    other_repo = "other-org/other-repo"
-    other_repo_active = PR_REVIEW_FIXTURES / "agents_other_repo_active.json"
+    unqualified_cross_repo = PR_REVIEW_FIXTURES / "agents_same_pr_number_unqualified.json"
     no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
-    mock_curl = _bash_mock_curl_from_fixtures(other_repo_active, pr_url_fixture=no_legacy)
+    mock_curl = _bash_mock_curl_from_fixtures(unqualified_cross_repo, pr_url_fixture=no_legacy)
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" in result.stdout
     assert "Skipping review_orchestrator dispatch" not in result.stderr
-    assert f"PR review harness {other_repo}#{SAMPLE_PR_NUMBER}" in other_repo_active.read_text()
+    assert f"PR review harness #{SAMPLE_PR_NUMBER}" in unqualified_cross_repo.read_text()
+    assert SAMPLE_NUMBERED_AGENT_NAME not in unqualified_cross_repo.read_text()
+
+    pre_fix = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        SAMPLE_HARNESS_ENV,
+        dedupe_script=_pre_repo_qualification_active_dedupe_script(),
+    )
+    assert pre_fix.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in pre_fix.stdout
+    assert "Skipping review_orchestrator dispatch" in pre_fix.stderr
+    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER})" in pre_fix.stderr
 
 
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
