@@ -180,14 +180,121 @@ project-root `TASKS_TO_RESOLVE.md`.
 After each notable phase, post **one new** comment with `gh pr comment <n>
 --body-file`. Do not pass `--edit-last`. Each run creates its own comments.
 
-```markdown
-## PR review harness
+Follow this visual style on every orchestrator comment:
 
-**Phase:** panel | resolve | verify | decision
-**PR:** <url>
-**Open tasks:** N
-**Significant issues remaining:** N
-```
+- Heading is `### PR review harness` (never `##`).
+- First block is a five-column stage table. Do not use a bold-label list.
+- After the table, bullets only. One sentence per bullet. No multi-sentence
+  paragraphs.
+- Do not emit GitHub alerts on orchestrator comments. Alerts belong on
+  `risk_classifier` comments when a human must act.
+- At **decision**, do not repeat the classifier rationale. Table plus short
+  bullets only.
+
+Icons: ✅ done, 🔄 in progress, ⏳ queued, 🟢 low risk, 🔴 not low risk,
+⛔ merge blocked, ⏸️ merge skipped.
+
+Fill cells from the current phase. Use `<br>` so the icon sits above a short
+status word.
+
+**Panel**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| 🔄<br>loop N | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- Four reviewers dispatched in parallel.
+````
+
+**Resolve**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | 🔄<br>TASK-00X | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- Current work: TASK-00X.
+````
+
+**Verify**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>done | ✅<br>done | 🔄<br>k/n | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- No human action yet.
+````
+
+**Decision** (after `risk_classifier` returns). Set Risk and Merge cells from
+the classifier JSON outcome. Reuse the classifier table labels verbatim for
+Risk and Merge (for example `blocked`, not `token`).
+
+| Classifier `risk` | Classifier `merge` | Decision Risk cell | Decision Merge cell |
+| --- | --- | --- | --- |
+| `low` | `performed` | 🟢<br>`low` | ✅<br>`done` or `merged` |
+| `low` | `blocked_by_protection` | 🟢<br>`low` | ⛔<br>`blocked` |
+| `not_low` | `skipped` | 🔴<br>`not_low` | ⏸️<br>`skipped` |
+
+**Merge performed** (low risk, squash-merge succeeded). The classifier posts
+no comment on this path; the orchestrator Decision comment is the sole PR
+comment carrying merge outcome.
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ✅<br>done |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+- Squash-merge performed.
+````
+
+**Merge skipped** (not low risk; classifier posted its own comment).
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🔴<br>`not_low` | ⏸️<br>skipped |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+- Auto-merge skipped; human should review the diff.
+````
+
+**Merge blocked** (low risk, protection or token cannot squash-merge).
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ⛔<br>blocked |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+- Merge blocked; human with permission should squash-merge.
+````
 
 Record the latest comment URL in `delivery.github_comment_url`.
 
