@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.17.0
+
 - Style `pr_review_harness` GitHub comments as a horizontal stage table
   with bullets, plus a WARNING/CAUTION alert only when a human must act.
 - Update the PR review harness GitHub Action prompt to delegate harness steps to
