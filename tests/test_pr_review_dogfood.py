@@ -35,18 +35,30 @@ def _load_pr_review_workflow() -> dict:
     return yaml.safe_load(workflow_path.read_text())
 
 
-def _dispatch_step_script() -> str:
+def _dispatch_step() -> dict:
     workflow = _load_pr_review_workflow()
     steps = workflow["jobs"]["dispatch-orchestrator"]["steps"]
     for step in steps:
         if step.get("name") == DISPATCH_STEP_NAME:
-            run = step.get("run")
-            if not isinstance(run, str):
-                msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no run script"
-                raise ValueError(msg)
-            return run
+            return step
     msg = f"Workflow step {DISPATCH_STEP_NAME!r} not found in dispatch-orchestrator job"
     raise ValueError(msg)
+
+
+def _dispatch_step_script() -> str:
+    run = _dispatch_step().get("run")
+    if not isinstance(run, str):
+        msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no run script"
+        raise ValueError(msg)
+    return run
+
+
+def _dispatch_step_env() -> dict:
+    env = _dispatch_step().get("env")
+    if not isinstance(env, dict):
+        msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no env block"
+        raise ValueError(msg)
+    return env
 
 
 def _extract_workflow_script_block(marker: str) -> str:
@@ -146,6 +158,88 @@ def _run_post_dispatch_block_with_mock_curl(
         env={**os.environ, **env},
     )
     return result
+
+
+def _bash_mock_curl_for_post_dispatch(
+    *,
+    list_fixture: Path,
+    post_fixture: Path | None = None,
+    post_exit_code: int | None = None,
+    post_fail_once: bool = False,
+    active_after_post_failure: Path | None = None,
+    track_list_calls: bool = False,
+) -> str:
+    """Return bash that mocks curl for POST-dispatch workflow tests."""
+    lines: list[str] = []
+    if post_fail_once:
+        lines.extend(
+            [
+                'post_attempt_file="/tmp/post_attempt_${BASHPID:-$$}"',
+                'rm -f "${post_attempt_file}"',
+            ]
+        )
+    if track_list_calls:
+        lines.extend(
+            [
+                'list_calls_file="/tmp/pr_review_list_calls_${BASHPID:-$$}"',
+                'echo 0 > "${list_calls_file}"',
+            ]
+        )
+    lines.append("curl() {")
+    lines.append('  if [[ "$*" == *"--data"* ]]; then')
+    if post_fixture is not None:
+        lines.extend(
+            [
+                f'    cat "{post_fixture}"',
+                "    return 0",
+            ]
+        )
+    elif post_fail_once:
+        lines.extend(
+            [
+                '    if [[ ! -f "${post_attempt_file}" ]]; then',
+                '      touch "${post_attempt_file}"',
+                "      return 28",
+                "    fi",
+                '    echo "unexpected second POST: $*" >&2',
+                "    return 1",
+            ]
+        )
+    elif post_exit_code is not None:
+        lines.append(f"    return {post_exit_code}")
+    lines.append("  fi")
+    lines.append('  if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then')
+    if post_fail_once and active_after_post_failure is not None:
+        lines.extend(
+            [
+                '    if [[ -f "${post_attempt_file}" ]]; then',
+                '      if [[ "$*" == *"prUrl="* ]]; then',
+                f'        cat "{list_fixture}"',
+                "        return 0",
+                "      fi",
+                f'      cat "{active_after_post_failure}"',
+                "      return 0",
+                "    fi",
+            ]
+        )
+    if track_list_calls:
+        lines.extend(
+            [
+                '    n=$(cat "${list_calls_file}")',
+                '    echo $((n + 1)) > "${list_calls_file}"',
+            ]
+        )
+    lines.extend(
+        [
+            f'    cat "{list_fixture}"',
+            "    return 0",
+            "  fi",
+            '  echo "unexpected curl: $*" >&2',
+            "  return 1",
+            "}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def _bash_mock_curl_for_wait(*, run_fixture: Path, agent_fixture: Path | None = None) -> str:
@@ -269,7 +363,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     workflow = _load_pr_review_workflow()
     script = _dispatch_step_script()
     job = workflow["jobs"]["dispatch-orchestrator"]
-    step_env = job["steps"][0]["env"]
+    step_env = _dispatch_step_env()
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
@@ -469,34 +563,11 @@ def test_dedupe_skips_when_active_numbered_harness_beyond_pagination_cap() -> No
 def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     active = PR_REVIEW_FIXTURES / "agents_page2_active.json"
-    mock_curl = f"""
-    post_attempt_file="/tmp/post_attempt_${{BASHPID:-$$}}"
-    rm -f "${{post_attempt_file}}"
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        if [[ ! -f "${{post_attempt_file}}" ]]; then
-          touch "${{post_attempt_file}}"
-          return 28
-        fi
-        echo "unexpected second POST: $*" >&2
-        return 1
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        if [[ -f "${{post_attempt_file}}" ]]; then
-          if [[ "$*" == *"prUrl="* ]]; then
-            cat "{no_active}"
-            return 0
-          fi
-          cat "{active}"
-          return 0
-        fi
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fail_once=True,
+        active_after_post_failure=active,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "Skipping review_orchestrator dispatch" in result.stderr
@@ -506,19 +577,10 @@ def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure()
 
 def test_post_dispatch_fails_after_three_post_failures() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        return 28
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_exit_code=28,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 1
     assert "Failed to dispatch review_orchestrator after 3 attempts" in result.stderr
@@ -527,24 +589,11 @@ def test_post_dispatch_fails_after_three_post_failures() -> None:
 def test_post_dispatch_succeeds_on_first_attempt() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     success = PR_REVIEW_FIXTURES / "agents_dispatch_success.json"
-    mock_curl = f"""
-    list_calls_file="/tmp/pr_review_list_calls_${{BASHPID:-$$}}"
-    echo 0 > "${{list_calls_file}}"
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        cat "{success}"
-        return 0
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        n=$(cat "${{list_calls_file}}")
-        echo $((n + 1)) > "${{list_calls_file}}"
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fixture=success,
+        track_list_calls=True,
+    )
     result = _run_post_dispatch_block_with_mock_curl(
         mock_curl,
         SAMPLE_HARNESS_ENV,
@@ -559,20 +608,10 @@ def test_post_dispatch_succeeds_on_first_attempt() -> None:
 def test_post_dispatch_accepts_v1_agent_run_payload() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     success = PR_REVIEW_FIXTURES / "agents_v1_dispatch.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        cat "{success}"
-        return 0
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fixture=success,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "bc-harness-new-0072" in result.stdout
