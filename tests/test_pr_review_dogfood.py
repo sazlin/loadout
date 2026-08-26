@@ -53,17 +53,15 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "Skipping review_orchestrator dispatch" in text
     assert 'select(.status == "ACTIVE" and .name == $name)' in text
     assert 'agent_name="PR review harness #${PR_NUMBER}"' in text
-    assert "agent(s) already on" in text
+    assert "Attaching to existing" in text
     assert "proceeding with dispatch" not in text
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
     script = next(step["run"] for step in job["steps"] if "run" in step)
-    post_pos = script.index("curl --fail-with-body --request POST")
-    list_agents_pos = script.index("api.cursor.com/v1/agents?prUrl=${PR_URL}")
-    list_dedupe_block = script[list_agents_pos:post_pos]
-    assert "|| true" not in list_dedupe_block
-    assert "could not list agents" in list_dedupe_block
-    assert job["timeout-minutes"] == 5
+    list_retry = script[script.index("for attempt in 1 2 3") : script.index('if [[ -z "${agents_json}" ]]')]
+    assert "|| true" not in list_retry
+    assert "could not list agents" in script
+    assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
     assert "<<'EOF'" in script
@@ -94,6 +92,21 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "Cloud-run constraints:" in prompt
     assert "harness loop and role boundaries" in prompt
     assert "https://github.com/sazlin/loadout/pull/72 (#72)" in prompt
+
+
+def test_pr_review_harness_workflow_waits_for_run_completion() -> None:
+    workflow = yaml.safe_load((REPO / ".github/workflows/pr-review-harness.yml").read_text())
+    job = workflow["jobs"]["dispatch-orchestrator"]
+    script = next(step["run"] for step in job["steps"] if "run" in step)
+    assert job["timeout-minutes"] == 360
+    assert "api.cursor.com/v1/agents/${agent_id}/runs/${run_id}" in script
+    assert 'create_json="$(curl' in script
+    assert "FINISHED" in script
+    assert "ERROR|CANCELLED|EXPIRED" in script
+    assert "trap" in script
+    assert "INT TERM" in script
+    assert "/cancel" in script
+    assert "latestRunId" in script
 
 
 def test_ci_matrix_includes_pr_review_harness() -> None:
