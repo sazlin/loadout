@@ -54,7 +54,7 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "Skipping review_orchestrator dispatch" in text
     assert 'select(.status == "ACTIVE" and .name == $name)' in text
     assert 'agent_name="PR review harness #${PR_NUMBER}"' in text
-    assert "agent(s) already on" in text
+    assert 'active ${agent_name} agent(s) already on' in text
     assert "proceeding with dispatch" not in text
     assert "dedupe state unknown" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
