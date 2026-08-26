@@ -4,10 +4,11 @@ on:
   pull_request:
     types: [opened]
 
-# One dispatch-orchestrator job per PR at a time; later events wait rather than
-# cancel an in-flight orchestrator (issue_resolver may still be pushing).
+# Serialize dispatches per PR head branch (repo + branch name). Overlapping workflow
+# runs on the same branch wait rather than cancel. Re-runs after dispatch completes
+# are skipped when an ACTIVE cloud orchestrator already exists for this PR URL.
 concurrency:
-  group: pr-review-${{ github.event.pull_request.number }}
+  group: pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}
   cancel-in-progress: false
 
 permissions:
@@ -33,6 +34,21 @@ jobs:
             echo "CURSOR_API_KEY is not set; skipping review_orchestrator dispatch." >&2
             echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
             exit 0
+          fi
+          agents_json="$(curl --silent --show-error \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --url "https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false" \
+            -u "${CURSOR_API_KEY}:" || true)"
+          if [[ -n "${agents_json}" ]]; then
+            active_count="$(jq '[.items[]? | select(.status == "ACTIVE")] | length' <<<"${agents_json}")"
+            if [[ "${active_count}" -gt 0 ]]; then
+              echo "Skipping review_orchestrator dispatch: ${active_count} active cloud agent(s) already on ${PR_URL}." >&2
+              echo "Wait for the orchestrator to finish before re-running this workflow." >&2
+              exit 0
+            fi
+          else
+            echo "Warning: could not list agents for ${PR_URL}; proceeding with dispatch." >&2
           fi
           # BEGIN PROMPT_BUILD
           prompt="$(cat <<'EOF'

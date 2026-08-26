@@ -41,8 +41,15 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "CURSOR_API_KEY" in text
 
     workflow = yaml.safe_load(text)
-    assert workflow["concurrency"]["group"] == "pr-review-${{ github.event.pull_request.number }}"
+    assert (
+        workflow["concurrency"]["group"]
+        == "pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}"
+    )
     assert workflow["concurrency"]["cancel-in-progress"] is False
+    assert "pull_request.head.ref" in text
+    assert "api.cursor.com/v1/agents?prUrl=${PR_URL}" in text
+    assert "Skipping review_orchestrator dispatch" in text
+    assert "active cloud agent(s) already on" in text
     job = workflow["jobs"]["dispatch-orchestrator"]
     assert job["timeout-minutes"] == 5
     assert "--connect-timeout 10" in text
