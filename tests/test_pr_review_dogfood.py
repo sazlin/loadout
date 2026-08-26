@@ -14,6 +14,13 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
+SAMPLE_PR_NUMBER = "72"
+SAMPLE_PR_URL = f"https://github.com/sazlin/loadout/pull/{SAMPLE_PR_NUMBER}"
+SAMPLE_HARNESS_ENV = {
+    "CURSOR_API_KEY": "test-key",
+    "PR_URL": SAMPLE_PR_URL,
+    "PR_NUMBER": SAMPLE_PR_NUMBER,
+}
 
 
 def _load_pr_review_workflow() -> dict:
@@ -102,6 +109,8 @@ def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -
 def _run_post_dispatch_block_with_mock_curl(
     mock_curl_body: str,
     env: dict[str, str],
+    *,
+    trailer: str = "",
 ) -> subprocess.CompletedProcess[str]:
     dedupe_block = _extract_workflow_script_block("ACTIVE_DEDUPE")
     post_block = _extract_workflow_script_block("POST_DISPATCH")
@@ -111,10 +120,10 @@ def _run_post_dispatch_block_with_mock_curl(
         "PR_URL=${PR_URL:?}\n"
         "PR_NUMBER=${PR_NUMBER:?}\n"
         "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
-        'body=\'{"name":"PR review harness #72"}\'\n'
+        f'body=\'{{"name":"PR review harness #{SAMPLE_PR_NUMBER}"}}\'\n'
     )
     result = subprocess.run(
-        ["bash", "-c", preamble + dedupe_block + "\n" + post_block],
+        ["bash", "-c", preamble + dedupe_block + "\n" + post_block + trailer],
         capture_output=True,
         text=True,
         env={**os.environ, **env},
@@ -213,36 +222,27 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
         capture_output=True,
         text=True,
         check=True,
-        env={
-            **os.environ,
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
+        env={**os.environ, **SAMPLE_HARNESS_ENV},
     )
     prompt = result.stdout
     assert ".claude/agents/review_orchestrator.md" in prompt
     assert ".claude/skills/" in prompt
     assert "Cloud-run constraints:" in prompt
     assert "harness loop and role boundaries" in prompt
-    assert "https://github.com/sazlin/loadout/pull/72 (#72)" in prompt
+    assert f"{SAMPLE_PR_URL} (#{SAMPLE_PR_NUMBER})" in prompt
 
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
     mock_curl = _bash_mock_curl_from_fixtures(fixture)
-    result = _run_dedupe_block_with_mock_curl(
-        mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
-    )
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "0 numbered (PR review harness #72) and 1 legacy (PR review harness)" in result.stderr
+    assert (
+        f"0 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 1 legacy (PR review harness)"
+        in result.stderr
+    )
 
 
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
@@ -252,31 +252,20 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
         page1,
         cursor_fixtures={"page2-cursor-token": page2},
     )
-    result = _run_dedupe_block_with_mock_curl(
-        mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
-    )
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "1 numbered (PR review harness #72) and 0 legacy (PR review harness)" in result.stderr
+    assert (
+        f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)"
+        in result.stderr
+    )
 
 
 def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
     mock_curl = _bash_mock_curl_from_fixtures(fixture)
-    result = _run_dedupe_block_with_mock_curl(
-        mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
-    )
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" in result.stdout
     assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
@@ -311,17 +300,13 @@ def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure()
       return 1
     }}
     """
-    result = _run_post_dispatch_block_with_mock_curl(
-        mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
-    )
+    result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "1 numbered (PR review harness #72) and 0 legacy (PR review harness)" in result.stderr
+    assert (
+        f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)"
+        in result.stderr
+    )
     assert "unexpected second POST" not in result.stderr
 
 
@@ -340,14 +325,7 @@ def test_post_dispatch_fails_after_three_post_failures() -> None:
       return 1
     }}
     """
-    result = _run_post_dispatch_block_with_mock_curl(
-        mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
-    )
+    result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 1
     assert "Failed to dispatch review_orchestrator after 3 attempts" in result.stderr
 
@@ -356,14 +334,16 @@ def test_post_dispatch_succeeds_on_first_attempt() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     success = PR_REVIEW_FIXTURES / "agents_dispatch_success.json"
     mock_curl = f"""
-    post_calls=0
+    list_calls_file="/tmp/pr_review_list_calls_${{BASHPID:-$$}}"
+    echo 0 > "${{list_calls_file}}"
     curl() {{
       if [[ "$*" == *"--data"* ]]; then
-        post_calls=$((post_calls + 1))
         cat "{success}"
         return 0
       fi
       if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        n=$(cat "${{list_calls_file}}")
+        echo $((n + 1)) > "${{list_calls_file}}"
         cat "{no_active}"
         return 0
       fi
@@ -373,14 +353,12 @@ def test_post_dispatch_succeeds_on_first_attempt() -> None:
     """
     result = _run_post_dispatch_block_with_mock_curl(
         mock_curl,
-        {
-            "CURSOR_API_KEY": "test-key",
-            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
-            "PR_NUMBER": "72",
-        },
+        SAMPLE_HARNESS_ENV,
+        trailer='\necho "LIST_CALLS=$(cat "${list_calls_file}")"\n',
     )
     assert result.returncode == 0
     assert "bc-harness-new-0072" in result.stdout
+    assert "LIST_CALLS=1" in result.stdout
     assert "Failed to dispatch review_orchestrator after 3 attempts" not in result.stderr
 
 

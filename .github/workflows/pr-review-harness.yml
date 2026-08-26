@@ -52,6 +52,7 @@ jobs:
           fi
           # BEGIN ACTIVE_DEDUPE
           # ACTIVE dedupe is PR-URL-scoped (prUrl query below); no branch-level list API.
+          dedupe_negative_scan_done=false
           agent_name="PR review harness #${PR_NUMBER}"
           legacy_agent_name="PR review harness"
           check_active_harness_agents() {
@@ -120,6 +121,7 @@ jobs:
               echo "Warning: agents list pagination cap (${max_pages} pages) reached with unscanned pages for ${PR_URL}; no ACTIVE harness agents found in scanned pages. Proceeding with dispatch." >&2
               echo "An ACTIVE harness on unscanned pages could cause duplicate orchestrators." >&2
             fi
+            dedupe_negative_scan_done=true
           }
           skip_if_active_harness_exists
           # END ACTIVE_DEDUPE
@@ -160,7 +162,9 @@ jobs:
           # BEGIN POST_DISPATCH
           dispatch_output=""
           for attempt in 1 2 3; do
-            skip_if_active_harness_exists
+            if [[ "${attempt}" -ne 1 ]] || [[ "${dedupe_negative_scan_done}" != true ]]; then
+              skip_if_active_harness_exists
+            fi
             if dispatch_output="$(curl --silent --show-error --fail-with-body \
               --connect-timeout 10 \
               --max-time 60 \
