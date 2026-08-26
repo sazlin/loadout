@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": "bc-cap-page5",
+      "name": "Other agent",
+      "status": "FINISHED"
+    }
+  ],
+  "nextCursor": "cap-page6"
+}

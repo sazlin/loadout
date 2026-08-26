@@ -2,25 +2,47 @@ name: PR review harness
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, reopened]
 
-# Dedupe uses two layers with different scope:
+# Architecture (dispatch vs dedupe)
+#
+# ## Dispatch (env-only POST)
+#
+# POST body uses env: {type: "cloud", name: "loadout-env"} and does not include
+# repos[].prUrl. The Cursor agents API rejects both env and repos[] in one request
+# (mutual exclusivity); do not add repos[] back without removing env.
+#
+# loadout-env binds the repository. PR identity (URL, number, head ref) is carried in
+# the prompt text and envVars (PR_HEAD_REF, PR_NUMBER), not in repos[].prUrl.
+# workOnCurrentBranch cannot API-bind env-only dispatch to a PR head ref; the prompt
+# requires gh pr checkout before any git operation.
+#
+# ## Dedupe (two layers, different scope)
 #
 # 1. GitHub Actions concurrency (branch-scoped): group pr-review-<repo>-<head.ref>
 #    serializes workflow runs on the same PR head branch. Overlapping runs wait;
 #    cancel-in-progress is false so an in-flight dispatch is not aborted.
 #
-# 2. Pre-dispatch ACTIVE guard (PR-URL-scoped only): GET .../agents?prUrl=${PR_URL}
-#    (paginated) skips POST when an ACTIVE agent named "PR review harness #<number>"
-#    or legacy unnumbered "PR review harness" already exists on this pull request URL.
-#    The Cursor agents list API filters by prUrl, not branch; this workflow cannot
-#    list agents or dedupe by head ref from Actions.
+# 2. Pre-dispatch ACTIVE guard (name-scoped, paginated): skips POST when an ACTIVE
+#    harness agent already exists for this pull request, or when the agents list
+#    pagination cap is hit with unscanned pages (fail closed; do not POST).
+#
+#    Because env-only agents are not indexed under ?prUrl=, dedupe cannot rely on a
+#    single prUrl-filtered list even though PR context lives in the prompt. It uses
+#    two list queries:
+#    - GET .../agents (no prUrl) for numbered "PR review harness <repo>#<number>" —
+#      unique per repository and PR and visible for env-only agents.
+#    - GET .../agents?prUrl=${PR_URL} for legacy unnumbered "PR review harness" from older
+#      repos-based dispatches still indexed by pull request URL.
+#
+#    The Cursor agents list API has no branch filter; this workflow cannot dedupe by
+#    head ref from Actions.
 #
 # Implication: concurrency prevents duplicate dispatches from repeated workflow runs
 # on one branch, but does not detect an orchestrator tied to another PR that shares
-# the same head ref. The ACTIVE guard prevents duplicate harness runs on this PR URL
-# only. Cross-PR / same-branch overlap is accepted until the API supports branch
-# listing or filtering.
+# the same head ref. The ACTIVE guard prevents duplicate harness runs for this PR
+# (numbered name) and legacy PR-URL-indexed runs. Cross-PR / same-branch overlap is
+# accepted until the API supports branch listing or filtering.
 #
 # After a successful POST, the job polls GET /v1/agents/{id}/runs/{runId} until the
 # run is terminal so the GitHub check stays pending for the full harness, not just
@@ -44,9 +66,11 @@ jobs:
       - name: Launch review_orchestrator on this pull request
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          CURSOR_CLOUD_ENV: loadout-env
+          GITHUB_REPOSITORY: ${{ github.repository }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-          REPO_URL: ${{ github.event.repository.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
           if [[ -z "${CURSOR_API_KEY}" ]]; then
@@ -55,20 +79,26 @@ jobs:
             exit 0
           fi
           # BEGIN ACTIVE_DEDUPE
-          # ACTIVE dedupe is PR-URL-scoped (prUrl query below); no branch-level list API.
+          # ACTIVE dedupe: unfiltered list for numbered harness (env-only agents lack prUrl
+          # index); prUrl-filtered list for legacy unnumbered harness from repos-based runs.
           dedupe_negative_scan_done=false
-          agent_name="PR review harness #${PR_NUMBER}"
+          agent_name="PR review harness ${GITHUB_REPOSITORY}#${PR_NUMBER}"
           legacy_agent_name="PR review harness"
-          check_active_harness_agents() {
-            active_count=0
-            legacy_active_count=0
-            agents_list_failed=false
-            page_cursor=""
-            page_num=0
-            max_pages=5
+          agents_list_failed=false
+          dedupe_pagination_warning=""
+          count_active_agents_named() {
+            local target_name="$1"
+            local pr_url_filter="${2:-}"
+            local count=0
+            local page_cursor=""
+            local page_num=0
+            local max_pages=5
             while [[ "${page_num}" -lt "${max_pages}" ]]; do
               page_num=$((page_num + 1))
-              agents_url="https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false"
+              agents_url="https://api.cursor.com/v1/agents?limit=20&includeArchived=false"
+              if [[ -n "${pr_url_filter}" ]]; then
+                agents_url="${agents_url}&prUrl=${pr_url_filter}"
+              fi
               if [[ -n "${page_cursor}" ]]; then
                 agents_url="${agents_url}&cursor=${page_cursor}"
               fi
@@ -89,27 +119,51 @@ jobs:
               done
               if [[ -z "${agents_json}" ]]; then
                 agents_list_failed=true
-                break
+                return 1
               fi
-              page_active="$(jq --arg name "${agent_name}" \
+              page_count="$(jq --arg name "${target_name}" \
                 '[.items[]? | select(.status == "ACTIVE" and .name == $name)] | length' \
                 <<<"${agents_json}")"
-              page_legacy="$(jq --arg legacy "${legacy_agent_name}" \
-                '[.items[]? | select(.status == "ACTIVE" and .name == $legacy)] | length' \
-                <<<"${agents_json}")"
-              active_count=$((active_count + page_active))
-              legacy_active_count=$((legacy_active_count + page_legacy))
-              if [[ "${page_active}" -gt 0 ]] || [[ "${page_legacy}" -gt 0 ]]; then
+              count=$((count + page_count))
+              if [[ "${page_count}" -gt 0 ]]; then
                 break
               fi
               page_cursor="$(jq -r '.nextCursor // empty' <<<"${agents_json}")"
               if [[ -z "${page_cursor}" ]]; then
                 break
               fi
+              if [[ "${page_num}" -ge "${max_pages}" ]]; then
+                local scope="unfiltered agents list"
+                if [[ -n "${pr_url_filter}" ]]; then
+                  scope="prUrl=${pr_url_filter}"
+                fi
+                local page_warning="Warning: agents list pagination cap (${max_pages} pages) reached with unscanned pages for ${scope}; no ACTIVE ${target_name} found in scanned pages."
+                if [[ -n "${dedupe_pagination_warning}" ]]; then
+                  dedupe_pagination_warning="${dedupe_pagination_warning} ${page_warning}"
+                else
+                  dedupe_pagination_warning="${page_warning}"
+                fi
+                break
+              fi
             done
+            count_active_agents_result="${count}"
+          }
+          check_active_harness_agents() {
+            active_count=0
+            legacy_active_count=0
+            agents_list_failed=false
+            if ! count_active_agents_named "${agent_name}"; then
+              return 1
+            fi
+            active_count="${count_active_agents_result}"
+            if ! count_active_agents_named "${legacy_agent_name}" "${PR_URL}"; then
+              return 1
+            fi
+            legacy_active_count="${count_active_agents_result}"
           }
           skip_if_active_harness_exists() {
-            check_active_harness_agents
+            dedupe_pagination_warning=""
+            check_active_harness_agents || true
             if [[ "${agents_list_failed}" == true ]]; then
               echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
               echo "Re-run this workflow after the agents API is reachable." >&2
@@ -117,54 +171,72 @@ jobs:
             fi
             total_active=$((active_count + legacy_active_count))
             if [[ "${total_active}" -gt 0 ]]; then
-              echo "Skipping review_orchestrator dispatch: ${active_count} numbered (${agent_name}) and ${legacy_active_count} legacy (${legacy_agent_name}) active agent(s) on ${PR_URL}." >&2
+              echo "Skipping review_orchestrator dispatch: ${active_count} numbered (${agent_name}) and ${legacy_active_count} legacy (${legacy_agent_name}) active agent(s) for ${PR_URL}." >&2
               echo "Wait for the orchestrator to finish before re-running this workflow." >&2
               exit 0
             fi
-            if [[ "${page_num}" -ge "${max_pages}" ]] && [[ -n "${page_cursor}" ]]; then
-              echo "Warning: agents list pagination cap (${max_pages} pages) reached with unscanned pages for ${PR_URL}; no ACTIVE harness agents found in scanned pages. Proceeding with dispatch." >&2
-              echo "An ACTIVE harness on unscanned pages could cause duplicate orchestrators." >&2
+            if [[ -n "${dedupe_pagination_warning}" ]]; then
+              echo "${dedupe_pagination_warning}" >&2
+              echo "Skipping review_orchestrator dispatch: agents list pagination cap reached with unscanned pages; dedupe state incomplete." >&2
+              echo "Wait for the agents API list to shrink or re-run after existing harness agents finish." >&2
+              exit 0
             fi
             dedupe_negative_scan_done=true
           }
           skip_if_active_harness_exists
           # END ACTIVE_DEDUPE
           # BEGIN PROMPT_BUILD
-          # Dual-heredoc invariant: both blocks use <<'EOF' (quoted delimiter) so backticks
-          # in the prompt stay literal; unquoted <<EOF would expand nested `...` substitutions.
-          prompt="$(cat <<'EOF'
+          # PR_HEAD_REF must never expand inside bash double quotes (branch names may contain
+          # $(), backticks, or quotes). Static prompt sections use quoted heredocs; branch binding
+          # and dispatch envVars read env.PR_HEAD_REF via jq only.
+          pr_review_prompt_file="${RUNNER_TEMP:-/tmp}/pr-review-prompt.$$"
+          jq -rn \
+            --arg intro "$(cat <<'EOF'
           You are review_orchestrator. Follow '.claude/agents/review_orchestrator.md' and the skills it names under '.claude/skills/'. Dispatch those agents; do not become them.
           EOF
-          )"
-          prompt="${prompt}
-
-          This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}). Run the full harness on this existing PR.
-
-          $(cat <<'EOF'
+          )" \
+            --arg constraints "$(cat <<'EOF'
           Cloud-run constraints:
           - Follow '.claude/agents/review_orchestrator.md' for the harness loop and role boundaries (panel, resolve, verify, decision).
           - Work on the current PR branch only. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
           - Do not rewrite git history. No force-push, no rebase, no amend of commits you did not just create.
           - issue_resolver may commit and push to this PR branch only.
           EOF
-          )"
+          )" \
+            --arg pr_url "${PR_URL}" \
+            --arg pr_number "${PR_NUMBER}" \
+            'env.PR_HEAD_REF as $pr_head_ref |
+              $intro + "\n\nThis GitHub pull request is the change set: " + $pr_url + " (#" + $pr_number + "). Run the full harness on this existing PR.\n\n" + $constraints + "\n\n" +
+              "Branch binding (required before any git operation):\n" +
+              "- PR head branch: " + $pr_head_ref + " (PR #" + $pr_number + ", " + $pr_url + ")\n" +
+              "- At session start run: git symbolic-ref --short HEAD\n" +
+              "- If the result is not '" + $pr_head_ref + "', run: gh pr checkout " + $pr_number + "\n" +
+              "- Re-run git symbolic-ref --short HEAD and confirm it prints '" + $pr_head_ref + "' before any git read, commit, or push.\n" +
+              "- Nested issue_resolver briefs must name this branch; pushes must target origin/" + $pr_head_ref + " only."' \
+            > "${pr_review_prompt_file}"
+          prompt="$(cat "${pr_review_prompt_file}")"
           # END PROMPT_BUILD
-          # Cursor API: named env (loadout-env) is mutually exclusive with repos[].prUrl.
-          # Explicit repos + prUrl bind workOnCurrentBranch to the PR head and register agents for prUrl dedupe.
+          # Dispatch body: see "Dispatch (env-only POST)" in the header comment block.
           body="$(jq -n \
-            --arg prompt "$prompt" \
             --arg name "${agent_name}" \
-            --arg pr "$PR_URL" \
-            --arg repo "$REPO_URL" \
-            '{
+            --arg cloud_env "${CURSOR_CLOUD_ENV}" \
+            --arg pr_number "${PR_NUMBER}" \
+            --rawfile prompt "${pr_review_prompt_file}" \
+            'env.PR_HEAD_REF as $pr_head_ref | {
               name: $name,
               prompt: {text: $prompt},
-              repos: [{url: $repo, prUrl: $pr}],
+              env: {type: "cloud", name: $cloud_env},
               workOnCurrentBranch: true,
-              autoCreatePR: false
+              autoCreatePR: false,
+              envVars: {
+                PR_HEAD_REF: $pr_head_ref,
+                PR_NUMBER: $pr_number
+              }
             }')"
+          rm -f "${pr_review_prompt_file}"
           # BEGIN POST_DISPATCH
           dispatch_output=""
+          last_dispatch_error=""
           for attempt in 1 2 3; do
             if [[ "${attempt}" -ne 1 ]] || [[ "${dedupe_negative_scan_done}" != true ]]; then
               skip_if_active_harness_exists
@@ -179,6 +251,7 @@ jobs:
               && jq -e '((.agent.id // .id) | type == "string" and length > 0)' <<<"${dispatch_output}" >/dev/null 2>&1; then
               break
             fi
+            last_dispatch_error="${dispatch_output}"
             dispatch_output=""
             if [[ "${attempt}" -lt 3 ]]; then
               sleep 2
@@ -186,6 +259,9 @@ jobs:
           done
           if [[ -z "${dispatch_output}" ]]; then
             echo "Failed to dispatch review_orchestrator after 3 attempts." >&2
+            if [[ -n "${last_dispatch_error}" ]]; then
+              echo "${last_dispatch_error}" >&2
+            fi
             exit 1
           fi
           echo "${dispatch_output}"

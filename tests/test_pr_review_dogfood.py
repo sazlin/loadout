@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -15,11 +16,17 @@ REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
 SAMPLE_PR_NUMBER = "72"
-SAMPLE_PR_URL = f"https://github.com/sazlin/loadout/pull/{SAMPLE_PR_NUMBER}"
+SAMPLE_GITHUB_REPOSITORY = "sazlin/loadout"
+SAMPLE_PR_URL = f"https://github.com/{SAMPLE_GITHUB_REPOSITORY}/pull/{SAMPLE_PR_NUMBER}"
+SAMPLE_PR_HEAD_REF = "feat/pr-review-harness-loadout-env"
+SAMPLE_CURSOR_CLOUD_ENV = "loadout-env"
+SAMPLE_NUMBERED_AGENT_NAME = f"PR review harness {SAMPLE_GITHUB_REPOSITORY}#{SAMPLE_PR_NUMBER}"
 SAMPLE_HARNESS_ENV = {
     "CURSOR_API_KEY": "test-key",
+    "GITHUB_REPOSITORY": SAMPLE_GITHUB_REPOSITORY,
     "PR_URL": SAMPLE_PR_URL,
     "PR_NUMBER": SAMPLE_PR_NUMBER,
+    "PR_HEAD_REF": SAMPLE_PR_HEAD_REF,
 }
 
 
@@ -28,18 +35,30 @@ def _load_pr_review_workflow() -> dict:
     return yaml.safe_load(workflow_path.read_text())
 
 
-def _dispatch_step_script() -> str:
+def _dispatch_step() -> dict:
     workflow = _load_pr_review_workflow()
     steps = workflow["jobs"]["dispatch-orchestrator"]["steps"]
     for step in steps:
         if step.get("name") == DISPATCH_STEP_NAME:
-            run = step.get("run")
-            if not isinstance(run, str):
-                msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no run script"
-                raise ValueError(msg)
-            return run
+            return step
     msg = f"Workflow step {DISPATCH_STEP_NAME!r} not found in dispatch-orchestrator job"
     raise ValueError(msg)
+
+
+def _dispatch_step_script() -> str:
+    run = _dispatch_step().get("run")
+    if not isinstance(run, str):
+        msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no run script"
+        raise ValueError(msg)
+    return run
+
+
+def _dispatch_step_env() -> dict:
+    env = _dispatch_step().get("env")
+    if not isinstance(env, dict):
+        msg = f"Workflow step {DISPATCH_STEP_NAME!r} has no env block"
+        raise ValueError(msg)
+    return env
 
 
 def _extract_workflow_script_block(marker: str) -> str:
@@ -61,14 +80,16 @@ def _bash_mock_curl_from_fixtures(
     default_fixture: Path,
     *,
     cursor_fixtures: dict[str, Path] | None = None,
+    pr_url_fixture: Path | None = None,
 ) -> str:
     """Return bash that mocks curl for GET agents list API calls."""
     cursor_fixtures = cursor_fixtures or {}
+    pr_url_fixture = pr_url_fixture or default_fixture
     lines = ["curl() {"]
     for cursor, fixture in cursor_fixtures.items():
         lines.extend(
             [
-                f'  if [[ "$*" == *"cursor={cursor}"* ]]; then',
+                f'  if [[ "$*" == *"api.cursor.com/v1/agents"* ]] && [[ "$*" == *"cursor={cursor}"* ]]; then',
                 f'    cat "{fixture}"',
                 "    return 0",
                 "  fi",
@@ -76,6 +97,10 @@ def _bash_mock_curl_from_fixtures(
         )
     lines.extend(
         [
+            '  if [[ "$*" == *"api.cursor.com/v1/agents"* ]] && [[ "$*" == *"prUrl="* ]]; then',
+            f'    cat "{pr_url_fixture}"',
+            "    return 0",
+            "  fi",
             '  if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then',
             f'    cat "{default_fixture}"',
             "    return 0",
@@ -88,11 +113,35 @@ def _bash_mock_curl_from_fixtures(
     return "\n".join(lines) + "\n"
 
 
-def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def _active_dedupe_script_without_list_guard() -> str:
+    """Pre-C-001 snippet: set -e aborts before the soft-skip path on list failure."""
     script = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    return script.replace(
+        "check_active_harness_agents || true",
+        "check_active_harness_agents",
+    )
+
+
+def _pre_repo_qualification_active_dedupe_script() -> str:
+    """Pre-C-002 snippet: unfiltered list with PR-number-only harness name."""
+    script = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    return script.replace(
+        'agent_name="PR review harness ${GITHUB_REPOSITORY}#${PR_NUMBER}"',
+        'agent_name="PR review harness #${PR_NUMBER}"',
+    )
+
+
+def _run_dedupe_block_with_mock_curl(
+    mock_curl_body: str,
+    env: dict[str, str],
+    *,
+    dedupe_script: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    script = dedupe_script if dedupe_script is not None else _extract_workflow_script_block("ACTIVE_DEDUPE")
     preamble = (
         "set -euo pipefail\n"
         f"{mock_curl_body}\n"
+        "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?}\n"
         "PR_URL=${PR_URL:?}\n"
         "PR_NUMBER=${PR_NUMBER:?}\n"
         "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
@@ -118,10 +167,11 @@ def _run_post_dispatch_block_with_mock_curl(
     preamble = (
         "set -euo pipefail\n"
         f"{mock_curl_body}\n"
+        "GITHUB_REPOSITORY=${GITHUB_REPOSITORY:?}\n"
         "PR_URL=${PR_URL:?}\n"
         "PR_NUMBER=${PR_NUMBER:?}\n"
         "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
-        f'body=\'{{"name":"PR review harness #{SAMPLE_PR_NUMBER}"}}\'\n'
+        f'body=\'{{"name":"{SAMPLE_NUMBERED_AGENT_NAME}"}}\'\n'
     )
     result = subprocess.run(
         ["bash", "-c", preamble + dedupe_block + "\n" + post_block + trailer],
@@ -131,6 +181,88 @@ def _run_post_dispatch_block_with_mock_curl(
         env={**os.environ, **env},
     )
     return result
+
+
+def _bash_mock_curl_for_post_dispatch(
+    *,
+    list_fixture: Path,
+    post_fixture: Path | None = None,
+    post_exit_code: int | None = None,
+    post_fail_once: bool = False,
+    active_after_post_failure: Path | None = None,
+    track_list_calls: bool = False,
+) -> str:
+    """Return bash that mocks curl for POST-dispatch workflow tests."""
+    lines: list[str] = []
+    if post_fail_once:
+        lines.extend(
+            [
+                'post_attempt_file="/tmp/post_attempt_${BASHPID:-$$}"',
+                'rm -f "${post_attempt_file}"',
+            ]
+        )
+    if track_list_calls:
+        lines.extend(
+            [
+                'list_calls_file="/tmp/pr_review_list_calls_${BASHPID:-$$}"',
+                'echo 0 > "${list_calls_file}"',
+            ]
+        )
+    lines.append("curl() {")
+    lines.append('  if [[ "$*" == *"--data"* ]]; then')
+    if post_fixture is not None:
+        lines.extend(
+            [
+                f'    cat "{post_fixture}"',
+                "    return 0",
+            ]
+        )
+    elif post_fail_once:
+        lines.extend(
+            [
+                '    if [[ ! -f "${post_attempt_file}" ]]; then',
+                '      touch "${post_attempt_file}"',
+                "      return 28",
+                "    fi",
+                '    echo "unexpected second POST: $*" >&2',
+                "    return 1",
+            ]
+        )
+    elif post_exit_code is not None:
+        lines.append(f"    return {post_exit_code}")
+    lines.append("  fi")
+    lines.append('  if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then')
+    if post_fail_once and active_after_post_failure is not None:
+        lines.extend(
+            [
+                '    if [[ -f "${post_attempt_file}" ]]; then',
+                '      if [[ "$*" == *"prUrl="* ]]; then',
+                f'        cat "{list_fixture}"',
+                "        return 0",
+                "      fi",
+                f'      cat "{active_after_post_failure}"',
+                "      return 0",
+                "    fi",
+            ]
+        )
+    if track_list_calls:
+        lines.extend(
+            [
+                '    n=$(cat "${list_calls_file}")',
+                '    echo $((n + 1)) > "${list_calls_file}"',
+            ]
+        )
+    lines.extend(
+        [
+            f'    cat "{list_fixture}"',
+            "    return 0",
+            "  fi",
+            '  echo "unexpected curl: $*" >&2',
+            "  return 1",
+            "}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def _bash_mock_curl_for_wait(*, run_fixture: Path, agent_fixture: Path | None = None) -> str:
@@ -232,10 +364,10 @@ def test_dispatch_step_script_selects_named_step_not_first_run_step(
     assert "echo dummy" not in block
 
 
-def test_pr_review_harness_workflow_triggers_on_pr_opened() -> None:
+def test_pr_review_harness_workflow_triggers_on_pr_opened_and_reopened() -> None:
     text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
     assert "pull_request" in text
-    assert "types: [opened]" in text
+    assert "types: [opened, reopened]" in text
 
 
 def test_pr_review_harness_workflow_concurrency() -> None:
@@ -254,13 +386,23 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     workflow = _load_pr_review_workflow()
     script = _dispatch_step_script()
     job = workflow["jobs"]["dispatch-orchestrator"]
+    step_env = _dispatch_step_env()
     assert "review_orchestrator" in text
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
     assert "CURSOR_API_KEY" in text
-    assert "REPO_URL:" in text
-    assert "repos: [{url: $repo, prUrl: $pr}]" in text
-    assert 'env: {type: "cloud", name: "loadout-env"}' not in text
+    assert "REPO_URL:" not in text
+    assert "repos: [{url: $repo, prUrl: $pr}]" not in text
+    assert step_env["CURSOR_CLOUD_ENV"] == SAMPLE_CURSOR_CLOUD_ENV
+    assert step_env["GITHUB_REPOSITORY"] == "${{ github.repository }}"
+    assert "--arg cloud_env" in script
+    assert "env: {type: \"cloud\", name: $cloud_env}" in text
+    assert step_env["PR_HEAD_REF"] == "${{ github.event.pull_request.head.ref }}"
+    assert "github.event.pull_request.head.ref" in text
+    assert "gh pr checkout" in text
+    assert "PR_HEAD_REF:" in text
+    assert "envVars:" in text
+    assert "env.PR_HEAD_REF as $pr_head_ref" in text
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
@@ -283,92 +425,204 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     assert "Cloud-run constraints:" in prompt
     assert "harness loop and role boundaries" in prompt
     assert f"{SAMPLE_PR_URL} (#{SAMPLE_PR_NUMBER})" in prompt
+    assert "Branch binding (required before any git operation):" in prompt
+    assert f"PR head branch: {SAMPLE_PR_HEAD_REF}" in prompt
+    assert f"gh pr checkout {SAMPLE_PR_NUMBER}" in prompt
+    assert f"origin/{SAMPLE_PR_HEAD_REF}" in prompt
 
 
-def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
-    fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
-    mock_curl = _bash_mock_curl_from_fixtures(fixture)
+def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path: Path) -> None:
+    marker_file = tmp_path / "pwned"
+    malicious_ref = f"feat/$(echo PWNED > {marker_file})`id`\"branch\""
+    env = {**SAMPLE_HARNESS_ENV, "PR_HEAD_REF": malicious_ref}
+    prompt_script = (
+        _extract_workflow_script_block("PROMPT_BUILD")
+        + f"""
+body="$(jq -n \\
+  --arg name "{SAMPLE_NUMBERED_AGENT_NAME}" \\
+  --arg cloud_env "{SAMPLE_CURSOR_CLOUD_ENV}" \\
+  --arg pr_number "{SAMPLE_PR_NUMBER}" \\
+  --rawfile prompt "${{pr_review_prompt_file}}" \\
+  'env.PR_HEAD_REF as $pr_head_ref | {{
+    name: $name,
+    prompt: {{text: $prompt}},
+    env: {{type: "cloud", name: $cloud_env}},
+    workOnCurrentBranch: true,
+    autoCreatePR: false,
+    envVars: {{
+      PR_HEAD_REF: $pr_head_ref,
+      PR_NUMBER: $pr_number
+    }}
+  }}')"
+printf '%s\n---BODY---\n' "$prompt"
+printf '%s' "$body"
+"""
+    )
+    result = subprocess.run(
+        ["bash", "-c", prompt_script],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, **env},
+    )
+    assert result.returncode == 0, result.stderr
+    assert not marker_file.exists()
+    prompt_part, body_part = result.stdout.split("---BODY---\n", 1)
+    assert malicious_ref in prompt_part
+    body = json.loads(body_part)
+    assert body["envVars"]["PR_HEAD_REF"] == malicious_ref
+
+
+def test_dedupe_skips_dispatch_when_agents_list_unavailable() -> None:
+    mock_curl = """
+    curl() {
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        return 1
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }
+    """
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"0 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 1 legacy (PR review harness)" in result.stderr
+    assert f"could not list agents for {SAMPLE_PR_URL}" in result.stderr
+    assert "Re-run this workflow after the agents API is reachable." in result.stderr
+
+    pre_fix = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        SAMPLE_HARNESS_ENV,
+        dedupe_script=_active_dedupe_script_without_list_guard(),
+    )
+    assert pre_fix.returncode != 0
+    assert "Skipping review_orchestrator dispatch" not in pre_fix.stderr
+    assert "DISPATCH_WOULD_RUN" not in pre_fix.stdout
+
+
+def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
+    fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
+    no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(no_active, pr_url_fixture=fixture)
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"0 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 1 legacy (PR review harness)" in result.stderr
+
+
+def test_dedupe_finds_active_agent_created_with_env_only_dispatch_body() -> None:
+    """Env-only POST agents are not indexed by prUrl; unfiltered list must find them."""
+    no_prurl_match = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    env_only_active = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(env_only_active, pr_url_fixture=no_prurl_match)
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
+
+
+def test_dedupe_ignores_active_harness_for_same_pr_number_different_repo() -> None:
+    unqualified_cross_repo = PR_REVIEW_FIXTURES / "agents_same_pr_number_unqualified.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(unqualified_cross_repo, pr_url_fixture=no_legacy)
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" in result.stdout
+    assert "Skipping review_orchestrator dispatch" not in result.stderr
+    assert f"PR review harness #{SAMPLE_PR_NUMBER}" in unqualified_cross_repo.read_text()
+    assert SAMPLE_NUMBERED_AGENT_NAME not in unqualified_cross_repo.read_text()
+
+    pre_fix = _run_dedupe_block_with_mock_curl(
+        mock_curl,
+        SAMPLE_HARNESS_ENV,
+        dedupe_script=_pre_repo_qualification_active_dedupe_script(),
+    )
+    assert pre_fix.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in pre_fix.stdout
+    assert "Skipping review_orchestrator dispatch" in pre_fix.stderr
+    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER})" in pre_fix.stderr
 
 
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     page1 = PR_REVIEW_FIXTURES / "agents_page1.json"
     page2 = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     mock_curl = _bash_mock_curl_from_fixtures(
         page1,
         cursor_fixtures={"page2-cursor-token": page2},
+        pr_url_fixture=no_legacy,
     )
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
 
 
 def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
-    mock_curl = _bash_mock_curl_from_fixtures(fixture)
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(fixture, pr_url_fixture=no_legacy)
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
-    assert "DISPATCH_WOULD_RUN" in result.stdout
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
-    assert "Proceeding with dispatch" in result.stderr
-    assert "Skipping review_orchestrator dispatch" not in result.stderr
+    assert "dedupe state incomplete" in result.stderr
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert "Proceeding with dispatch" not in result.stderr
+
+
+def test_dedupe_skips_when_active_numbered_harness_beyond_pagination_cap() -> None:
+    page1 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page1.json"
+    page2 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page2.json"
+    page3 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page3.json"
+    page4 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page4.json"
+    page5 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page5.json"
+    page6_active = PR_REVIEW_FIXTURES / "agents_pagination_cap_page6_active.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(
+        page1,
+        cursor_fixtures={
+            "cap-page2": page2,
+            "cap-page3": page3,
+            "cap-page4": page4,
+            "cap-page5": page5,
+            "cap-page6": page6_active,
+        },
+        pr_url_fixture=no_legacy,
+    )
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
+    assert "dedupe state incomplete" in result.stderr
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME})" not in result.stderr
 
 
 def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     active = PR_REVIEW_FIXTURES / "agents_page2_active.json"
-    mock_curl = f"""
-    post_attempt_file="/tmp/post_attempt_${{BASHPID:-$$}}"
-    rm -f "${{post_attempt_file}}"
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        if [[ ! -f "${{post_attempt_file}}" ]]; then
-          touch "${{post_attempt_file}}"
-          return 28
-        fi
-        echo "unexpected second POST: $*" >&2
-        return 1
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        if [[ -f "${{post_attempt_file}}" ]]; then
-          cat "{active}"
-          return 0
-        fi
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fail_once=True,
+        active_after_post_failure=active,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME}) and 0 legacy (PR review harness)" in result.stderr
     assert "unexpected second POST" not in result.stderr
 
 
 def test_post_dispatch_fails_after_three_post_failures() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        return 28
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_exit_code=28,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 1
     assert "Failed to dispatch review_orchestrator after 3 attempts" in result.stderr
@@ -377,24 +631,11 @@ def test_post_dispatch_fails_after_three_post_failures() -> None:
 def test_post_dispatch_succeeds_on_first_attempt() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     success = PR_REVIEW_FIXTURES / "agents_dispatch_success.json"
-    mock_curl = f"""
-    list_calls_file="/tmp/pr_review_list_calls_${{BASHPID:-$$}}"
-    echo 0 > "${{list_calls_file}}"
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        cat "{success}"
-        return 0
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        n=$(cat "${{list_calls_file}}")
-        echo $((n + 1)) > "${{list_calls_file}}"
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fixture=success,
+        track_list_calls=True,
+    )
     result = _run_post_dispatch_block_with_mock_curl(
         mock_curl,
         SAMPLE_HARNESS_ENV,
@@ -402,27 +643,17 @@ def test_post_dispatch_succeeds_on_first_attempt() -> None:
     )
     assert result.returncode == 0
     assert "bc-harness-new-0072" in result.stdout
-    assert "LIST_CALLS=1" in result.stdout
+    assert "LIST_CALLS=2" in result.stdout
     assert "Failed to dispatch review_orchestrator after 3 attempts" not in result.stderr
 
 
 def test_post_dispatch_accepts_v1_agent_run_payload() -> None:
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     success = PR_REVIEW_FIXTURES / "agents_v1_dispatch.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"--data"* ]]; then
-        cat "{success}"
-        return 0
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{no_active}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_for_post_dispatch(
+        list_fixture=no_active,
+        post_fixture=success,
+    )
     result = _run_post_dispatch_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "bc-harness-new-0072" in result.stdout
