@@ -32,8 +32,9 @@ permissions:
 jobs:
   dispatch-orchestrator:
     runs-on: ubuntu-latest
-    # Worst-case curl budgets: dedupe up to 5 pages × 30s + POST 3×60s + retry sleeps ≈ 334s; 8m leaves margin.
-    timeout-minutes: 8
+    # Worst-case curl budgets: 4 dedupe passes (initial + 3 POST retries) × 5 pages × 30s
+    # + POST 3×60s + retry sleeps ≈ 790s; 15m leaves margin.
+    timeout-minutes: 15
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Launch review_orchestrator on this pull request

@@ -199,7 +199,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "REPO_URL:" in text
     assert "repos: [{url: $repo, prUrl: $pr}]" in text
     assert 'env: {type: "cloud", name: "loadout-env"}' not in text
-    assert job["timeout-minutes"] == 8
+    assert job["timeout-minutes"] == 15
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
     assert "<<'EOF'" in script
@@ -207,14 +207,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
 
 
 def test_pr_review_harness_workflow_prompt_subprocess() -> None:
-    script = _dispatch_step_script()
-    prompt_match = re.search(
-        r"# BEGIN PROMPT_BUILD\s*\n(.*?)# END PROMPT_BUILD",
-        script,
-        re.DOTALL,
-    )
-    assert prompt_match is not None
-    prompt_script = prompt_match.group(1) + "printf '%s' \"$prompt\""
+    prompt_script = _extract_workflow_script_block("PROMPT_BUILD") + "printf '%s' \"$prompt\""
     result = subprocess.run(
         ["bash", "-c", prompt_script],
         capture_output=True,
