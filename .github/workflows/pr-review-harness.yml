@@ -161,7 +161,7 @@ jobs:
           }
           skip_if_active_harness_exists() {
             dedupe_pagination_warning=""
-            check_active_harness_agents
+            check_active_harness_agents || true
             if [[ "${agents_list_failed}" == true ]]; then
               echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
               echo "Re-run this workflow after the agents API is reachable." >&2

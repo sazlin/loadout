@@ -350,6 +350,24 @@ printf '%s' "$body"
     assert body["envVars"]["PR_HEAD_REF"] == malicious_ref
 
 
+def test_dedupe_skips_dispatch_when_agents_list_unavailable() -> None:
+    mock_curl = """
+    curl() {
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        return 1
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }
+    """
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"could not list agents for {SAMPLE_PR_URL}" in result.stderr
+    assert "Re-run this workflow after the agents API is reachable." in result.stderr
+
+
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
     no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
