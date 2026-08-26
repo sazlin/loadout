@@ -51,7 +51,13 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "<<'EOF'" in script
     assert "cat <<EOF" not in script.replace("<<'EOF'", "")
 
-    prompt_script = script.split("body=\"$(jq")[0] + "printf '%s' \"$prompt\""
+    prompt_match = re.search(
+        r"# BEGIN PROMPT_BUILD\s*\n(.*?)# END PROMPT_BUILD",
+        script,
+        re.DOTALL,
+    )
+    assert prompt_match is not None
+    prompt_script = prompt_match.group(1) + "printf '%s' \"$prompt\""
     result = subprocess.run(
         ["bash", "-c", prompt_script],
         capture_output=True,

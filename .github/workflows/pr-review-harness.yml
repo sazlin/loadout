@@ -34,6 +34,7 @@ jobs:
             echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
             exit 0
           fi
+          # BEGIN PROMPT_BUILD
           prompt="$(cat <<'EOF'
           You are review_orchestrator. Follow `.claude/agents/review_orchestrator.md` and the skills it names under `.claude/skills/`. Dispatch those agents; do not become them.
           EOF
@@ -50,6 +51,7 @@ jobs:
           - issue_resolver may commit and push to this PR branch only.
           EOF
           )"
+          # END PROMPT_BUILD
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg pr "$PR_URL" \
