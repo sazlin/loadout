@@ -109,16 +109,15 @@ jobs:
               echo "Re-run this workflow after the agents API is reachable." >&2
               exit 0
             fi
-            if [[ "${page_num}" -ge "${max_pages}" ]] && [[ -n "${page_cursor}" ]]; then
-              echo "Skipping review_orchestrator dispatch: agents list pagination cap (${max_pages} pages) reached without scanning all agents for ${PR_URL}; dedupe state unknown." >&2
-              echo "Re-run this workflow after other agents finish or the list shrinks." >&2
-              exit 0
-            fi
             total_active=$((active_count + legacy_active_count))
             if [[ "${total_active}" -gt 0 ]]; then
               echo "Skipping review_orchestrator dispatch: ${active_count} numbered (${agent_name}) and ${legacy_active_count} legacy (${legacy_agent_name}) active agent(s) on ${PR_URL}." >&2
               echo "Wait for the orchestrator to finish before re-running this workflow." >&2
               exit 0
+            fi
+            if [[ "${page_num}" -ge "${max_pages}" ]] && [[ -n "${page_cursor}" ]]; then
+              echo "Warning: agents list pagination cap (${max_pages} pages) reached with unscanned pages for ${PR_URL}; no ACTIVE harness agents found in scanned pages. Proceeding with dispatch." >&2
+              echo "An ACTIVE harness on unscanned pages could cause duplicate orchestrators." >&2
             fi
           }
           skip_if_active_harness_exists

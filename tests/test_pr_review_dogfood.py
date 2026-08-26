@@ -273,7 +273,7 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     assert "1 numbered (PR review harness #72) and 0 legacy (PR review harness)" in result.stderr
 
 
-def test_dedupe_skips_when_pagination_cap_hit_without_definitive_match() -> None:
+def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
     mock_curl = _bash_mock_curl_from_fixtures(fixture)
     result = _run_dedupe_block_with_mock_curl(
@@ -285,9 +285,10 @@ def test_dedupe_skips_when_pagination_cap_hit_without_definitive_match() -> None
         },
     )
     assert result.returncode == 0
-    assert "DISPATCH_WOULD_RUN" not in result.stdout
-    assert "pagination cap (5 pages) reached" in result.stderr
-    assert "dedupe state unknown" in result.stderr
+    assert "DISPATCH_WOULD_RUN" in result.stdout
+    assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
+    assert "Proceeding with dispatch" in result.stderr
+    assert "Skipping review_orchestrator dispatch" not in result.stderr
 
 
 def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure() -> None:
