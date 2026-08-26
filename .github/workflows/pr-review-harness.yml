@@ -4,6 +4,26 @@ on:
   pull_request:
     types: [opened]
 
+# Dedupe uses two layers with different scope:
+#
+# 1. GitHub Actions concurrency (branch-scoped): group pr-review-<repo>-<head.ref>
+#    serializes workflow runs on the same PR head branch. Overlapping runs wait;
+#    cancel-in-progress is false so an in-flight dispatch is not aborted.
+#
+# 2. Pre-dispatch ACTIVE guard (PR-URL-scoped only): GET .../agents?prUrl=${PR_URL}
+#    skips POST when an ACTIVE agent named "PR review harness" already exists on
+#    this pull request URL. The Cursor agents list API filters by prUrl, not branch;
+#    this workflow cannot list agents or dedupe by head ref from Actions.
+#
+# Implication: concurrency prevents duplicate dispatches from repeated workflow runs
+# on one branch, but does not detect an orchestrator tied to another PR that shares
+# the same head ref. The ACTIVE guard prevents duplicate harness runs on this PR URL
+# only. Cross-PR / same-branch overlap is accepted until the API supports branch
+# listing or filtering.
+concurrency:
+  group: pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   pull-requests: read
@@ -11,6 +31,7 @@ permissions:
 jobs:
   dispatch-orchestrator:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Launch review_orchestrator on this pull request
@@ -26,21 +47,53 @@ jobs:
             echo "Add a Cursor API key at Settings → Secrets and variables → Actions to enable auto-review." >&2
             exit 0
           fi
-          prompt="$(cat <<EOF
-          You are review_orchestrator. Follow .claude/agents/review_orchestrator.md and the pr_review_harness skills.
-
-          This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}).
-
-          Run the full PR-review harness on this existing PR:
-          1. Dispatch the four dimensional reviewers in parallel (dispatch-panel-review).
-          2. Dedupe into TASKS_TO_RESOLVE.md and resolve tasks with issue_resolver (commit and push to this PR branch only).
-          3. Repeat panel review until no significant issues remain, max 3 panel loops.
-          4. Dispatch verifiers sequentially from VERIFIERS.md (missing file = empty list), max 3 verify loops.
-          5. Dispatch risk_classifier. It classifies the diff. If low risk and required checks are green, squash-merge with gh pr merge --squash. Never pass --admin.
-
-          Work on the current PR branch (do not open a second PR). Do not rewrite git history.
+          agents_json=""
+          for attempt in 1 2 3; do
+            if agents_json="$(curl --silent --show-error --fail-with-body \
+              --connect-timeout 10 \
+              --max-time 30 \
+              --url "https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false" \
+              -u "${CURSOR_API_KEY}:" 2>/dev/null)" \
+              && jq -e '.items | type == "array"' <<<"${agents_json}" >/dev/null 2>&1; then
+              break
+            fi
+            agents_json=""
+            if [[ "${attempt}" -lt 3 ]]; then
+              sleep 2
+            fi
+          done
+          if [[ -z "${agents_json}" ]]; then
+            echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
+            echo "Re-run this workflow after the agents API is reachable." >&2
+            exit 0
+          fi
+          # ACTIVE dedupe is PR-URL-scoped (prUrl query above); no branch-level list API.
+          active_count="$(jq '[.items[]? | select(.status == "ACTIVE" and .name == "PR review harness")] | length' <<<"${agents_json}")"
+          if [[ "${active_count}" -gt 0 ]]; then
+            echo "Skipping review_orchestrator dispatch: ${active_count} active PR review harness agent(s) already on ${PR_URL}." >&2
+            echo "Wait for the orchestrator to finish before re-running this workflow." >&2
+            exit 0
+          fi
+          # BEGIN PROMPT_BUILD
+          # Dual-heredoc invariant: both blocks use <<'EOF' (quoted delimiter) so backticks
+          # in the prompt stay literal; unquoted <<EOF would expand nested `...` substitutions.
+          prompt="$(cat <<'EOF'
+          You are review_orchestrator. Follow `.claude/agents/review_orchestrator.md` and the skills it names under `.claude/skills/`. Dispatch those agents; do not become them.
           EOF
           )"
+          prompt="${prompt}
+
+          This GitHub pull request is the change set: ${PR_URL} (#${PR_NUMBER}). Run the full harness on this existing PR.
+
+          $(cat <<'EOF'
+          Cloud-run constraints:
+          - Follow `.claude/agents/review_orchestrator.md` for the harness loop and role boundaries (panel, resolve, verify, decision).
+          - Work on the current PR branch only. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
+          - Do not rewrite git history. No force-push, no rebase, no amend of commits you did not just create.
+          - issue_resolver may commit and push to this PR branch only.
+          EOF
+          )"
+          # END PROMPT_BUILD
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg pr "$PR_URL" \
@@ -53,6 +106,8 @@ jobs:
               autoCreatePR: false
             }')"
           curl --fail-with-body --request POST \
+            --connect-timeout 10 \
+            --max-time 60 \
             --url https://api.cursor.com/v1/agents \
             -u "${CURSOR_API_KEY}:" \
             --header 'Content-Type: application/json' \
