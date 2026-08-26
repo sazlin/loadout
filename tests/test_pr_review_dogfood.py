@@ -260,7 +260,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "CURSOR_API_KEY" in text
     assert "REPO_URL:" in text
     assert "repos: [{url: $repo, prUrl: $pr}]" in text
-    assert 'env: {type: "cloud", name: "loadout-env"}' not in text
+    assert 'env: {type: "cloud", name: "loadout-env"}' in text
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text

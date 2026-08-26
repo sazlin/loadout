@@ -149,8 +149,8 @@ jobs:
           EOF
           )"
           # END PROMPT_BUILD
-          # Cursor API: named env (loadout-env) is mutually exclusive with repos[].prUrl.
-          # Explicit repos + prUrl bind workOnCurrentBranch to the PR head and register agents for prUrl dedupe.
+          # Named cloud env selects the loadout-env snapshot. repos[].prUrl binds
+          # workOnCurrentBranch to the PR head and registers agents for prUrl dedupe.
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
@@ -159,6 +159,7 @@ jobs:
             '{
               name: $name,
               prompt: {text: $prompt},
+              env: {type: "cloud", name: "loadout-env"},
               repos: [{url: $repo, prUrl: $pr}],
               workOnCurrentBranch: true,
               autoCreatePR: false
