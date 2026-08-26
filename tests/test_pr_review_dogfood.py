@@ -61,14 +61,16 @@ def _bash_mock_curl_from_fixtures(
     default_fixture: Path,
     *,
     cursor_fixtures: dict[str, Path] | None = None,
+    pr_url_fixture: Path | None = None,
 ) -> str:
     """Return bash that mocks curl for GET agents list API calls."""
     cursor_fixtures = cursor_fixtures or {}
+    pr_url_fixture = pr_url_fixture or default_fixture
     lines = ["curl() {"]
     for cursor, fixture in cursor_fixtures.items():
         lines.extend(
             [
-                f'  if [[ "$*" == *"cursor={cursor}"* ]]; then',
+                f'  if [[ "$*" == *"api.cursor.com/v1/agents"* ]] && [[ "$*" == *"cursor={cursor}"* ]]; then',
                 f'    cat "{fixture}"',
                 "    return 0",
                 "  fi",
@@ -76,6 +78,10 @@ def _bash_mock_curl_from_fixtures(
         )
     lines.extend(
         [
+            '  if [[ "$*" == *"api.cursor.com/v1/agents"* ]] && [[ "$*" == *"prUrl="* ]]; then',
+            f'    cat "{pr_url_fixture}"',
+            "    return 0",
+            "  fi",
             '  if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then',
             f'    cat "{default_fixture}"',
             "    return 0",
@@ -287,7 +293,8 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
-    mock_curl = _bash_mock_curl_from_fixtures(fixture)
+    no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(no_active, pr_url_fixture=fixture)
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
@@ -295,12 +302,26 @@ def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     assert f"0 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 1 legacy (PR review harness)" in result.stderr
 
 
+def test_dedupe_finds_active_agent_created_with_env_only_dispatch_body() -> None:
+    """Env-only POST agents are not indexed by prUrl; unfiltered list must find them."""
+    no_prurl_match = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    env_only_active = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(env_only_active, pr_url_fixture=no_prurl_match)
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"1 numbered (PR review harness #{SAMPLE_PR_NUMBER}) and 0 legacy (PR review harness)" in result.stderr
+
+
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     page1 = PR_REVIEW_FIXTURES / "agents_page1.json"
     page2 = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
     mock_curl = _bash_mock_curl_from_fixtures(
         page1,
         cursor_fixtures={"page2-cursor-token": page2},
+        pr_url_fixture=no_legacy,
     )
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
@@ -311,7 +332,7 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
 
 def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
-    mock_curl = _bash_mock_curl_from_fixtures(fixture)
+    mock_curl = _bash_mock_curl_from_fixtures(fixture, pr_url_fixture=fixture)
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" in result.stdout
@@ -337,6 +358,10 @@ def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure()
       fi
       if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
         if [[ -f "${{post_attempt_file}}" ]]; then
+          if [[ "$*" == *"prUrl="* ]]; then
+            cat "{no_active}"
+            return 0
+          fi
           cat "{active}"
           return 0
         fi
@@ -402,7 +427,7 @@ def test_post_dispatch_succeeds_on_first_attempt() -> None:
     )
     assert result.returncode == 0
     assert "bc-harness-new-0072" in result.stdout
-    assert "LIST_CALLS=1" in result.stdout
+    assert "LIST_CALLS=2" in result.stdout
     assert "Failed to dispatch review_orchestrator after 3 attempts" not in result.stderr
 
 
