@@ -32,7 +32,8 @@ permissions:
 jobs:
   dispatch-orchestrator:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Worst-case curl budgets: dedupe up to 5 pages × 30s + POST 3×60s + retry sleeps ≈ 334s; 8m leaves margin.
+    timeout-minutes: 8
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Launch review_orchestrator on this pull request
@@ -115,10 +116,7 @@ jobs:
             fi
             total_active=$((active_count + legacy_active_count))
             if [[ "${total_active}" -gt 0 ]]; then
-              if [[ "${legacy_active_count}" -gt 0 ]]; then
-                echo "Matched ${legacy_active_count} legacy ${legacy_agent_name} agent(s) during rollout migration." >&2
-              fi
-              echo "Skipping review_orchestrator dispatch: ${total_active} active ${agent_name} agent(s) already on ${PR_URL}." >&2
+              echo "Skipping review_orchestrator dispatch: ${active_count} numbered (${agent_name}) and ${legacy_active_count} legacy (${legacy_agent_name}) active agent(s) on ${PR_URL}." >&2
               echo "Wait for the orchestrator to finish before re-running this workflow." >&2
               exit 0
             fi

@@ -50,6 +50,37 @@ def _extract_workflow_script_block(marker: str) -> str:
     return script[start:stop]
 
 
+def _bash_mock_curl_from_fixtures(
+    default_fixture: Path,
+    *,
+    cursor_fixtures: dict[str, Path] | None = None,
+) -> str:
+    """Return bash that mocks curl for GET agents list API calls."""
+    cursor_fixtures = cursor_fixtures or {}
+    lines = ["curl() {"]
+    for cursor, fixture in cursor_fixtures.items():
+        lines.extend(
+            [
+                f'  if [[ "$*" == *"cursor={cursor}"* ]]; then',
+                f'    cat "{fixture}"',
+                "    return 0",
+                "  fi",
+            ]
+        )
+    lines.extend(
+        [
+            '  if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then',
+            f'    cat "{default_fixture}"',
+            "    return 0",
+            "  fi",
+            '  echo "unexpected curl: $*" >&2',
+            "  return 1",
+            "}",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
 def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     script = _extract_workflow_script_block("ACTIVE_DEDUPE")
     preamble = (
@@ -168,7 +199,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "REPO_URL:" in text
     assert "repos: [{url: $repo, prUrl: $pr}]" in text
     assert 'env: {type: "cloud", name: "loadout-env"}' not in text
-    assert job["timeout-minutes"] == 5
+    assert job["timeout-minutes"] == 8
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
     assert "<<'EOF'" in script
@@ -206,16 +237,7 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_legacy_active.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{fixture}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_from_fixtures(fixture)
     result = _run_dedupe_block_with_mock_curl(
         mock_curl,
         {
@@ -227,27 +249,16 @@ def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "legacy PR review harness agent(s) during rollout migration" in result.stderr
-    assert "active PR review harness #72 agent(s) already on" in result.stderr
+    assert "0 numbered (PR review harness #72) and 1 legacy (PR review harness)" in result.stderr
 
 
 def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     page1 = PR_REVIEW_FIXTURES / "agents_page1.json"
     page2 = PR_REVIEW_FIXTURES / "agents_page2_active.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"cursor=page2-cursor-token"* ]]; then
-        cat "{page2}"
-        return 0
-      fi
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{page1}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_from_fixtures(
+        page1,
+        cursor_fixtures={"page2-cursor-token": page2},
+    )
     result = _run_dedupe_block_with_mock_curl(
         mock_curl,
         {
@@ -259,21 +270,12 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
     assert result.returncode == 0
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "active PR review harness #72 agent(s) already on" in result.stderr
+    assert "1 numbered (PR review harness #72) and 0 legacy (PR review harness)" in result.stderr
 
 
 def test_dedupe_skips_when_pagination_cap_hit_without_definitive_match() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
-    mock_curl = f"""
-    curl() {{
-      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
-        cat "{fixture}"
-        return 0
-      fi
-      echo "unexpected curl: $*" >&2
-      return 1
-    }}
-    """
+    mock_curl = _bash_mock_curl_from_fixtures(fixture)
     result = _run_dedupe_block_with_mock_curl(
         mock_curl,
         {
@@ -325,7 +327,7 @@ def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure()
     )
     assert result.returncode == 0
     assert "Skipping review_orchestrator dispatch" in result.stderr
-    assert "active PR review harness #72 agent(s) already on" in result.stderr
+    assert "1 numbered (PR review harness #72) and 0 legacy (PR review harness)" in result.stderr
     assert "unexpected second POST" not in result.stderr
 
 
