@@ -17,6 +17,7 @@ DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
 SAMPLE_PR_NUMBER = "72"
 SAMPLE_PR_URL = f"https://github.com/sazlin/loadout/pull/{SAMPLE_PR_NUMBER}"
 SAMPLE_PR_HEAD_REF = "feat/pr-review-harness-loadout-env"
+SAMPLE_CURSOR_CLOUD_ENV = "loadout-env"
 SAMPLE_HARNESS_ENV = {
     "CURSOR_API_KEY": "test-key",
     "PR_URL": SAMPLE_PR_URL,
@@ -240,7 +241,7 @@ def test_dispatch_step_script_selects_named_step_not_first_run_step(
     assert "echo dummy" not in block
 
 
-def test_pr_review_harness_workflow_triggers_on_pr_opened() -> None:
+def test_pr_review_harness_workflow_triggers_on_pr_opened_and_reopened() -> None:
     text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
     assert "pull_request" in text
     assert "types: [opened, reopened]" in text
@@ -269,7 +270,9 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "CURSOR_API_KEY" in text
     assert "REPO_URL:" not in text
     assert "repos: [{url: $repo, prUrl: $pr}]" not in text
-    assert 'env: {type: "cloud", name: "loadout-env"}' in text
+    assert step_env["CURSOR_CLOUD_ENV"] == SAMPLE_CURSOR_CLOUD_ENV
+    assert "--arg cloud_env" in script
+    assert "env: {type: \"cloud\", name: $cloud_env}" in text
     assert step_env["PR_HEAD_REF"] == "${{ github.event.pull_request.head.ref }}"
     assert "github.event.pull_request.head.ref" in text
     assert "gh pr checkout" in text

@@ -65,6 +65,7 @@ jobs:
       - name: Launch review_orchestrator on this pull request
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          CURSOR_CLOUD_ENV: loadout-env
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
@@ -212,12 +213,13 @@ jobs:
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
+            --arg cloud_env "${CURSOR_CLOUD_ENV}" \
             --arg pr_head_ref "${PR_HEAD_REF}" \
             --arg pr_number "${PR_NUMBER}" \
             '{
               name: $name,
               prompt: {text: $prompt},
-              env: {type: "cloud", name: "loadout-env"},
+              env: {type: "cloud", name: $cloud_env},
               workOnCurrentBranch: true,
               autoCreatePR: false,
               envVars: {
