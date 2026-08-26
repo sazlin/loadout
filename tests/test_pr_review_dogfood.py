@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -278,7 +279,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "gh pr checkout" in text
     assert "PR_HEAD_REF:" in text
     assert "envVars:" in text
-    assert "PR_HEAD_REF: $pr_head_ref" in text
+    assert "env.PR_HEAD_REF as $pr_head_ref" in text
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
@@ -305,6 +306,48 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     assert f"PR head branch: {SAMPLE_PR_HEAD_REF}" in prompt
     assert f"gh pr checkout {SAMPLE_PR_NUMBER}" in prompt
     assert f"origin/{SAMPLE_PR_HEAD_REF}" in prompt
+
+
+def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path: Path) -> None:
+    marker_file = tmp_path / "pwned"
+    malicious_ref = f"feat/$(echo PWNED > {marker_file})`id`\"branch\""
+    env = {**SAMPLE_HARNESS_ENV, "PR_HEAD_REF": malicious_ref}
+    prompt_script = (
+        _extract_workflow_script_block("PROMPT_BUILD")
+        + f"""
+body="$(jq -n \\
+  --arg name "PR review harness #{SAMPLE_PR_NUMBER}" \\
+  --arg cloud_env "{SAMPLE_CURSOR_CLOUD_ENV}" \\
+  --arg pr_number "{SAMPLE_PR_NUMBER}" \\
+  --rawfile prompt "${{pr_review_prompt_file}}" \\
+  'env.PR_HEAD_REF as $pr_head_ref | {{
+    name: $name,
+    prompt: {{text: $prompt}},
+    env: {{type: "cloud", name: $cloud_env}},
+    workOnCurrentBranch: true,
+    autoCreatePR: false,
+    envVars: {{
+      PR_HEAD_REF: $pr_head_ref,
+      PR_NUMBER: $pr_number
+    }}
+  }}')"
+printf '%s\n---BODY---\n' "$prompt"
+printf '%s' "$body"
+"""
+    )
+    result = subprocess.run(
+        ["bash", "-c", prompt_script],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, **env},
+    )
+    assert result.returncode == 0, result.stderr
+    assert not marker_file.exists()
+    prompt_part, body_part = result.stdout.split("---BODY---\n", 1)
+    assert malicious_ref in prompt_part
+    body = json.loads(body_part)
+    assert body["envVars"]["PR_HEAD_REF"] == malicious_ref
 
 
 def test_dedupe_skips_when_legacy_unnumbered_harness_agent_is_active() -> None:
