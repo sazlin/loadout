@@ -382,6 +382,14 @@ def test_orchestrator_github_comments_use_option_g_stage_strip() -> None:
     assert "one sentence per bullet" in lowered
     assert "<br>" in text
     assert "do not emit github alerts on orchestrator comments" in lowered
+    # Decision-phase merge outcomes (all classifier terminal states)
+    assert "Classifier `risk`" in text and "Classifier `merge`" in text
+    assert "`blocked_by_protection`" in text
+    assert "⛔<br>blocked" in text
+    assert "⏸️<br>skipped" in text
+    assert "✅<br>done" in text or "✅<br>merged" in text
+    assert "⛔<br>token" not in text
+    assert "reuse the classifier table labels verbatim" in lowered
 
 
 def test_risk_classifier_github_comments_use_option_g_alert_and_strip() -> None:
@@ -405,6 +413,10 @@ def test_vendored_harness_agents_keep_option_g_comment_templates() -> None:
     assert "| Risk | Merge | Checks | Action |" in classifier
     assert "[!WARNING]" in classifier
     assert "[!CAUTION]" in classifier
+    assert "⛔<br>blocked" in orchestrator
+    assert "⏸️<br>skipped" in orchestrator
+    assert "✅<br>done" in orchestrator or "✅<br>merged" in orchestrator
+    assert "⛔<br>token" not in orchestrator
 
 
 def test_orchestrator_does_not_use_linear_as_artifact_rally_point() -> None:

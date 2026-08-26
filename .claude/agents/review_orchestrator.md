@@ -239,19 +239,61 @@ status word.
 - No human action yet.
 ````
 
-**Decision** (after `risk_classifier` returns). Set Risk and Merge cells to
-the classifier outcome.
+**Decision** (after `risk_classifier` returns). Set Risk and Merge cells from
+the classifier JSON outcome. Reuse the classifier table labels verbatim for
+Risk and Merge (for example `blocked`, not `token`).
+
+| Classifier `risk` | Classifier `merge` | Decision Risk cell | Decision Merge cell |
+| --- | --- | --- | --- |
+| `low` | `performed` | 🟢<br>`low` | ✅<br>`done` or `merged` |
+| `low` | `blocked_by_protection` | 🟢<br>`low` | ⛔<br>`blocked` |
+| `not_low` | `skipped` | 🔴<br>`not_low` | ⏸️<br>`skipped` |
+
+**Merge performed** (low risk, squash-merge succeeded). The classifier posts
+no comment on this path; the orchestrator Decision comment is the sole PR
+comment carrying merge outcome.
 
 ````markdown
 ### PR review harness
 
 | Panel | Resolve | Verify | Risk | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
-| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ⛔<br>token |
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ✅<br>done |
 
 - Open tasks: 0.
 - Significant issues remaining: 0.
 - CI: N checks green.
+- Squash-merge performed.
+````
+
+**Merge skipped** (not low risk; classifier posted its own comment).
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🔴<br>`not_low` | ⏸️<br>skipped |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+- Auto-merge skipped; human should review the diff.
+````
+
+**Merge blocked** (low risk, protection or token cannot squash-merge).
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ⛔<br>blocked |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+- Merge blocked; human with permission should squash-merge.
 ````
 
 Record the latest comment URL in `delivery.github_comment_url`.
