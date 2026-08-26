@@ -427,13 +427,43 @@ def test_dedupe_skips_when_active_agent_is_on_second_page() -> None:
 
 def test_dedupe_dispatches_when_pagination_cap_with_no_active_harness() -> None:
     fixture = PR_REVIEW_FIXTURES / "agents_pagination_cap.json"
-    mock_curl = _bash_mock_curl_from_fixtures(fixture, pr_url_fixture=fixture)
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(fixture, pr_url_fixture=no_legacy)
     result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
     assert result.returncode == 0
-    assert "DISPATCH_WOULD_RUN" in result.stdout
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
-    assert "Proceeding with dispatch" in result.stderr
-    assert "Skipping review_orchestrator dispatch" not in result.stderr
+    assert "dedupe state incomplete" in result.stderr
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert "Proceeding with dispatch" not in result.stderr
+
+
+def test_dedupe_skips_when_active_numbered_harness_beyond_pagination_cap() -> None:
+    page1 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page1.json"
+    page2 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page2.json"
+    page3 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page3.json"
+    page4 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page4.json"
+    page5 = PR_REVIEW_FIXTURES / "agents_pagination_cap_page5.json"
+    page6_active = PR_REVIEW_FIXTURES / "agents_pagination_cap_page6_active.json"
+    no_legacy = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = _bash_mock_curl_from_fixtures(
+        page1,
+        cursor_fixtures={
+            "cap-page2": page2,
+            "cap-page3": page3,
+            "cap-page4": page4,
+            "cap-page5": page5,
+            "cap-page6": page6_active,
+        },
+        pr_url_fixture=no_legacy,
+    )
+    result = _run_dedupe_block_with_mock_curl(mock_curl, SAMPLE_HARNESS_ENV)
+    assert result.returncode == 0
+    assert "DISPATCH_WOULD_RUN" not in result.stdout
+    assert "pagination cap (5 pages) reached with unscanned pages" in result.stderr
+    assert "dedupe state incomplete" in result.stderr
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert f"1 numbered ({SAMPLE_NUMBERED_AGENT_NAME})" not in result.stderr
 
 
 def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure() -> None:

@@ -24,7 +24,8 @@ on:
 #    cancel-in-progress is false so an in-flight dispatch is not aborted.
 #
 # 2. Pre-dispatch ACTIVE guard (name-scoped, paginated): skips POST when an ACTIVE
-#    harness agent already exists for this pull request.
+#    harness agent already exists for this pull request, or when the agents list
+#    pagination cap is hit with unscanned pages (fail closed; do not POST).
 #
 #    Because env-only agents are not indexed under ?prUrl=, dedupe cannot rely on a
 #    single prUrl-filtered list even though PR context lives in the prompt. It uses
@@ -175,8 +176,10 @@ jobs:
               exit 0
             fi
             if [[ -n "${dedupe_pagination_warning}" ]]; then
-              echo "${dedupe_pagination_warning} Proceeding with dispatch." >&2
-              echo "An ACTIVE harness on unscanned pages could cause duplicate orchestrators." >&2
+              echo "${dedupe_pagination_warning}" >&2
+              echo "Skipping review_orchestrator dispatch: agents list pagination cap reached with unscanned pages; dedupe state incomplete." >&2
+              echo "Wait for the agents API list to shrink or re-run after existing harness agents finish." >&2
+              exit 0
             fi
             dedupe_negative_scan_done=true
           }
