@@ -4,7 +4,20 @@ on:
   pull_request:
     types: [opened, reopened]
 
-# Dedupe uses two layers with different scope:
+# Architecture (dispatch vs dedupe)
+#
+# ## Dispatch (env-only POST)
+#
+# POST body uses env: {type: "cloud", name: "loadout-env"} and does not include
+# repos[].prUrl. The Cursor agents API rejects both env and repos[] in one request
+# (mutual exclusivity); do not add repos[] back without removing env.
+#
+# loadout-env binds the repository. PR identity (URL, number, head ref) is carried in
+# the prompt text and envVars (PR_HEAD_REF, PR_NUMBER), not in repos[].prUrl.
+# workOnCurrentBranch cannot API-bind env-only dispatch to a PR head ref; the prompt
+# requires gh pr checkout before any git operation.
+#
+# ## Dedupe (two layers, different scope)
 #
 # 1. GitHub Actions concurrency (branch-scoped): group pr-review-<repo>-<head.ref>
 #    serializes workflow runs on the same PR head branch. Overlapping runs wait;
@@ -13,9 +26,9 @@ on:
 # 2. Pre-dispatch ACTIVE guard (name-scoped, paginated): skips POST when an ACTIVE
 #    harness agent already exists for this pull request.
 #
-#    Dispatch uses env-only POST (env: {type: "cloud", name: "loadout-env"}) without
-#    repos[].prUrl, so env-based agents are not indexed under ?prUrl=. Dedupe therefore
-#    uses two list queries:
+#    Because env-only agents are not indexed under ?prUrl=, dedupe cannot rely on a
+#    single prUrl-filtered list even though PR context lives in the prompt. It uses
+#    two list queries:
 #    - GET .../agents (no prUrl) for numbered "PR review harness #<number>" — unique per
 #      PR and visible for env-only agents.
 #    - GET .../agents?prUrl=${PR_URL} for legacy unnumbered "PR review harness" from older
@@ -195,9 +208,7 @@ jobs:
           - Re-run git symbolic-ref --short HEAD and confirm it prints '${PR_HEAD_REF}' before any git read, commit, or push.
           - Nested issue_resolver briefs must name this branch; pushes must target origin/${PR_HEAD_REF} only."
           # END PROMPT_BUILD
-          # Named cloud env is mutually exclusive with explicit repos[].prUrl (API rejects
-          # both). loadout-env binds the repository; PR head ref is enforced in the prompt
-          # and envVars because env-only dispatch cannot API-bind workOnCurrentBranch to a PR.
+          # Dispatch body: see "Dispatch (env-only POST)" in the header comment block.
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
