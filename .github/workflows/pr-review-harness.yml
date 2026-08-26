@@ -2,7 +2,7 @@ name: PR review harness
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, reopened]
 
 # Dedupe uses two layers with different scope:
 #
@@ -45,7 +45,6 @@ jobs:
         env:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-          REPO_URL: ${{ github.event.repository.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
@@ -149,23 +148,21 @@ jobs:
           EOF
           )"
           # END PROMPT_BUILD
-          # Named cloud env selects the loadout-env snapshot. repos[].prUrl binds
-          # workOnCurrentBranch to the PR head and registers agents for prUrl dedupe.
+          # Named cloud env is mutually exclusive with explicit repos. PR context
+          # stays in the prompt; loadout-env already binds the repository.
           body="$(jq -n \
             --arg prompt "$prompt" \
             --arg name "${agent_name}" \
-            --arg pr "$PR_URL" \
-            --arg repo "$REPO_URL" \
             '{
               name: $name,
               prompt: {text: $prompt},
               env: {type: "cloud", name: "loadout-env"},
-              repos: [{url: $repo, prUrl: $pr}],
               workOnCurrentBranch: true,
               autoCreatePR: false
             }')"
           # BEGIN POST_DISPATCH
           dispatch_output=""
+          last_dispatch_error=""
           for attempt in 1 2 3; do
             if [[ "${attempt}" -ne 1 ]] || [[ "${dedupe_negative_scan_done}" != true ]]; then
               skip_if_active_harness_exists
@@ -180,6 +177,7 @@ jobs:
               && jq -e '((.agent.id // .id) | type == "string" and length > 0)' <<<"${dispatch_output}" >/dev/null 2>&1; then
               break
             fi
+            last_dispatch_error="${dispatch_output}"
             dispatch_output=""
             if [[ "${attempt}" -lt 3 ]]; then
               sleep 2
@@ -187,6 +185,9 @@ jobs:
           done
           if [[ -z "${dispatch_output}" ]]; then
             echo "Failed to dispatch review_orchestrator after 3 attempts." >&2
+            if [[ -n "${last_dispatch_error}" ]]; then
+              echo "${last_dispatch_error}" >&2
+            fi
             exit 1
           fi
           echo "${dispatch_output}"

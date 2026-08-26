@@ -235,7 +235,7 @@ def test_dispatch_step_script_selects_named_step_not_first_run_step(
 def test_pr_review_harness_workflow_triggers_on_pr_opened() -> None:
     text = (REPO / ".github/workflows/pr-review-harness.yml").read_text()
     assert "pull_request" in text
-    assert "types: [opened]" in text
+    assert "types: [opened, reopened]" in text
 
 
 def test_pr_review_harness_workflow_concurrency() -> None:
@@ -258,8 +258,8 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "api.cursor.com/v1/agents" in text
     assert "workOnCurrentBranch" in text
     assert "CURSOR_API_KEY" in text
-    assert "REPO_URL:" in text
-    assert "repos: [{url: $repo, prUrl: $pr}]" in text
+    assert "REPO_URL:" not in text
+    assert "repos: [{url: $repo, prUrl: $pr}]" not in text
     assert 'env: {type: "cloud", name: "loadout-env"}' in text
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
