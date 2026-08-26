@@ -46,6 +46,29 @@ def _run_dedupe_block_with_mock_curl(mock_curl_body: str, env: dict[str, str]) -
     return result
 
 
+def _run_post_dispatch_block_with_mock_curl(
+    mock_curl_body: str,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    dedupe_block = _extract_workflow_script_block("ACTIVE_DEDUPE")
+    post_block = _extract_workflow_script_block("POST_DISPATCH")
+    preamble = (
+        "set -euo pipefail\n"
+        f"{mock_curl_body}\n"
+        "PR_URL=${PR_URL:?}\n"
+        "PR_NUMBER=${PR_NUMBER:?}\n"
+        "CURSOR_API_KEY=${CURSOR_API_KEY:?}\n"
+        'body=\'{"name":"PR review harness #72"}\'\n'
+    )
+    result = subprocess.run(
+        ["bash", "-c", preamble + dedupe_block + "\n" + post_block],
+        capture_output=True,
+        text=True,
+        env={**os.environ, **env},
+    )
+    return result
+
+
 def test_this_repo_manifest_includes_base_pr_review_harness_and_playwright() -> None:
     data = yaml.safe_load((REPO / ".loadout.yaml").read_text())
     assert data["source"] == "https://github.com/sazlin/loadout"
@@ -108,6 +131,8 @@ def test_pr_review_harness_workflow_dispatches_orchestrator() -> None:
     assert "|| true" not in list_dedupe_block
     assert "could not list agents" in list_dedupe_block
     assert "for attempt in 1 2 3" in post_dispatch_block
+    assert "skip_if_active_harness_exists" in post_dispatch_block
+    assert '.id | type == "string"' in post_dispatch_block
     assert "Failed to dispatch review_orchestrator after 3 attempts" in post_dispatch_block
     assert job["timeout-minutes"] == 5
     assert "--connect-timeout 10" in text
@@ -224,6 +249,106 @@ def test_dedupe_skips_when_pagination_cap_hit_without_definitive_match() -> None
     assert "DISPATCH_WOULD_RUN" not in result.stdout
     assert "pagination cap (5 pages) reached" in result.stderr
     assert "dedupe state unknown" in result.stderr
+
+
+def test_post_dispatch_skips_retry_when_dedupe_finds_active_after_post_failure() -> None:
+    no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    active = PR_REVIEW_FIXTURES / "agents_page2_active.json"
+    mock_curl = f"""
+    post_attempt_file="/tmp/post_attempt_${{BASHPID:-$$}}"
+    rm -f "${{post_attempt_file}}"
+    curl() {{
+      if [[ "$*" == *"--data"* ]]; then
+        if [[ ! -f "${{post_attempt_file}}" ]]; then
+          touch "${{post_attempt_file}}"
+          return 28
+        fi
+        echo "unexpected second POST: $*" >&2
+        return 1
+      fi
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        if [[ -f "${{post_attempt_file}}" ]]; then
+          cat "{active}"
+          return 0
+        fi
+        cat "{no_active}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_post_dispatch_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 0
+    assert "Skipping review_orchestrator dispatch" in result.stderr
+    assert "active PR review harness #72 agent(s) already on" in result.stderr
+    assert "unexpected second POST" not in result.stderr
+
+
+def test_post_dispatch_fails_after_three_post_failures() -> None:
+    no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    mock_curl = f"""
+    curl() {{
+      if [[ "$*" == *"--data"* ]]; then
+        return 28
+      fi
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        cat "{no_active}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_post_dispatch_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 1
+    assert "Failed to dispatch review_orchestrator after 3 attempts" in result.stderr
+
+
+def test_post_dispatch_succeeds_on_first_attempt() -> None:
+    no_active = PR_REVIEW_FIXTURES / "agents_no_harness_active.json"
+    success = PR_REVIEW_FIXTURES / "agents_dispatch_success.json"
+    mock_curl = f"""
+    post_calls=0
+    curl() {{
+      if [[ "$*" == *"--data"* ]]; then
+        post_calls=$((post_calls + 1))
+        cat "{success}"
+        return 0
+      fi
+      if [[ "$*" == *"api.cursor.com/v1/agents"* ]]; then
+        cat "{no_active}"
+        return 0
+      fi
+      echo "unexpected curl: $*" >&2
+      return 1
+    }}
+    """
+    result = _run_post_dispatch_block_with_mock_curl(
+        mock_curl,
+        {
+            "CURSOR_API_KEY": "test-key",
+            "PR_URL": "https://github.com/sazlin/loadout/pull/72",
+            "PR_NUMBER": "72",
+        },
+    )
+    assert result.returncode == 0
+    assert "bc-harness-new-0072" in result.stdout
+    assert "Failed to dispatch review_orchestrator after 3 attempts" not in result.stderr
 
 
 def test_ci_matrix_includes_pr_review_harness() -> None:

@@ -52,72 +52,78 @@ jobs:
           # ACTIVE dedupe is PR-URL-scoped (prUrl query below); no branch-level list API.
           agent_name="PR review harness #${PR_NUMBER}"
           legacy_agent_name="PR review harness"
-          active_count=0
-          legacy_active_count=0
-          agents_list_failed=false
-          page_cursor=""
-          page_num=0
-          max_pages=5
-          while [[ "${page_num}" -lt "${max_pages}" ]]; do
-            page_num=$((page_num + 1))
-            agents_url="https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false"
-            if [[ -n "${page_cursor}" ]]; then
-              agents_url="${agents_url}&cursor=${page_cursor}"
-            fi
-            agents_json=""
-            for attempt in 1 2 3; do
-              if agents_json="$(curl --silent --show-error --fail-with-body \
-                --connect-timeout 10 \
-                --max-time 30 \
-                --url "${agents_url}" \
-                -u "${CURSOR_API_KEY}:" 2>/dev/null)" \
-                && jq -e '.items | type == "array"' <<<"${agents_json}" >/dev/null 2>&1; then
-                break
+          check_active_harness_agents() {
+            active_count=0
+            legacy_active_count=0
+            agents_list_failed=false
+            page_cursor=""
+            page_num=0
+            max_pages=5
+            while [[ "${page_num}" -lt "${max_pages}" ]]; do
+              page_num=$((page_num + 1))
+              agents_url="https://api.cursor.com/v1/agents?prUrl=${PR_URL}&limit=20&includeArchived=false"
+              if [[ -n "${page_cursor}" ]]; then
+                agents_url="${agents_url}&cursor=${page_cursor}"
               fi
               agents_json=""
-              if [[ "${attempt}" -lt 3 ]]; then
-                sleep 2
+              for attempt in 1 2 3; do
+                if agents_json="$(curl --silent --show-error --fail-with-body \
+                  --connect-timeout 10 \
+                  --max-time 30 \
+                  --url "${agents_url}" \
+                  -u "${CURSOR_API_KEY}:" 2>/dev/null)" \
+                  && jq -e '.items | type == "array"' <<<"${agents_json}" >/dev/null 2>&1; then
+                  break
+                fi
+                agents_json=""
+                if [[ "${attempt}" -lt 3 ]]; then
+                  sleep 2
+                fi
+              done
+              if [[ -z "${agents_json}" ]]; then
+                agents_list_failed=true
+                break
+              fi
+              page_active="$(jq --arg name "${agent_name}" \
+                '[.items[]? | select(.status == "ACTIVE" and .name == $name)] | length' \
+                <<<"${agents_json}")"
+              page_legacy="$(jq --arg legacy "${legacy_agent_name}" \
+                '[.items[]? | select(.status == "ACTIVE" and .name == $legacy)] | length' \
+                <<<"${agents_json}")"
+              active_count=$((active_count + page_active))
+              legacy_active_count=$((legacy_active_count + page_legacy))
+              if [[ "${page_active}" -gt 0 ]] || [[ "${page_legacy}" -gt 0 ]]; then
+                break
+              fi
+              page_cursor="$(jq -r '.nextCursor // empty' <<<"${agents_json}")"
+              if [[ -z "${page_cursor}" ]]; then
+                break
               fi
             done
-            if [[ -z "${agents_json}" ]]; then
-              agents_list_failed=true
-              break
+          }
+          skip_if_active_harness_exists() {
+            check_active_harness_agents
+            if [[ "${agents_list_failed}" == true ]]; then
+              echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
+              echo "Re-run this workflow after the agents API is reachable." >&2
+              exit 0
             fi
-            page_active="$(jq --arg name "${agent_name}" \
-              '[.items[]? | select(.status == "ACTIVE" and .name == $name)] | length' \
-              <<<"${agents_json}")"
-            page_legacy="$(jq --arg legacy "${legacy_agent_name}" \
-              '[.items[]? | select(.status == "ACTIVE" and .name == $legacy)] | length' \
-              <<<"${agents_json}")"
-            active_count=$((active_count + page_active))
-            legacy_active_count=$((legacy_active_count + page_legacy))
-            if [[ "${page_active}" -gt 0 ]] || [[ "${page_legacy}" -gt 0 ]]; then
-              break
+            if [[ "${page_num}" -ge "${max_pages}" ]] && [[ -n "${page_cursor}" ]]; then
+              echo "Skipping review_orchestrator dispatch: agents list pagination cap (${max_pages} pages) reached without scanning all agents for ${PR_URL}; dedupe state unknown." >&2
+              echo "Re-run this workflow after other agents finish or the list shrinks." >&2
+              exit 0
             fi
-            page_cursor="$(jq -r '.nextCursor // empty' <<<"${agents_json}")"
-            if [[ -z "${page_cursor}" ]]; then
-              break
+            total_active=$((active_count + legacy_active_count))
+            if [[ "${total_active}" -gt 0 ]]; then
+              if [[ "${legacy_active_count}" -gt 0 ]]; then
+                echo "Matched ${legacy_active_count} legacy ${legacy_agent_name} agent(s) during rollout migration." >&2
+              fi
+              echo "Skipping review_orchestrator dispatch: ${total_active} active ${agent_name} agent(s) already on ${PR_URL}." >&2
+              echo "Wait for the orchestrator to finish before re-running this workflow." >&2
+              exit 0
             fi
-          done
-          if [[ "${agents_list_failed}" == true ]]; then
-            echo "Skipping review_orchestrator dispatch: could not list agents for ${PR_URL}; dedupe state unknown." >&2
-            echo "Re-run this workflow after the agents API is reachable." >&2
-            exit 0
-          fi
-          if [[ "${page_num}" -ge "${max_pages}" ]] && [[ -n "${page_cursor}" ]]; then
-            echo "Skipping review_orchestrator dispatch: agents list pagination cap (${max_pages} pages) reached without scanning all agents for ${PR_URL}; dedupe state unknown." >&2
-            echo "Re-run this workflow after other agents finish or the list shrinks." >&2
-            exit 0
-          fi
-          total_active=$((active_count + legacy_active_count))
-          if [[ "${total_active}" -gt 0 ]]; then
-            if [[ "${legacy_active_count}" -gt 0 ]]; then
-              echo "Matched ${legacy_active_count} legacy ${legacy_agent_name} agent(s) during rollout migration." >&2
-            fi
-            echo "Skipping review_orchestrator dispatch: ${total_active} active ${agent_name} agent(s) already on ${PR_URL}." >&2
-            echo "Wait for the orchestrator to finish before re-running this workflow." >&2
-            exit 0
-          fi
+          }
+          skip_if_active_harness_exists
           # END ACTIVE_DEDUPE
           # BEGIN PROMPT_BUILD
           # Dual-heredoc invariant: both blocks use <<'EOF' (quoted delimiter) so backticks
@@ -156,13 +162,15 @@ jobs:
           # BEGIN POST_DISPATCH
           dispatch_output=""
           for attempt in 1 2 3; do
+            skip_if_active_harness_exists
             if dispatch_output="$(curl --silent --show-error --fail-with-body \
               --connect-timeout 10 \
               --max-time 60 \
               --url https://api.cursor.com/v1/agents \
               -u "${CURSOR_API_KEY}:" \
               --header 'Content-Type: application/json' \
-              --data "$body" 2>/dev/null)"; then
+              --data "$body" 2>/dev/null)" \
+              && jq -e '.id | type == "string" and length > 0' <<<"${dispatch_output}" >/dev/null 2>&1; then
               break
             fi
             dispatch_output=""
