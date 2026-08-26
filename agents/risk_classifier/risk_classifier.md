@@ -42,10 +42,10 @@ Do not edit source. Do not write `TASKS_TO_RESOLVE.md` or `VERIFIERS.md`.
    block low risk. Remaining `critical` or `important` issues do.
 3. If **low risk**: wait until required checks are green, then
    `gh pr merge <n> --squash`. Never `--admin`. If protection, required
-   reviews, or checks block it, post a new comment and set
-   `merge: blocked_by_protection`.
-4. If **not low risk**: post a new `gh pr comment` asking for human review.
-   Do not merge. Set `merge: skipped`.
+   reviews, or checks block it, post a new comment (see **GitHub PR
+   comments**) and set `merge: blocked_by_protection`.
+4. If **not low risk**: post a new `gh pr comment` using the not-low-risk
+   template. Do not merge. Set `merge: skipped`.
 5. Emit JSON. After **3** failed attempts at the same class (`gh` auth,
    unreadable diff), emit `blocked`.
 
@@ -118,6 +118,78 @@ gh pr merge <n> --squash
 
 If `mergeable` is false or checks are not green, do not retry with
 `--admin`. Comment and wait.
+
+### GitHub PR comments
+
+Post **one new** comment with `gh pr comment <n> --body-file`. Do not pass
+`--edit-last`. Use this visual style on every classifier comment:
+
+- Heading is `### Risk classifier` (never `##`).
+- First block is a four-column table: Risk, Merge, Checks, Action.
+- After the table, bullets only. One sentence per bullet. No multi-sentence
+  paragraphs.
+- Put rationale and raw `gh` errors in `<details>`. Never inline a token
+  error in the first screen.
+- Emit a GitHub alert **only** when a human must act:
+  - merge blocked → `> [!WARNING]`
+  - risk `not_low` → `> [!CAUTION]`
+  - successful squash-merge → no comment required
+- Do not emit `[!NOTE]` or `[!TIP]`.
+
+Icons: 🟢 low risk, 🔴 not low risk, ✅ checks green / merge done,
+⛔ merge blocked, ⏸️ merge skipped, 👤 human action.
+
+**Merge blocked** (low risk, token or protection cannot squash-merge)
+
+````markdown
+### Risk classifier
+
+| Risk | Merge | Checks | Action |
+|:----:|:-----:|:------:|:------:|
+| 🟢<br>`low` | ⛔<br>blocked | ✅<br>green | 👤<br>human |
+
+> [!WARNING]
+> - Low risk, merge blocked.
+> - A human with merge permission should squash-merge #<n>.
+
+- Command: `gh pr merge <n> --squash`.
+
+<details>
+<summary>Why this is low risk</summary>
+
+- Fill one bullet per reason from the rubric.
+- Remaining work is merge permission, not product risk.
+
+</details>
+
+<details>
+<summary>Merge error</summary>
+
+Paste the `gh` stderr inside a fenced code block.
+
+</details>
+````
+
+**Not low risk** (do not merge)
+
+````markdown
+### Risk classifier
+
+| Risk | Merge | Checks | Action |
+|:----:|:-----:|:------:|:------:|
+| 🔴<br>`not_low` | ⏸️<br>skipped | ✅<br>green | 👤<br>review diff |
+
+> [!CAUTION]
+> - Not low risk.
+> - Do not auto-merge.
+> - A human should review the diff.
+
+- Name the rubric reason in one bullet (auth, schema, remaining
+  significant issue, or similar).
+````
+
+If checks are not green, set the Checks cell to ⏳ and `pending` or ⛔ and
+`failing`. Keep the same table shape.
 
 ### When invoked
 

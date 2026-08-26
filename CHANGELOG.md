@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Style `pr_review_harness` GitHub comments as a horizontal stage table
+  with bullets, plus a WARNING/CAUTION alert only when a human must act.
 - Update the PR review harness GitHub Action prompt to delegate harness steps to
   `review_orchestrator` and cloud-run constraints instead of an inline numbered
   checklist.

@@ -178,14 +178,79 @@ project-root `TASKS_TO_RESOLVE.md`.
 After each notable phase, post **one new** comment with `gh pr comment <n>
 --body-file`. Do not pass `--edit-last`. Each run creates its own comments.
 
-```markdown
-## PR review harness
+Follow this visual style on every orchestrator comment:
 
-**Phase:** panel | resolve | verify | decision
-**PR:** <url>
-**Open tasks:** N
-**Significant issues remaining:** N
-```
+- Heading is `### PR review harness` (never `##`).
+- First block is a five-column stage table. Do not use a bold-label list.
+- After the table, bullets only. One sentence per bullet. No multi-sentence
+  paragraphs.
+- Do not emit GitHub alerts on orchestrator comments. Alerts belong on
+  `risk_classifier` comments when a human must act.
+- At **decision**, do not repeat the classifier rationale. Table plus short
+  bullets only.
+
+Icons: ✅ done, 🔄 in progress, ⏳ queued, 🟢 low risk, 🔴 not low risk,
+⛔ merge blocked, ⏸️ merge skipped.
+
+Fill cells from the current phase. Use `<br>` so the icon sits above a short
+status word.
+
+**Panel**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| 🔄<br>loop N | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- Four reviewers dispatched in parallel.
+````
+
+**Resolve**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | 🔄<br>TASK-00X | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- Current work: TASK-00X.
+````
+
+**Verify**
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>done | ✅<br>done | 🔄<br>k/n | ⏳<br>queued | ⏳<br>queued |
+
+- Open tasks: N.
+- Significant issues remaining: N.
+- No human action yet.
+````
+
+**Decision** (after `risk_classifier` returns). Set Risk and Merge cells to
+the classifier outcome.
+
+````markdown
+### PR review harness
+
+| Panel | Resolve | Verify | Risk | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ⛔<br>token |
+
+- Open tasks: 0.
+- Significant issues remaining: 0.
+- CI: N checks green.
+````
 
 Record the latest comment URL in `delivery.github_comment_url`.
 

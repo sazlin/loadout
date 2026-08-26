@@ -374,6 +374,39 @@ def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
     assert "inputs.github_pr" in text or '"github_pr"' in text
 
 
+def test_orchestrator_github_comments_use_option_g_stage_strip() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "### PR review harness" in text
+    assert "| Panel | Resolve | Verify | Risk | Merge |" in text
+    assert "one sentence per bullet" in lowered
+    assert "<br>" in text
+    assert "do not emit github alerts on orchestrator comments" in lowered
+
+
+def test_risk_classifier_github_comments_use_option_g_alert_and_strip() -> None:
+    text = _agent_file(RISK_CLASSIFIER).read_text()
+    lowered = text.lower()
+    assert "### Risk classifier" in text
+    assert "| Risk | Merge | Checks | Action |" in text
+    assert "[!WARNING]" in text
+    assert "[!CAUTION]" in text
+    assert "<details>" in text
+    assert "one sentence per bullet" in lowered
+    assert "--body-file" in text
+    assert "--edit-last" in lowered
+
+
+def test_vendored_harness_agents_keep_option_g_comment_templates() -> None:
+    claude = REPO / ".claude" / "agents"
+    orchestrator = (claude / "review_orchestrator.md").read_text()
+    classifier = (claude / "risk_classifier.md").read_text()
+    assert "| Panel | Resolve | Verify | Risk | Merge |" in orchestrator
+    assert "| Risk | Merge | Checks | Action |" in classifier
+    assert "[!WARNING]" in classifier
+    assert "[!CAUTION]" in classifier
+
+
 def test_orchestrator_does_not_use_linear_as_artifact_rally_point() -> None:
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text().lower()
     assert "rally point" not in text
