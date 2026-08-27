@@ -404,6 +404,8 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "envVars:" in text
     assert "--arg pr_head_ref" in text
     assert "env.PR_HEAD_REF as $pr_head_ref" not in text
+    assert "\\u0027" in script
+    assert 'not \'" + $pr_head_ref' not in script
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
