@@ -186,9 +186,11 @@ jobs:
           skip_if_active_harness_exists
           # END ACTIVE_DEDUPE
           # BEGIN PROMPT_BUILD
-          # PR_HEAD_REF must never expand inside bash double quotes (branch names may contain
-          # $(), backticks, or quotes). Static prompt sections use quoted heredocs; branch binding
-          # and dispatch envVars read env.PR_HEAD_REF via jq only.
+          # PR_HEAD_REF is passed to jq only via --arg pr_head_ref "${PR_HEAD_REF}" (prompt build
+          # and dispatch body). "${PR_HEAD_REF}" is allowed as the --arg value; do not embed it
+          # inside the jq program string. Both jq calls use the same --arg pattern for branch
+          # binding and envVars.PR_HEAD_REF.
+          # \u0027 in the jq filter below = apostrophe; a literal ' would break the bash-single-quoted string.
           pr_review_prompt_file="${RUNNER_TEMP:-/tmp}/pr-review-prompt.$$"
           jq -rn \
             --arg intro "$(cat <<'EOF'
@@ -205,13 +207,13 @@ jobs:
           )" \
             --arg pr_url "${PR_URL}" \
             --arg pr_number "${PR_NUMBER}" \
-            'env.PR_HEAD_REF as $pr_head_ref |
-              $intro + "\n\nThis GitHub pull request is the change set: " + $pr_url + " (#" + $pr_number + "). Run the full harness on this existing PR.\n\n" + $constraints + "\n\n" +
+            --arg pr_head_ref "${PR_HEAD_REF}" \
+            '$intro + "\n\nThis GitHub pull request is the change set: " + $pr_url + " (#" + $pr_number + "). Run the full harness on this existing PR.\n\n" + $constraints + "\n\n" +
               "Branch binding (required before any git operation):\n" +
               "- PR head branch: " + $pr_head_ref + " (PR #" + $pr_number + ", " + $pr_url + ")\n" +
               "- At session start run: git symbolic-ref --short HEAD\n" +
-              "- If the result is not '" + $pr_head_ref + "', run: gh pr checkout " + $pr_number + "\n" +
-              "- Re-run git symbolic-ref --short HEAD and confirm it prints '" + $pr_head_ref + "' before any git read, commit, or push.\n" +
+              "- If the result is not \u0027" + $pr_head_ref + "\u0027, run: gh pr checkout " + $pr_number + "\n" +
+              "- Re-run git symbolic-ref --short HEAD and confirm it prints \u0027" + $pr_head_ref + "\u0027 before any git read, commit, or push.\n" +
               "- Nested issue_resolver briefs must name this branch; pushes must target origin/" + $pr_head_ref + " only."' \
             > "${pr_review_prompt_file}"
           prompt="$(cat "${pr_review_prompt_file}")"
@@ -221,8 +223,9 @@ jobs:
             --arg name "${agent_name}" \
             --arg cloud_env "${CURSOR_CLOUD_ENV}" \
             --arg pr_number "${PR_NUMBER}" \
+            --arg pr_head_ref "${PR_HEAD_REF}" \
             --rawfile prompt "${pr_review_prompt_file}" \
-            'env.PR_HEAD_REF as $pr_head_ref | {
+            '{
               name: $name,
               prompt: {text: $prompt},
               env: {type: "cloud", name: $cloud_env},

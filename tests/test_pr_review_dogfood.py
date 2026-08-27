@@ -402,7 +402,10 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "gh pr checkout" in text
     assert "PR_HEAD_REF:" in text
     assert "envVars:" in text
-    assert "env.PR_HEAD_REF as $pr_head_ref" in text
+    assert "--arg pr_head_ref" in text
+    assert "env.PR_HEAD_REF as $pr_head_ref" not in text
+    assert "\\u0027" in script
+    assert 'not \'" + $pr_head_ref' not in script
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
@@ -442,8 +445,9 @@ body="$(jq -n \\
   --arg name "{SAMPLE_NUMBERED_AGENT_NAME}" \\
   --arg cloud_env "{SAMPLE_CURSOR_CLOUD_ENV}" \\
   --arg pr_number "{SAMPLE_PR_NUMBER}" \\
+  --arg pr_head_ref "${{PR_HEAD_REF}}" \\
   --rawfile prompt "${{pr_review_prompt_file}}" \\
-  'env.PR_HEAD_REF as $pr_head_ref | {{
+  '{{
     name: $name,
     prompt: {{text: $prompt}},
     env: {{type: "cloud", name: $cloud_env}},
