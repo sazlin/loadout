@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.18.0
+
 ## 0.17.0
 
 - Style `pr_review_harness` GitHub comments as a horizontal stage table
