@@ -28,13 +28,13 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout init --loadouts base,python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 ```
 
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
@@ -48,14 +48,14 @@ git commit -m "Add loadout-managed agent tooling"
 Pin a release tag instead of `main` once you want a fixed upgrade cadence:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 ```
 
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.16.0
+ref: v0.18.0
 loadouts:
   - base
   - python
@@ -67,7 +67,7 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.16.0
+ref: v0.18.0
 loadouts:
   - base
   - python
@@ -78,7 +78,7 @@ loadouts:
 Then re-sync and commit the diff:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -86,7 +86,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -106,7 +106,7 @@ When this repo ships new rules/skills (or you want a newer pin), bump the manife
 **Recommended — one command:**
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout update
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout update
 # or: just loadout-update
 ```
 
@@ -116,11 +116,11 @@ uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout update
 
 ```yaml
 # .loadout.yaml
-ref: v0.16.0   # was: main or an older tag
+ref: v0.18.0   # was: main or an older tag
 ```
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 ```
 
 Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
@@ -130,7 +130,7 @@ Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade i
 Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.16.0 loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync --check
 # or: just loadout-check
 ```
 
@@ -147,7 +147,7 @@ Example GitHub Actions step:
 <!-- generated:loadouts-catalog:start -->
 | Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/release-checklist/SKILL.md"><code>release-checklist</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/readme-loadouts.mdc"><code>readme-loadouts</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> | — |
+| `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/release-checklist/SKILL.md"><code>release-checklist</code></a></li><li><a href="skills/unslop/SKILL.md"><code>unslop</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/readme-loadouts.mdc"><code>readme-loadouts</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> | — |
 | `implementation_harness` | — | <ul><li><a href="agents/implementation_orchestrator/implementation_orchestrator.md"><code>implementation_orchestrator</code></a></li><li><a href="agents/implementation_planner/implementation_planner.md"><code>implementation_planner</code></a></li><li><a href="agents/implementation_plan_reviewer/implementation_plan_reviewer.md"><code>implementation_plan_reviewer</code></a></li><li><a href="agents/implementation_builder/implementation_builder.md"><code>implementation_builder</code></a></li><li><a href="agents/implementation_build_reviewer/implementation_build_reviewer.md"><code>implementation_build_reviewer</code></a></li></ul> | <ul><li><a href="skills/create-implementation-plan/SKILL.md"><code>create-implementation-plan</code></a></li><li><a href="skills/review-implementation-plan/SKILL.md"><code>review-implementation-plan</code></a></li><li><a href="skills/build-implementation-plan/SKILL.md"><code>build-implementation-plan</code></a></li><li><a href="skills/review-implementation-build/SKILL.md"><code>review-implementation-build</code></a></li></ul> | — | — | — | — |
 | `pr_review_harness` | — | <ul><li><a href="agents/review_correctness/review_correctness.md"><code>review_correctness</code></a></li><li><a href="agents/review_maintainability/review_maintainability.md"><code>review_maintainability</code></a></li><li><a href="agents/review_scale/review_scale.md"><code>review_scale</code></a></li><li><a href="agents/review_security/review_security.md"><code>review_security</code></a></li><li><a href="agents/review_orchestrator/review_orchestrator.md"><code>review_orchestrator</code></a></li><li><a href="agents/issue_resolver/issue_resolver.md"><code>issue_resolver</code></a></li><li><a href="agents/verifier/verifier.md"><code>verifier</code></a></li><li><a href="agents/risk_classifier/risk_classifier.md"><code>risk_classifier</code></a></li></ul> | <ul><li><a href="skills/dispatch-panel-review/SKILL.md"><code>dispatch-panel-review</code></a></li><li><a href="skills/dedupe-and-write-tasks/SKILL.md"><code>dedupe-and-write-tasks</code></a></li><li><a href="skills/resolve-next-task/SKILL.md"><code>resolve-next-task</code></a></li><li><a href="skills/log-progress/SKILL.md"><code>log-progress</code></a></li><li><a href="skills/dispatch-verifiers/SKILL.md"><code>dispatch-verifiers</code></a></li></ul> | <ul><li><a href="rules/core/honor-check-intent.mdc"><code>honor-check-intent</code></a></li></ul> | — | — | — |
 | `superpowers` | — | — | <ul><li><a href="skills/brainstorming/SKILL.md"><code>brainstorming</code></a></li><li><a href="skills/dispatching-parallel-agents/SKILL.md"><code>dispatching-parallel-agents</code></a></li><li><a href="skills/executing-plans/SKILL.md"><code>executing-plans</code></a></li><li><a href="skills/finishing-a-development-branch/SKILL.md"><code>finishing-a-development-branch</code></a></li><li><a href="skills/receiving-code-review/SKILL.md"><code>receiving-code-review</code></a></li><li><a href="skills/requesting-code-review/SKILL.md"><code>requesting-code-review</code></a></li><li><a href="skills/subagent-driven-development/SKILL.md"><code>subagent-driven-development</code></a></li><li><a href="skills/systematic-debugging/SKILL.md"><code>systematic-debugging</code></a></li><li><a href="skills/test-driven-development/SKILL.md"><code>test-driven-development</code></a></li><li><a href="skills/using-git-worktrees/SKILL.md"><code>using-git-worktrees</code></a></li><li><a href="skills/using-superpowers/SKILL.md"><code>using-superpowers</code></a></li><li><a href="skills/verification-before-completion/SKILL.md"><code>verification-before-completion</code></a></li><li><a href="skills/writing-plans/SKILL.md"><code>writing-plans</code></a></li><li><a href="skills/writing-skills/SKILL.md"><code>writing-skills</code></a></li></ul> | — | — | <ul><li><a href="hooks/session-start/SOURCE.md"><code>session-start</code></a></li></ul> | — |
@@ -221,7 +221,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch pin (`v0.16.0`, …) |
+| `ref` | yes | Release tag or branch pin (`v0.18.0`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
@@ -296,7 +296,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.16.0   # on release/v0.16.0: validate, push, open PR; CI tags on merge
+just release 0.18.0   # on release/v0.18.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me

@@ -14,6 +14,7 @@ skills:
   - src: skills/next-decision
   - src: skills/learn
   - src: skills/release-checklist
+  - src: skills/unslop
 hooks:
   - src: hooks/deny-dangerous
 agents:
