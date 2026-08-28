@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import pytest
+from _pytest.outcomes import Failed
 
 from loadout.models import load_loadout
 
@@ -100,6 +101,22 @@ def _wait_until_dead(pid: int, *, timeout: float = 2.0) -> None:
             return
         time.sleep(0.05)
     pytest.fail(f"process {pid} still alive after {timeout}s")
+
+
+def test_wait_until_dead_fails_when_process_still_alive() -> None:
+    sleeper = subprocess.Popen(["sleep", "60"])
+    try:
+        with pytest.raises(Failed, match="still alive"):
+            _wait_until_dead(sleeper.pid, timeout=0.1)
+    finally:
+        sleeper.kill()
+        sleeper.wait()
+
+
+def test_wait_until_dead_returns_when_process_already_dead() -> None:
+    proc = subprocess.Popen(["true"])
+    proc.wait()
+    _wait_until_dead(proc.pid)
 
 
 def _keeper_pids(bindir: Path) -> list[int]:
