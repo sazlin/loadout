@@ -91,6 +91,17 @@ def _wait_file(path: Path, timeout: float = 1.0) -> Path:
     raise AssertionError(f"timed out waiting for {path}")
 
 
+def _wait_until_dead(pid: int, *, timeout: float = 2.0) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return
+        time.sleep(0.05)
+    pytest.fail(f"process {pid} still alive after {timeout}s")
+
+
 def _keeper_pids(bindir: Path) -> list[int]:
     needle = str(bindir / "caffeinate")
     listed = subprocess.run(
@@ -182,9 +193,7 @@ def test_keep_awake_stop_kills_caffeinate(tmp_path: Path) -> None:
     assert code == 0
     assert "stopped" in stdout
     assert not _pidfile(tmp_path).exists()
-    time.sleep(0.05)
-    with pytest.raises(OSError):
-        os.kill(pid, 0)
+    _wait_until_dead(pid)
 
 
 def test_keep_awake_status_exits_nonzero_when_not_running(tmp_path: Path) -> None:
@@ -204,9 +213,7 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
         new_pid = int(_pidfile(tmp_path).read_text().strip())
         assert new_pid != old_pid
         os.kill(new_pid, 0)
-        time.sleep(0.05)
-        with pytest.raises(OSError):
-            os.kill(old_pid, 0)
+        _wait_until_dead(old_pid)
         assert "renewed" in stdout
         args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
         assert args == ["-i", "-t", "90"]
@@ -482,9 +489,7 @@ def test_overlapping_renews_leave_one_keeper(tmp_path: Path) -> None:
         assert set(_keeper_pids(bindir)) == {keeper}
         _run(tmp_path, "stop", extra_path=bindir)
         assert not _pidfile(tmp_path).exists()
-        time.sleep(0.05)
-        with pytest.raises(OSError):
-            os.kill(keeper, 0)
+        _wait_until_dead(keeper)
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
 
