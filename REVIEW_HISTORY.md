@@ -2,6 +2,36 @@
 
 Append-only log for the PR-review harness. Do not rewrite.
 
+## 2026-08-28T12:55:00Z — risk_classifier — decision
+
+- **Task:** none
+- **Outcome:** wait_for_human
+- **Summary:** Classified PR #80 diff as low risk. All 28 CI checks green. Squash merge attempted but blocked by token permissions (mergePullRequest not accessible). Human with merge access should run `gh pr merge 80 --squash`.
+
+## 2026-08-28T12:50:00Z — verifier — verify
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Re-evaluated three VERIFIERS.md claims on PR #80 after TASK-001 fix. All claims true: no TypeScript any, no bypass renames, meaningful tests for _wait_until_dead helper (dedicated unit tests fail on main, pass on branch).
+
+## 2026-08-28T12:45:00Z — issue_resolver — resolve
+
+- **Task:** TASK-001
+- **Outcome:** ok
+- **Summary:** Added dedicated unit tests for `_wait_until_dead`: timeout path asserts `Failed` when a live process exceeds the deadline, and success path returns when the PID is already dead. Committed 15685af and pushed to the PR branch. `uv run pytest tests/test_anti_sleep.py -q` — 30 passed.
+
+## 2026-08-28T12:40:00Z — verifier — verify
+
+- **Task:** none
+- **Outcome:** false_claim
+- **Summary:** Evaluated three VERIFIERS.md claims on PR #80. Claims 1 (no TypeScript any) and 2 (no bypass renames) are true. Claim 3 (meaningful tests) is false: _wait_until_dead helper added without dedicated new test; refactored integration tests would pass on base. V-001 filed as TASK-001.
+
+## 2026-08-28T12:35:00Z — review_orchestrator — panel
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Panel loop 1 dispatched four reviewers in parallel on PR #80 (release v0.19.0). All four returned zero issues: review_correctness, review_maintainability, review_scale, and review_security found no critical or important defects in the version bump and test_anti_sleep.py _wait_until_dead refactor. TASKS_TO_RESOLVE.md rewritten with no open tasks.
+
 ## 2026-08-27T12:28:00Z — risk_classifier — decision
 
 - **Task:** none
