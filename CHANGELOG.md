@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Vendor `unslop` skill from [cursor/plugins](https://github.com/cursor/plugins)
+  (`pstack/skills/unslop`) on the `base` loadout for AI writing cleanup.
+
 ## 0.19.0
 
 ## 0.18.0
