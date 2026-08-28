@@ -1,6 +1,6 @@
 [project]
 name = "loadout"
-version = "0.18.0"
+version = "0.19.0"
 description = "Centralized, versioned Cursor rules and skills composed per project"
 readme = "README.md"
 requires-python = ">=3.12"
