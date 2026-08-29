@@ -120,10 +120,51 @@ def _extends_from_cell(cell: str) -> list[str]:
     raise AssertionError(f"unrecognized Extends cell: {cell!r}")
 
 
+def _is_readme_loadouts_rule_src(src: str) -> bool:
+    return src.endswith("readme-loadouts.mdc") or "rules/core/readme-loadouts.mdc" in src
+
+
+def _attached_readme_loadouts_rules(loadout: LoadoutDef) -> list[str]:
+    return [
+        entry["src"]
+        for entry in loadout.rules
+        if isinstance(entry.get("src"), str) and _is_readme_loadouts_rule_src(entry["src"])
+    ]
+
+
 def test_readme_loadouts_rule_is_not_attached_to_any_loadout() -> None:
-    needle = "readme-loadouts"
-    for path in sorted((REPO / "loadouts").glob("*.yaml")):
-        assert needle not in path.read_text(), f"{path.name} must not vendor {needle}"
+    for path in sorted(LOADOUTS_DIR.glob("*.yaml")):
+        attached = _attached_readme_loadouts_rules(load_loadout(path))
+        assert not attached, f"{path.name} must not vendor readme-loadouts: {attached}"
+
+
+def test_readme_loadouts_comment_mention_does_not_count_as_attachment(tmp_path: Path) -> None:
+    path = tmp_path / "comment-only.yaml"
+    path.write_text(
+        "name: comment-only\n"
+        "description: mentions readme-loadouts in a comment but does not attach it\n"
+        "# readme-loadouts is repo-local; do not list rules/core/readme-loadouts.mdc\n"
+        "rules: []\n"
+    )
+    assert _attached_readme_loadouts_rules(load_loadout(path)) == []
+
+
+@pytest.mark.parametrize(
+    "src",
+    [
+        "rules/core/readme-loadouts.mdc",
+        ".cursor/rules/readme-loadouts.mdc",
+    ],
+)
+def test_attached_readme_loadouts_rule_srcs_detects_listed_rules(tmp_path: Path, src: str) -> None:
+    path = tmp_path / "attached.yaml"
+    path.write_text(
+        f"name: attached\n"
+        f"description: incorrectly vendors readme-loadouts\n"
+        f"rules:\n"
+        f"  - src: {src}\n"
+    )
+    assert _attached_readme_loadouts_rules(load_loadout(path)) == [src]
 
 
 def test_readme_loadouts_rule_exists_in_cursor_rules() -> None:
