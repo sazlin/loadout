@@ -13,8 +13,10 @@ from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
 RULE = REPO / ".cursor/rules/readme-loadouts.mdc"
+CORE_RULE = REPO / "rules" / "core" / "readme-loadouts.mdc"
 README = REPO / "README.md"
 LOADOUTS_DIR = REPO / "loadouts"
+FIXTURES = Path(__file__).parent / "fixtures" / "readme_loadouts"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
 CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
@@ -138,37 +140,34 @@ def test_readme_loadouts_rule_is_not_attached_to_any_loadout() -> None:
         assert not attached, f"{path.name} must not vendor readme-loadouts: {attached}"
 
 
-def test_readme_loadouts_comment_mention_does_not_count_as_attachment(tmp_path: Path) -> None:
-    path = tmp_path / "comment-only.yaml"
-    path.write_text(
-        "name: comment-only\n"
-        "description: mentions readme-loadouts in a comment but does not attach it\n"
-        "# readme-loadouts is repo-local; do not list rules/core/readme-loadouts.mdc\n"
-        "rules: []\n"
-    )
-    assert _attached_readme_loadouts_rules(load_loadout(path)) == []
+def test_readme_loadouts_comment_mention_does_not_count_as_attachment() -> None:
+    comment_only = FIXTURES / "comment-only.yaml"
+    assert _attached_readme_loadouts_rules(load_loadout(comment_only)) == []
+    base_attached = _attached_readme_loadouts_rules(load_loadout(LOADOUTS_DIR / "base.yaml"))
+    assert base_attached == [], f"base.yaml must not vendor readme-loadouts: {base_attached}"
 
 
 @pytest.mark.parametrize(
-    "src",
+    ("loadout_path", "expected"),
     [
-        "rules/core/readme-loadouts.mdc",
-        ".cursor/rules/readme-loadouts.mdc",
+        (LOADOUTS_DIR / "base.yaml", []),
+        (FIXTURES / "attached-core.yaml", ["rules/core/readme-loadouts.mdc"]),
+        (FIXTURES / "attached-cursor.yaml", [".cursor/rules/readme-loadouts.mdc"]),
     ],
 )
-def test_attached_readme_loadouts_rule_srcs_detects_listed_rules(tmp_path: Path, src: str) -> None:
-    path = tmp_path / "attached.yaml"
-    path.write_text(
-        f"name: attached\n"
-        f"description: incorrectly vendors readme-loadouts\n"
-        f"rules:\n"
-        f"  - src: {src}\n"
-    )
-    assert _attached_readme_loadouts_rules(load_loadout(path)) == [src]
+def test_attached_readme_loadouts_rule_srcs_detect_listed_rules(
+    loadout_path: Path, expected: list[str]
+) -> None:
+    assert _attached_readme_loadouts_rules(load_loadout(loadout_path)) == expected
 
 
-def test_readme_loadouts_rule_exists_in_cursor_rules() -> None:
+def test_readme_loadouts_rule_is_repo_local_cursor_rule() -> None:
     assert RULE.is_file()
+    text = RULE.read_text()
+    assert "Repo-local rule" in text
+    assert "Do not add it to any" in text
+    assert "loadout.managed" not in text
+    assert not CORE_RULE.is_file(), "rules/core/readme-loadouts.mdc must not be vendored through loadouts"
 
 
 def test_readme_loadouts_rule_is_glob_scoped_to_catalog_sources() -> None:
