@@ -20,6 +20,30 @@ Append-only log for the PR-review harness. Do not rewrite.
 - **Outcome:** ok
 - **Summary:** Panel loop 1 dispatched four reviewers in parallel on PR #84 (release v0.22.0). All four returned zero issues: review_correctness, review_maintainability, review_scale, and review_security found no critical or important defects in the version bump across CHANGELOG.md, pyproject.toml, src/loadout/__init__.py, tests/test_version.py, and uv.lock. TASKS_TO_RESOLVE.md rewritten with no open tasks.
 
+## 2026-08-29T06:05:00Z — risk_classifier — decision
+
+- **Task:** none
+- **Outcome:** wait_for_human
+- **Summary:** Classified PR #81 diff as low risk. All 28 CI checks green. Squash merge attempted but blocked by token permissions (mergePullRequest not accessible). Human with merge access should run `gh pr merge 81 --squash`.
+
+## 2026-08-29T06:00:00Z — verifier — verify
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Re-evaluated VERIFIERS.md claims on PR #81 after verify TASK-001 fix (3c63ad4). All three claims true: no TypeScript any, no bypass renames, meaningful tests (5 detach/guard tests fail on main with branch test files, 13 pass on branch).
+
+## 2026-08-29T05:55:00Z — verifier — verify
+
+- **Task:** none
+- **Outcome:** false_claim
+- **Summary:** Evaluated three VERIFIERS.md claims on PR #81. Claims 1 and 2 true. Claim 3 false: newly added parametrized tests pass on main. V-003 filed as verify TASK-001.
+
+## 2026-08-29T05:50:00Z — issue_resolver — resolve
+
+- **Task:** TASK-001
+- **Outcome:** ok
+- **Summary:** Tied readme-loadouts comment, attachment, and repo-local existence tests to on-disk fixtures plus base.yaml and `.cursor/rules/readme-loadouts.mdc` invariants so they fail on main (5 failures when branch tests run against main) and pass on PR branch (13 passed). Added `tests/fixtures/readme_loadouts/*.yaml`. Committed 3c63ad4 and pushed to PR #81 branch.
+
 ## 2026-08-28T12:55:00Z — risk_classifier — decision
 
 - **Task:** none
