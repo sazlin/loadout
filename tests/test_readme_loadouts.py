@@ -12,8 +12,7 @@ from loadout.models import LoadoutDef, load_loadout
 from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
-RULE_SRC = "rules/core/readme-loadouts.mdc"
-RULE = REPO / RULE_SRC
+RULE = REPO / ".cursor/rules/readme-loadouts.mdc"
 README = REPO / "README.md"
 LOADOUTS_DIR = REPO / "loadouts"
 HEADING = "## Available loadouts"
@@ -121,9 +120,14 @@ def _extends_from_cell(cell: str) -> list[str]:
     raise AssertionError(f"unrecognized Extends cell: {cell!r}")
 
 
-def test_base_loadout_includes_readme_loadouts_rule() -> None:
-    loadout = load_loadout(REPO / "loadouts" / "base.yaml")
-    assert RULE_SRC in {entry["src"] for entry in loadout.rules}
+def test_readme_loadouts_rule_is_not_attached_to_any_loadout() -> None:
+    needle = "readme-loadouts"
+    for path in sorted((REPO / "loadouts").glob("*.yaml")):
+        assert needle not in path.read_text(), f"{path.name} must not vendor {needle}"
+
+
+def test_readme_loadouts_rule_exists_in_cursor_rules() -> None:
+    assert RULE.is_file()
 
 
 def test_readme_loadouts_rule_is_glob_scoped_to_catalog_sources() -> None:
@@ -192,12 +196,11 @@ def test_readme_omits_loadout_spec_and_stale_version_pins() -> None:
     assert "loadout@main" not in text
 
 
-def test_base_sync_vendors_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_base_sync_does_not_vendor_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
     project.mkdir()
     (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [base]\n")
     sync(project)
     dest = project / ".cursor/rules/readme-loadouts.mdc"
-    assert dest.is_file()
-    assert "Available loadouts" in dest.read_text()
+    assert not dest.exists()

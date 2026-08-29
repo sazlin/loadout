@@ -43,6 +43,15 @@ These are dynamic learnings an agent should consider.
 1. `just test` and other just recipes take no file arguments; run `uv run pytest <paths>` for a subset.
 2. Before pushing a shared feature branch, fetch `origin/<branch>` and rebase onto that tip. Do not push over newer remote commits.
 
+## Repo-local rules
+
+These rules live only in this repository's `.cursor/rules/` and are not vendored
+through any loadout.
+
+| Rule | Scope | What it covers |
+| --- | --- | --- |
+| `.cursor/rules/readme-loadouts.mdc` | `loadouts/*.yaml` | Keep README.md Available loadouts in sync when adding, removing, or changing a loadout. Applies when editing loadouts/. |
+
 <!-- BEGIN LOADOUT: agent-rules (generated, do not edit) -->
 ## Agent Rules
 
@@ -65,7 +74,6 @@ repo, so read them at the start of a session.
 | `.cursor/rules/agent-authoring.mdc` | `agents/*/*.md`, `agents/_agent_template.md` | Author and import agents from agents/_agent_template.md. Applies only when working on files under agents/. |
 | `.cursor/rules/pytest.mdc` | `**/test_*.py`, `**/*_test.py`, `tests/**/*.py` | Write reliable, focused pytest coverage for Python behavior. |
 | `.cursor/rules/python-code-style.mdc` | `**/*.py`, `**/*.pyi` | Write simple, readable, maintainable Python that a reviewer can quickly read and understand in one pass. |
-| `.cursor/rules/readme-loadouts.mdc` | `loadouts/*.yaml` | Keep README.md Available loadouts in sync when adding, removing, or changing a loadout. Applies when editing loadouts/. |
 | `.cursor/rules/test-agents.mdc` | `specs/**/*.md`, `e2e/**/*.spec.ts`, `e2e/**/*.spec.js`, `playwright.config.*` | Playwright Test Agent conventions for specs/, seed tests, and generated specs. |
 | `e2e/.cursor/rules/e2e-conventions.mdc` | `e2e/**/*.ts`, `e2e/**/*.tsx`, `e2e/**/*.js`, `e2e/**/*.jsx` | Keep Playwright end-to-end tests deterministic and user-focused under /e2e. |
 

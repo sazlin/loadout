@@ -1,12 +1,9 @@
 ---
-description: Keep README.md Available loadouts in sync when adding, removing, or changing
-  a loadout. Applies when editing loadouts/.
+description: >-
+  Keep README.md Available loadouts in sync when adding, removing, or
+  changing a loadout. Applies when editing loadouts/.
 globs:
-- loadouts/*.yaml
-metadata:
-  loadout.managed: 'true'
-  loadout.source: rules/core/readme-loadouts.mdc
-  loadout.sha: local
+  - loadouts/*.yaml
 ---
 
 # README loadout catalog
