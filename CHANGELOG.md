@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Readme-loadouts detach
+
+- Detach `readme-loadouts` from all loadouts: keep it as a repo-local rule in
+  `.cursor/rules/` for this source tree only; it is no longer vendored to
+  consumer projects.
+
 ## 0.22.0
 
 ## 0.21.0

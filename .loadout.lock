@@ -3,8 +3,8 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-25T00:50:01Z",
-  "tool_version": "0.15.0",
+  "synced_at": "2026-08-31T16:28:04Z",
+  "tool_version": "0.22.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
@@ -49,7 +49,7 @@
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "24224e365ad01080fadd5ef1f121804d55c53c1ceab2632f5255ab33bff0a517"
+      "sha256": "c1c9fa9a873b692f7db4a1d510e74dbfd93d98fa58e4ddb88c7ba5d4d40b2747"
     },
     {
       "dest": ".claude/agents/review_scale.md",
@@ -64,7 +64,7 @@
     {
       "dest": ".claude/agents/risk_classifier.md",
       "src": "agents/risk_classifier/risk_classifier.md",
-      "sha256": "25796786c0c69045aa2c40d000856391bc10f1585c3248d396b453087438c801"
+      "sha256": "2792d1cf69519706dcd3a65cf174fb1bfbc822022afda5dce2a3a27d7360d2aa"
     },
     {
       "dest": ".claude/agents/verifier.md",
@@ -357,6 +357,16 @@
       "sha256": "51471c853306ff92ca8bb41dcaea05f31c0e46b03651f8f3c99754b7172f4ae1"
     },
     {
+      "dest": ".claude/skills/unslop/SKILL.md",
+      "src": "skills/unslop/SKILL.md",
+      "sha256": "a8c9a7605a3629db7538a4993e426a6b2f3fce0a699a8eb94f5a8703f2089e05"
+    },
+    {
+      "dest": ".claude/skills/unslop/SOURCE.md",
+      "src": "skills/unslop/SOURCE.md",
+      "sha256": "a2fa47162fa725d03006de18274d2a585d88a75dc85670a968310b4eeafbf10c"
+    },
+    {
       "dest": ".claude/skills/using-git-worktrees/SKILL.md",
       "src": "skills/using-git-worktrees/SKILL.md",
       "sha256": "487998f948b16dfdbc3edc285c3365e9c5cc4245a4231254cb0afc0afc235f61"
@@ -516,11 +526,6 @@
       "sha256": "006044b980df7b73b8f177e5ac6c39833a9f1979d995f364fafe91a244eea6f7"
     },
     {
-      "dest": ".cursor/rules/readme-loadouts.mdc",
-      "src": "rules/core/readme-loadouts.mdc",
-      "sha256": "4298b69605af65e40b5d9d96105d3fff4d1a58b5f795bb0549a1b3489dd66444"
-    },
-    {
       "dest": ".cursor/rules/repo-conventions.mdc",
       "src": "rules/core/repo-conventions.mdc",
       "sha256": "5fb5ca1def5eb9ae39ac64e5aa06e653c24820fffff542d4692c775a282470d7"
@@ -545,7 +550,7 @@
     {
       "file": "AGENTS.md",
       "block": "agent-rules",
-      "sha256": "f6a4acf96f8d7af1bcb4234364bd1a551a4a8d9f6753b4f2b77f2121fbc84a5a"
+      "sha256": "ceb4b9c48f92c4874087cc8642e0112891ca54367470180e77f6af6f04f9a122"
     },
     {
       "file": "CLAUDE.md",

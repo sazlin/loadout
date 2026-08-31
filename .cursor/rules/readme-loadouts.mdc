@@ -1,15 +1,16 @@
 ---
-description: Keep README.md Available loadouts in sync when adding, removing, or changing
-  a loadout. Applies when editing loadouts/.
+description: >-
+  Keep README.md Available loadouts in sync when adding, removing, or
+  changing a loadout. Applies when editing loadouts/.
 globs:
-- loadouts/*.yaml
-metadata:
-  loadout.managed: 'true'
-  loadout.source: rules/core/readme-loadouts.mdc
-  loadout.sha: local
+  - loadouts/*.yaml
 ---
 
 # README loadout catalog
+
+Repo-local rule for this loadout source tree. **Do not add it to any
+loadouts/*.yaml.** It is not consumer tooling. See [AGENTS.md Repo-local
+rules](../../AGENTS.md#repo-local-rules) for the full list.
 
 This rule applies only in a loadout source repo (a tree with `loadouts/*.yaml`).
 In a consumer project without that directory, ignore it.

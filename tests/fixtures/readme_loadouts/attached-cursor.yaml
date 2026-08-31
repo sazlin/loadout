@@ -1,0 +1,4 @@
+name: attached-cursor
+description: incorrectly vendors readme-loadouts via .cursor path
+rules:
+  - src: .cursor/rules/readme-loadouts.mdc

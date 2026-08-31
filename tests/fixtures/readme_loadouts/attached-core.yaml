@@ -1,0 +1,4 @@
+name: attached-core
+description: incorrectly vendors readme-loadouts via rules/core path
+rules:
+  - src: rules/core/readme-loadouts.mdc

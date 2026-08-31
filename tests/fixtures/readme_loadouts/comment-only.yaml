@@ -1,0 +1,4 @@
+name: comment-only
+description: mentions readme-loadouts in a comment but does not attach it
+# readme-loadouts is repo-local; do not list rules/core/readme-loadouts.mdc
+rules: []

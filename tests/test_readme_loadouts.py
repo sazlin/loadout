@@ -12,10 +12,11 @@ from loadout.models import LoadoutDef, load_loadout
 from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
-RULE_SRC = "rules/core/readme-loadouts.mdc"
-RULE = REPO / RULE_SRC
+RULE = REPO / ".cursor/rules/readme-loadouts.mdc"
+CORE_RULE = REPO / "rules" / "core" / "readme-loadouts.mdc"
 README = REPO / "README.md"
 LOADOUTS_DIR = REPO / "loadouts"
+FIXTURES = Path(__file__).parent / "fixtures" / "readme_loadouts"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
 CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
@@ -121,9 +122,52 @@ def _extends_from_cell(cell: str) -> list[str]:
     raise AssertionError(f"unrecognized Extends cell: {cell!r}")
 
 
-def test_base_loadout_includes_readme_loadouts_rule() -> None:
-    loadout = load_loadout(REPO / "loadouts" / "base.yaml")
-    assert RULE_SRC in {entry["src"] for entry in loadout.rules}
+def _is_readme_loadouts_rule_src(src: str) -> bool:
+    return src.endswith("readme-loadouts.mdc") or "rules/core/readme-loadouts.mdc" in src
+
+
+def _attached_readme_loadouts_rules(loadout: LoadoutDef) -> list[str]:
+    return [
+        entry["src"]
+        for entry in loadout.rules
+        if isinstance(entry.get("src"), str) and _is_readme_loadouts_rule_src(entry["src"])
+    ]
+
+
+def test_readme_loadouts_rule_is_not_attached_to_any_loadout() -> None:
+    for path in sorted(LOADOUTS_DIR.glob("*.yaml")):
+        attached = _attached_readme_loadouts_rules(load_loadout(path))
+        assert not attached, f"{path.name} must not vendor readme-loadouts: {attached}"
+
+
+def test_readme_loadouts_comment_mention_does_not_count_as_attachment() -> None:
+    comment_only = FIXTURES / "comment-only.yaml"
+    assert _attached_readme_loadouts_rules(load_loadout(comment_only)) == []
+    base_attached = _attached_readme_loadouts_rules(load_loadout(LOADOUTS_DIR / "base.yaml"))
+    assert base_attached == [], f"base.yaml must not vendor readme-loadouts: {base_attached}"
+
+
+@pytest.mark.parametrize(
+    ("loadout_path", "expected"),
+    [
+        (LOADOUTS_DIR / "base.yaml", []),
+        (FIXTURES / "attached-core.yaml", ["rules/core/readme-loadouts.mdc"]),
+        (FIXTURES / "attached-cursor.yaml", [".cursor/rules/readme-loadouts.mdc"]),
+    ],
+)
+def test_attached_readme_loadouts_rule_srcs_detect_listed_rules(
+    loadout_path: Path, expected: list[str]
+) -> None:
+    assert _attached_readme_loadouts_rules(load_loadout(loadout_path)) == expected
+
+
+def test_readme_loadouts_rule_is_repo_local_cursor_rule() -> None:
+    assert RULE.is_file()
+    text = RULE.read_text()
+    assert "Repo-local rule" in text
+    assert "Do not add it to any" in text
+    assert "loadout.managed" not in text
+    assert not CORE_RULE.is_file(), "rules/core/readme-loadouts.mdc must not be vendored through loadouts"
 
 
 def test_readme_loadouts_rule_is_glob_scoped_to_catalog_sources() -> None:
@@ -192,12 +236,11 @@ def test_readme_omits_loadout_spec_and_stale_version_pins() -> None:
     assert "loadout@main" not in text
 
 
-def test_base_sync_vendors_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_base_sync_does_not_vendor_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
     project.mkdir()
     (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [base]\n")
     sync(project)
     dest = project / ".cursor/rules/readme-loadouts.mdc"
-    assert dest.is_file()
-    assert "Available loadouts" in dest.read_text()
+    assert not dest.exists()
