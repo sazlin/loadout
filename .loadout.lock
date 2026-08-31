@@ -3,8 +3,8 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-29T05:32:19Z",
-  "tool_version": "0.19.0",
+  "synced_at": "2026-08-31T16:28:04Z",
+  "tool_version": "0.22.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
