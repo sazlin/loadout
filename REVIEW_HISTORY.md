@@ -2,6 +2,24 @@
 
 Append-only log for the PR-review harness. Do not rewrite.
 
+## 2026-08-31T12:20:00Z — risk_classifier — decision
+
+- **Task:** none
+- **Outcome:** wait_for_human
+- **Summary:** Classified PR #84 diff as low risk. Substantive CI (lint-and-test, typecheck, sync/resolve matrix) green. Squash merge attempted but blocked by token permissions (mergePullRequest not accessible). Human with merge access should run `gh pr merge 84 --squash`.
+
+## 2026-08-31T12:15:00Z — verifier — verify
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Evaluated three VERIFIERS.md claims on PR #84. All claims true: no TypeScript any usage, no bypass renames (five modified files only), meaningful tests claim vacuously satisfied for version-only release bump with established version-pin test rename pattern.
+
+## 2026-08-31T12:10:00Z — review_orchestrator — panel
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Panel loop 1 dispatched four reviewers in parallel on PR #84 (release v0.22.0). All four returned zero issues: review_correctness, review_maintainability, review_scale, and review_security found no critical or important defects in the version bump across CHANGELOG.md, pyproject.toml, src/loadout/__init__.py, tests/test_version.py, and uv.lock. TASKS_TO_RESOLVE.md rewritten with no open tasks.
+
 ## 2026-08-28T12:55:00Z — risk_classifier — decision
 
 - **Task:** none
