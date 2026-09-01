@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.23.0
+
 ### Readme-loadouts detach
 
 - Detach `readme-loadouts` from all loadouts: keep it as a repo-local rule in
