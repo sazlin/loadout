@@ -35,35 +35,62 @@ jobs:
             echo "No loadouts/*.yaml found" >&2
             exit 1
           fi
+          cheap=()
+          cli_tools=()
           for yaml in "${loadouts[@]}"; do
+            if grep -qE '^cli_tools:' "$yaml"; then
+              cli_tools+=("$yaml")
+            else
+              cheap+=("$yaml")
+            fi
+          done
+          run_one_loadout() {
+            local yaml="$1"
+            local name
             name="$(basename "$yaml" .yaml)"
             echo "::group::${name}"
+            local project
             project="$(mktemp -d)"
             cat > "$project/.loadout.yaml" <<EOF
           source: https://github.com/sazlin/loadout
           ref: main
           loadouts: [$name]
           EOF
+            local rc=0
             if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout resolve --list); then
               echo "::error::resolve failed for ${name}"
-              failed=1
+              rc=1
             fi
             if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout sync); then
               echo "::error::sync failed for ${name}"
-              failed=1
+              rc=1
             else
               if find "$project" -type d -name evals | grep -q .; then
                 echo "Found evals/ in vendored output for ${name}:" >&2
                 find "$project" -type d -name evals >&2
-                failed=1
+                rc=1
               fi
               if find "$project" -type d -name '*-workspace' | grep -q .; then
                 echo "Found *-workspace/ in vendored output for ${name}:" >&2
                 find "$project" -type d -name '*-workspace' >&2
-                failed=1
+                rc=1
               fi
             fi
             rm -rf "$project"
             echo "::endgroup::"
+            return "${rc}"
+          }
+          for yaml in "${cheap[@]}"; do
+            run_one_loadout "$yaml" || failed=1
           done
+          if [[ ${#cli_tools[@]} -gt 0 ]]; then
+            pids=()
+            for yaml in "${cli_tools[@]}"; do
+              run_one_loadout "$yaml" &
+              pids+=("$!")
+            done
+            for pid in "${pids[@]}"; do
+              wait "$pid" || failed=1
+            done
+          fi
           exit "${failed}"

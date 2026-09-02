@@ -51,3 +51,13 @@ def test_loadouts_job_globs_yaml_and_checks_clean_sync() -> None:
     assert "evals" in script
     assert "*-workspace" in script
     assert 'rm -rf "$project"' in script
+
+
+def test_loadouts_job_runs_cheap_loadouts_before_parallel_cli_tools() -> None:
+    script = _job_script("loadouts")
+    assert "grep -qE '^cli_tools:'" in script
+    assert 'for yaml in "${cheap[@]}"' in script
+    assert 'run_one_loadout "$yaml" &' in script
+    assert script.index('for yaml in "${cheap[@]}"') < script.index(
+        'run_one_loadout "$yaml" &'
+    )
