@@ -37,7 +37,8 @@ an existing manifest with open tasks.
    each dedupe). `<short-sha>` is the reviewed commit from startup.
 2. Append-only `REVIEW_HISTORY.md` via `log-progress` during the run. After
    all other tasks complete, drop entries older than 30 days.
-3. One **new** GitHub PR comment per notable phase (never `--edit-last`)
+3. One **new** GitHub PR comment per notable phase (never `--edit-last`),
+   starting with **Started** as soon as the run begins on an open PR
 4. A final fenced `json` report matching **Output schema**
 
 Before exit, delete the frozen `tasks_path` manifest only when `open_task_ids`
@@ -58,6 +59,11 @@ prose alone.
    `dispatch-panel-review` until all tasks are `[done]` or the verify loop
    needs dedupe. Otherwise set `tasks_path` to
    `TASKS_TO_RESOLVE-<short-sha>.md` for the current head SHA.
+
+   As soon as the PR is confirmed open, post the **Started** GitHub comment
+   before `dispatch-panel-review` or `issue_resolver`. Resolve this run's
+   Cursor Cloud dashboard URL with `run-info` and include it. Never invent
+   an id. If the PR is already merged, abort instead of posting Started.
 
    Before the first dedupe write, delete stale project-root
    `TASKS_TO_RESOLVE-<other-sha>.md` files only when `<other-sha>` (the
@@ -155,6 +161,8 @@ Never:
 - Commit or `git push` to the PR branch after the PR is merged
 - Cancel this orchestrator run so the GitHub Action wait fails; abort by
   skipping remaining work and exiting `FINISHED` with `status: "aborted"`
+- Skip the **Started** comment and wait until a later phase
+- Invent a Cursor Cloud dashboard id for the start comment
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -174,7 +182,9 @@ it and record remaining tasks in `REVIEW_HISTORY.md` and the final JSON.
 
 1. Resolve the PR with `gh pr view` and `gh pr diff`. Do not guess the range.
    Read `state` and `mergedAt`. If the PR is already merged, abort before
-   dispatching anyone.
+   dispatching anyone. If it is open, resolve this run's Cursor Cloud
+   dashboard URL with `run-info` and post the **Started** comment before
+   any other harness work. Never invent an id.
 2. Resolve the reviewed short SHA. If the brief names a GitHub PR:
    `gh pr view <n> --json headRefOid --jq .headRefOid`, then
    `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
@@ -325,8 +335,11 @@ must abort:
 
 ### GitHub PR comments
 
-After each notable phase, post **one new** comment with `gh pr comment <n>
---body-file`. Do not pass `--edit-last`. Each run creates its own comments.
+As soon as this run begins and the PR is open, post the **Started**
+comment. Then after each notable phase, post **one new** comment with
+`gh pr comment <n> --body-file`. Do not pass `--edit-last`. Each run creates its own comments.
+Resolve this run's dashboard URL with `run-info` before the first comment.
+Never invent an id.
 
 Follow this visual style on every orchestrator comment:
 
@@ -349,6 +362,21 @@ Icons: ✅ done, 🔄 in progress, ⏳ queued, 🟢 low risk, 🔴 not low risk,
 
 Fill cells from the current phase. Use `<br>` so the icon sits above a short
 status word.
+
+**Started** (post immediately after confirming the PR is open, before any
+panel, resolve, or verify work). Resolve this run's URL with `run-info`.
+Never invent an id. All stages queued.
+
+````markdown
+### PR review harness
+
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ⏳<br>queued | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+
+- The PR Review Harness has started.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
+````
 
 **Panel Review**
 
@@ -478,24 +506,27 @@ Record the latest comment URL in `delivery.github_comment_url`.
 ### When invoked
 
 1. Confirm the PR and change set. If it is already merged, abort.
-2. Resolve the reviewed short SHA (`git rev-parse --short` of PR
+2. As soon as the PR is open, resolve this run's Cursor Cloud dashboard URL
+   with `run-info` and post the **Started** comment. Do this before SHA
+   setup, panel, resolve, or verify. Never invent an id.
+3. Resolve the reviewed short SHA (`git rev-parse --short` of PR
    `headRefOid`, else `HEAD`). If the brief or prior JSON supplies
    `tasks_path` and that file has `[open]` tasks, freeze `tasks_path` and
    **resume** (skip panel). Otherwise set `tasks_path` to
    `TASKS_TO_RESOLVE-<short-sha>.md`. Delete `TASKS_TO_RESOLVE-<other-sha>.md`
    only when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
-3. **Review** loop until no significant issues or cap: fresh runs use panel
+4. **Review** loop until no significant issues or cap: fresh runs use panel
    (dispatch → dedupe → resolve → log); resume runs skip panel and go straight
    to resolve → log. Before each loop or new `issue_resolver` task, abort if
    the PR is merged.
-4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
+5. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
    are all `true` or cap or file missing. Abort if the PR is merged before
    a verify loop.
-5. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
-6. Delete the frozen `tasks_path` only when `open_task_ids` is empty;
+6. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
+7. Delete the frozen `tasks_path` only when `open_task_ids` is empty;
    otherwise log remaining open tasks and keep `tasks_path` in the JSON.
-7. After all other tasks, trim `REVIEW_HISTORY.md` (entries older than
+8. After all other tasks, trim `REVIEW_HISTORY.md` (entries older than
    30 days). Then emit the JSON report.
 
 ## Output schema

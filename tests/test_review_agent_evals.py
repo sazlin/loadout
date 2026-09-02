@@ -235,6 +235,24 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
 
 
 ORCHESTRATOR_STAGE_TABLE_HEADER = "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |"
+STARTED_COMMENT_HEADING = "**Started**"
+STARTED_COMMENT_PHRASE = "the pr review harness has started"
+QUEUED_STAGE_CELL = "⏳<br>queued"
+
+
+def _fenced_markdown_after(text: str, marker: str) -> str:
+    """Return the first ````markdown fence body after marker, or empty."""
+    if marker not in text:
+        return ""
+    after = text.split(marker, 1)[1]
+    fence = "````markdown"
+    if fence not in after:
+        return ""
+    body = after.split(fence, 1)[1]
+    closer = "````"
+    if closer not in body:
+        return ""
+    return body.split(closer, 1)[0]
 
 
 def _assert_orchestrator_github_comment_spec(text: str) -> None:
@@ -259,6 +277,13 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "dashboard" in lowered
     # Abort comments must include this exact phrase.
     assert "pr review harness has aborted" in lowered
+    started = _fenced_markdown_after(text, "**Started** (post immediately")
+    assert STARTED_COMMENT_HEADING in text
+    assert STARTED_COMMENT_PHRASE in started.lower()
+    assert ORCHESTRATOR_STAGE_TABLE_HEADER in started
+    assert started.count(QUEUED_STAGE_CELL) == 5
+    assert "https://cursor.com/agents/" in started
+    assert "cursor cloud dashboard for this harness" in started.lower()
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -496,6 +521,33 @@ def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
 
 def test_orchestrator_github_comments_use_stage_table_and_bullets() -> None:
     _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
+
+
+def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "as soon as" in comments
+        assert "run-info" in comments
+        assert "never invent" in comments
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step2 = definition.split("2. ", 1)[1].split("\n3.", 1)[0].lower()
+        assert "started" in step2
+        assert "as soon as" in step2
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        started_at = invoked.find("started")
+        review_at = invoked.find("**review**")
+        assert started_at != -1
+        assert review_at != -1
+        assert started_at < review_at
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "started" in anti
+        assert "invent" in anti and "dashboard" in anti
+        assert "skip" in anti
+        assert "github_comment_url" in text
+        assert "gh pr comment" in lowered
 
 
 def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
