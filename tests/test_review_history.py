@@ -18,7 +18,8 @@ NOW = datetime(2026, 9, 2, tzinfo=UTC)
 
 PREAMBLE = """# Review history
 
-Append-only log for the PR-review harness. Do not rewrite.
+Append-only log for the PR-review harness. `review_orchestrator` drops
+entries older than 30 days after a run's other tasks complete.
 
 """
 
@@ -80,6 +81,25 @@ def test_trim_keeps_unparseable_entry_timestamps() -> None:
     trimmed = module.trim_review_history(text, now=NOW)
     assert "Timestamp is not ISO." in trimmed
     assert "Forty days old." not in trimmed
+
+
+def test_trim_bounds_unparseable_entry_accumulation() -> None:
+    module = _load_script()
+    excess = 200
+    blocks = [
+        f"""## bad-{index} — review_orchestrator — panel
+
+- **Summary:** Unparseable block {index}.
+
+"""
+        for index in range(excess)
+    ]
+    text = PREAMBLE + "".join(blocks)
+    trimmed = module.trim_review_history(text, now=NOW)
+    kept = trimmed.count("- **Summary:** Unparseable block")
+    assert kept == module.MAX_UNPARSEABLE_ENTRIES
+    assert "Unparseable block 0." not in trimmed
+    assert f"Unparseable block {excess - 1}." in trimmed
 
 
 def test_trim_file_is_noop_when_history_is_missing(tmp_path: Path) -> None:

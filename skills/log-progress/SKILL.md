@@ -38,5 +38,7 @@ Do not commit this file as part of a product fix. Do not edit
 ## Retention (orchestrator only)
 
 `review_orchestrator` drops entries older than 30 days after all other
-harness tasks complete, using `scripts/trim_review_history.py`. Do not trim
-from this skill. Append only during the run.
+harness tasks complete, using `scripts/trim_review_history.py`. Entries
+whose headings lack a parseable ISO timestamp are kept up to 50 blocks
+(file order; oldest dropped first when over the cap). Do not trim from this
+skill. Append only during the run.

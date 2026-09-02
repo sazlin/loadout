@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 RETENTION_DAYS = 30
+MAX_UNPARSEABLE_ENTRIES = 50
 DEFAULT_HISTORY = Path("REVIEW_HISTORY.md")
 ENTRY_HEADING_RE = re.compile(r"^##\s+(\S+)\s+[\u2014\u2013-]\s+.+$")
 
@@ -47,10 +48,20 @@ def _split_entries(text: str) -> tuple[str, list[tuple[str, str]]]:
     for index, begin in enumerate(starts):
         end = starts[index + 1] if index + 1 < len(starts) else len(lines)
         match = ENTRY_HEADING_RE.match(_heading_text(lines[begin]))
-        if match is None:
-            continue
         entries.append((match.group(1), "".join(lines[begin:end])))
     return preamble, entries
+
+
+def _bound_unparseable_entries(entries: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Keep at most MAX_UNPARSEABLE_ENTRIES blocks whose headings lack ISO timestamps."""
+    unparseable = [
+        index for index, (timestamp, _) in enumerate(entries) if parse_entry_timestamp(timestamp) is None
+    ]
+    excess = len(unparseable) - MAX_UNPARSEABLE_ENTRIES
+    if excess <= 0:
+        return entries
+    drop = set(unparseable[:excess])
+    return [entry for index, entry in enumerate(entries) if index not in drop]
 
 
 def trim_review_history(text: str, *, now: datetime | None = None) -> str:
@@ -62,8 +73,9 @@ def trim_review_history(text: str, *, now: datetime | None = None) -> str:
     preamble, entries = _split_entries(text)
     if not entries:
         return text
-    kept = [body for timestamp, body in entries if _keep_entry(timestamp, cutoff)]
-    return preamble + "".join(kept)
+    kept = [(timestamp, body) for timestamp, body in entries if _keep_entry(timestamp, cutoff)]
+    kept = _bound_unparseable_entries(kept)
+    return preamble + "".join(body for _, body in kept)
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
