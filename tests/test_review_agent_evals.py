@@ -257,6 +257,7 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "https://cursor.com/agents/" in text
     assert "cursor cloud" in lowered
     assert "dashboard" in lowered
+    # Abort comments must include this exact phrase.
     assert "pr review harness has aborted" in lowered
 
 
