@@ -26,7 +26,8 @@ Do not take a second task in the same run. Do not delete the tasks file.
 
 **Receives:** a self-contained brief from `resolve-next-task` naming the PR
 branch, `tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`), and optionally a
-specific `TASK-NNN` id.
+specific `TASK-NNN` id. The orchestrator always passes `tasks_path`; treat
+it as required in normal harness runs.
 
 **Emits:**
 1. Source edits for that single task
@@ -40,10 +41,16 @@ If no open tasks remain, emit `ok` with empty `changes` and
 
 ## Definition of done
 
-1. Read `tasks_path` from the brief (`TASKS_TO_RESOLVE-<short-sha>.md`). If
-   omitted, glob project-root `TASKS_TO_RESOLVE-*.md` and use the single
-   match. Select the first task whose status is `open` (or the id in the
-   brief). If none, report done with no edits.
+1. Read `tasks_path` from the brief (`TASKS_TO_RESOLVE-<short-sha>.md`).
+   If omitted (for example manual `/resolve_next_task`), glob project-root
+   `TASKS_TO_RESOLVE-*.md` with these rules:
+   - **Exactly one** match: use that path.
+   - **Zero** matches: emit `ok` with empty `changes` and
+     `inputs.summary` stating there is no tasks file to resolve.
+   - **More than one** match: emit `blocked`; require an explicit
+     `tasks_path` in the brief. Do not read or modify any tasks file.
+   Select the first task whose status is `open` (or the id in the brief).
+   If none, report done with no edits.
 2. Implement only that task's issues. Run its acceptance checks.
 3. Commit with a focused message. `git push` to the **existing PR branch
    only**.

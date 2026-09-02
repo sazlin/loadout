@@ -46,11 +46,15 @@ prose alone.
 
 1. Name the PR in `inputs.github_pr` and the change set in `inputs.summary`.
 2. On startup, resolve the reviewed short SHA and set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md`. Keep that path for the whole run.
+   `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first dedupe write,
+   delete every other project-root `TASKS_TO_RESOLVE-*.md` whose suffix
+   does not equal `<short-sha>` (stale files from prior crashed runs).
+   Keep that path for the whole run.
 3. Run **Review** until no significant (`critical` / `important`) issues remain
    or **3** panel loops are used: `dispatch-panel-review` →
    `dedupe-and-write-tasks` → dispatch `issue_resolver` with
-   `resolve-next-task` until open tasks are gone → `log-progress`.
+   `resolve-next-task` (always pass `tasks_path` in the brief) until open
+   tasks are gone → `log-progress`.
 4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
    empty list (no-op). On `false` claims, dedupe/resolve and repeat, max **3**
    verify loops.
@@ -116,7 +120,9 @@ delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists.
    `gh pr view <n> --json headRefOid --jq .headRefOid`, then
    `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
    If `gh` cannot return a head SHA, fall back to `git rev-parse --short HEAD`.
-   Set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`.
+   Set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first
+   dedupe write, delete every other project-root `TASKS_TO_RESOLVE-*.md`
+   whose suffix does not equal `<short-sha>`.
 3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
    `dedupe-and-write-tasks`, `resolve-next-task`, `log-progress`, and
    `dispatch-verifiers` when running those steps.
@@ -322,7 +328,9 @@ Record the latest comment URL in `delivery.github_comment_url`.
 1. Confirm the PR and change set.
 2. Resolve the reviewed short SHA (`git rev-parse --short` of PR
    `headRefOid`, else `HEAD`). Set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md`.
+   `TASKS_TO_RESOLVE-<short-sha>.md`. Delete stale project-root
+   `TASKS_TO_RESOLVE-*.md` files whose suffix does not equal
+   `<short-sha>`.
 3. Panel loop (dispatch → dedupe → resolve → log) until no significant
    issues or cap.
 4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
