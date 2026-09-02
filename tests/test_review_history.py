@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
+
+import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "skills" / "log-progress" / "scripts" / "trim_review_history.py"
@@ -84,6 +87,35 @@ def test_trim_file_is_noop_when_history_is_missing(tmp_path: Path) -> None:
     missing = tmp_path / "REVIEW_HISTORY.md"
     module.trim_review_history_file(missing, now=NOW)
     assert not missing.exists()
+
+
+def test_trim_file_atomic_on_write_failure_preserves_original(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_script()
+    ancient = """## 2020-01-01T00:00:00Z — review_orchestrator — panel
+
+- **Summary:** Ancient.
+
+"""
+    far_future = """## 2099-01-01T00:00:00Z — review_orchestrator — decision
+
+- **Summary:** Far future.
+
+"""
+    history = tmp_path / "REVIEW_HISTORY.md"
+    original_text = PREAMBLE + ancient + far_future
+    history.write_text(original_text, encoding="utf-8")
+
+    def fail_replace(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
+        raise OSError("simulated replace failure")
+
+    monkeypatch.setattr(os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="simulated replace failure"):
+        module.trim_review_history_file(history, now=NOW)
+
+    assert history.read_text(encoding="utf-8") == original_text
 
 
 def test_trim_cli_rewrites_cwd_review_history(tmp_path: Path) -> None:

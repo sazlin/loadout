@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import os
 import re
 import sys
+import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -64,6 +66,25 @@ def trim_review_history(text: str, *, now: datetime | None = None) -> str:
     return preamble + "".join(kept)
 
 
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write text to path atomically via a temp file in the same directory."""
+    fd, tmp_path_str = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    tmp_path = Path(tmp_path_str)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    except Exception:
+        tmp_path.unlink(missing_ok=True)
+        raise
+
+
 def trim_review_history_file(path: Path, *, now: datetime | None = None) -> None:
     """Rewrite path in place, or do nothing when the file is missing."""
     if not path.is_file():
@@ -71,7 +92,7 @@ def trim_review_history_file(path: Path, *, now: datetime | None = None) -> None
     original = path.read_text(encoding="utf-8")
     trimmed = trim_review_history(original, now=now)
     if trimmed != original:
-        path.write_text(trimmed, encoding="utf-8")
+        _atomic_write_text(path, trimmed)
 
 
 def main(argv: list[str] | None = None) -> int:
