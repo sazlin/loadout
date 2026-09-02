@@ -419,6 +419,28 @@ def test_orchestrator_hashes_and_deletes_the_tasks_file() -> None:
     assert "never write unhashed" in lowered or "do not write unhashed" in lowered
 
 
+def test_orchestrator_stale_cleanup_compares_embedded_sha_not_md_suffix() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "whose suffix does not equal" not in lowered
+    assert "between `tasks_to_resolve-` and `.md`" in lowered
+    assert "other-sha" in lowered
+    assert "never delete" in lowered and "[open]" in text
+    assert "keep `tasks_path` for the whole run" in lowered
+
+
+def test_orchestrator_resume_skips_panel_when_open_manifest_present() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "resume" in lowered
+    assert "freeze" in lowered or "frozen" in lowered
+    assert "skip" in lowered and "dispatch-panel-review" in text
+    assert "[open]" in text
+    assert "tasks_path" in text
+    assert "do not run dedupe until the manifest is fully" in lowered
+    assert "resolved" in lowered
+
+
 def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     lowered = text.lower()

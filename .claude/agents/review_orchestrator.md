@@ -31,7 +31,8 @@ classify risk yourself.
 
 **Receives:** a self-contained brief that names the change set as a GitHub
 pull request (PR number, `owner/repo#123`, or a `github.com/.../pull/N` URL),
-optionally with a local git range and/or paths.
+optionally with a local git range, paths, and/or `tasks_path` to resume from
+an existing manifest with open tasks.
 
 **Emits:**
 1. `TASKS_TO_RESOLVE-<short-sha>.md` via `dedupe-and-write-tasks` (rewritten
@@ -49,16 +50,29 @@ prose alone.
 ## Definition of done
 
 1. Name the PR in `inputs.github_pr` and the change set in `inputs.summary`.
-2. On startup, resolve the reviewed short SHA and set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first dedupe write,
-   delete every other project-root `TASKS_TO_RESOLVE-*.md` whose suffix
-   does not equal `<short-sha>` (stale files from prior crashed runs).
-   Keep that path for the whole run.
+2. **Startup and resume.** Resolve the reviewed short SHA from the PR head
+   (or `HEAD`). If the brief or prior JSON supplies `tasks_path` and that
+   file exists with at least one `[open]` task, **resume**: freeze
+   `tasks_path` to that manifest for the whole run (do not re-hash from
+   current head) and skip `dispatch-panel-review` until all tasks are
+   `[done]` or the verify loop needs dedupe. Otherwise set `tasks_path` to
+   `TASKS_TO_RESOLVE-<short-sha>.md` for the current head SHA.
+
+   Before the first dedupe write, delete stale project-root
+   `TASKS_TO_RESOLVE-<other-sha>.md` files only when `<other-sha>` (the
+   token between `TASKS_TO_RESOLVE-` and `.md`) is not the run's frozen
+   `<short-sha>` **and** the file has no `[open]` tasks. Never delete a
+   hashed tasks file that still has `[open]` tasks, even when its embedded
+   SHA differs from current head. Keep `tasks_path` for the whole run.
 3. Run **Review** until no significant (`critical` / `important`) issues remain
-   or **3** panel loops are used: `dispatch-panel-review` →
-   `dedupe-and-write-tasks` → dispatch `issue_resolver` with
-   `resolve-next-task` (always pass `tasks_path` in the brief) until open
-   tasks are gone → `log-progress`.
+   or **3** panel loops are used:
+   - **Fresh run:** `dispatch-panel-review` → `dedupe-and-write-tasks` →
+     dispatch `issue_resolver` with `resolve-next-task` (always pass
+     `tasks_path` in the brief) until open tasks are gone → `log-progress`.
+   - **Resume run:** skip panel; go straight to `issue_resolver` with
+     `resolve-next-task` (pass frozen `tasks_path`) until open tasks are
+     gone → `log-progress`. Do not run dedupe until the manifest is fully
+     resolved or the verify loop reports `false` claims.
 4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
    empty list (no-op). On `false` claims, dedupe/resolve and repeat, max **3**
    verify loops.
@@ -110,8 +124,12 @@ Never:
   (blocks resume without a new panel pass)
 - Skip deleting the tasks file after all tasks are done
   (`REVIEW_HISTORY.md` is the durable log; the manifest is ephemeral once empty)
-- Re-hash the filename after a fixer push; the startup SHA is the name
-  for the whole run
+- Re-hash the filename after a fixer push; the startup or resume SHA is the
+  name for the whole run
+- Delete a hashed tasks file that still has `[open]` tasks during stale
+  cleanup (even when embedded SHA differs from current head)
+- Run `dispatch-panel-review` or `dedupe-and-write-tasks` on a resume run
+  while the supplied manifest still has `[open]` tasks
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -134,9 +152,13 @@ final JSON.
    `gh pr view <n> --json headRefOid --jq .headRefOid`, then
    `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
    If `gh` cannot return a head SHA, fall back to `git rev-parse --short HEAD`.
-   Set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first
-   dedupe write, delete every other project-root `TASKS_TO_RESOLVE-*.md`
-   whose suffix does not equal `<short-sha>`.
+   If the brief or prior JSON supplies `tasks_path` and that file exists with
+   `[open]` tasks, freeze `tasks_path` to that manifest (resume). Otherwise
+   set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first
+   dedupe write, delete `TASKS_TO_RESOLVE-<other-sha>.md` only when
+   `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the run's
+   frozen `<short-sha>` and the file has no `[open]` tasks. Never delete a
+   hashed tasks file that still has `[open]` tasks.
 3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
    `dedupe-and-write-tasks`, `resolve-next-task`, `log-progress`, and
    `dispatch-verifiers` when running those steps.
@@ -220,13 +242,17 @@ When the orchestrator exits with non-empty `open_task_ids` (panel cap, verify
 cap, blocked resolve, or dispatch failure after partial resolve):
 
 1. **Keep** `TASKS_TO_RESOLVE-<short-sha>.md` on disk with open tasks still
-   marked `[open]`.
+   marked `[open]` (the frozen manifest SHA for that run).
 2. Append via `log-progress` a summary listing each remaining `open_task_ids`
    entry and `tasks_path`.
 3. Final JSON must include non-empty `open_task_ids` and `tasks_path`.
-4. A follow-up harness run or manual `/resolve_next_task` dispatch passes the
-   same `tasks_path` to `issue_resolver`; no new panel review is required until
-   the manifest is rewritten by dedupe.
+4. A follow-up harness run passes the same `tasks_path` in the brief. On
+   startup, the orchestrator **resumes**: it freezes that manifest path, skips
+   `dispatch-panel-review`, and dispatches `issue_resolver` until all tasks are
+   `[done]` or the verify loop needs dedupe. Stale cleanup must not delete the
+   manifest while it still has `[open]` tasks, even after a fixer push changes
+   head SHA. No new panel review is required until the manifest is fully
+   resolved or rewritten by dedupe.
 
 ### GitHub PR comments
 
@@ -355,12 +381,15 @@ Record the latest comment URL in `delivery.github_comment_url`.
 
 1. Confirm the PR and change set.
 2. Resolve the reviewed short SHA (`git rev-parse --short` of PR
-   `headRefOid`, else `HEAD`). Set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md`. Delete stale project-root
-   `TASKS_TO_RESOLVE-*.md` files whose suffix does not equal
-   `<short-sha>`.
-3. Panel loop (dispatch → dedupe → resolve → log) until no significant
-   issues or cap.
+   `headRefOid`, else `HEAD`). If the brief or prior JSON supplies
+   `tasks_path` and that file has `[open]` tasks, freeze `tasks_path` and
+   **resume** (skip panel). Otherwise set `tasks_path` to
+   `TASKS_TO_RESOLVE-<short-sha>.md`. Delete `TASKS_TO_RESOLVE-<other-sha>.md`
+   only when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
+   run's frozen `<short-sha>` and the file has no `[open]` tasks.
+3. **Review** loop until no significant issues or cap: fresh runs use panel
+   (dispatch → dedupe → resolve → log); resume runs skip panel and go straight
+   to resolve → log.
 4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
    are all `true` or cap or file missing.
 5. Dispatch `risk_classifier`. Record `decision`.
