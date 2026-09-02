@@ -40,7 +40,9 @@ optionally with a local git range and/or paths.
 3. One **new** GitHub PR comment per notable phase (never `--edit-last`)
 4. A final fenced `json` report matching **Output schema**
 
-Delete the hashed tasks file before exit. Do not create or edit
+Before exit, delete the hashed tasks file only when `open_task_ids` is empty.
+When open tasks remain, keep the file so a follow-up `issue_resolver` can
+resume from `tasks_path` without a new panel pass. Do not create or edit
 `VERIFIERS.md`. Do not write unhashed `TASKS_TO_RESOLVE.md`. Do not end on
 prose alone.
 
@@ -63,9 +65,16 @@ prose alone.
 5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
    merge yourself.
-6. Delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists. Then emit the JSON
-   report. If dispatch or a required delivery fails after **3** attempts,
-   still delete the tasks file, then emit `blocked`.
+6. If `open_task_ids` is empty, delete `TASKS_TO_RESOLVE-<short-sha>.md` if it
+   exists. If `open_task_ids` is non-empty (capped panel/verify loops, blocked
+   resolve, or dispatch failure with partial work), **keep** the tasks file,
+   append a structured summary of remaining open tasks to `REVIEW_HISTORY.md`
+   via `log-progress`, and include `open_task_ids` and `tasks_path` in the
+   final JSON so a follow-up run can dispatch `issue_resolver` with the same
+   `tasks_path` without re-paneling. Then emit the JSON report. On dispatch or
+   required delivery failure after **3** attempts, follow the same
+   keep-or-delete rule from `open_task_ids`; do not delete while open tasks
+   remain.
 
 ## Tools / privileges
 
@@ -73,8 +82,8 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
 - **Write scope:** only `TASKS_TO_RESOLVE-<short-sha>.md` and
   `REVIEW_HISTORY.md`. No source, test, config, or `VERIFIERS.md` edits.
-  Delete the hashed tasks file on exit. Never write unhashed
-  `TASKS_TO_RESOLVE.md`.
+  Delete the hashed tasks file before exit only when `open_task_ids` is empty.
+  Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
   `gh pr view` / `gh pr diff` / `gh pr comment`. No `git push`, force-push,
   history rewrite, or `gh pr merge`. Never `gh pr comment --edit-last`.
@@ -97,9 +106,10 @@ Never:
 - Edit or delete a previous GitHub PR comment; each comment is new
 - Commit secrets or PII copied from a reviewer report (redact in artifacts)
 - Write unhashed `TASKS_TO_RESOLVE.md`
-- Leave `TASKS_TO_RESOLVE-<short-sha>.md` on disk after exit
-- Skip deleting the tasks file because it "documents the work"
-  (`REVIEW_HISTORY.md` is the durable log)
+- Delete `TASKS_TO_RESOLVE-<short-sha>.md` while `open_task_ids` is non-empty
+  (blocks resume without a new panel pass)
+- Skip deleting the tasks file after all tasks are done
+  (`REVIEW_HISTORY.md` is the durable log; the manifest is ephemeral once empty)
 - Re-hash the filename after a fixer push; the startup SHA is the name
   for the whole run
 
@@ -112,8 +122,10 @@ PR, malformed JSON, `gh` auth), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
 Prefer writing nothing over inventing issues. If a reviewer is `blocked`,
 continue with the others and record that gap in `assumptions`. If a required
-GitHub comment cannot be posted, do not emit `ok`. On every exit path,
-delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists.
+GitHub comment cannot be posted, do not emit `ok`. On every exit path, delete
+`TASKS_TO_RESOLVE-<short-sha>.md` only when `open_task_ids` is empty;
+otherwise keep it and record remaining tasks in `REVIEW_HISTORY.md` and the
+final JSON.
 
 ## Context acquisition
 
@@ -201,6 +213,20 @@ After dedupe, build tasks of **1–3** similar issues. Assign `TASK-001`, …
 in severity-then-file order. Pass `tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`)
 in the brief and write through `dedupe-and-write-tasks`. Never write
 unhashed `TASKS_TO_RESOLVE.md`.
+
+### Resume partial work
+
+When the orchestrator exits with non-empty `open_task_ids` (panel cap, verify
+cap, blocked resolve, or dispatch failure after partial resolve):
+
+1. **Keep** `TASKS_TO_RESOLVE-<short-sha>.md` on disk with open tasks still
+   marked `[open]`.
+2. Append via `log-progress` a summary listing each remaining `open_task_ids`
+   entry and `tasks_path`.
+3. Final JSON must include non-empty `open_task_ids` and `tasks_path`.
+4. A follow-up harness run or manual `/resolve_next_task` dispatch passes the
+   same `tasks_path` to `issue_resolver`; no new panel review is required until
+   the manifest is rewritten by dedupe.
 
 ### GitHub PR comments
 
@@ -338,7 +364,8 @@ Record the latest comment URL in `delivery.github_comment_url`.
 4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
    are all `true` or cap or file missing.
 5. Dispatch `risk_classifier`. Record `decision`.
-6. Delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists. JSON report.
+6. Delete `TASKS_TO_RESOLVE-<short-sha>.md` only when `open_task_ids` is
+   empty; otherwise log remaining open tasks and JSON report with `tasks_path`.
 
 ## Output schema
 
@@ -383,7 +410,7 @@ End every run with a fenced `json` block:
   },
   "changes": [
     { "path": "TASKS_TO_RESOLVE-abc1234.md", "action": "create", "rationale": "deduped tasks" },
-    { "path": "TASKS_TO_RESOLVE-abc1234.md", "action": "delete", "rationale": "ephemeral tasks file" }
+    { "path": "TASKS_TO_RESOLVE-abc1234.md", "action": "delete", "rationale": "all tasks resolved; ephemeral manifest" }
   ],
   "verification": [
     { "command": "...", "result": "pass|fail", "notes": "..." }
