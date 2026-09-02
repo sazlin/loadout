@@ -86,3 +86,13 @@ def test_loadouts_skips_sync_after_resolve_failure() -> None:
     between = script[resolve_idx:sync_idx]
     assert "resolve failed" in between
     assert "else" in between
+
+
+def test_loadouts_validates_filename_stem_before_workflow_commands() -> None:
+    script = _job_script("loadouts")
+    pattern = r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$"
+    assert pattern in script
+    assert "invalid loadout filename stem" in script
+    pattern_idx = script.index(pattern)
+    group_idx = script.index("::group::")
+    assert pattern_idx < group_idx

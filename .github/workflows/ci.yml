@@ -51,6 +51,10 @@ jobs:
             local yaml="$1"
             local name
             name="$(basename "$yaml" .yaml)"
+            if [[ ! "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+              echo "::error::invalid loadout filename stem in loadouts/*.yaml" >&2
+              return 1
+            fi
             echo "::group::${name}"
             local project
             project="$(mktemp -d)"
