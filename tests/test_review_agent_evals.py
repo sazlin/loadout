@@ -441,6 +441,26 @@ def test_orchestrator_resume_skips_panel_when_open_manifest_present() -> None:
     assert "resolved" in lowered
 
 
+def test_orchestrator_trims_review_history_after_other_tasks() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "REVIEW_HISTORY.md" in text
+        assert "30 days" in lowered
+        assert "trim" in lowered
+        assert "trim_review_history.py" in text
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step7 = definition.split("7. ", 1)[1]
+        assert "after all other tasks" in step7.lower()
+        assert "30 days" in step7.lower()
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert invoked.find("trim") > invoked.find("risk_classifier")
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "30 days" in anti or "30-day" in anti
+        assert "during panel" in anti or "during the panel" in anti
+
+
 def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     lowered = text.lower()
