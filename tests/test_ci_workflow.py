@@ -50,3 +50,4 @@ def test_loadouts_job_globs_yaml_and_checks_clean_sync() -> None:
     assert "loadout sync" in script
     assert "evals" in script
     assert "*-workspace" in script
+    assert 'rm -rf "$project"' in script

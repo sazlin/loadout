@@ -63,6 +63,7 @@ jobs:
                 failed=1
               fi
             fi
+            rm -rf "$project"
             echo "::endgroup::"
           done
           exit "${failed}"
