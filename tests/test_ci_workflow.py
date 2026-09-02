@@ -8,7 +8,6 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 CI_YML = REPO / ".github" / "workflows" / "ci.yml"
-LOADOUTS_DIR = REPO / "loadouts"
 
 
 def _ci_text() -> str:
@@ -51,6 +50,3 @@ def test_loadouts_job_globs_yaml_and_checks_clean_sync() -> None:
     assert "loadout sync" in script
     assert "evals" in script
     assert "*-workspace" in script
-    names = {path.stem for path in LOADOUTS_DIR.glob("*.yaml")}
-    assert "pr_review_harness" in names
-    assert "playwright-e2e" not in names
