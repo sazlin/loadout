@@ -50,20 +50,25 @@ prose alone.
 ## Definition of done
 
 1. Name the PR in `inputs.github_pr` and the change set in `inputs.summary`.
-2. **Startup and resume.** Resolve the reviewed short SHA from the PR head
-   (or `HEAD`). If the brief or prior JSON supplies `tasks_path` and that
-   file exists with at least one `[open]` task, **resume**: freeze
-   `tasks_path` to that manifest for the whole run (do not re-hash from
-   current head); set the run's frozen `<short-sha>` to the token between
-   `TASKS_TO_RESOLVE-` and `.md` in that `tasks_path` and skip
-   `dispatch-panel-review` until all tasks are `[done]` or the verify loop
-   needs dedupe. Otherwise set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md` for the current head SHA.
+2. **Startup and resume.** Confirm the PR is open with a lightweight
+   `gh pr view <n> --json state,mergedAt`. If `state` is `MERGED` or
+   `mergedAt` is set, abort instead of posting Started.
 
-   As soon as the PR is confirmed open, post the **Started** GitHub comment
-   before `dispatch-panel-review` or `issue_resolver`. Resolve this run's
-   Cursor Cloud dashboard URL with `run-info` and include it. Never invent
-   an id. If the PR is already merged, abort instead of posting Started.
+   As soon as the PR is confirmed open, resolve this run's Cursor Cloud
+   dashboard URL with `run-info` and post the **Started** GitHub comment
+   before SHA setup, `gh pr diff`, `dispatch-panel-review`, or
+   `issue_resolver`. Post Started exactly once per run. Never invent an id.
+
+   Resolve the reviewed short SHA from the PR head: `gh pr view <n> --json
+   headRefOid --jq .headRefOid`, then `git rev-parse --short <oid>` (or
+   `git rev-parse --short HEAD` when no PR). If the brief or prior JSON
+   supplies `tasks_path` and that file exists with at least one `[open]` task, **resume**: freeze `tasks_path` to that manifest for
+   the whole run (do not re-hash from current head); set the run's frozen
+   `<short-sha>` to the token between `TASKS_TO_RESOLVE-` and `.md` in that
+   `tasks_path` and skip `dispatch-panel-review` until all tasks are
+   `[done]` or the verify loop needs dedupe. Otherwise set `tasks_path` to
+   `TASKS_TO_RESOLVE-<short-sha>.md` for the current head SHA. Fetch the PR
+   diff with `gh pr diff` after Started is posted.
 
    Before the first dedupe write, delete stale project-root
    `TASKS_TO_RESOLVE-<other-sha>.md` files only when `<other-sha>` (the
@@ -162,6 +167,7 @@ Never:
 - Cancel this orchestrator run so the GitHub Action wait fails; abort by
   skipping remaining work and exiting `FINISHED` with `status: "aborted"`
 - Skip the **Started** comment and wait until a later phase
+- Post the **Started** comment more than once at startup (exactly once per run)
 - Invent a Cursor Cloud dashboard id for the start comment
 
 If the only path to done is one of the above: emit `blocked`.
@@ -180,22 +186,24 @@ it and record remaining tasks in `REVIEW_HISTORY.md` and the final JSON.
 
 ## Context acquisition
 
-1. Resolve the PR with `gh pr view` and `gh pr diff`. Do not guess the range.
-   Read `state` and `mergedAt`. If the PR is already merged, abort before
+1. Confirm the PR with a lightweight `gh pr view <n> --json state,mergedAt`.
+   Do not guess the range. If the PR is already merged, abort before
    dispatching anyone. If it is open, resolve this run's Cursor Cloud
    dashboard URL with `run-info` and post the **Started** comment before
-   any other harness work. Never invent an id.
+   SHA setup or `gh pr diff`. Post Started exactly once per run. Never
+   invent an id.
 2. Resolve the reviewed short SHA. If the brief names a GitHub PR:
    `gh pr view <n> --json headRefOid --jq .headRefOid`, then
    `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
    If `gh` cannot return a head SHA, fall back to `git rev-parse --short HEAD`.
    If the brief or prior JSON supplies `tasks_path` and that file exists with
    `[open]` tasks, freeze `tasks_path` to that manifest (resume). Otherwise
-   set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`. Before the first
-   dedupe write, delete `TASKS_TO_RESOLVE-<other-sha>.md` only when
-   `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the run's
-   frozen `<short-sha>` and the file has no `[open]` tasks. Never delete a
-   hashed tasks file that still has `[open]` tasks.
+   set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`. Fetch the PR diff
+   with `gh pr diff` after Started is posted. Before the first dedupe write,
+   delete `TASKS_TO_RESOLVE-<other-sha>.md` only when `<other-sha>` (between
+   `TASKS_TO_RESOLVE-` and `.md`) is not the run's frozen `<short-sha>` and
+   the file has no `[open]` tasks. Never delete a hashed tasks file that
+   still has `[open]` tasks.
 3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
    `dedupe-and-write-tasks`, `resolve-next-task`, `log-progress`, and
    `dispatch-verifiers` when running those steps.
@@ -505,16 +513,19 @@ Record the latest comment URL in `delivery.github_comment_url`.
 
 ### When invoked
 
-1. Confirm the PR and change set. If it is already merged, abort.
+1. Confirm the PR and change set with a lightweight `gh pr view <n> --json
+   state,mergedAt`. If it is already merged, abort.
 2. As soon as the PR is open, resolve this run's Cursor Cloud dashboard URL
    with `run-info` and post the **Started** comment. Do this before SHA
-   setup, panel, resolve, or verify. Never invent an id.
+   setup, `gh pr diff`, panel, resolve, or verify. Post Started exactly once
+   per run. Never invent an id.
 3. Resolve the reviewed short SHA (`git rev-parse --short` of PR
    `headRefOid`, else `HEAD`). If the brief or prior JSON supplies
    `tasks_path` and that file has `[open]` tasks, freeze `tasks_path` and
    **resume** (skip panel). Otherwise set `tasks_path` to
-   `TASKS_TO_RESOLVE-<short-sha>.md`. Delete `TASKS_TO_RESOLVE-<other-sha>.md`
-   only when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
+   `TASKS_TO_RESOLVE-<short-sha>.md`. Fetch the PR diff with `gh pr diff`
+   after Started is posted. Delete `TASKS_TO_RESOLVE-<other-sha>.md` only
+   when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
 4. **Review** loop until no significant issues or cap: fresh runs use panel
    (dispatch → dedupe → resolve → log); resume runs skip panel and go straight

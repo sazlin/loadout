@@ -536,6 +536,18 @@ def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
         step2 = definition.split("2. ", 1)[1].split("\n3.", 1)[0].lower()
         assert "started" in step2
         assert "as soon as" in step2
+        started_at = step2.find("started")
+        sha_markers = [step2.find(marker) for marker in ("rev-parse", "headrefoid")]
+        sha_at = min(pos for pos in sha_markers if pos != -1)
+        assert started_at != -1
+        assert sha_at != -1
+        assert started_at < sha_at
+        context = text.split("## Context acquisition", 1)[1].split("## Repo conventions", 1)[0].lower()
+        context_started_at = context.find("started")
+        context_diff_at = context.find("gh pr diff")
+        assert context_started_at != -1
+        assert context_diff_at != -1
+        assert context_started_at < context_diff_at
         invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
         started_at = invoked.find("started")
         review_at = invoked.find("**review**")
@@ -546,6 +558,7 @@ def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
         assert "started" in anti
         assert "invent" in anti and "dashboard" in anti
         assert "skip" in anti
+        assert "exactly once" in anti
         assert "github_comment_url" in text
         assert "gh pr comment" in lowered
 
