@@ -258,6 +258,12 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "cursor cloud" in lowered
     assert "dashboard" in lowered
     assert "pr review harness has aborted" in lowered
+    aborted_section = text.split("**Aborted**", 1)[1].split("Record the latest", 1)[0]
+    aborted_lowered = aborted_section.lower()
+    assert "completed stage cells" in aborted_lowered
+    assert "abort phase" in aborted_lowered
+    assert "✅<br>" in aborted_section
+    assert aborted_section.count("⛔<br>aborted") < 5
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:

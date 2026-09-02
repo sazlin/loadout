@@ -457,7 +457,9 @@ comment carrying merge outcome.
 ````
 
 **Aborted** (PR was merged while the harness was still in progress). Keep
-completed stage cells. Set remaining queued or in-progress cells to
+completed stage cells (for example `✅<br>done`, `✅<br>N loops`, or
+`✅<br>N tasks`). Set only queued (⏳) or in-progress (🔄) cells to
+⛔ aborted. When no stage completed yet, all five cells may show
 ⛔ aborted.
 
 ````markdown
@@ -465,10 +467,11 @@ completed stage cells. Set remaining queued or in-progress cells to
 
 | Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
-| ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted |
+| ✅<br>N loops | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted |
 
 - The PR Review Harness has aborted.
 - The pull request is already merged.
+- Abort phase: resolve (panel review completed).
 - Remaining review and verification tasks were skipped.
 - Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
