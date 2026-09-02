@@ -235,8 +235,11 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
 
 
 ORCHESTRATOR_STAGE_TABLE_HEADER = "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |"
-STARTED_COMMENT_HEADING = "**Started**"
+STARTED_COMMENT_HEADING = "**Started (fresh run only)**"
+STARTED_SECTION_MARKER = "**Started (fresh run"
 STARTED_COMMENT_PHRASE = "the pr review harness has started"
+RESUME_STARTUP_MARKER = "**Resume startup (do not post Started)**"
+RESOLVE_ISSUES_TEMPLATE_MARKER = "\n\n**Resolve Issues**\n\n````markdown"
 QUEUED_STAGE_CELL = "⏳<br>queued"
 
 
@@ -277,13 +280,16 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "dashboard" in lowered
     # Abort comments must include this exact phrase.
     assert "pr review harness has aborted" in lowered
-    started = _fenced_markdown_after(text, "**Started** (post immediately")
-    assert STARTED_COMMENT_HEADING in text
+    started = _fenced_markdown_after(text, STARTED_SECTION_MARKER)
+    assert STARTED_COMMENT_HEADING in text, "Started (fresh run only) heading missing"
+    assert started, f"No Started template fence found after {STARTED_SECTION_MARKER!r}"
     assert STARTED_COMMENT_PHRASE in started.lower()
     assert ORCHESTRATOR_STAGE_TABLE_HEADER in started
     assert started.count(QUEUED_STAGE_CELL) == 5
+    assert "all stages queued" in started.lower()
     assert "https://cursor.com/agents/" in started
     assert "cursor cloud dashboard for this harness" in started.lower()
+    assert RESUME_STARTUP_MARKER in text
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -559,8 +565,48 @@ def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
         assert "invent" in anti and "dashboard" in anti
         assert "skip" in anti
         assert "exactly once" in anti
+        assert "fresh startup" in anti or "fresh run" in anti
         assert "github_comment_url" in text
         assert "gh pr comment" in lowered
+
+
+def test_orchestrator_started_comment_reflects_resume_state() -> None:
+    """Fresh runs post all-queued Started; resume runs skip Started and show Panel completed."""
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        started_fresh = _fenced_markdown_after(text, STARTED_SECTION_MARKER)
+        assert started_fresh.count(QUEUED_STAGE_CELL) == 5
+        assert "all stages queued" in started_fresh.lower()
+        assert RESUME_STARTUP_MARKER in text
+        assert "do not post started" in RESUME_STARTUP_MARKER.lower()
+        resume_section = text.split(RESUME_STARTUP_MARKER, 1)[1].split("**Panel Review**", 1)[0]
+        resume_lower = resume_section.lower()
+        assert "skip started" in resume_lower
+        assert "panel review" in resume_lower
+        assert "completed" in resume_lower or "✅" in resume_section
+        assert "queued" in resume_lower and "not queued" in resume_lower
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step2 = definition.split("2. ", 1)[1].split("\n3.", 1)[0].lower()
+        assert "resume detection" in step2
+        assert "do not post started" in step2
+        assert "resolve issues" in step2
+        assert "fresh startup" in step2
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "fresh run" in comments and "resume run" in comments
+        assert "skip started" in comments
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "skip started" in invoked
+        assert "resolve issues" in invoked
+        assert "panel review completed" in invoked or "panel review" in invoked
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "resume run" in anti and "started" in anti
+        assert RESOLVE_ISSUES_TEMPLATE_MARKER in text
+        resolve_body = text.split(RESOLVE_ISSUES_TEMPLATE_MARKER, 1)[1]
+        resolve_template = resolve_body.split("````", 1)[0]
+        assert "✅" in resolve_template
+        assert "🔄" in resolve_template or "task-00" in resolve_template.lower()
 
 
 def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
