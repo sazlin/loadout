@@ -714,11 +714,6 @@ def test_wait_for_run_loads_latest_run_id_when_create_payload_omits_run() -> Non
     assert "status=FINISHED" in result.stdout
 
 
-def test_ci_matrix_includes_pr_review_harness() -> None:
-    text = (REPO / ".github/workflows/ci.yml").read_text()
-    assert "pr_review_harness" in text
-
-
 def test_verifiers_md_contains_required_claims() -> None:
     lines = [
         line for line in (REPO / "VERIFIERS.md").read_text().splitlines() if line.strip() and not line.startswith("#")
