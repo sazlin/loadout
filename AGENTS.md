@@ -33,8 +33,10 @@ projects. See [README.md](README.md) for full details.
   fetches from the GitHub `source`/`ref` in the manifest, which needs network.
 - `pre-commit` is available (installed via the dev extra), but git hooks are not
   auto-installed; run `uv run pre-commit run --all-files` if you want the ruff
-  and pyrefly hooks. CI (`.github/workflows/ci.yml`) runs `uv sync --all-extras`
-  then `just lint && just test`, plus a `typecheck` job (`uv run pyrefly check`).
+  and pyrefly hooks. CI (`.github/workflows/ci.yml`) has two jobs after
+  `uv sync --all-extras`: `lint-and-test` (`just lint && just test` plus
+  `uv run pyrefly check --output-format=github`) and `loadouts` (resolve and
+  sync every `loadouts/*.yaml`, asserting no vendored `evals/` or `*-workspace/`).
 
 ## Learnings
 

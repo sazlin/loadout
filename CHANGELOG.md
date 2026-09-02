@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Collapse CI into two jobs: lint/test/typecheck, and one loop over every
+  `loadouts/*.yaml` for resolve plus a clean sync (no per-loadout matrix).
 - Rename PR review harness comment stages to Panel Review, Resolve Issues,
   Verifiers, and Risk Classification, and append Cursor Cloud dashboard
   links.

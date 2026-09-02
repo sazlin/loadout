@@ -14,72 +14,55 @@ jobs:
       - uses: extractions/setup-just@v2
       - run: uv sync --all-extras
       - run: just lint && just test
-
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync --all-extras
       - name: Pyrefly type check
         run: uv run pyrefly check --output-format=github
 
-  resolve-loadouts:
+  loadouts:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright, superpowers, pr_review_harness, implementation_harness]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --all-extras
-      - name: Resolve ${{ matrix.loadout }}
+      - name: Resolve and sync every loadout
         env:
           LOADOUT_PATH: ${{ github.workspace }}
-          LOADOUT_NAME: ${{ matrix.loadout }}
         run: |
           set -euo pipefail
-          project="$(mktemp -d)"
-          cat > "$project/.loadout.yaml" <<EOF
-          source: https://github.com/sazlin/loadout
-          ref: main
-          loadouts: [$LOADOUT_NAME]
-          EOF
-          cd "$project"
-          uv run --project "$GITHUB_WORKSPACE" loadout resolve --list
-
-  sync-clean-output:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        loadout: [base, python, python-monorepo, typescript, aws, db, github, supabase, terraform, playwright, superpowers, pr_review_harness, implementation_harness]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync --all-extras
-      - name: Sync ${{ matrix.loadout }} with no evals or workspace artifacts
-        env:
-          LOADOUT_PATH: ${{ github.workspace }}
-          LOADOUT_NAME: ${{ matrix.loadout }}
-        run: |
-          set -euo pipefail
-          project="$(mktemp -d)"
-          cat > "$project/.loadout.yaml" <<EOF
-          source: https://github.com/sazlin/loadout
-          ref: main
-          loadouts: [$LOADOUT_NAME]
-          EOF
-          cd "$project"
-          uv run --project "$GITHUB_WORKSPACE" loadout sync
-          if find . -type d -name evals | grep -q .; then
-            echo "Found evals/ in vendored output:" >&2
-            find . -type d -name evals >&2
+          shopt -s nullglob
+          failed=0
+          loadouts=("$GITHUB_WORKSPACE"/loadouts/*.yaml)
+          if [[ ${#loadouts[@]} -eq 0 ]]; then
+            echo "No loadouts/*.yaml found" >&2
             exit 1
           fi
-          if find . -type d -name '*-workspace' | grep -q .; then
-            echo "Found *-workspace/ in vendored output:" >&2
-            find . -type d -name '*-workspace' >&2
-            exit 1
-          fi
+          for yaml in "${loadouts[@]}"; do
+            name="$(basename "$yaml" .yaml)"
+            echo "::group::${name}"
+            project="$(mktemp -d)"
+            cat > "$project/.loadout.yaml" <<EOF
+          source: https://github.com/sazlin/loadout
+          ref: main
+          loadouts: [$name]
+          EOF
+            if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout resolve --list); then
+              echo "::error::resolve failed for ${name}"
+              failed=1
+            fi
+            if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout sync); then
+              echo "::error::sync failed for ${name}"
+              failed=1
+            else
+              if find "$project" -type d -name evals | grep -q .; then
+                echo "Found evals/ in vendored output for ${name}:" >&2
+                find "$project" -type d -name evals >&2
+                failed=1
+              fi
+              if find "$project" -type d -name '*-workspace' | grep -q .; then
+                echo "Found *-workspace/ in vendored output for ${name}:" >&2
+                find "$project" -type d -name '*-workspace' >&2
+                failed=1
+              fi
+            fi
+            echo "::endgroup::"
+          done
+          exit "${failed}"
