@@ -1,8 +1,9 @@
 ---
 name: log-progress
 description: Append one entry to REVIEW_HISTORY.md. Use after a panel, task, verifier,
-  or risk decision, or when the user says /log_progress. Never rewrite or truncate
-  the file.
+  or risk decision, or when the user says /log_progress. Append-only from this skill;
+  review_orchestrator may drop entries older than 30 days after other harness tasks
+  via scripts/trim_review_history.py.
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/log-progress/SKILL.md
