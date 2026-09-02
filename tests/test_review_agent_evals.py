@@ -236,7 +236,6 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
 
 ORCHESTRATOR_STAGE_TABLE_HEADER = "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |"
 STARTED_COMMENT_HEADING = "**Started (fresh run only)**"
-STARTED_SECTION_MARKER = "**Started (fresh run"
 STARTED_COMMENT_PHRASE = "the pr review harness has started"
 RESUME_STARTUP_MARKER = "**Resume startup (do not post Started)**"
 RESOLVE_ISSUES_TEMPLATE_MARKER = "\n\n**Resolve Issues**\n\n````markdown"
@@ -280,9 +279,9 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "dashboard" in lowered
     # Abort comments must include this exact phrase.
     assert "pr review harness has aborted" in lowered
-    started = _fenced_markdown_after(text, STARTED_SECTION_MARKER)
-    assert STARTED_COMMENT_HEADING in text, "Started (fresh run only) heading missing"
-    assert started, f"No Started template fence found after {STARTED_SECTION_MARKER!r}"
+    assert STARTED_COMMENT_HEADING in text, f"Started section heading missing: {STARTED_COMMENT_HEADING!r}"
+    started = _fenced_markdown_after(text, STARTED_COMMENT_HEADING)
+    assert started, f"No Started template fence found after {STARTED_COMMENT_HEADING!r}"
     assert STARTED_COMMENT_PHRASE in started.lower()
     assert ORCHESTRATOR_STAGE_TABLE_HEADER in started
     assert started.count(QUEUED_STAGE_CELL) == 5
@@ -576,7 +575,7 @@ def test_orchestrator_started_comment_reflects_resume_state() -> None:
     vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
     for text in (source, vendored):
         lowered = text.lower()
-        started_fresh = _fenced_markdown_after(text, STARTED_SECTION_MARKER)
+        started_fresh = _fenced_markdown_after(text, STARTED_COMMENT_HEADING)
         assert started_fresh.count(QUEUED_STAGE_CELL) == 5
         assert "all stages queued" in started_fresh.lower()
         assert RESUME_STARTUP_MARKER in text
