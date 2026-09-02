@@ -8,6 +8,7 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -19,6 +20,7 @@ jobs:
 
   loadouts:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -57,23 +59,24 @@ jobs:
           loadouts: [$name]
           EOF
             local rc=0
-            if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout resolve --list); then
+            if ! timeout 120s bash -c "cd \"$project\" && uv run --project \"$GITHUB_WORKSPACE\" loadout resolve --list"; then
               echo "::error::resolve failed for ${name}"
               rc=1
-            fi
-            if ! (cd "$project" && uv run --project "$GITHUB_WORKSPACE" loadout sync); then
-              echo "::error::sync failed for ${name}"
-              rc=1
             else
-              if find "$project" -type d -name evals | grep -q .; then
-                echo "Found evals/ in vendored output for ${name}:" >&2
-                find "$project" -type d -name evals >&2
+              if ! timeout 120s bash -c "cd \"$project\" && uv run --project \"$GITHUB_WORKSPACE\" loadout sync"; then
+                echo "::error::sync failed for ${name}"
                 rc=1
-              fi
-              if find "$project" -type d -name '*-workspace' | grep -q .; then
-                echo "Found *-workspace/ in vendored output for ${name}:" >&2
-                find "$project" -type d -name '*-workspace' >&2
-                rc=1
+              else
+                if find "$project" -type d -name evals | grep -q .; then
+                  echo "Found evals/ in vendored output for ${name}:" >&2
+                  find "$project" -type d -name evals >&2
+                  rc=1
+                fi
+                if find "$project" -type d -name '*-workspace' | grep -q .; then
+                  echo "Found *-workspace/ in vendored output for ${name}:" >&2
+                  find "$project" -type d -name '*-workspace' >&2
+                  rc=1
+                fi
               fi
             fi
             rm -rf "$project"

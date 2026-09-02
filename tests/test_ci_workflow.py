@@ -33,6 +33,12 @@ def test_ci_uses_two_jobs_without_a_matrix() -> None:
         assert "strategy" not in job, f"{name} still uses a matrix"
 
 
+def test_ci_jobs_define_timeout_minutes() -> None:
+    jobs = _ci_jobs()
+    assert jobs["lint-and-test"]["timeout-minutes"] == 20
+    assert jobs["loadouts"]["timeout-minutes"] == 30
+
+
 def test_lint_and_test_runs_lint_pytest_and_pyrefly() -> None:
     text = _ci_text()
     script = _job_script("lint-and-test")
@@ -61,3 +67,21 @@ def test_loadouts_job_runs_cheap_loadouts_before_parallel_cli_tools() -> None:
     assert script.index('for yaml in "${cheap[@]}"') < script.index(
         'run_one_loadout "$yaml" &'
     )
+
+
+def test_loadouts_wraps_resolve_and_sync_with_per_iteration_timeout() -> None:
+    script = _job_script("loadouts")
+    assert script.count("timeout 120s") >= 2
+    resolve_idx = script.index("loadout resolve --list")
+    sync_idx = script.index("loadout sync")
+    assert script.index("timeout 120s") < resolve_idx
+    assert script.rindex("timeout 120s", 0, sync_idx + len("loadout sync")) < sync_idx
+
+
+def test_loadouts_skips_sync_after_resolve_failure() -> None:
+    script = _job_script("loadouts")
+    resolve_idx = script.index("loadout resolve --list")
+    sync_idx = script.index("loadout sync")
+    between = script[resolve_idx:sync_idx]
+    assert "resolve failed" in between
+    assert "else" in between
