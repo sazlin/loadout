@@ -8,6 +8,8 @@
 - Abort the PR review harness when the pull request is already merged:
   skip remaining work, post an abort comment, and archive child Cursor
   Cloud agents.
+- Re-run `loadout sync` against latest `main` after that harness update;
+  vendored files already matched (no drift).
 - After all other PR-review harness tasks, `review_orchestrator` trims
   `REVIEW_HISTORY.md` entries older than 30 days.
 - Hash `TASKS_TO_RESOLVE.md` with the reviewed git short SHA
