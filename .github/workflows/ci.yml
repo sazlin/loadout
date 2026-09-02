@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  lint-and-test:
+  lint-test-typecheck:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -16,6 +16,7 @@ jobs:
       - run: uv sync --all-extras
       - run: just lint && just test
       - name: Pyrefly type check
+        # --output-format=github for Actions annotations; local dev uses just typecheck
         run: uv run pyrefly check --output-format=github
 
   loadouts:

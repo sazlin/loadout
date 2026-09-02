@@ -34,9 +34,10 @@ projects. See [README.md](README.md) for full details.
 - `pre-commit` is available (installed via the dev extra), but git hooks are not
   auto-installed; run `uv run pre-commit run --all-files` if you want the ruff
   and pyrefly hooks. CI (`.github/workflows/ci.yml`) has two jobs after
-  `uv sync --all-extras`: `lint-and-test` (`just lint && just test` plus
-  `uv run pyrefly check --output-format=github`) and `loadouts` (resolve and
-  sync every `loadouts/*.yaml`, asserting no vendored `evals/` or `*-workspace/`).
+  `uv sync --all-extras`: `lint-test-typecheck` (`just lint && just test` plus
+  `uv run pyrefly check --output-format=github` for Actions annotations; locally
+  use `just typecheck`) and `loadouts` (resolve and sync every `loadouts/*.yaml`,
+  asserting no vendored `evals/` or `*-workspace/`).
 
 ## Learnings
 

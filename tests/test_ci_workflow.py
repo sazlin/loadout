@@ -28,20 +28,20 @@ def _job_script(job_name: str) -> str:
 
 def test_ci_uses_two_jobs_without_a_matrix() -> None:
     jobs = _ci_jobs()
-    assert list(jobs) == ["lint-and-test", "loadouts"]
+    assert list(jobs) == ["lint-test-typecheck", "loadouts"]
     for name, job in jobs.items():
         assert "strategy" not in job, f"{name} still uses a matrix"
 
 
 def test_ci_jobs_define_timeout_minutes() -> None:
     jobs = _ci_jobs()
-    assert jobs["lint-and-test"]["timeout-minutes"] == 20
+    assert jobs["lint-test-typecheck"]["timeout-minutes"] == 20
     assert jobs["loadouts"]["timeout-minutes"] == 30
 
 
 def test_lint_and_test_runs_lint_pytest_and_pyrefly() -> None:
     text = _ci_text()
-    script = _job_script("lint-and-test")
+    script = _job_script("lint-test-typecheck")
     assert "just lint" in script
     assert "just test" in script
     assert "pyrefly check" in script
