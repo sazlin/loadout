@@ -35,7 +35,8 @@ an existing manifest with open tasks.
 **Emits:**
 1. `TASKS_TO_RESOLVE-<short-sha>.md` via `dedupe-and-write-tasks` (rewritten
    each dedupe). `<short-sha>` is the reviewed commit from startup.
-2. Append-only `REVIEW_HISTORY.md` via `log-progress`
+2. Append-only `REVIEW_HISTORY.md` via `log-progress` during the run. After
+   all other tasks complete, drop entries older than 30 days.
 3. One **new** GitHub PR comment per notable phase (never `--edit-last`)
 4. A final fenced `json` report matching **Output schema**
 
@@ -87,10 +88,14 @@ prose alone.
    append a structured summary of remaining open tasks to `REVIEW_HISTORY.md`
    via `log-progress`, and include `open_task_ids` and `tasks_path` in the
    final JSON so a follow-up run can dispatch `issue_resolver` with the same
-   `tasks_path` without re-paneling. Then emit the JSON report. On dispatch or
-   required delivery failure after **3** attempts, follow the same
-   keep-or-delete rule from `open_task_ids`; do not delete while open tasks
-   remain.
+   `tasks_path` without re-paneling. On dispatch or required delivery failure
+   after **3** attempts, follow the same keep-or-delete rule from
+   `open_task_ids`; do not delete while open tasks remain.
+7. After all other tasks are complete, trim `REVIEW_HISTORY.md`: drop entries
+   whose heading timestamp is older than 30 days. From the project root run
+   `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
+   Missing `REVIEW_HISTORY.md` is a no-op. Do not trim during panel, resolve,
+   or verify. Then emit the JSON report.
 
 ## Tools / privileges
 
@@ -102,8 +107,10 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
   empty.
   Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
-  `gh pr view` / `gh pr diff` / `gh pr comment`. No `git push`, force-push,
-  history rewrite, or `gh pr merge`. Never `gh pr comment --edit-last`.
+  `gh pr view` / `gh pr diff` / `gh pr comment`;
+  `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
+  No `git push`, force-push, history rewrite, or `gh pr merge`. Never
+  `gh pr comment --edit-last`.
 - **Dispatch:** host subagent / Task / Agent tool. If missing, ask the parent
   to launch the named agents — do not silently become a reviewer or fixer.
 - You are not the fixer, not the verifier, not the classifier, and not the
@@ -136,6 +143,9 @@ Never:
   cleanup (even when embedded SHA differs from current head)
 - Run `dispatch-panel-review` or `dedupe-and-write-tasks` on a resume run
   while the supplied manifest still has `[open]` tasks
+- Skip the 30-day `REVIEW_HISTORY.md` trim after all other tasks complete
+- Drop entries from the last 30 days, or trim during panel, resolve, or
+  verify
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -202,7 +212,7 @@ project commands. Do not apply a personal style guide while grouping.
 | `dispatch-panel-review` | Start or repeat the panel. Four parallel dispatches. |
 | `dedupe-and-write-tasks` | After panel or verifier issues. Rewrite `TASKS_TO_RESOLVE-<short-sha>.md`. |
 | `resolve-next-task` | Brief for each `issue_resolver` invocation (one open task). Pass `tasks_path`. |
-| `log-progress` | After each phase and each resolved task. Append only. |
+| `log-progress` | After each phase and each resolved task. Append only. Orchestrator trims entries older than 30 days after all other tasks. |
 | `dispatch-verifiers` | After panel is clean of significant issues. Sequential claims. |
 
 ### Significant issues and caps
@@ -258,6 +268,18 @@ cap, blocked resolve, or dispatch failure after partial resolve):
    manifest while it still has `[open]` tasks, even after a fixer push changes
    head SHA. No new panel review is required until the manifest is fully
    resolved or rewritten by dedupe.
+
+### Retention trim
+
+After all other tasks are complete, drop `REVIEW_HISTORY.md` entries older
+than 30 days. Do this once, after panel, resolve, verify, the risk
+decision, keep-or-delete of `tasks_path`, and this run's `log-progress`
+appends. `risk_classifier` still reads the untrimmed log.
+
+From the project root run
+`python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
+Missing `REVIEW_HISTORY.md` is a no-op. Keep remaining entries in order.
+This rewrite is the only exception to `log-progress` append-only.
 
 ### GitHub PR comments
 
@@ -399,7 +421,9 @@ Record the latest comment URL in `delivery.github_comment_url`.
    are all `true` or cap or file missing.
 5. Dispatch `risk_classifier`. Record `decision`.
 6. Delete the frozen `tasks_path` only when `open_task_ids` is empty;
-   otherwise log remaining open tasks and JSON report with `tasks_path`.
+   otherwise log remaining open tasks and keep `tasks_path` in the JSON.
+7. After all other tasks, trim `REVIEW_HISTORY.md` (entries older than
+   30 days). Then emit the JSON report.
 
 ## Output schema
 

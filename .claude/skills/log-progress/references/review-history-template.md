@@ -1,6 +1,7 @@
 # Review history
 
-Append-only log for the PR-review harness. Do not rewrite.
+Append-only log for the PR-review harness. `review_orchestrator` drops
+entries older than 30 days after a run's other tasks complete.
 
 ## <ISO timestamp> — <agent> — <phase>
 

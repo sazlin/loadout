@@ -58,6 +58,9 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     history = (SKILLS / "log-progress" / "SKILL.md").read_text()
     assert "REVIEW_HISTORY.md" in history
     assert "append" in history.lower()
+    assert "30 days" in history.lower()
+    assert "review_orchestrator" in history.lower()
+    assert (SKILLS / "log-progress" / "scripts" / "trim_review_history.py").is_file()
 
     verifiers = (SKILLS / "dispatch-verifiers" / "SKILL.md").read_text()
     assert "VERIFIERS.md" in verifiers

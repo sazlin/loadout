@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-02T15:45:16Z",
+  "synced_at": "2026-09-02T18:08:55Z",
   "tool_version": "0.24.0",
   "files": [
     {
@@ -14,7 +14,7 @@
     {
       "dest": ".claude/agents/issue_resolver.md",
       "src": "agents/issue_resolver/issue_resolver.md",
-      "sha256": "aa835e5d8675fb189b17e65b0f999d907b69b273096b4565d6ede242c61ffad3"
+      "sha256": "758619e9539bcb73289a2cf9ee708fc19b3156d04ec16e575ecde2c87ae3b51d"
     },
     {
       "dest": ".claude/agents/playwright_generator.md",
@@ -49,7 +49,7 @@
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "dfc8d58d2492274eb53389f511fa0af3762fd3e5d04c7786d2f41cd72f432246"
+      "sha256": "27b006648173a9bc84751aee9a925cd40133d10e7afa4fc2ac32298b61b59390"
     },
     {
       "dest": ".claude/agents/review_scale.md",
@@ -185,12 +185,18 @@
     {
       "dest": ".claude/skills/log-progress/SKILL.md",
       "src": "skills/log-progress/SKILL.md",
-      "sha256": "c3a2d1d061bcc59a230548568618680eb9a06d090a8bda56270be63124021ed8"
+      "sha256": "b03aee50999e91a984bcecfa7b2dbe67c5046991de51a781a1a79f5c910422f2"
     },
     {
       "dest": ".claude/skills/log-progress/references/review-history-template.md",
       "src": "skills/log-progress/references/review-history-template.md",
-      "sha256": "696a3651f246f5977c206096878be9366ba22b8d64775abc3021dd035b0f29f8"
+      "sha256": "a1a9756623526075e7147d1076fc52888e290196e90eb43d67f0f83fae2a4d95"
+    },
+    {
+      "dest": ".claude/skills/log-progress/scripts/trim_review_history.py",
+      "src": "skills/log-progress/scripts/trim_review_history.py",
+      "sha256": "c0baa94f7afc1bc80bddba87d7af611259ec3f53bd88d96db9a1448c8281d473",
+      "mode": "755"
     },
     {
       "dest": ".claude/skills/next-decision/SKILL.md",
@@ -250,7 +256,7 @@
     {
       "dest": ".claude/skills/resolve-next-task/SKILL.md",
       "src": "skills/resolve-next-task/SKILL.md",
-      "sha256": "6a4c6d9d05327e8a5dcd61cce23483c7ff7eb546c8720229ca31e34fd154197a"
+      "sha256": "05f8537fb9977dd65b00e20c18c7878d436bba2f5bae2f63ca56ad33f6d1e989"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/SKILL.md",

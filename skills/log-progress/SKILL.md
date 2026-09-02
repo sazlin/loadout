@@ -20,7 +20,8 @@ Append-only history for the PR-review harness.
 
 1. If `REVIEW_HISTORY.md` does not exist at the project root, create it from
    `references/review-history-template.md`.
-2. **Append** one entry. Never rewrite, truncate, or reorder prior entries.
+2. **Append** one entry. Never rewrite, truncate, or reorder prior entries
+   from this skill.
 3. Fill: timestamp (ISO), agent, phase (`panel` | `resolve` | `verify` |
    `decision`), optional task id, one-paragraph summary, outcome
    (`ok` | `blocked` | `false_claim` | `merged` | `wait_for_human`).
@@ -30,5 +31,11 @@ Do not commit this file as part of a product fix. Do not edit
 
 ## Guardrails
 
-- Never delete or rewrite history
+- Never delete or rewrite history from this skill
 - Never log secrets or raw PII; redact
+
+## Retention (orchestrator only)
+
+`review_orchestrator` drops entries older than 30 days after all other
+harness tasks complete, using `scripts/trim_review_history.py`. Do not trim
+from this skill. Append only during the run.

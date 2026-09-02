@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- After all other PR-review harness tasks, `review_orchestrator` trims
+  `REVIEW_HISTORY.md` entries older than 30 days.
 - Hash `TASKS_TO_RESOLVE.md` with the reviewed git short SHA
   (`TASKS_TO_RESOLVE-<short-sha>.md`) and delete that file when
   `review_orchestrator` exits so it is not left to be committed.
