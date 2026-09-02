@@ -40,6 +40,7 @@ def test_ci_jobs_define_timeout_minutes() -> None:
 
 
 def test_lint_and_test_runs_lint_pytest_and_pyrefly() -> None:
+    # setup-just is a uses: step; run commands come from _job_script
     text = _ci_text()
     script = _job_script("lint-test-typecheck")
     assert "just lint" in script
