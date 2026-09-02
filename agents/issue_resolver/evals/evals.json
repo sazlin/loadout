@@ -4,10 +4,10 @@
     {
       "id": "issue-resolver-tax-after-discount",
       "agent": "issue_resolver",
-      "prompt": "You are issue_resolver. Follow agents/issue_resolver/issue_resolver.md and skills/resolve-next-task/SKILL.md. Resolve the first open task in agents/issue_resolver/evals/files/TASKS_TO_RESOLVE.md against agents/issue_resolver/evals/files/pricing.py. Do not remove _tmp. Do not merge. Return the JSON report.",
+      "prompt": "You are issue_resolver. Follow agents/issue_resolver/issue_resolver.md and skills/resolve-next-task/SKILL.md. tasks_path: agents/issue_resolver/evals/files/TASKS_TO_RESOLVE-abc1234.md. Resolve the first open task against agents/issue_resolver/evals/files/pricing.py. Do not remove _tmp. Do not merge. Return the JSON report.",
       "files": [
         "evals/files/pricing.py",
-        "evals/files/TASKS_TO_RESOLVE.md"
+        "evals/files/TASKS_TO_RESOLVE-abc1234.md"
       ],
       "expected_output": "JSON report for a scoped tax-formula fix and a push, not a merge",
       "expectations": [

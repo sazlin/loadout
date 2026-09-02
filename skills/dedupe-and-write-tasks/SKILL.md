@@ -1,7 +1,7 @@
 ---
 name: dedupe-and-write-tasks
 description: >-
-  Dedupe panel or verifier issues and rewrite TASKS_TO_RESOLVE.md with 1-3
+  Dedupe panel or verifier issues and rewrite the hashed tasks file with 1-3
   similar issues per task. Use after dispatch-panel-review or
   dispatch-verifiers returns issues, or when the user says
   /dedupe-and-write-tasks.
@@ -9,7 +9,7 @@ description: >-
 
 # Dedupe and write tasks
 
-Turn issue JSON into project-root `TASKS_TO_RESOLVE.md`.
+Turn issue JSON into the hashed tasks file named in the brief.
 
 ## When to use
 
@@ -37,14 +37,17 @@ fix steps from the dropped one. Record every drop. Severity: keep the higher
 
 ## Write
 
-Rewrite (do not append) project-root `TASKS_TO_RESOLVE.md` using the
-template in `references/tasks-to-resolve-template.md`.
+The brief names `tasks_path` as `TASKS_TO_RESOLVE-<short-sha>.md`. Rewrite
+(do not append) that project-root file using the template in
+`references/tasks-to-resolve-template.md`.
 
-Do not write `review-work-items/`. Do not edit `VERIFIERS.md`. Do not
-implement the fixes.
+Never write unhashed `TASKS_TO_RESOLVE.md`. Do not write `review-work-items/`.
+Do not edit `VERIFIERS.md`. Do not implement the fixes. Do not delete the
+tasks file (the orchestrator deletes it on exit).
 
 ## Guardrails
 
 - Never hide a duplicate without recording it
 - Never put more than 3 issues in one task
 - Never leave a half-written tasks file
+- Never invent a path; use the brief's `TASKS_TO_RESOLVE-<short-sha>.md`

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Hash `TASKS_TO_RESOLVE.md` with the reviewed git short SHA
+  (`TASKS_TO_RESOLVE-<short-sha>.md`) and delete that file when
+  `review_orchestrator` exits so it is not left to be committed.
+
 ## 0.24.0
 
 ## 0.23.0
