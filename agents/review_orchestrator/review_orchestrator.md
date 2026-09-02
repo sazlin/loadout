@@ -190,14 +190,20 @@ If the only path to done is one of the above: emit `blocked`.
 ## Blocked protocol
 
 Max **3** attempts for the same failure class (dispatch failure, unreadable
-PR, malformed JSON, `gh` auth), then emit `status: "blocked"` with
-`blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
-Prefer writing nothing over inventing issues. If a reviewer is `blocked`,
-continue with the others and record that gap in `assumptions`. If a required
-GitHub comment cannot be posted, do not emit `ok`. A merged PR is
-`status: "aborted"`, not `blocked`. On every exit path, delete
-the frozen `tasks_path` only when `open_task_ids` is empty; otherwise keep
-it and record remaining tasks in `REVIEW_HISTORY.md` and the final JSON.
+PR, malformed JSON, `gh` auth, **Started** `gh pr comment` delivery,
+`run-info` lookup), with short backoff between retries (e.g. 2–5 seconds),
+then emit `status: "blocked"` with `blocked_reason` naming the dependency
+(`github_comment`, `run_info`, or the existing classes), plus `tried`,
+`rejected`, `verification`, and `assumptions`. Do not retry indefinitely on
+GitHub 5xx, rate limits, or cursor-cloud MCP flakes. Prefer writing nothing
+over inventing issues. If a reviewer is `blocked`, continue with the others
+and record that gap in `assumptions`. If a required GitHub comment cannot be
+posted after max attempts, do not emit `ok`. When `run-info` fails after
+retries, you may post **Started** without a dashboard link (degraded mode) but
+never invent a Cursor Cloud agent id. A merged PR is `status: "aborted"`, not
+`blocked`. On every exit path, delete the frozen `tasks_path` only when
+`open_task_ids` is empty; otherwise keep it and record remaining tasks in
+`REVIEW_HISTORY.md` and the final JSON.
 
 ## Context acquisition
 
@@ -366,8 +372,7 @@ As soon as this run begins and the PR is open:
   Issues** as this run's first comment, with Panel Review completed.
 
 After the startup comment, post **one new** comment per notable phase with
-`gh pr comment <n> --body-file`. Do not pass `--edit-last`. Each run creates
-its own comments.
+`gh pr comment <n> --body-file`. Do not pass `--edit-last`. Each run creates its own comments.
 Resolve this run's dashboard URL with `run-info` before the first comment.
 Never invent an id.
 

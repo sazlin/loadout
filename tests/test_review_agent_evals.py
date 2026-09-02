@@ -609,6 +609,30 @@ def test_orchestrator_started_comment_reflects_resume_state() -> None:
         assert "🔄" in resolve_template or "task-00" in resolve_template.lower()
 
 
+def test_orchestrator_blocked_protocol_caps_started_comment_and_run_info_retries() -> None:
+    """Blocked protocol must bound retries for Started gh pr comment and run-info."""
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+        blocked_lower = blocked.lower()
+        assert "3" in blocked
+        for failure_class in (
+            "dispatch failure",
+            "malformed json",
+            "`gh` auth",
+            "gh pr comment",
+            "run-info",
+        ):
+            assert failure_class in blocked_lower
+        assert "backoff" in blocked_lower
+        assert "github_comment" in blocked_lower
+        assert "run_info" in blocked_lower
+        assert 'status: "blocked"' in blocked or "`blocked`" in blocked_lower
+        assert "degraded" in blocked_lower or "without a dashboard link" in blocked_lower
+        assert "never invent" in blocked_lower
+
+
 def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
     source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
