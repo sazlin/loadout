@@ -14,7 +14,8 @@ Append-only history for the PR-review harness.
 ## When to use
 
 - After panel dispatch/results, each resolved task, each verifier claim
-  batch, and the risk decision
+  batch, the risk decision, and when the harness aborts because the PR
+  merged
 - The user asks `/log_progress`
 
 ## Steps
@@ -24,8 +25,9 @@ Append-only history for the PR-review harness.
 2. **Append** one entry. Never rewrite, truncate, or reorder prior entries
    from this skill.
 3. Fill: timestamp (ISO), agent, phase (`panel` | `resolve` | `verify` |
-   `decision`), optional task id, one-paragraph summary, outcome
-   (`ok` | `blocked` | `false_claim` | `merged` | `wait_for_human`).
+   `decision` | `abort`), optional task id, one-paragraph summary, outcome
+   (`ok` | `blocked` | `false_claim` | `merged` | `wait_for_human` |
+   `aborted`).
 
 Do not commit this file as part of a product fix. Do not edit
 `VERIFIERS.md` or source.

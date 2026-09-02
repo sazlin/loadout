@@ -67,6 +67,11 @@ prose alone.
    `<short-sha>` **and** the file has no `[open]` tasks. Never delete a
    hashed tasks file that still has `[open]` tasks, even when its embedded
    SHA differs from current head. Keep `tasks_path` for the whole run.
+   Before each panel loop, each `issue_resolver` dispatch, each verify loop,
+   and `risk_classifier`, check whether the PR is merged
+   (`gh pr view <n> --json state,mergedAt`). If `state` is `MERGED` or
+   `mergedAt` is set, follow **Abort if the PR is merged** instead of the
+   remaining Review, Verification, and Decision work.
 3. Run **Review** until no significant (`critical` / `important`) issues remain
    or **3** panel loops are used:
    - **Fresh run:** `dispatch-panel-review` → `dedupe-and-write-tasks` →
@@ -148,6 +153,10 @@ Never:
 - Skip the 30-day `REVIEW_HISTORY.md` trim after all other tasks complete
 - Drop entries from the last 30 days, or trim during panel, resolve, or
   verify
+- Continue Review, Verification, or Decision after the PR is merged
+- Commit or `git push` to the PR branch after the PR is merged
+- Cancel this orchestrator run so the GitHub Action wait fails; abort by
+  skipping remaining work and exiting `FINISHED` with `status: "aborted"`
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -158,13 +167,16 @@ PR, malformed JSON, `gh` auth), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
 Prefer writing nothing over inventing issues. If a reviewer is `blocked`,
 continue with the others and record that gap in `assumptions`. If a required
-GitHub comment cannot be posted, do not emit `ok`. On every exit path, delete
+GitHub comment cannot be posted, do not emit `ok`. A merged PR is
+`status: "aborted"`, not `blocked`. On every exit path, delete
 the frozen `tasks_path` only when `open_task_ids` is empty; otherwise keep
 it and record remaining tasks in `REVIEW_HISTORY.md` and the final JSON.
 
 ## Context acquisition
 
 1. Resolve the PR with `gh pr view` and `gh pr diff`. Do not guess the range.
+   Read `state` and `mergedAt`. If the PR is already merged, abort before
+   dispatching anyone.
 2. Resolve the reviewed short SHA. If the brief names a GitHub PR:
    `gh pr view <n> --json headRefOid --jq .headRefOid`, then
    `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
@@ -283,6 +295,36 @@ From the project root run
 Missing `REVIEW_HISTORY.md` is a no-op. Keep remaining entries in order.
 This rewrite is the only exception to `log-progress` append-only.
 
+### Abort if the PR is merged
+
+Before beginning a panel loop, dispatching `issue_resolver` for a new task,
+starting a verify loop, or dispatching `risk_classifier`, run:
+
+`gh pr view <n> --json state,mergedAt`
+
+If `state` is `MERGED` or `mergedAt` is not null, the PR Review Harness
+must abort:
+
+1. Stop. Skip remaining review, resolve, verification, and risk tasks.
+   Do not dispatch further sub-agents.
+2. Do not commit any more changes to the PR branch. Do not `git push`.
+   Do not ask `issue_resolver` to continue.
+3. Clean up Cursor Cloud state for **child** agents of this run. Cancel
+   in-flight child runs
+   (`POST https://api.cursor.com/v1/agents/{id}/runs/{runId}/cancel`)
+   then archive those children
+   (`POST https://api.cursor.com/v1/agents/{id}/archive`) when
+   `CURSOR_API_KEY` is set. Do not cancel or archive this orchestrator
+   run; let it reach `FINISHED`. If the key is missing, skip API cleanup
+   and record that in `assumptions`.
+4. Post one new GitHub comment using the **Aborted** template. The body
+   must say that the PR Review Harness has aborted.
+5. `log-progress` with phase `abort` and outcome `aborted`.
+6. Keep or delete `tasks_path` with the usual `open_task_ids` rule.
+   Trim `REVIEW_HISTORY.md` as on any other exit. Emit JSON with
+   `status: "aborted"`, `phase: "abort"`, and
+   `blocked_reason: "pull request merged"`.
+
 ### GitHub PR comments
 
 After each notable phase, post **one new** comment with `gh pr comment <n>
@@ -294,57 +336,66 @@ Follow this visual style on every orchestrator comment:
 - First block is a five-column stage table. Do not use a bold-label list.
 - After the table, bullets only. One sentence per bullet. No multi-sentence
   paragraphs.
+- End every comment with Cursor Cloud dashboard bullets so a user can
+  monitor the agents. Use `https://cursor.com/agents/<id>`. Always include
+  this harness run. Include each dispatched child that has a
+  `cloudAgentBcId`. Resolve this run's URL with the cursor-cloud `run-info`
+  tool when available. Never invent an id.
 - Do not emit GitHub alerts on orchestrator comments. Alerts belong on
   `risk_classifier` comments when a human must act.
 - At **decision**, do not repeat the classifier rationale. Table plus short
   bullets only.
 
 Icons: ✅ done, 🔄 in progress, ⏳ queued, 🟢 low risk, 🔴 not low risk,
-⛔ merge blocked, ⏸️ merge skipped.
+⛔ merge blocked or aborted, ⏸️ merge skipped.
 
 Fill cells from the current phase. Use `<br>` so the icon sits above a short
 status word.
 
-**Panel**
+**Panel Review**
 
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | 🔄<br>loop N | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
 
 - Open tasks: N.
 - Significant issues remaining: N.
 - Four reviewers dispatched in parallel.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
-**Resolve**
+**Resolve Issues**
 
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | ✅<br>N loops | 🔄<br>TASK-00X | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
 
 - Open tasks: N.
 - Significant issues remaining: N.
 - Current work: TASK-00X.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
+- Cursor Cloud dashboard for issue_resolver: [open](https://cursor.com/agents/<id>).
 ````
 
-**Verify**
+**Verifiers**
 
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | ✅<br>done | ✅<br>done | 🔄<br>k/n | ⏳<br>queued | ⏳<br>queued |
 
 - Open tasks: N.
 - Significant issues remaining: N.
 - No human action yet.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
 **Decision** (after `risk_classifier` returns). Set Risk and Merge cells from
@@ -364,7 +415,7 @@ comment carrying merge outcome.
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ✅<br>done |
 
@@ -372,6 +423,7 @@ comment carrying merge outcome.
 - Significant issues remaining: 0.
 - CI: N checks green.
 - Squash-merge performed.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
 **Merge skipped** (not low risk; classifier posted its own comment).
@@ -379,7 +431,7 @@ comment carrying merge outcome.
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🔴<br>`not_low` | ⏸️<br>skipped |
 
@@ -387,6 +439,7 @@ comment carrying merge outcome.
 - Significant issues remaining: 0.
 - CI: N checks green.
 - Auto-merge skipped; human should review the diff.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
 **Merge blocked** (low risk, protection or token cannot squash-merge).
@@ -394,7 +447,7 @@ comment carrying merge outcome.
 ````markdown
 ### PR review harness
 
-| Panel | Resolve | Verify | Risk | Merge |
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
 | ✅<br>N loops | ✅<br>N tasks | ✅<br>k/n | 🟢<br>`low` | ⛔<br>blocked |
 
@@ -402,13 +455,31 @@ comment carrying merge outcome.
 - Significant issues remaining: 0.
 - CI: N checks green.
 - Merge blocked; human with permission should squash-merge.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
+````
+
+**Aborted** (PR was merged while the harness was still in progress). Keep
+completed stage cells. Set remaining queued or in-progress cells to
+⛔ aborted.
+
+````markdown
+### PR review harness
+
+| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
+|:-----:|:-------:|:------:|:----:|:-----:|
+| ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted | ⛔<br>aborted |
+
+- The PR Review Harness has aborted.
+- The pull request is already merged.
+- Remaining review and verification tasks were skipped.
+- Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
 Record the latest comment URL in `delivery.github_comment_url`.
 
 ### When invoked
 
-1. Confirm the PR and change set.
+1. Confirm the PR and change set. If it is already merged, abort.
 2. Resolve the reviewed short SHA (`git rev-parse --short` of PR
    `headRefOid`, else `HEAD`). If the brief or prior JSON supplies
    `tasks_path` and that file has `[open]` tasks, freeze `tasks_path` and
@@ -418,10 +489,12 @@ Record the latest comment URL in `delivery.github_comment_url`.
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
 3. **Review** loop until no significant issues or cap: fresh runs use panel
    (dispatch → dedupe → resolve → log); resume runs skip panel and go straight
-   to resolve → log.
+   to resolve → log. Before each loop or new `issue_resolver` task, abort if
+   the PR is merged.
 4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
-   are all `true` or cap or file missing.
-5. Dispatch `risk_classifier`. Record `decision`.
+   are all `true` or cap or file missing. Abort if the PR is merged before
+   a verify loop.
+5. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
 6. Delete the frozen `tasks_path` only when `open_task_ids` is empty;
    otherwise log remaining open tasks and keep `tasks_path` in the JSON.
 7. After all other tasks, trim `REVIEW_HISTORY.md` (entries older than
@@ -433,7 +506,7 @@ End every run with a fenced `json` block:
 
 ```json
 {
-  "status": "ok | blocked",
+  "status": "ok | blocked | aborted",
   "agent": "review_orchestrator",
   "charter": "Coordinate panel review, task resolution, verification, and risk decision for one GitHub pull request.",
   "inputs": {
@@ -441,7 +514,7 @@ End every run with a fenced `json` block:
     "paths": [],
     "github_pr": null
   },
-  "phase": "panel | resolve | verify | decision",
+  "phase": "panel | resolve | verify | decision | abort",
   "loops": { "panel": 1, "verify": 0 },
   "tasks_path": "TASKS_TO_RESOLVE-abc1234.md",
   "open_task_ids": [],
@@ -483,6 +556,7 @@ End every run with a fenced `json` block:
 }
 ```
 
-On success, `blocked_reason` is `null`. Always populate `assumptions`,
+On success, `blocked_reason` is `null`. On abort, `blocked_reason` is
+`"pull request merged"`. Always populate `assumptions`,
 `tried`, `rejected`, `dropped_duplicates`, `reviewers`, `tasks`, and
 `decision`. Every `tasks[].path` is `TASKS_TO_RESOLVE-<short-sha>.md`.

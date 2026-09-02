@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Rename PR review harness comment stages to Panel Review, Resolve Issues,
+  Verifiers, and Risk Classification, and append Cursor Cloud dashboard
+  links.
+- Abort the PR review harness when the pull request is already merged:
+  skip remaining work, post an abort comment, and archive child Cursor
+  Cloud agents.
 - After all other PR-review harness tasks, `review_orchestrator` trims
   `REVIEW_HISTORY.md` entries older than 30 days.
 - Hash `TASKS_TO_RESOLVE.md` with the reviewed git short SHA
