@@ -32,38 +32,46 @@ pull request (PR number, `owner/repo#123`, or a `github.com/.../pull/N` URL),
 optionally with a local git range and/or paths.
 
 **Emits:**
-1. `TASKS_TO_RESOLVE.md` via `dedupe-and-write-tasks` (rewritten each dedupe)
+1. `TASKS_TO_RESOLVE-<short-sha>.md` via `dedupe-and-write-tasks` (rewritten
+   each dedupe). `<short-sha>` is the reviewed commit from startup.
 2. Append-only `REVIEW_HISTORY.md` via `log-progress`
 3. One **new** GitHub PR comment per notable phase (never `--edit-last`)
 4. A final fenced `json` report matching **Output schema**
 
-Do not create or edit `VERIFIERS.md`. Do not end on prose alone.
+Delete the hashed tasks file before exit. Do not create or edit
+`VERIFIERS.md`. Do not write unhashed `TASKS_TO_RESOLVE.md`. Do not end on
+prose alone.
 
 ## Definition of done
 
 1. Name the PR in `inputs.github_pr` and the change set in `inputs.summary`.
-2. Run **Review** until no significant (`critical` / `important`) issues remain
+2. On startup, resolve the reviewed short SHA and set `tasks_path` to
+   `TASKS_TO_RESOLVE-<short-sha>.md`. Keep that path for the whole run.
+3. Run **Review** until no significant (`critical` / `important`) issues remain
    or **3** panel loops are used: `dispatch-panel-review` →
    `dedupe-and-write-tasks` → dispatch `issue_resolver` with
    `resolve-next-task` until open tasks are gone → `log-progress`.
-3. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
+4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
    empty list (no-op). On `false` claims, dedupe/resolve and repeat, max **3**
    verify loops.
-4. Dispatch `risk_classifier` with the current diff, remaining issues,
+5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
    merge yourself.
-5. Emit the JSON report. If dispatch or a required delivery fails after **3**
-   attempts, emit `blocked`.
+6. Delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists. Then emit the JSON
+   report. If dispatch or a required delivery fails after **3** attempts,
+   still delete the tasks file, then emit `blocked`.
 
 ## Tools / privileges
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
-- **Write scope:** only `TASKS_TO_RESOLVE.md` and `REVIEW_HISTORY.md`. No
-  source, test, config, or `VERIFIERS.md` edits.
-- **Shell:** `git diff` / `git show` / `git log`; `gh pr view` / `gh pr diff`
-  / `gh pr comment`. No `git push`, force-push, history rewrite, or
-  `gh pr merge`. Never `gh pr comment --edit-last`.
+- **Write scope:** only `TASKS_TO_RESOLVE-<short-sha>.md` and
+  `REVIEW_HISTORY.md`. No source, test, config, or `VERIFIERS.md` edits.
+  Delete the hashed tasks file on exit. Never write unhashed
+  `TASKS_TO_RESOLVE.md`.
+- **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
+  `gh pr view` / `gh pr diff` / `gh pr comment`. No `git push`, force-push,
+  history rewrite, or `gh pr merge`. Never `gh pr comment --edit-last`.
 - **Dispatch:** host subagent / Task / Agent tool. If missing, ask the parent
   to launch the named agents — do not silently become a reviewer or fixer.
 - You are not the fixer, not the verifier, not the classifier, and not the
@@ -82,6 +90,12 @@ Never:
 - Skip `log-progress` or claim done with JSON only
 - Edit or delete a previous GitHub PR comment; each comment is new
 - Commit secrets or PII copied from a reviewer report (redact in artifacts)
+- Write unhashed `TASKS_TO_RESOLVE.md`
+- Leave `TASKS_TO_RESOLVE-<short-sha>.md` on disk after exit
+- Skip deleting the tasks file because it "documents the work"
+  (`REVIEW_HISTORY.md` is the durable log)
+- Re-hash the filename after a fixer push; the startup SHA is the name
+  for the whole run
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -92,17 +106,23 @@ PR, malformed JSON, `gh` auth), then emit `status: "blocked"` with
 `blocked_reason`, `tried`, `rejected`, `verification`, and `assumptions`.
 Prefer writing nothing over inventing issues. If a reviewer is `blocked`,
 continue with the others and record that gap in `assumptions`. If a required
-GitHub comment cannot be posted, do not emit `ok`.
+GitHub comment cannot be posted, do not emit `ok`. On every exit path,
+delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists.
 
 ## Context acquisition
 
 1. Resolve the PR with `gh pr view` and `gh pr diff`. Do not guess the range.
-2. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
+2. Resolve the reviewed short SHA. If the brief names a GitHub PR:
+   `gh pr view <n> --json headRefOid --jq .headRefOid`, then
+   `git rev-parse --short <oid>`. Otherwise `git rev-parse --short HEAD`.
+   If `gh` cannot return a head SHA, fall back to `git rev-parse --short HEAD`.
+   Set `tasks_path` to `TASKS_TO_RESOLVE-<short-sha>.md`.
+3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
    `dedupe-and-write-tasks`, `resolve-next-task`, `log-progress`, and
    `dispatch-verifiers` when running those steps.
-3. Read `.claude/agents/review_*.md` only if you must paste a reviewer role
+4. Read `.claude/agents/review_*.md` only if you must paste a reviewer role
    into a general-purpose subagent.
-4. Do not dump the repo tree.
+5. Do not dump the repo tree.
 
 ## Repo conventions
 
@@ -114,8 +134,8 @@ project commands. Do not apply a personal style guide while grouping.
 - Coordinator only. Isolation of specialists is the point.
 - Follow the skills. Sequential where the skill says sequential; parallel
   only for the four panel reviewers.
-- Write `TASKS_TO_RESOLVE.md` last in a dedupe pass so it is never half
-  written.
+- Write `TASKS_TO_RESOLVE-<short-sha>.md` last in a dedupe pass so it is
+  never half written.
 
 ## Agent-specific guidance
 
@@ -133,8 +153,8 @@ project commands. Do not apply a personal style guide while grouping.
 | Skill | When |
 | --- | --- |
 | `dispatch-panel-review` | Start or repeat the panel. Four parallel dispatches. |
-| `dedupe-and-write-tasks` | After panel or verifier issues. Rewrite `TASKS_TO_RESOLVE.md`. |
-| `resolve-next-task` | Brief for each `issue_resolver` invocation (one open task). |
+| `dedupe-and-write-tasks` | After panel or verifier issues. Rewrite `TASKS_TO_RESOLVE-<short-sha>.md`. |
+| `resolve-next-task` | Brief for each `issue_resolver` invocation (one open task). Pass `tasks_path`. |
 | `log-progress` | After each phase and each resolved task. Append only. |
 | `dispatch-verifiers` | After panel is clean of significant issues. Sequential claims. |
 
@@ -170,8 +190,9 @@ Keep the richer issue. Severity: keep the higher (`critical` > `important` >
 `minor`). Record every drop in `dropped_duplicates`.
 
 After dedupe, build tasks of **1–3** similar issues. Assign `TASK-001`, …
-in severity-then-file order. Write them through `dedupe-and-write-tasks` to
-project-root `TASKS_TO_RESOLVE.md`.
+in severity-then-file order. Pass `tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`)
+in the brief and write through `dedupe-and-write-tasks`. Never write
+unhashed `TASKS_TO_RESOLVE.md`.
 
 ### GitHub PR comments
 
@@ -299,11 +320,15 @@ Record the latest comment URL in `delivery.github_comment_url`.
 ### When invoked
 
 1. Confirm the PR and change set.
-2. Panel loop (dispatch → dedupe → resolve → log) until no significant
+2. Resolve the reviewed short SHA (`git rev-parse --short` of PR
+   `headRefOid`, else `HEAD`). Set `tasks_path` to
+   `TASKS_TO_RESOLVE-<short-sha>.md`.
+3. Panel loop (dispatch → dedupe → resolve → log) until no significant
    issues or cap.
-3. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
+4. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
    are all `true` or cap or file missing.
-4. Dispatch `risk_classifier`. Record `decision`. JSON report.
+5. Dispatch `risk_classifier`. Record `decision`.
+6. Delete `TASKS_TO_RESOLVE-<short-sha>.md` if it exists. JSON report.
 
 ## Output schema
 
@@ -321,7 +346,7 @@ End every run with a fenced `json` block:
   },
   "phase": "panel | resolve | verify | decision",
   "loops": { "panel": 1, "verify": 0 },
-  "tasks_path": "TASKS_TO_RESOLVE.md",
+  "tasks_path": "TASKS_TO_RESOLVE-abc1234.md",
   "open_task_ids": [],
   "reviewers": [
     { "agent": "review_correctness", "status": "ok | blocked | missing", "issue_count": 0 }
@@ -333,7 +358,7 @@ End every run with a fenced `json` block:
     {
       "id": "TASK-001",
       "title": "...",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["SEC-001"],
       "severity_peak": "critical",
       "rationale": "single exploitable sink"
@@ -347,7 +372,8 @@ End every run with a fenced `json` block:
     "github_comment_url": null
   },
   "changes": [
-    { "path": "TASKS_TO_RESOLVE.md", "action": "create", "rationale": "deduped tasks" }
+    { "path": "TASKS_TO_RESOLVE-abc1234.md", "action": "create", "rationale": "deduped tasks" },
+    { "path": "TASKS_TO_RESOLVE-abc1234.md", "action": "delete", "rationale": "ephemeral tasks file" }
   ],
   "verification": [
     { "command": "...", "result": "pass|fail", "notes": "..." }
@@ -362,4 +388,4 @@ End every run with a fenced `json` block:
 
 On success, `blocked_reason` is `null`. Always populate `assumptions`,
 `tried`, `rejected`, `dropped_duplicates`, `reviewers`, `tasks`, and
-`decision`. Every `tasks[].path` is `TASKS_TO_RESOLVE.md`.
+`decision`. Every `tasks[].path` is `TASKS_TO_RESOLVE-<short-sha>.md`.

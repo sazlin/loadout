@@ -37,12 +37,15 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "in-process" in panel or "in process" in panel
 
     dedupe = (SKILLS / "dedupe-and-write-tasks" / "SKILL.md").read_text()
-    assert "TASKS_TO_RESOLVE.md" in dedupe
+    assert "TASKS_TO_RESOLVE-" in dedupe
     assert "1-3" in dedupe or "1–3" in dedupe
+    assert "brief" in dedupe.lower()
 
     resolve = (SKILLS / "resolve-next-task" / "SKILL.md").read_text().lower()
     assert "git push" in resolve
     assert "merge" in resolve
+    assert "tasks_to_resolve-" in resolve
+    assert "do not delete" in resolve or "never delete" in resolve
 
     history = (SKILLS / "log-progress" / "SKILL.md").read_text()
     assert "REVIEW_HISTORY.md" in history
@@ -60,3 +63,9 @@ def test_pr_review_skills_are_not_orphans() -> None:
     loadout = load_loadout(REPO / "loadouts" / "pr_review_harness.yaml")
     srcs = {entry["src"] for entry in loadout.skills}
     assert {f"skills/{name}" for name in PR_REVIEW_SKILLS} == srcs
+
+
+def test_gitignore_covers_ephemeral_tasks_files() -> None:
+    text = (REPO / ".gitignore").read_text()
+    assert "/TASKS_TO_RESOLVE.md" in text
+    assert "/TASKS_TO_RESOLVE-*.md" in text

@@ -409,6 +409,16 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
 
 
+def test_orchestrator_hashes_and_deletes_the_tasks_file() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "git rev-parse --short" in text
+    assert "TASKS_TO_RESOLVE-<" in text
+    assert "headrefoid" in lowered or "head_ref_oid" in lowered or "head sha" in lowered
+    assert "delete" in lowered and "before" in lowered and "exit" in lowered
+    assert "never write unhashed" in lowered or "do not write unhashed" in lowered
+
+
 def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     lowered = text.lower()
@@ -542,7 +552,7 @@ def test_orchestrator_scorer_rejects_more_than_three_issues_in_a_task() -> None:
         {
             "id": "TASK-001",
             "title": "everything",
-            "path": "TASKS_TO_RESOLVE.md",
+            "path": "TASKS_TO_RESOLVE-abc1234.md",
             "issue_ids": ["SEC-001", "SEC-002", "SEC-003", "C-001"],
         }
     ]
@@ -592,7 +602,8 @@ def test_issue_resolver_pushes_and_does_not_merge() -> None:
     assert "git push" in text
     assert "gh pr merge" in text
     assert "do not merge" in text
-    assert "tasks_to_resolve.md" in text
+    assert "tasks_to_resolve-" in text
+    assert "do not delete" in text or "never delete" in text
 
 
 def test_risk_classifier_squash_merges_without_admin() -> None:

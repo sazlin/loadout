@@ -10,7 +10,7 @@
         "Only the first open task is taken",
         "git push to the existing branch",
         "Does not gh pr merge",
-        "Does not commit TASKS_TO_RESOLVE.md"
+        "Does not commit TASKS_TO_RESOLVE-<short-sha>.md"
       ]
     }
   ]
