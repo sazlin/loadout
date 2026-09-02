@@ -234,11 +234,15 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
     assert "cookie" in secret_dump or "token" in secret_dump, label
 
 
+ORCHESTRATOR_STAGE_TABLE_HEADER = "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |"
+
+
 def _assert_orchestrator_github_comment_spec(text: str) -> None:
     """Option-G orchestrator PR comment contract: stage table, no alerts, merge outcomes."""
     lowered = text.lower()
     assert "### PR review harness" in text
-    assert "| Panel | Resolve | Verify | Risk | Merge |" in text
+    assert ORCHESTRATOR_STAGE_TABLE_HEADER in text
+    assert "| Panel | Resolve | Verify | Risk | Merge |" not in text
     assert "one sentence per bullet" in lowered
     assert "<br>" in text
     assert "do not emit github alerts on orchestrator comments" in lowered
@@ -250,6 +254,10 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "✅<br>done" in text or "✅<br>merged" in text
     assert "⛔<br>token" not in text
     assert "reuse the classifier table labels verbatim" in lowered
+    assert "https://cursor.com/agents/" in text
+    assert "cursor cloud" in lowered
+    assert "dashboard" in lowered
+    assert "pr review harness has aborted" in lowered
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -487,6 +495,27 @@ def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
 
 def test_orchestrator_github_comments_use_stage_table_and_bullets() -> None:
     _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
+
+
+def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "gh pr view" in lowered
+        assert "merged" in lowered
+        assert "abort" in lowered
+        assert "do not commit" in lowered or "don't commit" in lowered
+        assert "issue_resolver" in lowered
+        assert "/archive" in text
+        assert "cloudAgentBcId" in text or "cloudagentbcid" in lowered
+        assert '"aborted"' in text
+        assert "phase" in lowered and "abort" in lowered
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "merged" in anti
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "merged" in invoked
+        assert "abort" in invoked
 
 
 def test_risk_classifier_github_comments_use_stage_table_with_human_action_alerts() -> None:

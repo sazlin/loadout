@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-02T18:08:55Z",
+  "synced_at": "2026-09-02T18:40:21Z",
   "tool_version": "0.24.0",
   "files": [
     {
@@ -49,7 +49,7 @@
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "27b006648173a9bc84751aee9a925cd40133d10e7afa4fc2ac32298b61b59390"
+      "sha256": "efd3e3a28e1c88cf3397475fc58545d2de759b1c4064347a8f647f8b8ac4e341"
     },
     {
       "dest": ".claude/agents/review_scale.md",
@@ -185,12 +185,12 @@
     {
       "dest": ".claude/skills/log-progress/SKILL.md",
       "src": "skills/log-progress/SKILL.md",
-      "sha256": "b03aee50999e91a984bcecfa7b2dbe67c5046991de51a781a1a79f5c910422f2"
+      "sha256": "37f087497999b4763bcaa1a45c6ec77637d94f576f08af8952e16144b934d6cd"
     },
     {
       "dest": ".claude/skills/log-progress/references/review-history-template.md",
       "src": "skills/log-progress/references/review-history-template.md",
-      "sha256": "a1a9756623526075e7147d1076fc52888e290196e90eb43d67f0f83fae2a4d95"
+      "sha256": "193bf50d026838a007f4bb11e54e34539bbcad8c805bc639a5d5c93cba8ff63d"
     },
     {
       "dest": ".claude/skills/log-progress/scripts/trim_review_history.py",
