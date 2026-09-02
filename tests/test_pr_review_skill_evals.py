@@ -30,6 +30,14 @@ def test_pr_review_skills_have_colocated_evals() -> None:
                 assert path.is_file(), f"{name} evals[{index}] missing {relative}"
 
 
+def test_resolve_next_task_eval_uses_hashed_tasks_fixture() -> None:
+    evals = json.loads((SKILLS / "resolve-next-task" / "evals" / "evals.json").read_text())
+    entry = evals["evals"][0]
+    assert entry["files"] == ["evals/files/TASKS_TO_RESOLVE-abc1234.md"]
+    assert "tasks_path" in entry["prompt"].lower()
+    assert "TASKS_TO_RESOLVE-abc1234.md" in entry["prompt"]
+
+
 def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     panel = (SKILLS / "dispatch-panel-review" / "SKILL.md").read_text().lower()
     assert "parallel" in panel

@@ -606,6 +606,16 @@ def test_issue_resolver_pushes_and_does_not_merge() -> None:
     assert "do not delete" in text or "never delete" in text
 
 
+def test_issue_resolver_eval_uses_hashed_tasks_fixture() -> None:
+    suite = load_evals()
+    entry = next(item for item in suite["evals"] if item["agent"] == "issue_resolver")
+    prompt = entry["prompt"]
+    assert "tasks_path" in prompt.lower()
+    assert "TASKS_TO_RESOLVE-" in prompt
+    assert all("TASKS_TO_RESOLVE-" in relative for relative in entry["files"] if "TASKS_TO_RESOLVE" in relative)
+    assert not any(relative.endswith("/TASKS_TO_RESOLVE.md") for relative in entry["files"])
+
+
 def test_risk_classifier_squash_merges_without_admin() -> None:
     text = _agent_file(RISK_CLASSIFIER).read_text().lower()
     assert "gh pr merge" in text
