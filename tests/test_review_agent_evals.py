@@ -522,6 +522,15 @@ def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
         invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
         assert "merged" in invoked
         assert "abort" in invoked
+        abort_section = text.split("### Abort if the PR is merged", 1)[1].split(
+            "### GitHub PR comments", 1
+        )[0]
+        abort_lowered = abort_section.lower()
+        assert "dispatched-child registry" in abort_lowered
+        assert "latestrunid" in abort_lowered
+        assert "never invent" in abort_lowered
+        assert "agents-list" in abort_lowered
+        assert "dashboard bullets" in abort_lowered
 
 
 def test_risk_classifier_github_comments_use_stage_table_with_human_action_alerts() -> None:

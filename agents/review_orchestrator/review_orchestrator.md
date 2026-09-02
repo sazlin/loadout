@@ -250,6 +250,12 @@ Agent calls using the custom agent names. Do not inherit session history.
 
 `issue_resolver`, `verifier`, and `risk_classifier` are **sequential**.
 
+After each sub-agent dispatch, append its `cloudAgentBcId` (and `run.id` when
+the dispatch response includes it) to this run's **dispatched-child registry**:
+a bounded in-memory list of `{ cloudAgentBcId, runId? }` entries. The registry
+is the only source of agent and run ids for abort cleanup and GitHub dashboard
+bullets.
+
 ### Dedupe and tasks
 
 Two issues are duplicates when they name the same defect at the same place:
@@ -307,14 +313,24 @@ must abort:
    Do not dispatch further sub-agents.
 2. Do not commit any more changes to the PR branch. Do not `git push`.
    Do not ask `issue_resolver` to continue.
-3. Clean up Cursor Cloud state for **child** agents of this run. Cancel
-   in-flight child runs
-   (`POST https://api.cursor.com/v1/agents/{id}/runs/{runId}/cancel`)
-   then archive those children
-   (`POST https://api.cursor.com/v1/agents/{id}/archive`) when
-   `CURSOR_API_KEY` is set. Do not cancel or archive this orchestrator
-   run; let it reach `FINISHED`. If the key is missing, skip API cleanup
-   and record that in `assumptions`.
+3. Clean up Cursor Cloud state for **child** agents of this run using only
+   ids from this run's **dispatched-child registry** (see **Dispatch**). The
+   children in GitHub dashboard bullets are the same set targeted here. Do
+   not page through agents-list APIs or scan unrelated runs during abort.
+   When `CURSOR_API_KEY` is set and the registry is non-empty, for each
+   proven child in dispatch order:
+   1. Resolve `{id}` from the entry's `cloudAgentBcId`. Resolve `{runId}`
+      from the recorded `runId`, or when absent call
+      `GET https://api.cursor.com/v1/agents/{id}` and read `latestRunId`.
+      Never invent or guess agent or run ids for cancel/archive (same rule as
+      dashboard links).
+   2. Cancel in-flight runs:
+      `POST https://api.cursor.com/v1/agents/{id}/runs/{runId}/cancel`.
+   3. Archive the child:
+      `POST https://api.cursor.com/v1/agents/{id}/archive`.
+   Do not cancel or archive this orchestrator run; let it reach `FINISHED`.
+   If the key is missing or the registry is empty, skip API cleanup and
+   record that in `assumptions`.
 4. Post one new GitHub comment using the **Aborted** template. The body
    must say that the PR Review Harness has aborted.
 5. `log-progress` with phase `abort` and outcome `aborted`.
@@ -337,8 +353,10 @@ Follow this visual style on every orchestrator comment:
 - End every comment with Cursor Cloud dashboard bullets so a user can
   monitor the agents. Use `https://cursor.com/agents/<id>`. Always include
   this harness run. Include each dispatched child that has a
-  `cloudAgentBcId`. Resolve this run's URL with the cursor-cloud `run-info`
-  tool when available. Never invent an id.
+  `cloudAgentBcId` from this run's dispatched-child registry. Resolve this
+  run's URL with the cursor-cloud `run-info` tool when available. Never
+  invent an id. The same rule applies to cancel and archive API calls: use
+  only agent and run ids recorded in this run's dispatched-child registry.
 - Do not emit GitHub alerts on orchestrator comments. Alerts belong on
   `risk_classifier` comments when a human must act.
 - At **decision**, do not repeat the classifier rationale. Table plus short
