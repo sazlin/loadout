@@ -441,7 +441,20 @@ def test_orchestrator_resume_skips_panel_when_open_manifest_present() -> None:
     assert "resolved" in lowered
 
 
-def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
+def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+    step6 = definition.split("6. ", 1)[1].split("\n7.", 1)[0]
+    assert "frozen `tasks_path`" in step6.lower()
+    assert "delete `tasks_to_resolve-<short-sha>.md` if it" not in step6.lower()
+    assert "do not delete from pr-head sha alone" in step6.lower()
+    assert "frozen `<short-sha>`" in lowered
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+    assert "frozen `tasks_path`" in blocked.lower()
+    when_invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0]
+    assert "frozen `tasks_path`" in when_invoked.lower()
+    assert "orphans the real" in lowered
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     lowered = text.lower()
     assert "github" in lowered and "pull request" in lowered
