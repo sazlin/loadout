@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove base as parent for `stripe` loadout
+
 ## 0.25.0
 
 - Collapse CI into two jobs: lint/test/typecheck, and one loop over every

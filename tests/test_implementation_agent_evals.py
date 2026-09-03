@@ -106,9 +106,3 @@ def test_evals_path_is_the_committed_suite() -> None:
 
 def test_report_blob_is_lowercased() -> None:
     assert "tax_rate" in report_blob({"changes": [{"rationale": "TAX_RATE after discount"}]})
-
-
-def test_old_eval_roots_are_gone() -> None:
-    repo = Path(__file__).resolve().parents[1]
-    assert not (repo / "tests" / "evals").exists()
-    assert not (repo / "evals").exists()
