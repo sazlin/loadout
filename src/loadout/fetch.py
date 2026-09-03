@@ -40,8 +40,8 @@ def fetch_source(
     if destination.exists():
         raise FetchError(f"Source cache path is not a directory: {destination}")
 
-    _clone_to_cache(manifest.source, commit_sha, cache_root, destination)
-    return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
+    ref = resolved_sha or manifest.ref
+    return _clone_to_cache(manifest.source, ref, cache_root)
 
 
 def _cache_root(env: Mapping[str, str]) -> Path:
@@ -70,28 +70,24 @@ def _resolve_sha(manifest: Manifest) -> str:
     return resolved_sha
 
 
-def _clone_to_cache(source: str, resolved_sha: str, cache_root: Path, destination: Path) -> None:
+def _clone_to_cache(source: str, ref: str, cache_root: Path) -> FetchedSource:
     try:
         cache_root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=cache_root) as temp_dir:
             checkout = Path(temp_dir) / "checkout"
-            _run_git(["git", "clone", "--depth", "1", "--no-checkout", source, str(checkout)])
-            _run_git(
-                [
-                    "git",
-                    "-C",
-                    str(checkout),
-                    "fetch",
-                    "--depth",
-                    "1",
-                    "origin",
-                    resolved_sha,
-                ]
-            )
-            _run_git(["git", "-C", str(checkout), "checkout", "--detach", resolved_sha])
+            _run_git(["git", "init", str(checkout)])
+            _run_git(["git", "-C", str(checkout), "remote", "add", "origin", source])
+            _run_git(["git", "-C", str(checkout), "fetch", "--depth", "1", "origin", ref])
+            result = _run_git(["git", "-C", str(checkout), "rev-parse", "FETCH_HEAD^{commit}"])
+            commit_sha = result.stdout.strip()
+            destination = cache_root / commit_sha
+            if destination.is_dir():
+                return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
             if destination.exists():
-                return
+                raise FetchError(f"Source cache path is not a directory: {destination}")
+            _run_git(["git", "-C", str(checkout), "checkout", "--detach", commit_sha])
             shutil.move(str(checkout), destination)
+            return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
     except OSError as error:
         raise FetchError(f"Could not cache source from {source!r}: {error}") from error
 

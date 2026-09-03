@@ -19,6 +19,16 @@ def make_manifest() -> Manifest:
     )
 
 
+def run_git(repository: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), *args],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout.strip()
+
+
 def test_fetch_uses_loadout_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     source = tmp_path / "source"
     source.mkdir()
@@ -74,6 +84,31 @@ def test_fetch_accepts_an_explicit_resolved_commit(tmp_path: Path, monkeypatch: 
 
     assert fetched.resolved_sha == resolved_sha
     assert fetched.root == cache_source
+
+
+def test_fetch_uses_commit_fetched_from_moving_ref(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    run_git(repository, "init", "-b", "main")
+    run_git(repository, "config", "user.name", "Test User")
+    run_git(repository, "config", "user.email", "test@example.com")
+    content = repository / "content.txt"
+    content.write_text("old\n")
+    run_git(repository, "add", "content.txt")
+    run_git(repository, "commit", "-m", "old")
+    old_sha = run_git(repository, "rev-parse", "HEAD")
+    content.write_text("new\n")
+    run_git(repository, "commit", "-am", "new")
+    new_sha = run_git(repository, "rev-parse", "HEAD")
+    manifest = Manifest(source=str(repository), ref="main", loadouts=["base"])
+    monkeypatch.delenv("LOADOUT_PATH", raising=False)
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    monkeypatch.setattr(fetch, "_resolve_sha", lambda manifest: old_sha)
+
+    fetched = fetch_source(manifest)
+
+    assert fetched.resolved_sha == new_sha
+    assert (fetched.root / "content.txt").read_text() == "new\n"
 
 
 def test_resolve_sha_prefers_peeled_annotated_tag(
