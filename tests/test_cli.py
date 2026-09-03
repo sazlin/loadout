@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from loadout import __version__
 from loadout.cli import main
+from loadout.errors import FetchError
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mini_loadout"
 
@@ -252,6 +253,23 @@ def test_lint_fails_when_loadout_extends_missing_parent(runner: CliRunner) -> No
 
         assert result.exit_code == 2
         assert "Loadout not found: missing" in result.output
+
+
+def test_update_restores_manifest_when_remote_sync_fails(runner: CliRunner, monkeypatch: pytest.MonkeyPatch) -> None:
+    with runner.isolated_filesystem():
+        original = "source: https://example.com/loadout\nref: v1.0.0\nloadouts: [python]\n"
+        Path(".loadout.yaml").write_text(original)
+
+        def fail_sync(project_root: Path) -> None:
+            raise FetchError("remote unavailable")
+
+        monkeypatch.setattr("loadout.update.run_sync", fail_sync)
+
+        result = runner.invoke(main, ["update", "--to", "main"])
+
+        assert result.exit_code == 3
+        assert Path(".loadout.yaml").read_text() == original
+        assert not Path(".loadout.lock").exists()
 
 
 def test_update_rewrites_ref_syncs_and_prints_changelog_slice(runner: CliRunner) -> None:

@@ -7,7 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from loadout.errors import FetchError, ValidationError
+from loadout.errors import FetchError, LoadoutError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.models import load_lockfile, load_manifest
 from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
@@ -34,8 +34,13 @@ def update(project_root: Path, *, to_ref: str | None = None) -> UpdateResult:
     old_ref = manifest.ref
     new_ref = to_ref or _latest_tag(manifest.source)
 
+    original_manifest = manifest_path.read_text()
     _rewrite_ref(manifest_path, new_ref)
-    run_sync(project_root)
+    try:
+        run_sync(project_root)
+    except LoadoutError:
+        manifest_path.write_text(original_manifest)
+        raise
 
     updated_manifest = load_manifest(manifest_path)
     lock = load_lockfile(project_root / LOCKFILE_NAME)
