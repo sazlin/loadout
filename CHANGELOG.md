@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.25.0
+
 - Collapse CI into two jobs: lint/test/typecheck, and one loop over every
   `loadouts/*.yaml` for resolve plus a clean sync (no per-loadout matrix).
 - Post a **Started** GitHub comment as soon as `review_orchestrator` begins
