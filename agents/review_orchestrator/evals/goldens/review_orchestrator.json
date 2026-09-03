@@ -9,7 +9,7 @@
   },
   "phase": "resolve",
   "loops": { "panel": 1, "verify": 0 },
-  "tasks_path": "TASKS_TO_RESOLVE.md",
+  "tasks_path": "TASKS_TO_RESOLVE-abc1234.md",
   "open_task_ids": ["TASK-001", "TASK-002", "TASK-003", "TASK-004", "TASK-005", "TASK-006", "TASK-007"],
   "reviewers": [
     {"agent": "review_correctness", "status": "ok", "issue_count": 3},
@@ -28,7 +28,7 @@
     {
       "id": "TASK-001",
       "title": "Parameterize user lookup SQL",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["SEC-001"],
       "severity_peak": "critical",
       "rationale": "single exploitable sink after dropping C-003"
@@ -36,7 +36,7 @@
     {
       "id": "TASK-002",
       "title": "Stop leaking PII in logs and responses",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["SEC-002", "SEC-003"],
       "severity_peak": "critical",
       "rationale": "same get_user privacy leaks"
@@ -44,7 +44,7 @@
     {
       "id": "TASK-003",
       "title": "Record zero-qty lines instead of dropping them",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["C-001"],
       "severity_peak": "important",
       "rationale": "standalone data-loss fix"
@@ -52,7 +52,7 @@
     {
       "id": "TASK-004",
       "title": "Fix history_page off-by-one",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["C-002"],
       "severity_peak": "important",
       "rationale": "standalone paging fix"
@@ -60,7 +60,7 @@
     {
       "id": "TASK-005",
       "title": "Rename and uncomment report_builder",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["M-001", "M-002"],
       "severity_peak": "important",
       "rationale": "same-file readability fixes"
@@ -68,7 +68,7 @@
     {
       "id": "TASK-006",
       "title": "Bound fanout result storage",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["R-001"],
       "severity_peak": "critical",
       "rationale": "unbounded memory stands alone"
@@ -76,7 +76,7 @@
     {
       "id": "TASK-007",
       "title": "Timeout partner GETs and surface failures",
-      "path": "TASKS_TO_RESOLVE.md",
+      "path": "TASKS_TO_RESOLVE-abc1234.md",
       "issue_ids": ["R-002", "R-003"],
       "severity_peak": "important",
       "rationale": "same dependency-failure path"
@@ -85,7 +85,7 @@
   "decision": { "risk": "pending", "merge": "pending" },
   "delivery": { "github_comment_url": null },
   "changes": [
-    {"path": "TASKS_TO_RESOLVE.md", "action": "create", "rationale": "deduped tasks"}
+    {"path": "TASKS_TO_RESOLVE-abc1234.md", "action": "create", "rationale": "deduped tasks"}
   ],
   "verification": [
     {"command": "python -c 'print(7)'", "result": "pass", "notes": "seven tasks"}

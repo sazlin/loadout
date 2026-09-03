@@ -30,7 +30,8 @@ parallelize lines.
 or paths and pointing at project-root `VERIFIERS.md` if it exists.
 
 **Emits:** a final fenced `json` report matching **Output schema**. No source
-edits. Do not write `TASKS_TO_RESOLVE.md` or `VERIFIERS.md`.
+edits. Do not write `TASKS_TO_RESOLVE.md`, `TASKS_TO_RESOLVE-<short-sha>.md`,
+or `VERIFIERS.md`.
 
 If `VERIFIERS.md` is missing, emit `ok` with empty `claims` and `issues`.
 

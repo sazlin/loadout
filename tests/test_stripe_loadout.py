@@ -6,10 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-import pytest
-
 from loadout.models import load_loadout
-from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
 SKILL_NAMES = (
@@ -33,51 +30,11 @@ def write_manifest(project: Path, body: str) -> None:
 def test_stripe_loadout_ships_vendored_stripe_skills() -> None:
     loadout = load_loadout(REPO / "loadouts" / "stripe.yaml")
     assert loadout.name == "stripe"
-    assert loadout.extends == ["base"]
+    assert loadout.extends == []
     assert {entry["src"] for entry in loadout.skills} == set(SKILL_SRCS)
     assert loadout.rules == []
     assert loadout.agents == []
     assert loadout.mcps == []
-
-
-def test_stripe_sync_vendors_skills_and_base(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
-    project = tmp_path / "project"
-    write_manifest(
-        project,
-        """source: https://github.com/sazlin/loadout
-ref: main
-loadouts: [stripe]
-""",
-    )
-
-    sync(project)
-
-    for name in SKILL_NAMES:
-        skill = project / ".claude" / "skills" / name / "SKILL.md"
-        assert skill.is_file(), skill
-        assert f"name: {name}" in skill.read_text()
-        assert not (project / ".claude" / "skills" / name / "evals").exists()
-
-    assert (project / ".claude/agents/davinci.md").is_file()
-    assert (project / ".cursor/rules/repo-conventions.mdc").is_file()
-
-
-def test_base_sync_does_not_vendor_stripe_skills(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
-    project = tmp_path / "project"
-    write_manifest(
-        project,
-        """source: https://github.com/sazlin/loadout
-ref: main
-loadouts: [base]
-""",
-    )
-
-    sync(project)
-
-    for name in SKILL_NAMES:
-        assert not (project / ".claude" / "skills" / name).exists()
 
 
 def test_stripe_skill_evals_are_colocated() -> None:

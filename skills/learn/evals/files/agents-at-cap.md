@@ -24,7 +24,7 @@ These are dynamic learnings an agent should consider.
 16. Do not skip failing tests to get a green suite.
 17. Keep AGENTS.md hand-owned text outside generated loadout blocks.
 18. Name pytest tests after the observable behavior they check.
-19. Do not commit TASKS_TO_RESOLVE.md or REVIEW_HISTORY.md with a product fix.
+19. Do not commit TASKS_TO_RESOLVE-<short-sha>.md or REVIEW_HISTORY.md with a product fix.
 20. Use fixtures for repeated pytest setup and tmp_path for filesystem isolation.
 
 <!-- BEGIN LOADOUT: agent-rules (generated, do not edit) -->

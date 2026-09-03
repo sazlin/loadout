@@ -3,8 +3,8 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-08-31T16:28:04Z",
-  "tool_version": "0.22.0",
+  "synced_at": "2026-09-02T18:40:21Z",
+  "tool_version": "0.24.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
@@ -14,7 +14,7 @@
     {
       "dest": ".claude/agents/issue_resolver.md",
       "src": "agents/issue_resolver/issue_resolver.md",
-      "sha256": "60bde14d03ad10f67b1bd9f7067bc97c62d1cb64f5e7c2946805322bd95c625d"
+      "sha256": "758619e9539bcb73289a2cf9ee708fc19b3156d04ec16e575ecde2c87ae3b51d"
     },
     {
       "dest": ".claude/agents/playwright_generator.md",
@@ -39,37 +39,37 @@
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "bf3cf49f7271877eabe5b0a73daf639880800d57899f8261855d2c1b39e7facb"
+      "sha256": "b23e9012e31a96662cb18ae55458685e15e132bd3070e6b368fa6f3e9b78a7fe"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
       "src": "agents/review_maintainability/review_maintainability.md",
-      "sha256": "0b52fadd55ddfb3e63f6e0ed9cd3df73b64041aa9af92c81bbce492157b82a5a"
+      "sha256": "9e893cc84ee41b26b80146261ec652c0c1585e7f11dd53b5374e22785a633380"
     },
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "c1c9fa9a873b692f7db4a1d510e74dbfd93d98fa58e4ddb88c7ba5d4d40b2747"
+      "sha256": "efd3e3a28e1c88cf3397475fc58545d2de759b1c4064347a8f647f8b8ac4e341"
     },
     {
       "dest": ".claude/agents/review_scale.md",
       "src": "agents/review_scale/review_scale.md",
-      "sha256": "5b8e389f214ef9c41bab3d62c24b2cb9e4cd152533346296682869e26f122abf"
+      "sha256": "4068441350fdc784dc63df36a702bb2f03ff22c835c7205ad755cc3dfa6ad116"
     },
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "d481427e7e8df6e94e8900f9f2407f9db09cfb0f5b84ca6995e72f85e4adfceb"
+      "sha256": "c8ebc33129494c6f0e78c5dadedddc908ed3d4ab5e7cd77b5e146b98fc084b89"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",
       "src": "agents/risk_classifier/risk_classifier.md",
-      "sha256": "2792d1cf69519706dcd3a65cf174fb1bfbc822022afda5dce2a3a27d7360d2aa"
+      "sha256": "588620076f1d00fc5167c4d34611e3c8638e2d1d2c744f2584b6ea0bd5b51ef9"
     },
     {
       "dest": ".claude/agents/verifier.md",
       "src": "agents/verifier/verifier.md",
-      "sha256": "b977434b59a049e986b12f4f7dbe915ec835333e49cf85a2a01507bc5f628b2f"
+      "sha256": "2e4f7f4e88a617e0888840514a71c679d4159feaf7e54b3e4caf8c6f7630e8e9"
     },
     {
       "dest": ".claude/settings.json",
@@ -145,7 +145,7 @@
     {
       "dest": ".claude/skills/dedupe-and-write-tasks/SKILL.md",
       "src": "skills/dedupe-and-write-tasks/SKILL.md",
-      "sha256": "eb7dc08482f13850da8612e8b064558edf4114eff68fa9d50b83df249c6df2e0"
+      "sha256": "e77cc8426504a941d5cf304159d0eea583efe37f7f1ba0be112c8dbf0399d065"
     },
     {
       "dest": ".claude/skills/dedupe-and-write-tasks/references/tasks-to-resolve-template.md",
@@ -155,7 +155,7 @@
     {
       "dest": ".claude/skills/dispatch-panel-review/SKILL.md",
       "src": "skills/dispatch-panel-review/SKILL.md",
-      "sha256": "2f63dd39d04919e9f0c756e0e8351c9162c72a9d7165adb7b9ef31b1ba1c3948"
+      "sha256": "d30f86841ce2382a3a195e86631496fd61d21ac2ce32e5f848c9e81e43b8c6b2"
     },
     {
       "dest": ".claude/skills/dispatch-verifiers/SKILL.md",
@@ -185,12 +185,18 @@
     {
       "dest": ".claude/skills/log-progress/SKILL.md",
       "src": "skills/log-progress/SKILL.md",
-      "sha256": "c3a2d1d061bcc59a230548568618680eb9a06d090a8bda56270be63124021ed8"
+      "sha256": "37f087497999b4763bcaa1a45c6ec77637d94f576f08af8952e16144b934d6cd"
     },
     {
       "dest": ".claude/skills/log-progress/references/review-history-template.md",
       "src": "skills/log-progress/references/review-history-template.md",
-      "sha256": "696a3651f246f5977c206096878be9366ba22b8d64775abc3021dd035b0f29f8"
+      "sha256": "193bf50d026838a007f4bb11e54e34539bbcad8c805bc639a5d5c93cba8ff63d"
+    },
+    {
+      "dest": ".claude/skills/log-progress/scripts/trim_review_history.py",
+      "src": "skills/log-progress/scripts/trim_review_history.py",
+      "sha256": "c0baa94f7afc1bc80bddba87d7af611259ec3f53bd88d96db9a1448c8281d473",
+      "mode": "755"
     },
     {
       "dest": ".claude/skills/next-decision/SKILL.md",
@@ -250,7 +256,7 @@
     {
       "dest": ".claude/skills/resolve-next-task/SKILL.md",
       "src": "skills/resolve-next-task/SKILL.md",
-      "sha256": "960a1d435e5f56433ed7bd9c6f649f4da627e000d540a70de6ccb00ae4b94d40"
+      "sha256": "05f8537fb9977dd65b00e20c18c7878d436bba2f5bae2f63ca56ad33f6d1e989"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/SKILL.md",

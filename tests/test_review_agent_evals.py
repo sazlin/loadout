@@ -234,11 +234,35 @@ def _assert_computer_use_stays_in_app_window(label: str, text: str) -> None:
     assert "cookie" in secret_dump or "token" in secret_dump, label
 
 
+ORCHESTRATOR_STAGE_TABLE_HEADER = "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |"
+STARTED_COMMENT_HEADING = "**Started (fresh run only)**"
+STARTED_COMMENT_PHRASE = "the pr review harness has started"
+RESUME_STARTUP_MARKER = "**Resume startup (do not post Started)**"
+RESOLVE_ISSUES_TEMPLATE_MARKER = "\n\n**Resolve Issues**\n\n````markdown"
+QUEUED_STAGE_CELL = "⏳<br>queued"
+
+
+def _fenced_markdown_after(text: str, marker: str) -> str:
+    """Return the first ````markdown fence body after marker, or empty."""
+    if marker not in text:
+        return ""
+    after = text.split(marker, 1)[1]
+    fence = "````markdown"
+    if fence not in after:
+        return ""
+    body = after.split(fence, 1)[1]
+    closer = "````"
+    if closer not in body:
+        return ""
+    return body.split(closer, 1)[0]
+
+
 def _assert_orchestrator_github_comment_spec(text: str) -> None:
     """Option-G orchestrator PR comment contract: stage table, no alerts, merge outcomes."""
     lowered = text.lower()
     assert "### PR review harness" in text
-    assert "| Panel | Resolve | Verify | Risk | Merge |" in text
+    assert ORCHESTRATOR_STAGE_TABLE_HEADER in text
+    assert "| Panel | Resolve | Verify | Risk | Merge |" not in text
     assert "one sentence per bullet" in lowered
     assert "<br>" in text
     assert "do not emit github alerts on orchestrator comments" in lowered
@@ -250,6 +274,21 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "✅<br>done" in text or "✅<br>merged" in text
     assert "⛔<br>token" not in text
     assert "reuse the classifier table labels verbatim" in lowered
+    assert "https://cursor.com/agents/" in text
+    assert "cursor cloud" in lowered
+    assert "dashboard" in lowered
+    # Abort comments must include this exact phrase.
+    assert "pr review harness has aborted" in lowered
+    assert STARTED_COMMENT_HEADING in text, f"Started section heading missing: {STARTED_COMMENT_HEADING!r}"
+    started = _fenced_markdown_after(text, STARTED_COMMENT_HEADING)
+    assert started, f"No Started template fence found after {STARTED_COMMENT_HEADING!r}"
+    assert STARTED_COMMENT_PHRASE in started.lower()
+    assert ORCHESTRATOR_STAGE_TABLE_HEADER in started
+    assert started.count(QUEUED_STAGE_CELL) == 5
+    assert "all stages queued" in started.lower()
+    assert "https://cursor.com/agents/" in started
+    assert "cursor cloud dashboard for this harness" in started.lower()
+    assert RESUME_STARTUP_MARKER in text
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -409,7 +448,72 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
 
 
-def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
+def test_orchestrator_hashes_and_deletes_the_tasks_file() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "git rev-parse --short" in text
+    assert "TASKS_TO_RESOLVE-<" in text
+    assert "headrefoid" in lowered or "head_ref_oid" in lowered or "head sha" in lowered
+    assert "delete" in lowered and "before" in lowered and "exit" in lowered
+    assert "never write unhashed" in lowered or "do not write unhashed" in lowered
+
+
+def test_orchestrator_stale_cleanup_compares_embedded_sha_not_md_suffix() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "whose suffix does not equal" not in lowered
+    assert "between `tasks_to_resolve-` and `.md`" in lowered
+    assert "other-sha" in lowered
+    assert "never delete" in lowered and "[open]" in text
+    assert "keep `tasks_path` for the whole run" in lowered
+
+
+def test_orchestrator_resume_skips_panel_when_open_manifest_present() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    assert "resume" in lowered
+    assert "freeze" in lowered or "frozen" in lowered
+    assert "skip" in lowered and "dispatch-panel-review" in text
+    assert "[open]" in text
+    assert "tasks_path" in text
+    assert "do not run dedupe until the manifest is fully" in lowered
+    assert "resolved" in lowered
+
+
+def test_orchestrator_trims_review_history_after_other_tasks() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "REVIEW_HISTORY.md" in text
+        assert "30 days" in lowered
+        assert "trim" in lowered
+        assert "trim_review_history.py" in text
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step7 = definition.split("7. ", 1)[1]
+        assert "after all other tasks" in step7.lower()
+        assert "30 days" in step7.lower()
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert invoked.find("trim") > invoked.find("risk_classifier")
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "30 days" in anti or "30-day" in anti
+        assert "during panel" in anti or "during the panel" in anti
+
+
+def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    lowered = text.lower()
+    definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+    step6 = definition.split("6. ", 1)[1].split("\n7.", 1)[0]
+    assert "frozen `tasks_path`" in step6.lower()
+    assert "delete `tasks_to_resolve-<short-sha>.md` if it" not in step6.lower()
+    assert "do not delete from pr-head sha alone" in step6.lower()
+    assert "frozen `<short-sha>`" in lowered
+    blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+    assert "frozen `tasks_path`" in blocked.lower()
+    when_invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0]
+    assert "frozen `tasks_path`" in when_invoked.lower()
+    assert "orphans the real" in lowered
     text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     lowered = text.lower()
     assert "github" in lowered and "pull request" in lowered
@@ -422,6 +526,131 @@ def test_orchestrator_posts_a_new_github_pr_comment_per_run() -> None:
 
 def test_orchestrator_github_comments_use_stage_table_and_bullets() -> None:
     _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
+
+
+def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "as soon as" in comments
+        assert "run-info" in comments
+        assert "never invent" in comments
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step2 = definition.split("2. ", 1)[1].split("\n3.", 1)[0].lower()
+        assert "started" in step2
+        assert "as soon as" in step2
+        started_at = step2.find("started")
+        sha_markers = [step2.find(marker) for marker in ("rev-parse", "headrefoid")]
+        sha_at = min(pos for pos in sha_markers if pos != -1)
+        assert started_at != -1
+        assert sha_at != -1
+        assert started_at < sha_at
+        context = text.split("## Context acquisition", 1)[1].split("## Repo conventions", 1)[0].lower()
+        context_started_at = context.find("started")
+        context_diff_at = context.find("gh pr diff")
+        assert context_started_at != -1
+        assert context_diff_at != -1
+        assert context_started_at < context_diff_at
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        started_at = invoked.find("started")
+        review_at = invoked.find("**review**")
+        assert started_at != -1
+        assert review_at != -1
+        assert started_at < review_at
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "started" in anti
+        assert "invent" in anti and "dashboard" in anti
+        assert "skip" in anti
+        assert "exactly once" in anti
+        assert "fresh startup" in anti or "fresh run" in anti
+        assert "github_comment_url" in text
+        assert "gh pr comment" in lowered
+
+
+def test_orchestrator_started_comment_reflects_resume_state() -> None:
+    """Fresh runs post all-queued Started; resume runs skip Started and show Panel completed."""
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        started_fresh = _fenced_markdown_after(text, STARTED_COMMENT_HEADING)
+        assert started_fresh.count(QUEUED_STAGE_CELL) == 5
+        assert "all stages queued" in started_fresh.lower()
+        assert RESUME_STARTUP_MARKER in text
+        assert "do not post started" in RESUME_STARTUP_MARKER.lower()
+        resume_section = text.split(RESUME_STARTUP_MARKER, 1)[1].split("**Panel Review**", 1)[0]
+        resume_lower = resume_section.lower()
+        assert "skip started" in resume_lower
+        assert "panel review" in resume_lower
+        assert "completed" in resume_lower or "✅" in resume_section
+        assert "queued" in resume_lower and "not queued" in resume_lower
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        step2 = definition.split("2. ", 1)[1].split("\n3.", 1)[0].lower()
+        assert "resume detection" in step2
+        assert "do not post started" in step2
+        assert "resolve issues" in step2
+        assert "fresh startup" in step2
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "fresh run" in comments and "resume run" in comments
+        assert "skip started" in comments
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "skip started" in invoked
+        assert "resolve issues" in invoked
+        assert "panel review completed" in invoked or "panel review" in invoked
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "resume run" in anti and "started" in anti
+        assert RESOLVE_ISSUES_TEMPLATE_MARKER in text
+        resolve_body = text.split(RESOLVE_ISSUES_TEMPLATE_MARKER, 1)[1]
+        resolve_template = resolve_body.split("````", 1)[0]
+        assert "✅" in resolve_template
+        assert "🔄" in resolve_template or "task-00" in resolve_template.lower()
+
+
+def test_orchestrator_blocked_protocol_caps_started_comment_and_run_info_retries() -> None:
+    """Blocked protocol must bound retries for Started gh pr comment and run-info."""
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        blocked = text.split("## Blocked protocol", 1)[1].split("## Context acquisition", 1)[0]
+        blocked_lower = blocked.lower()
+        assert "3" in blocked
+        for failure_class in (
+            "dispatch failure",
+            "malformed json",
+            "`gh` auth",
+            "gh pr comment",
+            "run-info",
+        ):
+            assert failure_class in blocked_lower
+        assert "backoff" in blocked_lower
+        assert "github_comment" in blocked_lower
+        assert "run_info" in blocked_lower
+        assert 'status: "blocked"' in blocked or "`blocked`" in blocked_lower
+        assert "degraded" in blocked_lower or "without a dashboard link" in blocked_lower
+        assert "never invent" in blocked_lower
+
+
+def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "gh pr view" in lowered
+        assert "merged" in lowered
+        assert "abort" in lowered
+        assert "do not commit" in lowered or "don't commit" in lowered
+        assert "issue_resolver" in lowered
+        assert "/archive" in text
+        assert "cloudAgentBcId" in text or "cloudagentbcid" in lowered
+        assert '"aborted"' in text
+        assert "phase" in lowered and "abort" in lowered
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "merged" in anti
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "merged" in invoked
+        assert "abort" in invoked
 
 
 def test_risk_classifier_github_comments_use_stage_table_with_human_action_alerts() -> None:
@@ -542,7 +771,7 @@ def test_orchestrator_scorer_rejects_more_than_three_issues_in_a_task() -> None:
         {
             "id": "TASK-001",
             "title": "everything",
-            "path": "TASKS_TO_RESOLVE.md",
+            "path": "TASKS_TO_RESOLVE-abc1234.md",
             "issue_ids": ["SEC-001", "SEC-002", "SEC-003", "C-001"],
         }
     ]
@@ -592,7 +821,18 @@ def test_issue_resolver_pushes_and_does_not_merge() -> None:
     assert "git push" in text
     assert "gh pr merge" in text
     assert "do not merge" in text
-    assert "tasks_to_resolve.md" in text
+    assert "tasks_to_resolve-" in text
+    assert "do not delete" in text or "never delete" in text
+
+
+def test_issue_resolver_eval_uses_hashed_tasks_fixture() -> None:
+    suite = load_evals()
+    entry = next(item for item in suite["evals"] if item["agent"] == "issue_resolver")
+    prompt = entry["prompt"]
+    assert "tasks_path" in prompt.lower()
+    assert "TASKS_TO_RESOLVE-" in prompt
+    assert all("TASKS_TO_RESOLVE-" in relative for relative in entry["files"] if "TASKS_TO_RESOLVE" in relative)
+    assert not any(relative.endswith("/TASKS_TO_RESOLVE.md") for relative in entry["files"])
 
 
 def test_risk_classifier_squash_merges_without_admin() -> None:
