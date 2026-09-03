@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from loadout.errors import FetchError, ValidationError
-from loadout.models import Lockfile, Manifest
+from loadout.models import Manifest
 
 
 @dataclass(frozen=True)
@@ -21,8 +21,8 @@ class FetchedSource:
 
 def fetch_source(
     manifest: Manifest,
-    lock: Lockfile | None,
     *,
+    resolved_sha: str | None = None,
     env: Mapping[str, str] = os.environ,
 ) -> FetchedSource:
     local_path = env.get("LOADOUT_PATH")
@@ -32,22 +32,16 @@ def fetch_source(
             raise ValidationError(f"LOADOUT_PATH is not a directory: {root}")
         return FetchedSource(root=root.resolve(), resolved_sha="local", from_local=True)
 
-    resolved_sha = _locked_sha(manifest, lock) or _resolve_sha(manifest)
+    commit_sha = resolved_sha or _resolve_sha(manifest)
     cache_root = _cache_root(env)
-    destination = cache_root / resolved_sha
+    destination = cache_root / commit_sha
     if destination.is_dir():
-        return FetchedSource(root=destination, resolved_sha=resolved_sha, from_local=False)
+        return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
     if destination.exists():
         raise FetchError(f"Source cache path is not a directory: {destination}")
 
-    _clone_to_cache(manifest.source, resolved_sha, cache_root, destination)
-    return FetchedSource(root=destination, resolved_sha=resolved_sha, from_local=False)
-
-
-def _locked_sha(manifest: Manifest, lock: Lockfile | None) -> str | None:
-    if lock is not None and lock.source == manifest.source and lock.ref == manifest.ref:
-        return lock.resolved_sha
-    return None
+    _clone_to_cache(manifest.source, commit_sha, cache_root, destination)
+    return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
 
 
 def _cache_root(env: Mapping[str, str]) -> Path:

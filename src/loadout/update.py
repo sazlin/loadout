@@ -39,7 +39,9 @@ def update(project_root: Path, *, to_ref: str | None = None) -> UpdateResult:
 
     updated_manifest = load_manifest(manifest_path)
     lock = load_lockfile(project_root / LOCKFILE_NAME)
-    fetched = fetch_source(updated_manifest, lock)
+    if lock is None:
+        raise ValidationError(f"No {LOCKFILE_NAME} written by sync")
+    fetched = fetch_source(updated_manifest, resolved_sha=lock.resolved_sha)
     changelog = _changelog_between(fetched.root, old_ref, new_ref)
 
     result = UpdateResult(old_ref=old_ref, new_ref=new_ref, changelog=changelog)

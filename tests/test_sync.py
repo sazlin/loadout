@@ -8,14 +8,17 @@ from typing import Any
 
 import pytest
 
+import loadout.fetch as fetch_module
+import loadout.sync as sync_module
 from loadout.blocks import (
     AGENT_RULES_BEGIN,
     AGENT_RULES_END,
     CLAUDE_IMPORT_BEGIN,
     CLAUDE_IMPORT_END,
 )
-from loadout.errors import DriftError, ValidationError
-from loadout.models import load_lockfile
+from loadout.errors import DriftError, FetchError, ValidationError
+from loadout.fetch import FetchedSource
+from loadout.models import Manifest, load_lockfile
 from loadout.sync import sync
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mini_loadout"
@@ -75,6 +78,28 @@ def snapshot(root: Path) -> dict[str, tuple[bytes, int]]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def fetched_version(tmp_path: Path, name: str, sha: str) -> FetchedSource:
+    source = tmp_path / name
+    shutil.copytree(FIXTURE, source)
+    return FetchedSource(root=source, resolved_sha=sha, from_local=False)
+
+
+def cached_version(tmp_path: Path, sha: str) -> Path:
+    source = tmp_path / "cache" / "loadout" / "sources" / sha
+    shutil.copytree(FIXTURE, source)
+    return source
+
+
+def use_remote_versions(monkeypatch: pytest.MonkeyPatch, *versions: FetchedSource) -> None:
+    remaining = iter(versions)
+
+    def fetch_current(manifest: Manifest) -> FetchedSource:
+        assert manifest.ref == "main"
+        return next(remaining)
+
+    monkeypatch.setattr(sync_module, "fetch_source", fetch_current)
 
 
 def test_fresh_sync_writes_rules_skills_and_lockfile(project: Path) -> None:
@@ -506,6 +531,85 @@ def test_sync_prints_summary(project: Path, capsys: pytest.CaptureFixture[str]) 
     assert "13 added" in out
     assert "AGENTS.md" in out
     assert "Cursor" in out
+
+
+def test_sync_reresolves_remote_ref_and_records_new_sha(
+    project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first_sha = "a" * 40
+    second_sha = "b" * 40
+    cached_version(tmp_path, first_sha)
+    second = cached_version(tmp_path, second_sha)
+    (second / "rules/core/a.mdc").write_text("---\ndescription: Updated rule\n---\n\nUpdated.\n")
+    remaining = iter([first_sha, second_sha])
+    monkeypatch.delenv("LOADOUT_PATH")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+    monkeypatch.setattr(fetch_module, "_resolve_sha", lambda manifest: next(remaining))
+    write_manifest(project, manifest_body().replace("ref: v1.0.0", "ref: main"))
+
+    sync(project)
+    sync(project)
+
+    assert "Updated." in (project / RULE_A).read_text()
+    assert read_lock(project)["resolved_sha"] == second_sha
+
+
+def test_sync_refresh_prunes_files_missing_from_new_remote(
+    project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = fetched_version(tmp_path, "first", "c" * 40)
+    second = fetched_version(tmp_path, "second", "d" * 40)
+    (second.root / "loadouts/base.yaml").write_text(
+        "name: base\ndescription: Base rules and skills\n"
+        "skills:\n  - src: skills/demo\n"
+        "hooks:\n  - src: hooks/demo\n"
+        "mcps:\n  - src: mcps/demo-docs\n"
+    )
+    write_manifest(project, manifest_body().replace("ref: v1.0.0", "ref: main"))
+    use_remote_versions(monkeypatch, first, second)
+
+    sync(project)
+    sync(project)
+
+    assert not (project / RULE_A).exists()
+    assert read_lock(project)["resolved_sha"] == "d" * 40
+
+
+def test_check_reports_advanced_remote_sha_without_writing(
+    project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = fetched_version(tmp_path, "first", "e" * 40)
+    second = fetched_version(tmp_path, "second", "f" * 40)
+    write_manifest(project, manifest_body().replace("ref: v1.0.0", "ref: main"))
+    use_remote_versions(monkeypatch, first, second)
+    sync(project)
+    before = snapshot(project)
+
+    with pytest.raises(DriftError, match="resolved_sha"):
+        sync(project, check=True)
+
+    assert snapshot(project) == before
+
+
+def test_remote_resolution_failure_leaves_project_unchanged(
+    project: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = fetched_version(tmp_path, "first", "1" * 40)
+    write_manifest(project, manifest_body().replace("ref: v1.0.0", "ref: main"))
+    use_remote_versions(monkeypatch, first)
+    sync(project)
+    before = snapshot(project)
+
+    def fail_fetch(manifest: Manifest) -> FetchedSource:
+        assert manifest.ref == "main"
+        raise FetchError("remote unavailable")
+
+    monkeypatch.setattr(sync_module, "fetch_source", fail_fetch)
+
+    with pytest.raises(FetchError, match="remote unavailable"):
+        sync(project)
+
+    assert snapshot(project) == before
 
 
 def test_check_passes_on_a_clean_tree(project: Path) -> None:

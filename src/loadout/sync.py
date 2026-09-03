@@ -139,7 +139,7 @@ def sync(project_root: Path, *, check: bool = False) -> SyncResult:
     lock_path = project_root / LOCKFILE_NAME
     lock = load_lockfile(lock_path)
 
-    fetched = fetch_source(manifest, lock)
+    fetched = fetch_source(manifest)
     resolved, cli_tools = resolve_selection(manifest, fetched.root)
     validate_resolved(resolved, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 

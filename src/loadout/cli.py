@@ -13,9 +13,9 @@ from loadout import __version__
 from loadout.errors import LoadoutError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.lint import lint_repo
-from loadout.models import load_lockfile, load_manifest
+from loadout.models import load_manifest
 from loadout.resolve import resolve_selection
-from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
+from loadout.sync import MANIFEST_NAME
 from loadout.sync import sync as run_sync
 from loadout.update import update as run_update
 from loadout.validate import validate_resolved
@@ -110,8 +110,7 @@ def _print_resolved() -> None:
         raise ValidationError(f"No {MANIFEST_NAME} found in {project_root}")
 
     manifest = load_manifest(manifest_path)
-    lock = load_lockfile(project_root / LOCKFILE_NAME)
-    fetched = fetch_source(manifest, lock)
+    fetched = fetch_source(manifest)
     files, cli_tools = resolve_selection(manifest, fetched.root)
     validate_resolved(files, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 
