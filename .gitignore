@@ -245,3 +245,8 @@ skills-lock.json
 
 # Playwright loadout cli_tools
 node_modules/
+
+# PR review harness runtime tasks file (hashed per reviewed SHA; deleted on exit)
+/TASKS_TO_RESOLVE.md
+/TASKS_TO_RESOLVE-*.md
+

@@ -32,7 +32,8 @@ remaining issues from panel/verify, verifier claim results, and
    merge, or a wait-for-human comment
 3. A final fenced `json` report matching **Output schema**
 
-Do not edit source. Do not write `TASKS_TO_RESOLVE.md` or `VERIFIERS.md`.
+Do not edit source. Do not write `TASKS_TO_RESOLVE.md`,
+`TASKS_TO_RESOLVE-<short-sha>.md`, or `VERIFIERS.md`.
 
 ## Definition of done
 

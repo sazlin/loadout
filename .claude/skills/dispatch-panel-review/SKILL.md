@@ -33,8 +33,8 @@ Launch `review_correctness`, `review_maintainability`, `review_scale`, and
    - Enough diff/path context that the reviewer does not need this chat.
 4. Wait for all four JSON reports. If a report is missing the issue schema,
    one retry, then record that reviewer as `missing`.
-5. Do **not** review in-process. Do **not** write `TASKS_TO_RESOLVE.md` here
-   (`dedupe-and-write-tasks` is next).
+5. Do **not** review in-process. Do **not** write `TASKS_TO_RESOLVE.md` or
+   `TASKS_TO_RESOLVE-<short-sha>.md` here (`dedupe-and-write-tasks` is next).
 
 ## Harness
 

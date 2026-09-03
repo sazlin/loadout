@@ -1,7 +1,7 @@
 {
   "status": "ok",
   "agent": "issue_resolver",
-  "charter": "Complete the first open task in TASKS_TO_RESOLVE.md: implement, verify, commit, and push to the existing PR branch.",
+  "charter": "Complete the first open task in TASKS_TO_RESOLVE-<short-sha>.md: implement, verify, commit, and push to the existing PR branch.",
   "inputs": {
     "summary": "Fix discounted_total so tax applies after discount. Push the PR branch. Do not merge.",
     "paths": ["evals/files/pricing.py"],

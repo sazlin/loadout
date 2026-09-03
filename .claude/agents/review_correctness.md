@@ -32,7 +32,8 @@ and any requirements the caller named. Briefs usually come from
 `dispatch-panel-review`.
 
 **Emits:** a final fenced `json` report matching **Output schema**. No source
-edits. Do not write `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or
+edits. Do not write `TASKS_TO_RESOLVE.md`, `TASKS_TO_RESOLVE-<short-sha>.md`,
+`REVIEW_HISTORY.md`, or
 `VERIFIERS.md`. Do not write files; return JSON only.
 
 ## Definition of done

@@ -4,6 +4,28 @@
 
 - Remove base as parent for `stripe` loadout
 
+## 0.25.0
+
+- Collapse CI into two jobs: lint/test/typecheck, and one loop over every
+  `loadouts/*.yaml` for resolve plus a clean sync (no per-loadout matrix).
+- Post a **Started** GitHub comment as soon as `review_orchestrator` begins
+  on an open PR, including a Cursor Cloud dashboard link to that run.
+- Rename PR review harness comment stages to Panel Review, Resolve Issues,
+  Verifiers, and Risk Classification, and append Cursor Cloud dashboard
+  links.
+- Abort the PR review harness when the pull request is already merged:
+  skip remaining work, post an abort comment, and archive child Cursor
+  Cloud agents.
+- Re-run `loadout sync` against latest `main` after that harness update;
+  vendored files already matched (no drift).
+- After all other PR-review harness tasks, `review_orchestrator` trims
+  `REVIEW_HISTORY.md` entries older than 30 days.
+- Hash `TASKS_TO_RESOLVE.md` with the reviewed git short SHA
+  (`TASKS_TO_RESOLVE-<short-sha>.md`) and delete that file when
+  `review_orchestrator` exits so it is not left to be committed.
+
+## 0.24.0
+
 ## 0.23.0
 
 ### Readme-loadouts detach
