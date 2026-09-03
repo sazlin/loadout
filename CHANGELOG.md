@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove base as parent for `stripe` loadout
+
 ## 0.23.0
 
 ### Readme-loadouts detach
