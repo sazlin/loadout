@@ -7,7 +7,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-from loadout import __version__
+from loadout import __version__, fetch
 from loadout.cli import main
 from loadout.errors import FetchError
 
@@ -16,6 +16,12 @@ FIXTURE = Path(__file__).parent / "fixtures" / "mini_loadout"
 
 def write_manifest(loadouts: str = "[python]", *, extra: str = "") -> None:
     Path(".loadout.yaml").write_text(f"source: https://example.com/loadout\nref: v1.0.0\nloadouts: {loadouts}\n{extra}")
+
+
+def cached_source(cache_home: Path, sha: str, changelog: str) -> None:
+    source = cache_home / "loadout" / "sources" / sha
+    shutil.copytree(FIXTURE, source)
+    (source / "CHANGELOG.md").write_text(changelog)
 
 
 @pytest.fixture
@@ -270,6 +276,40 @@ def test_update_restores_manifest_when_remote_sync_fails(runner: CliRunner, monk
         assert result.exit_code == 3
         assert Path(".loadout.yaml").read_text() == original
         assert not Path(".loadout.lock").exists()
+
+
+def test_update_reports_changelog_when_main_advances(
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first_sha = "a" * 40
+    second_sha = "b" * 40
+    cache_home = tmp_path / "cache"
+    cached_source(
+        cache_home,
+        first_sha,
+        "# CHANGELOG\n\n## 1.0.0\n\n- First release notes\n",
+    )
+    cached_source(
+        cache_home,
+        second_sha,
+        "# CHANGELOG\n\n## 2.0.0\n\n- Second release notes\n\n## 1.0.0\n\n- First release notes\n",
+    )
+    remaining = iter([first_sha, second_sha])
+    monkeypatch.setattr(fetch, "_resolve_sha", lambda manifest: next(remaining))
+    env = {"LOADOUT_PATH": "", "XDG_CACHE_HOME": str(cache_home)}
+
+    with runner.isolated_filesystem():
+        Path(".loadout.yaml").write_text("source: https://example.com/loadout\nref: main\nloadouts: [python]\n")
+        initial = runner.invoke(main, ["sync"], env=env)
+
+        result = runner.invoke(main, ["update", "--to", "main"], env=env)
+
+        assert initial.exit_code == 0, initial.output
+        assert result.exit_code == 0, result.output
+        assert "Second release notes" in result.output
+        assert "First release notes" not in result.output
+        lock = yaml.safe_load(Path(".loadout.lock").read_text())
+        assert lock["resolved_sha"] == second_sha
 
 
 def test_update_rewrites_ref_syncs_and_prints_changelog_slice(runner: CliRunner) -> None:

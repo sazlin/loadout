@@ -9,7 +9,7 @@ from pathlib import Path
 
 from loadout.errors import FetchError, LoadoutError, ValidationError
 from loadout.fetch import fetch_source
-from loadout.models import load_lockfile, load_manifest
+from loadout.models import Manifest, load_lockfile, load_manifest
 from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
 from loadout.sync import sync as run_sync
 
@@ -33,6 +33,7 @@ def update(project_root: Path, *, to_ref: str | None = None) -> UpdateResult:
     manifest = load_manifest(manifest_path)
     old_ref = manifest.ref
     new_ref = to_ref or _latest_tag(manifest.source)
+    previous_source = _locked_source_for_same_ref(project_root, manifest, new_ref)
 
     original_manifest = manifest_path.read_text()
     _rewrite_ref(manifest_path, new_ref)
@@ -47,11 +48,24 @@ def update(project_root: Path, *, to_ref: str | None = None) -> UpdateResult:
     if lock is None:
         raise ValidationError(f"No {LOCKFILE_NAME} written by sync")
     fetched = fetch_source(updated_manifest, resolved_sha=lock.resolved_sha)
-    changelog = _changelog_between(fetched.root, old_ref, new_ref)
+    changelog = (
+        _changelog_since(previous_source, fetched.root)
+        if previous_source is not None
+        else _changelog_between(fetched.root, old_ref, new_ref)
+    )
 
     result = UpdateResult(old_ref=old_ref, new_ref=new_ref, changelog=changelog)
     _print_summary(result)
     return result
+
+
+def _locked_source_for_same_ref(project_root: Path, manifest: Manifest, new_ref: str) -> Path | None:
+    if manifest.ref != new_ref:
+        return None
+    lock = load_lockfile(project_root / LOCKFILE_NAME)
+    if lock is None or lock.source != manifest.source or lock.ref != manifest.ref:
+        return None
+    return fetch_source(manifest, resolved_sha=lock.resolved_sha).root
 
 
 def _latest_tag(source: str) -> str:
@@ -80,6 +94,21 @@ def _rewrite_ref(manifest_path: Path, new_ref: str) -> None:
     if not _REF_LINE_RE.search(text):
         raise ValidationError(f"{manifest_path.name} has no ref: line to update")
     manifest_path.write_text(_REF_LINE_RE.sub(f"ref: {new_ref}", text, count=1))
+
+
+def _changelog_since(previous_source: Path, current_source: Path) -> str:
+    previous_path = previous_source / "CHANGELOG.md"
+    current_path = current_source / "CHANGELOG.md"
+    if not current_path.is_file():
+        return ""
+    previous_text = previous_path.read_text() if previous_path.is_file() else ""
+    previous_sections = dict(_parse_sections(previous_text))
+    changed_sections = [
+        section
+        for version, section in _parse_sections(current_path.read_text())
+        if previous_sections.get(version) != section
+    ]
+    return "\n\n".join(changed_sections)
 
 
 def _changelog_between(source_root: Path, old_ref: str, new_ref: str) -> str:
