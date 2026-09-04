@@ -8,7 +8,7 @@ from pathlib import Path
 
 from loadout.errors import FetchError, LoadoutError, ValidationError
 from loadout.fetch import _run_git, fetch_source
-from loadout.models import Manifest, load_lockfile, load_manifest
+from loadout.models import Lockfile, Manifest, load_lockfile, load_manifest
 from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
 from loadout.sync import sync as run_sync
 
@@ -59,15 +59,32 @@ def update(project_root: Path, *, to_ref: str | None = None) -> UpdateResult:
 
 
 def _locked_source_for_same_ref(project_root: Path, manifest: Manifest, new_ref: str) -> Path | None:
+    """Return the pre-sync checkout for changelog diffing on a same-ref refresh.
+
+    Call this **before** rewriting the manifest ref. When ``new_ref`` matches
+    ``manifest.ref``, fetch the lockfile's previous ``resolved_sha`` and return
+    that tree so ``_changelog_since`` can print only newly landed sections.
+    Otherwise return ``None`` (caller uses ``_changelog_between``).
+    """
     if manifest.ref != new_ref:
         return None
     lock = load_lockfile(project_root / LOCKFILE_NAME)
-    if lock is None or lock.source != manifest.source or lock.ref != manifest.ref or lock.resolved_sha == "local":
+    if lock is None or not _lock_usable_for_changelog(lock, manifest):
         return None
     try:
         return fetch_source(manifest, resolved_sha=lock.resolved_sha).root
     except FetchError:
         return None
+
+
+def _lock_usable_for_changelog(lock: Lockfile, manifest: Manifest) -> bool:
+    if lock.source != manifest.source:
+        return False
+    if lock.ref != manifest.ref:
+        return False
+    if lock.resolved_sha == "local":
+        return False
+    return True
 
 
 def _latest_tag(source: str) -> str:
