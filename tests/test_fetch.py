@@ -147,3 +147,14 @@ def test_fetch_wraps_git_resolution_failure(
 
     with pytest.raises(FetchError, match="repository not found"):
         fetch_source(make_manifest())
+
+
+def test_fetch_git_timeout_raises_fetch_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+
+    monkeypatch.setenv("LOADOUT_GIT_TIMEOUT_SECONDS", "0.2")
+
+    start = time.monotonic()
+    with pytest.raises(FetchError, match="timed out after 0.2s"):
+        fetch._run_git(["sleep", "30"])
+    assert time.monotonic() - start < 2.0

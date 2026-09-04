@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 from loadout.errors import FetchError, LoadoutError, ValidationError
-from loadout.fetch import fetch_source
+from loadout.fetch import _run_git, fetch_source
 from loadout.models import Manifest, load_lockfile, load_manifest
 from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
 from loadout.sync import sync as run_sync
@@ -81,15 +80,6 @@ def _latest_tag(source: str) -> str:
         if ref.startswith("refs/tags/"):
             return ref.removeprefix("refs/tags/")
     raise FetchError(f"No tags found at {source!r}")
-
-
-def _run_git(command: list[str]) -> subprocess.CompletedProcess[str]:
-    try:
-        return subprocess.run(command, check=True, text=True, capture_output=True)
-    except (OSError, subprocess.CalledProcessError) as error:
-        stderr = getattr(error, "stderr", None)
-        detail = stderr.strip() if isinstance(stderr, str) and stderr.strip() else str(error)
-        raise FetchError(f"Git command failed: {detail}") from error
 
 
 def _rewrite_ref(manifest_path: Path, new_ref: str) -> None:

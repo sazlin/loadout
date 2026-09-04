@@ -11,6 +11,9 @@ from pathlib import Path
 from loadout.errors import FetchError, ValidationError
 from loadout.models import Manifest
 
+_DEFAULT_GIT_TIMEOUT_SECONDS = 120
+_GIT_TIMEOUT_ENV = "LOADOUT_GIT_TIMEOUT_SECONDS"
+
 
 @dataclass(frozen=True)
 class FetchedSource:
@@ -92,9 +95,30 @@ def _clone_to_cache(source: str, ref: str, cache_root: Path) -> FetchedSource:
         raise FetchError(f"Could not cache source from {source!r}: {error}") from error
 
 
+def _git_timeout_seconds() -> float:
+    override = os.environ.get(_GIT_TIMEOUT_ENV)
+    if override is not None and override.strip():
+        return float(override)
+    return _DEFAULT_GIT_TIMEOUT_SECONDS
+
+
 def _run_git(command: list[str]) -> subprocess.CompletedProcess[str]:
+    timeout = _git_timeout_seconds()
     try:
-        return subprocess.run(command, check=True, text=True, capture_output=True)
+        return subprocess.run(
+            command,
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        process = getattr(error, "process", None)
+        if process is not None:
+            process.kill()
+        raise FetchError(
+            f"Git command timed out after {timeout}s: {' '.join(command)}"
+        ) from error
     except (OSError, subprocess.CalledProcessError) as error:
         stderr = getattr(error, "stderr", None)
         detail = stderr.strip() if isinstance(stderr, str) and stderr.strip() else str(error)
