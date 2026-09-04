@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Remove base as parent for `stripe` loadout
+- Resolve the configured remote ref on every `loadout sync`, update the lockfile
+  to the fetched commit, and prune managed files no longer selected.
 
 ## 0.25.0
 

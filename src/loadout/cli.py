@@ -13,9 +13,9 @@ from loadout import __version__
 from loadout.errors import LoadoutError, ValidationError
 from loadout.fetch import fetch_source
 from loadout.lint import lint_repo
-from loadout.models import load_lockfile, load_manifest
+from loadout.models import load_manifest
 from loadout.resolve import resolve_selection
-from loadout.sync import LOCKFILE_NAME, MANIFEST_NAME
+from loadout.sync import MANIFEST_NAME
 from loadout.sync import sync as run_sync
 from loadout.update import update as run_update
 from loadout.validate import validate_resolved
@@ -35,14 +35,14 @@ def main() -> None:
 @main.command()
 @click.option("--check", is_flag=True, help="Report drift without writing.")
 def sync(check: bool) -> None:
-    """Apply the pinned loadout to this project, or check it for drift."""
+    """Apply the current remote loadout ref, or check it for drift."""
     _guarded(lambda: run_sync(Path.cwd(), check=check))
 
 
 @main.command()
 @click.option("--loadouts", required=True, help="Comma-separated loadout names.")
 @click.option("--source", default=DEFAULT_SOURCE, show_default=True, help="Loadout repo URL.")
-@click.option("--ref", default=DEFAULT_REF, show_default=True, help="Git ref to pin.")
+@click.option("--ref", default=DEFAULT_REF, show_default=True, help="Git ref to synchronize.")
 def init(loadouts: str, source: str, ref: str) -> None:
     """Write a starter .loadout.yaml manifest."""
     _guarded(lambda: _write_manifest(loadouts, source, ref))
@@ -51,7 +51,7 @@ def init(loadouts: str, source: str, ref: str) -> None:
 @main.command()
 @click.option("--to", "to_ref", default=None, help="Ref to update to. Defaults to the latest tag.")
 def update(to_ref: str | None) -> None:
-    """Bump the pinned ref, re-sync, and print the CHANGELOG entries that landed."""
+    """Select a ref, re-sync it from the remote, and print its CHANGELOG entries."""
     _guarded(lambda: run_update(Path.cwd(), to_ref=to_ref))
 
 
@@ -110,8 +110,7 @@ def _print_resolved() -> None:
         raise ValidationError(f"No {MANIFEST_NAME} found in {project_root}")
 
     manifest = load_manifest(manifest_path)
-    lock = load_lockfile(project_root / LOCKFILE_NAME)
-    fetched = fetch_source(manifest, lock)
+    fetched = fetch_source(manifest)
     files, cli_tools = resolve_selection(manifest, fetched.root)
     validate_resolved(files, fetched.root, manifest.skills_dir, manifest.hooks_dir, manifest.agents_dir)
 

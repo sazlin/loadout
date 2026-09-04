@@ -37,6 +37,10 @@ uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout init --loadouts
 uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 ```
 
+Every remote sync resolves the configured `ref` again. A branch such as `main`
+follows its current remote head; a release tag stays on that release. The
+lockfile records the exact commit used and the managed files installed from it.
+
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
 
 ```bash
@@ -75,7 +79,8 @@ loadouts:
   # - aws       # remove by deleting the line
 ```
 
-Then re-sync and commit the diff:
+Then re-sync and commit the diff. Sync removes files that the previous lockfile
+recorded for loadouts you removed, while leaving user-owned files alone:
 
 ```bash
 uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
@@ -101,33 +106,32 @@ exclude:
 
 ## Pull loadout changes over time
 
-When this repo ships new rules/skills (or you want a newer pin), bump the manifest ref and re-sync.
+`sync` resolves the configured remote `ref` on every run. If the manifest uses
+`ref: main`, an ordinary sync pulls the current `main` head:
 
-**Recommended — one command:**
+```bash
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
+```
+
+To move the manifest to the latest release tag, use:
 
 ```bash
 uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout update
 # or: just loadout-update
 ```
 
-`update` rewrites `ref:` to the latest release tag (or `--to vX.Y.Z`), re-runs `sync`, and prints the CHANGELOG entries that landed.
+`update` rewrites `ref:` to the latest release tag, or to the ref supplied with
+`--to`, then runs a fresh sync and prints the CHANGELOG entries that landed.
+`loadout update --to main` switches to `main` and resolves its current remote
+head even when the manifest already names `main`.
 
-**Manual alternative:**
-
-```yaml
-# .loadout.yaml
-ref: v0.18.0   # was: main or an older tag
-```
-
-```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
-```
-
-Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
+Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the update is
+reviewable in a PR.
 
 ## Check for drift
 
-Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
+Fail CI, or a local check, if someone hand-edited vendored files, the lock is
+stale, or the configured remote ref advanced:
 
 ```bash
 uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync --check
@@ -221,7 +225,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch pin (`v0.18.0`, …) |
+| `ref` | yes | Release tag or branch to resolve on every remote sync (`v0.18.0`, `main`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
