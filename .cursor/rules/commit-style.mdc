@@ -4,7 +4,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/commit-style.mdc
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Commit style

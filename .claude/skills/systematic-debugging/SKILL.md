@@ -5,7 +5,7 @@ description: Use when encountering any bug, test failure, or unexpected behavior
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/systematic-debugging/SKILL.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Systematic Debugging

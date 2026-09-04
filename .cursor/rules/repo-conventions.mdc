@@ -4,7 +4,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/repo-conventions.mdc
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Repository conventions

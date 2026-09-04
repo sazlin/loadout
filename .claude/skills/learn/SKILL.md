@@ -6,7 +6,7 @@ description: Use only when the user says /learn or asks to capture this session'
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/learn/SKILL.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Learn

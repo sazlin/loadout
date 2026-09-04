@@ -7,7 +7,7 @@ globs:
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/python/pytest.mdc
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # pytest conventions

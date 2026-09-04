@@ -6,7 +6,7 @@ description: Use this skill before every release; drive the release through a de
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/release-checklist/SKILL.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Release checklist

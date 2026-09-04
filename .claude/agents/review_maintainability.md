@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/review_maintainability/review_maintainability.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 You are **review_maintainability**, a read-only reviewer for maintainability and code quality.

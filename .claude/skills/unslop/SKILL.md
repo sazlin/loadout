@@ -4,7 +4,7 @@ description: Cut AI tells from any writing. Must always apply.
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/unslop/SKILL.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Unslop
