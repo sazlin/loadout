@@ -5,6 +5,7 @@
 - Remove base as parent for `stripe` loadout
 - Resolve the configured remote ref on every `loadout sync`, update the lockfile
   to the fetched commit, and prune managed files no longer selected.
+- loadout update (from self) on main
 
 ## 0.25.0
 

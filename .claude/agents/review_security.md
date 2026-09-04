@@ -14,7 +14,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/review_security/review_security.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 You are **review_security**, a read-only reviewer for security and privacy.

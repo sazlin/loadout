@@ -5,7 +5,7 @@ description: Use when executing implementation plans with independent tasks in t
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/subagent-driven-development/SKILL.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Subagent-Driven Development

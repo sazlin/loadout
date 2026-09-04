@@ -6,7 +6,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/honor-check-intent.mdc
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 # Honor check intent

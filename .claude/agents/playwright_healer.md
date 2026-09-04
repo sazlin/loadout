@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/playwright_healer/playwright_healer.md
-  loadout.sha: local
+  loadout.sha: a01e7bd
 ---
 
 You are **playwright_healer**, a focused Playwright Test Healer for this repository.
