@@ -28,6 +28,13 @@ def fetch_source(
     resolved_sha: str | None = None,
     env: Mapping[str, str] = os.environ,
 ) -> FetchedSource:
+    """Return the loadout source tree and resolved commit.
+
+    When ``resolved_sha`` is None, resolve ``manifest.ref`` from the remote
+    (or use ``LOADOUT_PATH`` when set). When an explicit SHA is passed, probe
+    the cache for that commit only and do not re-resolve the ref (used by
+    ``update`` changelog helpers).
+    """
     local_path = env.get("LOADOUT_PATH")
     if local_path:
         root = Path(local_path).expanduser()
@@ -35,11 +42,12 @@ def fetch_source(
             raise ValidationError(f"LOADOUT_PATH is not a directory: {root}")
         return FetchedSource(root=root.resolve(), resolved_sha="local", from_local=True)
 
-    commit_sha = resolved_sha or _resolve_sha(manifest)
+    cache_key_sha = resolved_sha or _resolve_sha(manifest)
     cache_root = _cache_root(env)
-    destination = cache_root / commit_sha
+    # Cache probe only; clone path determines the returned commit on cache miss.
+    destination = cache_root / cache_key_sha
     if destination.is_dir():
-        return FetchedSource(root=destination, resolved_sha=commit_sha, from_local=False)
+        return FetchedSource(root=destination, resolved_sha=cache_key_sha, from_local=False)
     if destination.exists():
         raise FetchError(f"Source cache path is not a directory: {destination}")
 
