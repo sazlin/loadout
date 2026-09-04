@@ -63,9 +63,12 @@ def _locked_source_for_same_ref(project_root: Path, manifest: Manifest, new_ref:
     if manifest.ref != new_ref:
         return None
     lock = load_lockfile(project_root / LOCKFILE_NAME)
-    if lock is None or lock.source != manifest.source or lock.ref != manifest.ref:
+    if lock is None or lock.source != manifest.source or lock.ref != manifest.ref or lock.resolved_sha == "local":
         return None
-    return fetch_source(manifest, resolved_sha=lock.resolved_sha).root
+    try:
+        return fetch_source(manifest, resolved_sha=lock.resolved_sha).root
+    except FetchError:
+        return None
 
 
 def _latest_tag(source: str) -> str:

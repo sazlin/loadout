@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,16 @@ def cached_source(cache_home: Path, sha: str, changelog: str) -> None:
     source = cache_home / "loadout" / "sources" / sha
     shutil.copytree(FIXTURE, source)
     (source / "CHANGELOG.md").write_text(changelog)
+
+
+def run_git(repository: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(repository), *args],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout.strip()
 
 
 @pytest.fixture
@@ -276,6 +287,39 @@ def test_update_restores_manifest_when_remote_sync_fails(runner: CliRunner, monk
         assert result.exit_code == 3
         assert Path(".loadout.yaml").read_text() == original
         assert not Path(".loadout.lock").exists()
+
+
+def test_update_from_local_sync_uses_remote_ref(runner: CliRunner, tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    shutil.copytree(FIXTURE, source)
+    run_git(source, "init", "-b", "main")
+    run_git(source, "config", "user.name", "Test User")
+    run_git(source, "config", "user.email", "test@example.com")
+    run_git(source, "add", ".")
+    run_git(source, "commit", "-m", "source")
+    source_sha = run_git(source, "rev-parse", "HEAD")
+
+    with runner.isolated_filesystem():
+        Path(".loadout.yaml").write_text(f"source: {source}\nref: main\nloadouts: [python]\n")
+        initial = runner.invoke(
+            main,
+            ["sync"],
+            env={"LOADOUT_PATH": str(source)},
+        )
+
+        result = runner.invoke(
+            main,
+            ["update", "--to", "main"],
+            env={
+                "LOADOUT_PATH": "",
+                "XDG_CACHE_HOME": str(tmp_path / "cache"),
+            },
+        )
+
+        assert initial.exit_code == 0, initial.output
+        assert result.exit_code == 0, result.output
+        lock = yaml.safe_load(Path(".loadout.lock").read_text())
+        assert lock["resolved_sha"] == source_sha
 
 
 def test_update_reports_changelog_when_main_advances(
