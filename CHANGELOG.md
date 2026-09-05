@@ -2,12 +2,17 @@
 
 ## Unreleased
 
+## 0.27.0
+
+- Re-run `loadout sync` against latest `main` (loadout update from self).
+- Set root `package.json` name to `loadout` so `npm install` does not rewrite
+  `package-lock.json` back to a directory-derived name on Cloud Agent VMs.
+
 ## 0.26.0
 
 - Remove base as parent for `stripe` loadout
 - Resolve the configured remote ref on every `loadout sync`, update the lockfile
   to the fetched commit, and prune managed files no longer selected.
-- loadout update (from self) on main
 
 ## 0.25.0
 

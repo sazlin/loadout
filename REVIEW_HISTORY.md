@@ -2,6 +2,36 @@
 
 Append-only log for the PR-review harness. Do not rewrite.
 
+## 2026-09-05T12:15:00Z — issue_resolver — resolve
+
+- **Task:** TASK-001
+- **Outcome:** ok
+- **Summary:** Fixed CHANGELOG v0.27.0 release notes: added bullets for loadout sync from main and package.json name fix under ## 0.27.0; removed mis-attributed "loadout update (from self) on main" from ## 0.26.0 so the tagged section matches v0.26.0. Verified `_slice_sections` v0.26.0→v0.27.0 includes loadout keywords; `tests/test_version.py` and `just lint` pass.
+
+## 2026-09-05T12:22:00Z — risk_classifier — decision
+
+- **Task:** none
+- **Outcome:** wait_for_human
+- **Summary:** Classified PR #99 diff as low risk (version-only release bump + CHANGELOG fix). CI green (lint-test-typecheck, loadouts). Squash merge attempted but blocked by token permissions (mergePullRequest not accessible). Human with merge access should run `gh pr merge 99 --squash`.
+
+## 2026-09-05T12:18:00Z — review_orchestrator — verify
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Verified 3 VERIFIERS.md claims on PR #99 sequentially. All true: no TypeScript any usage, no bypass renames, meaningful-tests claim vacuously satisfied for version-only release bump. No false claims; no verify loop retry needed.
+
+## 2026-09-05T12:15:00Z — review_orchestrator — panel
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Panel loop 2 on PR #99 after TASK-001 fix. Four reviewers re-dispatched. review_correctness, review_scale, review_security: zero issues. review_maintainability: one minor (M-001 changelog wording). No critical or important issues remain. Proceeding to verify.
+
+## 2026-09-05T12:10:30Z — review_orchestrator — panel
+
+- **Task:** none
+- **Outcome:** ok
+- **Summary:** Panel loop 1 on PR #99 (release v0.27.0). Four reviewers dispatched in parallel. review_correctness reported 2 important issues (C-001 empty ## 0.27.0 changelog, C-002 mis-attributed v0.26.0 bullet). review_maintainability, review_scale, and review_security reported no issues. Deduped into TASK-001 (2 issues, CHANGELOG.md). tasks_path: TASKS_TO_RESOLVE-6dae6f8.md.
+
 ## 2026-08-31T12:20:00Z — risk_classifier — decision
 
 - **Task:** none
