@@ -110,11 +110,14 @@ _CORE_LADDER_RUNGS = (
 
 
 def test_ponytail_rule_core_ladder_matches_skill() -> None:
-    rule_text = (REPO / RULE_SRC).read_text().lower()
-    skill_text = (REPO / "skills/ponytail/SKILL.md").read_text().lower()
+    rule_text = (REPO / RULE_SRC).read_text()
+    skill_text = (REPO / "skills" / "ponytail" / "SKILL.md").read_text()
+    assert "skills/ponytail/SKILL.md" in rule_text
+    rule_lower = rule_text.lower()
+    skill_lower = skill_text.lower()
     for rule_marker, skill_marker in _CORE_LADDER_RUNGS:
-        assert rule_marker.lower() in rule_text, f"rule missing ladder rung: {rule_marker!r}"
-        assert skill_marker.lower() in skill_text, f"skill missing ladder rung: {skill_marker!r}"
+        assert rule_marker.lower() in rule_lower, f"rule missing ladder rung: {rule_marker!r}"
+        assert skill_marker.lower() in skill_lower, f"skill missing ladder rung: {skill_marker!r}"
 
 
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
