@@ -5,6 +5,9 @@
 - Add `coding` loadout with ponytail (DietrichGebert/ponytail): six YAGNI
   skills, a globbed coding rule, and a SessionStart hook that injects the
   ladder. Compose with language loadouts; does not extend base.
+- Add RTK (Token Killer, rtk-ai/rtk v0.48.0) to `coding`: consumer skill,
+  fail-open `rtk-rewrite` hook (`rtk hook cursor` / `rtk hook claude`), and
+  a pinned GitHub-release `cli_tools` install. Do not run `rtk init`.
 
 ## 0.28.0
 

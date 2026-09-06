@@ -1,10 +1,11 @@
-"""Contracts for the coding loadout and vendored ponytail artifacts."""
+"""Contracts for the coding loadout and vendored ponytail / RTK artifacts."""
 
 from __future__ import annotations
 
 import hashlib
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -23,13 +24,25 @@ SKILL_NAMES = (
     "ponytail-debt",
     "ponytail-gain",
     "ponytail-help",
+    "rtk",
 )
 SKILL_SRCS = tuple(f"skills/{name}" for name in SKILL_NAMES)
+PONYTAIL_SKILL_NAMES = SKILL_NAMES[:-1]
+PONYTAIL_SKILL_SRCS = SKILL_SRCS[:-1]
 RULE_SRC = "rules/coding/ponytail.mdc"
-HOOK_SRC = "hooks/ponytail-activate"
+PONYTAIL_HOOK_SRC = "hooks/ponytail-activate"
+RTK_HOOK_SRC = "hooks/rtk-rewrite"
+HOOK_SRCS = (PONYTAIL_HOOK_SRC, RTK_HOOK_SRC)
 HOOK_SCRIPT = REPO / "hooks" / "ponytail-activate" / "ponytail-activate"
+RTK_HOOK_SCRIPT = REPO / "hooks" / "rtk-rewrite" / "rtk-rewrite.sh"
 UPSTREAM = "https://github.com/DietrichGebert/ponytail"
 PONYTAIL_COMMIT = "974d940a1c5344210874150b98ff0d2c861fab6a"
+RTK_UPSTREAM = "https://github.com/rtk-ai/rtk"
+RTK_VERSION = "0.48.0"
+RTK_COMMIT = "fde0a8f185945556f51718de0f4c430bb62b3df6"
+RTK_MUSL_SHA256 = "e4e650fa1677c0de2f6839a6040d7b17f312d32f163c402b75af70e9e5af1a91"
+CURL_PIPE_SH = re.compile(r"curl[^\n]*\|\s*(?:ba)?sh")
+CARGO_INSTALL_CRATES_RTK = re.compile(r"cargo\s+install(?:\s+--locked)?\s+rtk\b")
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -37,20 +50,35 @@ def write_manifest(project: Path, body: str) -> None:
     (project / ".loadout.yaml").write_text(body)
 
 
-def test_coding_loadout_ships_ponytail_artifacts() -> None:
+def _silence_cli_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
+
+
+def test_coding_loadout_ships_ponytail_and_rtk_artifacts() -> None:
     loadout = load_loadout(REPO / "loadouts" / "coding.yaml")
     assert loadout.name == "coding"
     assert loadout.extends == []
     assert {entry["src"] for entry in loadout.skills} == set(SKILL_SRCS)
     assert {entry["src"] for entry in loadout.rules} == {RULE_SRC}
-    assert {entry["src"] for entry in loadout.hooks} == {HOOK_SRC}
+    assert {entry["src"] for entry in loadout.hooks} == set(HOOK_SRCS)
     assert loadout.agents == []
     assert loadout.mcps == []
-    assert loadout.cli_tools == []
+    assert len(loadout.cli_tools) == 1
+    tool = loadout.cli_tools[0]
+    assert tool.name == "rtk"
+    assert RTK_VERSION in tool.command
+    assert "rtk-ai/rtk" in tool.command
+    assert "rtk gain" in tool.command
+    assert RTK_MUSL_SHA256 in tool.command
+    assert "curl" in tool.command
+    assert "| sh" not in tool.command
+    assert "|sh" not in tool.command.replace(" ", "")
+    assert CARGO_INSTALL_CRATES_RTK.search(tool.command) is None
+    assert "crates.io" not in tool.command
 
 
 def test_ponytail_skills_parse_and_drop_plugin_only_frontmatter() -> None:
-    for name, src in zip(SKILL_NAMES, SKILL_SRCS, strict=True):
+    for name, src in zip(PONYTAIL_SKILL_NAMES, PONYTAIL_SKILL_SRCS, strict=True):
         skill_md = REPO / src / "SKILL.md"
         text = skill_md.read_text()
         parse_skill_md(skill_md, text, dir_name=name)
@@ -61,7 +89,7 @@ def test_ponytail_skills_parse_and_drop_plugin_only_frontmatter() -> None:
 
 
 def test_ponytail_skill_evals_are_colocated() -> None:
-    for name, src in zip(SKILL_NAMES, SKILL_SRCS, strict=True):
+    for name, src in zip(PONYTAIL_SKILL_NAMES, PONYTAIL_SKILL_SRCS, strict=True):
         evals = REPO / src / "evals" / "evals.json"
         payload = json.loads(evals.read_text())
         assert payload["skill_name"] == name
@@ -73,7 +101,7 @@ def test_ponytail_skill_evals_are_colocated() -> None:
 
 
 def test_ponytail_skill_source_pins_exist() -> None:
-    for src in SKILL_SRCS:
+    for src in PONYTAIL_SKILL_SRCS:
         source = REPO / src / "SOURCE.md"
         text = source.read_text()
         assert UPSTREAM in text
@@ -121,7 +149,7 @@ def test_ponytail_rule_core_ladder_matches_skill() -> None:
 
 
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
-    hook_yaml = REPO / HOOK_SRC / "hook.yaml"
+    hook_yaml = REPO / PONYTAIL_HOOK_SRC / "hook.yaml"
     data = yaml.safe_load(hook_yaml.read_text())
     matcher = data["claude"]["matcher"]
     assert matcher == "startup"
@@ -131,6 +159,7 @@ def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
 
 def test_coding_sync_vendors_ponytail_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
+    _silence_cli_tools(monkeypatch)
     project = tmp_path / "project"
     write_manifest(
         project,
@@ -151,9 +180,14 @@ loadouts: [coding]
     assert script.is_file()
     assert os.access(script, os.X_OK)
     assert not (project / ".cursor/hooks/ponytail-activate/hook.yaml").exists()
+    rtk_script = project / ".cursor/hooks/rtk-rewrite/rtk-rewrite.sh"
+    assert rtk_script.is_file()
+    assert os.access(rtk_script, os.X_OK)
+    assert not (project / ".cursor/hooks/rtk-rewrite/hook.yaml").exists()
 
     cursor = json.loads((project / ".cursor/hooks.json").read_text())
     assert cursor["hooks"]["sessionStart"] == [{"command": ".cursor/hooks/ponytail-activate/ponytail-activate cursor"}]
+    assert cursor["hooks"]["beforeShellExecution"] == [{"command": ".cursor/hooks/rtk-rewrite/rtk-rewrite.sh cursor"}]
     claude = json.loads((project / ".claude/settings.json").read_text())
     assert claude["hooks"]["SessionStart"] == [
         {
@@ -162,6 +196,17 @@ loadouts: [coding]
                 {
                     "type": "command",
                     "command": ("${CLAUDE_PROJECT_DIR}/.cursor/hooks/ponytail-activate/ponytail-activate"),
+                }
+            ],
+        }
+    ]
+    assert claude["hooks"]["PreToolUse"] == [
+        {
+            "matcher": "Bash",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": ("${CLAUDE_PROJECT_DIR}/.cursor/hooks/rtk-rewrite/rtk-rewrite.sh"),
                 }
             ],
         }
@@ -343,6 +388,7 @@ def test_ponytail_activate_truncates_or_rejects_oversized_skill(tmp_path: Path) 
         [str(script), "cursor"],
         capture_output=True,
         text=True,
+        check=False,
         env={**os.environ},
     )
 
@@ -371,6 +417,7 @@ def test_ponytail_activate_unreadable_skill_exits_zero(tmp_path: Path) -> None:
         [str(script), "cursor"],
         capture_output=True,
         text=True,
+        check=False,
         env={**os.environ},
     )
 
@@ -401,3 +448,143 @@ skills_dir: .agents/skills
     assert isinstance(context, str)
     assert "Relocated marker" in context
     assert "Error: ponytail skill not found" not in context
+
+
+def test_rtk_skill_parses_and_has_colocated_evals() -> None:
+    skill_md = REPO / "skills" / "rtk" / "SKILL.md"
+    text = skill_md.read_text()
+    parse_skill_md(skill_md, text, dir_name="rtk")
+    data = yaml.safe_load(text.split("---", 2)[1])
+    assert "<" not in data["description"]
+    assert ">" not in data["description"]
+    evals = json.loads((REPO / "skills" / "rtk" / "evals" / "evals.json").read_text())
+    assert evals["skill_name"] == "rtk"
+    assert evals["evals"]
+
+
+def test_rtk_skill_source_pins_token_killer_release() -> None:
+    source = (REPO / "skills" / "rtk" / "SOURCE.md").read_text()
+    assert RTK_UPSTREAM in source
+    assert RTK_COMMIT in source
+    assert RTK_VERSION in source
+    digest = hashlib.sha256((REPO / "skills" / "rtk" / "SKILL.md").read_bytes()).hexdigest()
+    assert digest in source
+
+
+def test_rtk_skill_does_not_instruct_unpinned_or_wrong_installs() -> None:
+    text = (REPO / "skills" / "rtk" / "SKILL.md").read_text()
+    assert CURL_PIPE_SH.search(text) is None
+    assert CARGO_INSTALL_CRATES_RTK.search(text) is None
+    assert "rtk gain" in text
+    assert "rtk init" in text
+    assert "Do not" in text or "do not" in text
+    lowered = text.lower()
+    assert "crates.io" in lowered
+    assert "loadout" in lowered
+
+
+def test_rtk_hook_source_pins_exist() -> None:
+    source = (REPO / "hooks" / "rtk-rewrite" / "SOURCE.md").read_text()
+    assert RTK_UPSTREAM in source
+    assert RTK_COMMIT in source
+    assert "rtk hook cursor" in source
+    assert "rtk hook claude" in source
+    assert "rtk init" in source
+
+
+def _install_rtk_hook(project: Path) -> Path:
+    hook_dir = project / ".cursor" / "hooks" / "rtk-rewrite"
+    hook_dir.mkdir(parents=True)
+    script = hook_dir / "rtk-rewrite.sh"
+    script.write_bytes(RTK_HOOK_SCRIPT.read_bytes())
+    script.chmod(0o755)
+    return script
+
+
+def _run_rtk_hook(script: Path, stdin: str, *args: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [str(script), *args],
+        input=stdin,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+
+def _path_without_rtk() -> str:
+    parts = []
+    for entry in os.environ.get("PATH", "").split(":"):
+        if not entry:
+            continue
+        if (Path(entry) / "rtk").exists():
+            continue
+        parts.append(entry)
+    return ":".join(parts)
+
+
+def _write_fake_rtk(bin_dir: Path) -> None:
+    script = bin_dir / "rtk"
+    script.write_text(
+        """#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == "gain" ]]; then
+  exit 0
+fi
+if [[ "${1:-}" == "hook" && "${2:-}" == "cursor" ]]; then
+  cmd="$(jq -r '.tool_input.command // empty')"
+  if [[ "$cmd" == "git status" ]]; then
+    jq -n '{continue:true, permission:"allow", updated_input:{command:"rtk git status"}}'
+    exit 0
+  fi
+  printf '{}\\n'
+  exit 0
+fi
+if [[ "${1:-}" == "hook" && "${2:-}" == "claude" ]]; then
+  cmd="$(jq -r '.tool_input.command // empty')"
+  if [[ "$cmd" == "pytest -q" ]]; then
+    jq -n '{hookSpecificOutput:{hookEventName:"PreToolUse", permissionDecision:"allow", updatedInput:{command:"rtk pytest -q"}}}'
+    exit 0
+  fi
+  printf '{}\\n'
+  exit 0
+fi
+exit 1
+"""
+    )
+    script.chmod(0o755)
+
+
+def test_rtk_rewrite_fail_open_when_rtk_missing(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    script = _install_rtk_hook(project)
+    env = {**os.environ, "PATH": _path_without_rtk()}
+    result = _run_rtk_hook(script, '{"command":"git status"}', "cursor", env=env)
+    payload = json.loads(result.stdout)
+    assert payload == {"permission": "allow"}
+
+
+def test_rtk_rewrite_remaps_cursor_command_for_rtk_hook(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    script = _install_rtk_hook(project)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    _write_fake_rtk(bin_dir)
+    env = {**os.environ, "PATH": f"{bin_dir}:{_path_without_rtk()}"}
+    result = _run_rtk_hook(script, '{"command":"git status"}', "cursor", env=env)
+    payload = json.loads(result.stdout)
+    assert payload["permission"] == "allow"
+    assert payload["updated_input"]["command"] == "rtk git status"
+
+
+def test_rtk_rewrite_delegates_claude_payload(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    script = _install_rtk_hook(project)
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    _write_fake_rtk(bin_dir)
+    env = {**os.environ, "PATH": f"{bin_dir}:{_path_without_rtk()}"}
+    stdin = json.dumps({"tool_name": "Bash", "tool_input": {"command": "pytest -q"}})
+    result = _run_rtk_hook(script, stdin, env=env)
+    payload = json.loads(result.stdout)
+    assert payload["hookSpecificOutput"]["updatedInput"]["command"] == "rtk pytest -q"
