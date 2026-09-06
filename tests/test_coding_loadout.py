@@ -305,6 +305,29 @@ def test_ponytail_activate_json_safe_control_characters(tmp_path: Path) -> None:
     assert "\x1f" in context
 
 
+def test_ponytail_activate_invalid_env_mode_falls_back_to_full(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(
+        "---\nname: ponytail\ndescription: test\n---\n\n# Invalid env fallback marker\n"
+    )
+
+    config_dir = tmp_path / "config" / "ponytail"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.json").write_text('{"defaultMode": "off"}')
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+
+    payload = _run_ponytail_activate(
+        project, "cursor", env={"PONYTAIL_DEFAULT_MODE": "banana"}
+    )
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Invalid env fallback marker" in context
+
+
 def test_ponytail_activate_respects_config_file_default_mode(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

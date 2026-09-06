@@ -102,6 +102,9 @@ get_default_mode() {
             printf '%s' "$mode"
             return 0
         fi
+        # Non-empty but invalid env overrides config; fall back to full.
+        printf '%s' "full"
+        return 0
     fi
     if mode="$(read_config_default_mode)"; then
         printf '%s' "$mode"
