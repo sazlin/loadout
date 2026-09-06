@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add empty `coding` loadout as a compose-with-language opt-in for coding
+  discipline artifacts.
+
 ## 0.28.0
 
 ## 0.27.0
