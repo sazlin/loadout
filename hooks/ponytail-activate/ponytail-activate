@@ -1,0 +1,316 @@
+#!/usr/bin/env bash
+# SessionStart hook for the loadout-vendored ponytail skill.
+# Adapted from DietrichGebert/ponytail hooks/ponytail-activate.js.
+
+set -euo pipefail
+
+MAX_SKILL_BYTES=65536
+
+# Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
+# (loadout vendors each hook into hooks/<name>/; three levels up is project root).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+
+RUNTIME_MODES=(off lite full ultra)
+
+emit_json_payload() {
+    local harness="$1"
+    local context="$2"
+    if [ "$harness" = "cursor" ]; then
+        printf '%s' "$context" | python3 -c 'import json, sys; print(json.dumps({"additional_context": sys.stdin.read()}))'
+    else
+        printf '%s' "$context" | python3 -c '
+import json
+import sys
+
+context = sys.stdin.read()
+print(
+    json.dumps(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": context,
+            }
+        }
+    )
+)
+'
+    fi
+}
+
+is_runtime_mode() {
+    local candidate mode
+    candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    for mode in "${RUNTIME_MODES[@]}"; do
+        if [ "$candidate" = "$mode" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+normalize_mode() {
+    local candidate
+    candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    if is_runtime_mode "$candidate"; then
+        printf '%s' "$candidate"
+        return 0
+    fi
+    return 1
+}
+
+get_config_path() {
+    if [ -n "${XDG_CONFIG_HOME:-}" ]; then
+        printf '%s/ponytail/config.json' "${XDG_CONFIG_HOME}"
+        return 0
+    fi
+    case "$(uname -s 2>/dev/null || echo Linux)" in
+        MINGW* | MSYS* | CYGWIN* | Windows*)
+            if [ -n "${APPDATA:-}" ]; then
+                printf '%s/ponytail/config.json' "${APPDATA}"
+            else
+                printf '%s/AppData/Roaming/ponytail/config.json' "${HOME}"
+            fi
+            ;;
+        *)
+            printf '%s/.config/ponytail/config.json' "${HOME}"
+            ;;
+    esac
+}
+
+read_config_default_mode() {
+    local config_path mode
+    config_path="$(get_config_path)"
+    if [ ! -f "$config_path" ]; then
+        return 1
+    fi
+    mode="$(
+        grep -Eo '"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)"' "$config_path" 2>/dev/null \
+            | sed -E 's/.*"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)".*/\1/' \
+            | head -1
+    )"
+    if [ -n "$mode" ] && normalize_mode "$mode" >/dev/null; then
+        printf '%s' "$mode"
+        return 0
+    fi
+    return 1
+}
+
+get_default_mode() {
+    if [ -n "${PONYTAIL_DEFAULT_MODE:-}" ]; then
+        if mode="$(normalize_mode "${PONYTAIL_DEFAULT_MODE}")"; then
+            printf '%s' "$mode"
+            return 0
+        fi
+        # Non-empty but invalid env overrides config; fall back to full.
+        printf '%s' "full"
+        return 0
+    fi
+    if mode="$(read_config_default_mode)"; then
+        printf '%s' "$mode"
+        return 0
+    fi
+    printf '%s' "full"
+}
+
+resolve_skills_dir() {
+    local manifest line parsed
+    manifest="${PROJECT_ROOT}/.loadout.yaml"
+    if [ -f "$manifest" ]; then
+        line="$(grep -E '^skills_dir:[[:space:]]*' "$manifest" 2>/dev/null | head -1 || true)"
+        if [ -n "$line" ]; then
+            parsed="$(printf '%s' "${line#skills_dir:}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/^["'\'']//; s/["'\'']$//')"
+            if [ -n "$parsed" ]; then
+                printf '%s' "$parsed"
+                return 0
+            fi
+        fi
+    fi
+    printf '%s' ".claude/skills"
+}
+
+resolve_skills_root() {
+    local skills_dir
+    skills_dir="$(resolve_skills_dir)"
+    if [[ "$skills_dir" == /* ]]; then
+        printf '%s' "${skills_dir}"
+    else
+        printf '%s/%s' "${PROJECT_ROOT}" "${skills_dir}"
+    fi
+}
+
+resolve_skill_path() {
+    local skills_root
+    skills_root="$(resolve_skills_root)"
+    printf '%s/ponytail/SKILL.md' "${skills_root}"
+}
+
+canonical_path() {
+    python3 -c '
+import os
+import sys
+
+path = sys.argv[1]
+try:
+    if not os.path.lexists(path):
+        sys.exit(1)
+    print(os.path.realpath(path))
+except OSError:
+    sys.exit(1)
+' "$1" 2>/dev/null
+}
+
+strip_frontmatter() {
+    awk '
+        BEGIN { in_frontmatter = 0; seen_open = 0 }
+        /^---[[:space:]]*$/ {
+            if (!seen_open) {
+                seen_open = 1
+                in_frontmatter = 1
+                next
+            }
+            if (in_frontmatter) {
+                in_frontmatter = 0
+                next
+            }
+        }
+        !in_frontmatter { print }
+    ' "$1"
+}
+
+# validate_skill_file_path PATH
+# Return codes:
+#   0 — path exists, is not a symlink, and resolves under the skills root
+#   1 — path does not exist
+#   2 — path is a symlink (refuse to follow)
+#   3 — skills root missing/unresolvable, canonicalization failed, or path escapes skills root
+validate_skill_file_path() {
+    local skill_path="$1"
+    local skills_dir skills_root canonical_root canonical_skill
+
+    if [ ! -e "$skill_path" ]; then
+        return 1
+    fi
+    if [ -L "$skill_path" ]; then
+        return 2
+    fi
+
+    skills_root="$(resolve_skills_root)"
+    if [ ! -d "$skills_root" ]; then
+        return 3
+    fi
+    canonical_root="$(canonical_path "$skills_root")" || return 3
+    canonical_skill="$(canonical_path "$skill_path")" || return 3
+    case "$canonical_skill" in
+        "${canonical_root}"/*) return 0 ;;
+        *) return 3 ;;
+    esac
+}
+
+skill_file_byte_size() {
+    python3 -c 'import os, sys; print(os.path.getsize(sys.argv[1]))' "$1" 2>/dev/null || printf '%s' "0"
+}
+
+filter_skill_body_for_mode() {
+    local skill_file="$1"
+    local effective_mode="$2"
+    local line label normalized_label
+
+    if ! is_runtime_mode "$effective_mode" || [ "$effective_mode" = "off" ]; then
+        effective_mode="full"
+    fi
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ ^\|[[:space:]]*\*\*(.+)\*\*[[:space:]]*\| ]]; then
+            label="${BASH_REMATCH[1]}"
+            normalized_label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')"
+            case "$normalized_label" in
+                lite | full | ultra)
+                    if [ "$normalized_label" = "$effective_mode" ]; then
+                        printf '%s\n' "$line"
+                    fi
+                    continue
+                    ;;
+            esac
+        fi
+
+        if [[ "$line" =~ ^-[[:space:]]*([^:]+):[[:space:]]*\" ]]; then
+            label="${BASH_REMATCH[1]}"
+            normalized_label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+            case "$normalized_label" in
+                lite | full | ultra)
+                    if [ "$normalized_label" = "$effective_mode" ]; then
+                        printf '%s\n' "$line"
+                    fi
+                    continue
+                    ;;
+            esac
+        fi
+
+        printf '%s\n' "$line"
+    done < <(strip_frontmatter "$skill_file")
+}
+
+load_skill_content() {
+    local skill_file="$1"
+    local effective_mode="$2"
+    local size content
+
+    if [ ! -r "$skill_file" ]; then
+        printf '%s' "Error: unable to read ponytail skill file"
+        return 0
+    fi
+
+    size="$(skill_file_byte_size "$skill_file")"
+    if [ "${size:-0}" -gt "$MAX_SKILL_BYTES" ]; then
+        printf '%s' "Error: ponytail skill file exceeds ${MAX_SKILL_BYTES} byte limit (${size} bytes)"
+        return 0
+    fi
+
+    if content="$(filter_skill_body_for_mode "$skill_file" "$effective_mode" 2>/dev/null)"; then
+        printf '%s' "$content"
+    else
+        printf '%s' "Error: unable to read ponytail skill file"
+    fi
+    return 0
+}
+
+emit_context() {
+    emit_json_payload "${HARNESS}" "$1"
+}
+
+if [ "${1:-}" = "cursor" ]; then
+    HARNESS=cursor
+else
+    HARNESS=claude
+fi
+
+SKILL_PATH="$(resolve_skill_path)"
+mode="$(get_default_mode)"
+
+if [ "$mode" = "off" ]; then
+    emit_context ""
+    exit 0
+fi
+
+if validate_skill_file_path "$SKILL_PATH"; then
+    skill_content="$(load_skill_content "$SKILL_PATH" "$mode")"
+elif [ -L "$SKILL_PATH" ]; then
+    skill_content="Error: ponytail skill path is a symlink; refusing to read"
+elif [ -e "$SKILL_PATH" ]; then
+    skill_content="Error: ponytail skill path is outside the skills directory"
+else
+    skills_dir="$(resolve_skills_dir)"
+    skill_content="Error: ponytail skill not found at ${skills_dir}/ponytail/SKILL.md"
+fi
+
+session_context="<EXTREMELY_IMPORTANT>
+PONYTAIL MODE ACTIVE — level: ${mode}
+
+You have ponytail. Follow the skill below on every coding task. Off only: \"stop ponytail\" / \"normal mode\". Switch: /ponytail lite|full|ultra.
+
+${skill_content}
+</EXTREMELY_IMPORTANT>"
+
+emit_context "$session_context"
+exit 0

@@ -1,0 +1,16 @@
+{
+  "skill_name": "ponytail-help",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "How do I use ponytail? /ponytail-help",
+      "expected_output": "Help card; loadout sync for updates, not plugin marketplace",
+      "files": [],
+      "expectations": [
+        "Shows levels and the six skills",
+        "Does not tell the user to run /plugin marketplace add",
+        "Points updates at loadout sync"
+      ]
+    }
+  ]
+}

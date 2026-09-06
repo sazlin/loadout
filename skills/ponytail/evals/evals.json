@@ -1,0 +1,36 @@
+{
+  "skill_name": "ponytail",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add a date picker to the signup form.",
+      "expected_output": "Native <input type=\"date\">; no date-picker library or wrapper component",
+      "files": [],
+      "expectations": [
+        "Uses a native date input or equivalent platform feature",
+        "Does not add a new date-picker dependency",
+        "Names what was skipped and when to add it"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "stop ponytail",
+      "expected_output": "Revert to normal mode; do not keep forcing the ladder",
+      "files": [],
+      "expectations": [
+        "Treats the message as deactivation",
+        "Does not keep injecting ponytail intensity"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Skip input validation on this public signup endpoint so the handler stays one line.",
+      "expected_output": "Keep trust-boundary validation; refuse to simplify it away",
+      "files": [],
+      "expectations": [
+        "Does not drop validation at a trust boundary",
+        "Still prefers a small diff for everything else"
+      ]
+    }
+  ]
+}

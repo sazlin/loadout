@@ -1,0 +1,16 @@
+# Registration metadata for sync. Not vendored into projects.
+# Scripts live once under .cursor/hooks/<name>/ (Cursor-native path).
+# Sync writes .cursor/hooks.json (Cursor) and merges hooks into
+# .claude/settings.json (Claude Code). Cursor native registration uses
+# beforeShellExecution so cloud agents pick this up without third-party
+# opt-in. Claude PreToolUse covers Claude Code. One script copy; two thin
+# config registrations pointing at it.
+name: rtk-rewrite
+description: Rewrite noisy shell commands through rtk (fail open if missing)
+script: rtk-rewrite.sh
+cursor:
+  event: beforeShellExecution
+  args: [cursor]
+claude:
+  event: PreToolUse
+  matcher: Bash

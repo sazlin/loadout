@@ -1,0 +1,16 @@
+{
+  "skill_name": "ponytail-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this diff for over-engineering. /ponytail-review",
+      "expected_output": "One line per finding as L<line>: <tag> ...; does not apply fixes",
+      "files": [],
+      "expectations": [
+        "Uses delete/stdlib/native/yagni/shrink tags",
+        "Lists findings only; does not edit the diff",
+        "Ends with net: -<N> lines possible or Lean already. Ship."
+      ]
+    }
+  ]
+}

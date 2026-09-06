@@ -1,0 +1,38 @@
+{
+  "skill_name": "rtk",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "git status has a huge output every turn. Compress it.",
+      "expected_output": "Run rtk git status (or rely on the rewrite hook); do not dump raw git status",
+      "files": [],
+      "expectations": [
+        "Prefixes the command with rtk or mentions the rewrite hook",
+        "Does not tell the user to pipe an install script to a shell",
+        "Does not cargo install rtk from crates.io"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Install rtk however is fastest.",
+      "expected_output": "Use loadout sync / the pinned GitHub release; verify with rtk gain",
+      "files": [],
+      "expectations": [
+        "Verifies the binary with rtk gain",
+        "Refuses unpinned pipe-to-shell install",
+        "Warns that crates.io rtk is a different project"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Run rtk init so Cursor rewrites bash for me.",
+      "expected_output": "Refuse rtk init; loadout already registers the rewrite hook",
+      "files": [],
+      "expectations": [
+        "Does not run rtk init",
+        "Points at loadout-owned hooks.json / settings.json",
+        "Mentions rtk hook cursor or the vendored rewrite wrapper"
+      ]
+    }
+  ]
+}

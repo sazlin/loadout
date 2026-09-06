@@ -1,0 +1,39 @@
+name: coding
+description: >-
+  Opt-in ponytail lazy-senior-dev coding plus RTK (Token Killer) command
+  compression: YAGNI ladder skills, globbed rule, session-start activation,
+  pinned rtk binary, and a fail-open rewrite hook. Compose with language
+  loadouts; does not extend base.
+rules:
+  - src: rules/coding/ponytail.mdc
+skills:
+  - src: skills/ponytail
+  - src: skills/ponytail-review
+  - src: skills/ponytail-audit
+  - src: skills/ponytail-debt
+  - src: skills/ponytail-gain
+  - src: skills/ponytail-help
+  - src: skills/rtk
+hooks:
+  - src: hooks/ponytail-activate
+  - src: hooks/rtk-rewrite
+cli_tools:
+  - name: rtk
+    command: |
+      set -euo pipefail
+      if rtk --version 2>/dev/null | grep -q 0.48.0 && rtk gain >/dev/null 2>&1; then exit 0; fi
+      os="$(uname -s)"; arch="$(uname -m)"
+      case "$os-$arch" in
+        Linux-x86_64) asset=rtk-x86_64-unknown-linux-musl.tar.gz; sum=e4e650fa1677c0de2f6839a6040d7b17f312d32f163c402b75af70e9e5af1a91 ;;
+        Linux-aarch64) asset=rtk-aarch64-unknown-linux-gnu.tar.gz; sum=5ed65486a96077bd6bba7c87fdc9d0e4a1918d19619be3c87380888389a30c7c ;;
+        Darwin-x86_64) asset=rtk-x86_64-apple-darwin.tar.gz; sum=a95f2c23e08572dcc84ddff5fbe432e41e7f94369622eb086cca49ae0b6f61e8 ;;
+        Darwin-arm64) asset=rtk-aarch64-apple-darwin.tar.gz; sum=4fa025cc93a744b6963f4e53a008e5ba3f74b6a38061f4a47c639e1c3023e0db ;;
+        *) echo "rtk: unsupported platform $os $arch" >&2; exit 1 ;;
+      esac
+      tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+      curl -fsSL -o "$tmp/$asset" "https://github.com/rtk-ai/rtk/releases/download/v0.48.0/$asset"
+      if command -v sha256sum >/dev/null 2>&1; then actual="$(sha256sum "$tmp/$asset" | awk '{print $1}')"; else actual="$(shasum -a 256 "$tmp/$asset" | awk '{print $1}')"; fi
+      test "$actual" = "$sum"
+      tar -xzf "$tmp/$asset" -C "$tmp"
+      mkdir -p "$HOME/.local/bin"
+      install -m 755 "$tmp/rtk" "$HOME/.local/bin/rtk"

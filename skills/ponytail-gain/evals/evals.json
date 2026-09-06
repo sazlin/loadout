@@ -1,0 +1,16 @@
+{
+  "skill_name": "ponytail-gain",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Show ponytail impact. /ponytail-gain",
+      "expected_output": "Published benchmark scoreboard; no invented per-repo savings",
+      "files": [],
+      "expectations": [
+        "Prints the scoreboard from published medians",
+        "Does not invent a per-repo lines-saved number",
+        "Does not change mode or write flag files"
+      ]
+    }
+  ]
+}
