@@ -324,6 +324,61 @@ def test_ponytail_activate_rejects_symlink_skill_path(tmp_path: Path) -> None:
     assert "symlink" in context.lower()
 
 
+def test_ponytail_activate_truncates_or_rejects_oversized_skill(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    oversized_body = "X" * 100_000
+    skill.write_text(f"---\nname: ponytail\ndescription: test\n---\n\n{oversized_body}\n")
+
+    hook_dir = project / ".cursor" / "hooks" / "ponytail-activate"
+    hook_dir.mkdir(parents=True)
+    script = hook_dir / "ponytail-activate"
+    script.write_bytes(HOOK_SCRIPT.read_bytes())
+    script.chmod(0o755)
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        env={**os.environ},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert oversized_body not in context
+    assert "65536" in context or "byte limit" in context.lower()
+    assert len(context) < 10_000
+
+
+def test_ponytail_activate_unreadable_skill_exits_zero(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Unreadable marker\n")
+    skill.chmod(0o000)
+
+    hook_dir = project / ".cursor" / "hooks" / "ponytail-activate"
+    hook_dir.mkdir(parents=True)
+    script = hook_dir / "ponytail-activate"
+    script.write_bytes(HOOK_SCRIPT.read_bytes())
+    script.chmod(0o755)
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        env={**os.environ},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Unreadable marker" not in context
+    assert "unable to read" in context.lower() or "error" in context.lower()
+
+
 def test_ponytail_activate_finds_skill_when_skills_dir_relocated(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     skill = project / ".agents" / "skills" / "ponytail" / "SKILL.md"

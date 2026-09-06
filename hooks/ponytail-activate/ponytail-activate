@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+MAX_SKILL_BYTES=65536
+
 # Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
 # (loadout vendors each hook into hooks/<name>/; three levels up is project root).
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -170,6 +172,10 @@ validate_skill_file_path() {
     esac
 }
 
+skill_file_byte_size() {
+    python3 -c 'import os, sys; print(os.path.getsize(sys.argv[1]))' "$1" 2>/dev/null || printf '%s' "0"
+}
+
 filter_skill_body_for_mode() {
     local skill_file="$1"
     local effective_mode="$2"
@@ -210,6 +216,34 @@ filter_skill_body_for_mode() {
     done < <(strip_frontmatter "$skill_file")
 }
 
+load_skill_content() {
+    local skill_file="$1"
+    local effective_mode="$2"
+    local size content
+
+    if [ ! -r "$skill_file" ]; then
+        printf '%s' "Error: unable to read ponytail skill file"
+        return 0
+    fi
+
+    size="$(skill_file_byte_size "$skill_file")"
+    if [ "${size:-0}" -gt "$MAX_SKILL_BYTES" ]; then
+        printf '%s' "Error: ponytail skill file exceeds ${MAX_SKILL_BYTES} byte limit (${size} bytes)"
+        return 0
+    fi
+
+    if content="$(filter_skill_body_for_mode "$skill_file" "$effective_mode" 2>/dev/null)"; then
+        if [ -z "$content" ] && [ "${size:-0}" -gt 0 ]; then
+            printf '%s' "Error: unable to read ponytail skill file"
+        else
+            printf '%s' "$content"
+        fi
+    else
+        printf '%s' "Error: unable to read ponytail skill file"
+    fi
+    return 0
+}
+
 emit_context() {
     emit_json_payload "${HARNESS}" "$1"
 }
@@ -229,7 +263,7 @@ if [ "$mode" = "off" ]; then
 fi
 
 if validate_skill_file_path "$SKILL_PATH"; then
-    skill_content="$(filter_skill_body_for_mode "$SKILL_PATH" "$mode")"
+    skill_content="$(load_skill_content "$SKILL_PATH" "$mode")"
 elif [ -L "$SKILL_PATH" ]; then
     skill_content="Error: ponytail skill path is a symlink; refusing to read"
 elif [ -e "$SKILL_PATH" ]; then
