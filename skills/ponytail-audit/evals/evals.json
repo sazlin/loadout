@@ -1,0 +1,16 @@
+{
+  "skill_name": "ponytail-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit this repo for over-engineering. /ponytail-audit",
+      "expected_output": "Repo-wide ranked list; does not apply fixes",
+      "files": [],
+      "expectations": [
+        "Scans the tree rather than a single diff",
+        "Ranks biggest cut first",
+        "Does not apply the cuts"
+      ]
+    }
+  ]
+}

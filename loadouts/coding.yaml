@@ -1,4 +1,16 @@
 name: coding
 description: >-
-  Opt-in lazy-senior-dev coding discipline (ponytail). Compose with language
-  loadouts; does not extend base.
+  Opt-in ponytail lazy-senior-dev coding: YAGNI ladder skills, globbed rule,
+  and session-start activation. Compose with language loadouts; does not
+  extend base.
+rules:
+  - src: rules/coding/ponytail.mdc
+skills:
+  - src: skills/ponytail
+  - src: skills/ponytail-review
+  - src: skills/ponytail-audit
+  - src: skills/ponytail-debt
+  - src: skills/ponytail-gain
+  - src: skills/ponytail-help
+hooks:
+  - src: hooks/ponytail-activate

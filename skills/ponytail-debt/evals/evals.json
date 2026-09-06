@@ -1,0 +1,16 @@
+{
+  "skill_name": "ponytail-debt",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "What did ponytail defer? /ponytail-debt",
+      "expected_output": "Ledger of ponytail: comments; changes nothing unless asked to write a file",
+      "files": [],
+      "expectations": [
+        "Greps for ponytail: comment markers",
+        "Does not rewrite the codebase",
+        "Flags markers with no upgrade trigger"
+      ]
+    }
+  ]
+}

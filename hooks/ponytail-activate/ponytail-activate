@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# SessionStart hook for the loadout-vendored ponytail skill.
+# Adapted from DietrichGebert/ponytail hooks/ponytail-activate.js.
+
+set -euo pipefail
+
+# Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
+# (loadout vendors each hook into hooks/<name>/; three levels up is project root).
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+SKILL_PATH="${PROJECT_ROOT}/.claude/skills/ponytail/SKILL.md"
+
+mode="$(printf '%s' "${PONYTAIL_DEFAULT_MODE:-full}" | tr '[:upper:]' '[:lower:]')"
+
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+emit_context() {
+    local context="$1"
+    local escaped
+    escaped=$(escape_for_json "$context")
+    if [ "${HARNESS}" = "cursor" ]; then
+        printf '{\n  "additional_context": "%s"\n}\n' "$escaped" | cat
+    else
+        printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$escaped" | cat
+    fi
+}
+
+if [ "${1:-}" = "cursor" ]; then
+    HARNESS=cursor
+else
+    HARNESS=claude
+fi
+
+if [ "$mode" = "off" ]; then
+    emit_context ""
+    exit 0
+fi
+
+if [ -f "$SKILL_PATH" ]; then
+    skill_content=$(cat "$SKILL_PATH")
+else
+    skill_content="Error: ponytail skill not found at ${SKILL_PATH}"
+fi
+
+session_context="<EXTREMELY_IMPORTANT>
+PONYTAIL MODE ACTIVE — level: ${mode}
+
+You have ponytail. Follow the skill below on every coding task. Off only: \"stop ponytail\" / \"normal mode\". Switch: /ponytail lite|full|ultra.
+
+${skill_content}
+</EXTREMELY_IMPORTANT>"
+
+emit_context "$session_context"
+exit 0

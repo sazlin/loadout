@@ -1,0 +1,13 @@
+# Registration metadata for sync. Not vendored into projects.
+# Scripts live once under .cursor/hooks/<name>/ (Cursor-native path).
+# Sync writes .cursor/hooks.json (Cursor) and merges hooks into
+# .claude/settings.json (Claude Code).
+name: ponytail-activate
+description: Inject ponytail lazy-senior-dev skill at session start
+script: ponytail-activate
+cursor:
+  event: sessionStart
+  args: [cursor]
+claude:
+  event: SessionStart
+  matcher: startup|resume|clear|compact

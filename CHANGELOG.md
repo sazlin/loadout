@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Add empty `coding` loadout as a compose-with-language opt-in for coding
-  discipline artifacts.
+- Add `coding` loadout with ponytail (DietrichGebert/ponytail): six YAGNI
+  skills, a globbed coding rule, and a SessionStart hook that injects the
+  ladder. Compose with language loadouts; does not extend base.
 
 ## 0.28.0
 
