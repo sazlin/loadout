@@ -28,7 +28,7 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout init --loadouts python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
@@ -61,7 +61,6 @@ uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
 source: https://github.com/sazlin/loadout
 ref: v0.18.0
 loadouts:
-  - base
   - python
 ```
 
@@ -73,7 +72,6 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 source: https://github.com/sazlin/loadout
 ref: v0.18.0
 loadouts:
-  - base
   - python
   - terraform   # add
   # - aws       # remove by deleting the line
@@ -162,14 +160,14 @@ Example GitHub Actions step:
 | `db` | `base` | — | <ul><li><a href="skills/db-migrations/SKILL.md"><code>db-migrations</code></a></li></ul> | — | — | — | — |
 | `github` | `base` | — | <ul><li><a href="skills/github-upload-media-to-pr/SKILL.md"><code>github-upload-media-to-pr</code></a></li></ul> | — | — | — | — |
 | `playwright` | `base` | <ul><li><a href="agents/playwright_planner/playwright_planner.md"><code>playwright_planner</code></a></li><li><a href="agents/playwright_generator/playwright_generator.md"><code>playwright_generator</code></a></li><li><a href="agents/playwright_healer/playwright_healer.md"><code>playwright_healer</code></a></li></ul> | <ul><li><a href="skills/playwright-agents/SKILL.md"><code>playwright-agents</code></a></li></ul> | <ul><li><a href="rules/playwright/test-agents.mdc"><code>test-agents</code></a></li><li><a href="rules/playwright/e2e-conventions.mdc"><code>e2e-conventions</code></a></li></ul> | — | — | <ul><li><code>playwright-cli</code></li></ul> |
-| `python` | `base` | <ul><li><a href="agents/python_coder/python_coder.md"><code>python_coder</code></a></li></ul> | — | <ul><li><a href="rules/python/python-code-style.mdc"><code>python-code-style</code></a></li><li><a href="rules/python/pytest.mdc"><code>pytest</code></a></li></ul> | — | — | — |
+| `python` | `base`, `coding` | <ul><li><a href="agents/python_coder/python_coder.md"><code>python_coder</code></a></li></ul> | — | <ul><li><a href="rules/python/python-code-style.mdc"><code>python-code-style</code></a></li><li><a href="rules/python/pytest.mdc"><code>pytest</code></a></li></ul> | — | — | — |
 | `terraform` | `base` | — | <ul><li><a href="skills/terraform-plan-review/SKILL.md"><code>terraform-plan-review</code></a></li></ul> | <ul><li><a href="rules/terraform/aws-conventions.mdc"><code>aws-conventions</code></a></li></ul> | — | — | — |
-| `typescript` | `base` | — | — | <ul><li><a href="rules/typescript/typescript-code-style.mdc"><code>typescript-code-style</code></a></li></ul> | — | — | — |
+| `typescript` | `base`, `coding` | — | — | <ul><li><a href="rules/typescript/typescript-code-style.mdc"><code>typescript-code-style</code></a></li></ul> | — | — | — |
 | `python-monorepo` | `python` | — | — | <ul><li><a href="rules/python/uv-workspace.mdc"><code>uv-workspace</code></a></li></ul> | — | — | — |
 | `supabase` | `db` | — | <ul><li><a href="skills/supabase-postgres-best-practices/SKILL.md"><code>supabase-postgres-best-practices</code></a></li></ul> | — | — | — | — |
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
+Compose freely — for example `python-monorepo,terraform` or `typescript,playwright`. Language loadouts (`python`, `typescript`, `python-monorepo`) already extend `base` and `coding`; listing `base` again is redundant. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents
@@ -279,6 +277,26 @@ Enable it only on machines that do **not** have the Superpowers plugin installed
 for Cursor and/or Claude Code on that project. Combining plugin + loadout causes
 double SessionStart bootstrap and duplicate skills. Prefer plugin **or** loadout,
 not both.
+
+</details>
+
+<details>
+<summary><strong>Python / TypeScript loadouts</strong> — two beforeShellExecution hooks</summary>
+
+`python` and `typescript` extend `base` and `coding`. Sync registers two
+`beforeShellExecution` hooks on the shell hot path:
+
+1. `deny-dangerous` (from `base`) — blocks catastrophic commands
+2. `rtk-rewrite` (from `coding`) — fail-open RTK compression
+
+List `python` or `typescript` alone in `.loadout.yaml`. Do not also list
+`base`; resolution deduplicates artifacts but the manifest stays clearer and
+matches what sync actually needs.
+
+Explicit `loadouts: [base, python]` still works for older manifests but adds
+no extra protection beyond `[python]` alone. Both stacks run the same two
+hooks sequentially on every shell command (~30ms p95 combined on a typical
+Linux runner; dominated by `deny-dangerous` pattern matching).
 
 </details>
 

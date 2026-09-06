@@ -1,7 +1,10 @@
 name: python
-description: Python authoring conventions - readable code style and testing.
+description: >-
+  Python authoring conventions - readable code style and testing. Extends
+  base and coding; list python alone in manifests (do not also list base).
 extends:
   - base
+  - coding
 rules:
   - src: rules/python/python-code-style.mdc
   - src: rules/python/pytest.mdc
