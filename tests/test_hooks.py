@@ -16,7 +16,8 @@ from loadout.sync import sync
 FIXTURE = Path(__file__).parent / "fixtures" / "mini_loadout"
 REPO = Path(__file__).resolve().parent.parent
 ALLOW_PAYLOAD = json.dumps({"command": "echo hello", "cwd": "/tmp"})
-BEFORE_SHELL_HOOK_CHAIN_P95_MS = 50.0
+# GHA ubuntu-latest is noisier than a typical dev laptop (~30ms p95 documented in README).
+BEFORE_SHELL_HOOK_CHAIN_P95_MS = 100.0
 
 
 def write_manifest(project: Path, body: str) -> None:
