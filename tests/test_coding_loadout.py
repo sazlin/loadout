@@ -588,3 +588,48 @@ def test_rtk_rewrite_delegates_claude_payload(tmp_path: Path) -> None:
     result = _run_rtk_hook(script, stdin, env=env)
     payload = json.loads(result.stdout)
     assert payload["hookSpecificOutput"]["updatedInput"]["command"] == "rtk pytest -q"
+
+
+def test_ponytail_activate_works_without_realpath_binary(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# No realpath marker\n")
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_realpath = fake_bin / "realpath"
+    fake_realpath.write_text("#!/bin/sh\nexit 1\n")
+    fake_realpath.chmod(0o755)
+
+    payload = _run_ponytail_activate(
+        project,
+        "cursor",
+        env={"PATH": f"{fake_bin}{os.pathsep}{os.environ['PATH']}"},
+    )
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "No realpath marker" in context
+    assert "Error: ponytail skill not found" not in context
+
+
+def test_ponytail_activate_finds_skill_with_absolute_skills_dir(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skills_root = tmp_path / "test-skills"
+    skill = skills_root / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Absolute marker\n")
+    write_manifest(
+        project,
+        f"""source: https://github.com/sazlin/loadout
+ref: main
+loadouts: [coding]
+skills_dir: {skills_root}
+""",
+    )
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Absolute marker" in context
+    assert "Error: ponytail skill not found" not in context

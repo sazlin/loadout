@@ -124,10 +124,35 @@ resolve_skills_dir() {
     printf '%s' ".claude/skills"
 }
 
-resolve_skill_path() {
+resolve_skills_root() {
     local skills_dir
     skills_dir="$(resolve_skills_dir)"
-    printf '%s/%s/ponytail/SKILL.md' "${PROJECT_ROOT}" "${skills_dir}"
+    if [[ "$skills_dir" == /* ]]; then
+        printf '%s' "${skills_dir}"
+    else
+        printf '%s/%s' "${PROJECT_ROOT}" "${skills_dir}"
+    fi
+}
+
+resolve_skill_path() {
+    local skills_root
+    skills_root="$(resolve_skills_root)"
+    printf '%s/ponytail/SKILL.md' "${skills_root}"
+}
+
+canonical_path() {
+    python3 -c '
+import os
+import sys
+
+path = sys.argv[1]
+try:
+    if not os.path.lexists(path):
+        sys.exit(1)
+    print(os.path.realpath(path))
+except OSError:
+    sys.exit(1)
+' "$1" 2>/dev/null
 }
 
 strip_frontmatter() {
@@ -159,13 +184,12 @@ validate_skill_file_path() {
         return 2
     fi
 
-    skills_dir="$(resolve_skills_dir)"
-    skills_root="${PROJECT_ROOT}/${skills_dir}"
+    skills_root="$(resolve_skills_root)"
     if [ ! -d "$skills_root" ]; then
         return 3
     fi
-    canonical_root="$(realpath -e "$skills_root")"
-    canonical_skill="$(realpath -e "$skill_path")"
+    canonical_root="$(canonical_path "$skills_root")" || return 3
+    canonical_skill="$(canonical_path "$skill_path")" || return 3
     case "$canonical_skill" in
         "${canonical_root}"/*) return 0 ;;
         *) return 3 ;;
