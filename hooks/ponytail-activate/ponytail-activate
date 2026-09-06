@@ -175,6 +175,12 @@ strip_frontmatter() {
     ' "$1"
 }
 
+# validate_skill_file_path PATH
+# Return codes:
+#   0 — path exists, is not a symlink, and resolves under the skills root
+#   1 — path does not exist
+#   2 — path is a symlink (refuse to follow)
+#   3 — skills root missing/unresolvable, canonicalization failed, or path escapes skills root
 validate_skill_file_path() {
     local skill_path="$1"
     local skills_dir skills_root canonical_root canonical_skill
