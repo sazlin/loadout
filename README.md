@@ -282,6 +282,25 @@ not both.
 
 </details>
 
+<details>
+<summary><strong>Coding + superpowers loadouts</strong> — stacked SessionStart hooks</summary>
+
+When you select both `coding` and `superpowers`, loadout registers two
+SessionStart hooks (`ponytail-activate` and `session-start`). Cursor and Claude
+Code run them **sequentially** on session start, so each hook reads its skill
+from disk and injects context. That doubles startup I/O and context size.
+
+If Superpowers bootstrap is enough for your workflow, disable ponytail injection:
+
+```bash
+export PONYTAIL_DEFAULT_MODE=off
+```
+
+Or set `"defaultMode": "off"` in `~/.config/ponytail/config.json` (see
+[`ponytail-help`](skills/ponytail-help/SKILL.md)).
+
+</details>
+
 ## Local development
 
 When hacking on this repo, point sync at your working copy instead of cloning from GitHub:

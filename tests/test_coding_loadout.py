@@ -168,7 +168,10 @@ loadouts: [coding]
     ]
 
 
-def _run_ponytail_activate(project: Path, *args: str, env: dict[str, str] | None = None) -> dict:
+def _run_ponytail_activate(
+    project: Path, *args: str, env: dict[str, str] | None = None
+) -> dict[str, object]:
+    """Run the synced hook as if installed under project/.cursor/hooks/ponytail-activate/."""
     hook_dir = project / ".cursor" / "hooks" / "ponytail-activate"
     hook_dir.mkdir(parents=True)
     script = hook_dir / "ponytail-activate"
