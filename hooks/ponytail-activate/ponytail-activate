@@ -11,14 +11,29 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 RUNTIME_MODES=(off lite full ultra)
 
-escape_for_json() {
-    local s="$1"
-    s="${s//\\/\\\\}"
-    s="${s//\"/\\\"}"
-    s="${s//$'\n'/\\n}"
-    s="${s//$'\r'/\\r}"
-    s="${s//$'\t'/\\t}"
-    printf '%s' "$s"
+emit_json_payload() {
+    local harness="$1"
+    local context="$2"
+    if [ "$harness" = "cursor" ]; then
+        printf '%s' "$context" | python3 -c 'import json, sys; print(json.dumps({"additional_context": sys.stdin.read()}))'
+    else
+        printf '%s' "$context" | python3 -c '
+import json
+import sys
+
+context = sys.stdin.read()
+print(
+    json.dumps(
+        {
+            "hookSpecificOutput": {
+                "hookEventName": "SessionStart",
+                "additionalContext": context,
+            }
+        }
+    )
+)
+'
+    fi
 }
 
 is_runtime_mode() {
@@ -196,14 +211,7 @@ filter_skill_body_for_mode() {
 }
 
 emit_context() {
-    local context="$1"
-    local escaped
-    escaped=$(escape_for_json "$context")
-    if [ "${HARNESS}" = "cursor" ]; then
-        printf '{\n  "additional_context": "%s"\n}\n' "$escaped" | cat
-    else
-        printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$escaped" | cat
-    fi
+    emit_json_payload "${HARNESS}" "$1"
 }
 
 if [ "${1:-}" = "cursor" ]; then
@@ -227,7 +235,8 @@ elif [ -L "$SKILL_PATH" ]; then
 elif [ -e "$SKILL_PATH" ]; then
     skill_content="Error: ponytail skill path is outside the skills directory"
 else
-    skill_content="Error: ponytail skill not found at ${SKILL_PATH}"
+    skills_dir="$(resolve_skills_dir)"
+    skill_content="Error: ponytail skill not found at ${skills_dir}/ponytail/SKILL.md"
 fi
 
 session_context="<EXTREMELY_IMPORTANT>

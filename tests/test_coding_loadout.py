@@ -236,6 +236,25 @@ def test_ponytail_activate_missing_skill_emits_error_and_exits_zero(tmp_path: Pa
     assert isinstance(context, str)
     assert "Error: ponytail skill not found" in context
     assert ".claude/skills/ponytail/SKILL.md" in context
+    assert "/home/" not in context
+    assert not context.startswith("/")
+
+
+def test_ponytail_activate_json_safe_control_characters(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_bytes(
+        b"---\nname: ponytail\ndescription: test\n---\n\n"
+        b"Control chars: \x00 NUL \x0c form-feed \x1f unit-sep\n"
+    )
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Control chars:" in context
+    assert "\x0c" in context
+    assert "\x1f" in context
 
 
 def test_ponytail_activate_respects_config_file_default_mode(
