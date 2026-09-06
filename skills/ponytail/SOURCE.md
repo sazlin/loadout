@@ -18,3 +18,10 @@ because the plugin is a multi-harness tree, not a skills.sh package.
 2. **Adapted** — dropped `argument-hint` from SKILL.md frontmatter. Loadout
    skill lint allows only name, description, license, allowed-tools, metadata,
    and compatibility.
+3. **Rule excerpt** — `rules/coding/ponytail.mdc` mirrors the ladder section
+   here. On every bump, refresh that rule so rungs stay aligned (see
+   `test_ponytail_rule_core_ladder_matches_skill`).
+4. **Hook intensity** — the loadout `ponytail-activate` SessionStart hook filters
+   SKILL.md body per `PONYTAIL_DEFAULT_MODE` / config `defaultMode`
+   (`off` skips injection; `lite`/`full`/`ultra` strip other intensity rows
+   and examples). Same behavior as upstream JS filtering, vendored in bash.

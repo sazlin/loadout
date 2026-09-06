@@ -97,6 +97,26 @@ def test_ponytail_rule_is_globbed_not_always_apply() -> None:
     assert "YAGNI" in path.read_text() or "yagni" in path.read_text().lower()
 
 
+# Each tuple is (rule substring, skill substring) for one ladder rung.
+_CORE_LADDER_RUNGS = (
+    ("Does this need to be built", "Does this need to exist"),
+    ("already exist in this codebase", "Already in this codebase"),
+    ("standard library", "Stdlib"),
+    ("native platform feature", "Native platform feature"),
+    ("already-installed dependency", "Already-installed dependency"),
+    ("one line", "one line"),
+    ("minimum code", "minimum code"),
+)
+
+
+def test_ponytail_rule_core_ladder_matches_skill() -> None:
+    rule_text = (REPO / RULE_SRC).read_text().lower()
+    skill_text = (REPO / "skills/ponytail/SKILL.md").read_text().lower()
+    for rule_marker, skill_marker in _CORE_LADDER_RUNGS:
+        assert rule_marker.lower() in rule_text, f"rule missing ladder rung: {rule_marker!r}"
+        assert skill_marker.lower() in skill_text, f"skill missing ladder rung: {skill_marker!r}"
+
+
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
     hook_yaml = REPO / HOOK_SRC / "hook.yaml"
     data = yaml.safe_load(hook_yaml.read_text())
