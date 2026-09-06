@@ -131,6 +131,30 @@ strip_frontmatter() {
     ' "$1"
 }
 
+validate_skill_file_path() {
+    local skill_path="$1"
+    local skills_dir skills_root canonical_root canonical_skill
+
+    if [ ! -e "$skill_path" ]; then
+        return 1
+    fi
+    if [ -L "$skill_path" ]; then
+        return 2
+    fi
+
+    skills_dir="$(resolve_skills_dir)"
+    skills_root="${PROJECT_ROOT}/${skills_dir}"
+    if [ ! -d "$skills_root" ]; then
+        return 3
+    fi
+    canonical_root="$(realpath -e "$skills_root")"
+    canonical_skill="$(realpath -e "$skill_path")"
+    case "$canonical_skill" in
+        "${canonical_root}"/*) return 0 ;;
+        *) return 3 ;;
+    esac
+}
+
 filter_skill_body_for_mode() {
     local skill_file="$1"
     local effective_mode="$2"
@@ -196,8 +220,12 @@ if [ "$mode" = "off" ]; then
     exit 0
 fi
 
-if [ -f "$SKILL_PATH" ]; then
+if validate_skill_file_path "$SKILL_PATH"; then
     skill_content="$(filter_skill_body_for_mode "$SKILL_PATH" "$mode")"
+elif [ -L "$SKILL_PATH" ]; then
+    skill_content="Error: ponytail skill path is a symlink; refusing to read"
+elif [ -e "$SKILL_PATH" ]; then
+    skill_content="Error: ponytail skill path is outside the skills directory"
 else
     skill_content="Error: ponytail skill not found at ${SKILL_PATH}"
 fi

@@ -265,6 +265,23 @@ def test_ponytail_activate_lite_mode_filters_non_lite_examples(tmp_path: Path) -
     assert "Ultra example dropped." not in context
 
 
+def test_ponytail_activate_rejects_symlink_skill_path(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill_dir = project / ".claude" / "skills" / "ponytail"
+    skill_dir.mkdir(parents=True)
+    secret = project / ".env"
+    secret.write_text("SECRET_API_KEY=super-secret-value\n")
+    skill_link = skill_dir / "SKILL.md"
+    skill_link.symlink_to(secret)
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "SECRET_API_KEY" not in context
+    assert "super-secret-value" not in context
+    assert "symlink" in context.lower()
+
+
 def test_ponytail_activate_finds_skill_when_skills_dir_relocated(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     skill = project / ".agents" / "skills" / "ponytail" / "SKILL.md"
