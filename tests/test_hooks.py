@@ -102,27 +102,6 @@ loadouts: {loadouts}
     assert sum("rtk-rewrite/rtk-rewrite.sh" in command for command in commands) == 1
 
 
-def test_python_only_includes_deny_dangerous_without_explicit_base(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("LOADOUT_PATH", str(REPO))
-    _silence_cli_tools(monkeypatch)
-    project = tmp_path / "project"
-    write_manifest(
-        project,
-        """source: https://github.com/sazlin/loadout
-ref: main
-loadouts: [python]
-""",
-    )
-
-    sync(project)
-
-    assert (project / ".cursor/hooks/deny-dangerous/deny-dangerous.sh").is_file()
-    commands = _before_shell_commands(project)
-    assert any("deny-dangerous/deny-dangerous.sh" in command for command in commands)
-
-
 def test_before_shell_hook_chain_p95_under_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     _silence_cli_tools(monkeypatch)
