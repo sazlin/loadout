@@ -372,7 +372,21 @@ def test_ponytail_activate_rejects_symlink_skill_path(tmp_path: Path) -> None:
     assert "symlink" in context.lower()
 
 
-def test_ponytail_activate_truncates_or_rejects_oversized_skill(tmp_path: Path) -> None:
+def test_ponytail_activate_frontmatter_only_skill_emits_empty_body(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n")
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "PONYTAIL MODE ACTIVE" in context
+    assert "unable to read" not in context.lower()
+    assert "name: ponytail" not in context
+
+
+def test_ponytail_activate_rejects_oversized_skill(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
     skill.parent.mkdir(parents=True)

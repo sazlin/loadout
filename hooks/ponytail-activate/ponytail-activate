@@ -39,12 +39,14 @@ print(
 }
 
 is_runtime_mode() {
-    local candidate
+    local candidate mode
     candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
-    case "$candidate" in
-        off | lite | full | ultra) return 0 ;;
-        *) return 1 ;;
-    esac
+    for mode in "${RUNTIME_MODES[@]}"; do
+        if [ "$candidate" = "$mode" ]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 normalize_mode() {
@@ -257,11 +259,7 @@ load_skill_content() {
     fi
 
     if content="$(filter_skill_body_for_mode "$skill_file" "$effective_mode" 2>/dev/null)"; then
-        if [ -z "$content" ] && [ "${size:-0}" -gt 0 ]; then
-            printf '%s' "Error: unable to read ponytail skill file"
-        else
-            printf '%s' "$content"
-        fi
+        printf '%s' "$content"
     else
         printf '%s' "Error: unable to read ponytail skill file"
     fi
