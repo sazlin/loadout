@@ -40,8 +40,25 @@ jobs:
           fi
           cheap=()
           cli_tools=()
+          loadout_resolves_cli_tools() {
+            local name="$1"
+            local project
+            project="$(mktemp -d)"
+            cat > "$project/.loadout.yaml" <<EOF
+          source: https://github.com/sazlin/loadout
+          ref: main
+          loadouts: [$name]
+          EOF
+            if timeout 120s bash -c "cd \"$project\" && uv run --project \"$GITHUB_WORKSPACE\" loadout resolve --list" | grep -qE '^cli_tools:'; then
+              rm -rf "$project"
+              return 0
+            fi
+            rm -rf "$project"
+            return 1
+          }
           for yaml in "${loadouts[@]}"; do
-            if grep -qE '^cli_tools:' "$yaml"; then
+            name="$(basename "$yaml" .yaml)"
+            if grep -qE '^cli_tools:' "$yaml" || loadout_resolves_cli_tools "$name"; then
               cli_tools+=("$yaml")
             else
               cheap+=("$yaml")
@@ -49,6 +66,7 @@ jobs:
           done
           run_one_loadout() {
             local yaml="$1"
+            local sync_timeout="${2:-120}"
             local name
             name="$(basename "$yaml" .yaml)"
             if [[ ! "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
@@ -68,7 +86,7 @@ jobs:
               echo "::error::resolve failed for ${name}"
               rc=1
             else
-              if ! timeout 120s bash -c "cd \"$project\" && uv run --project \"$GITHUB_WORKSPACE\" loadout sync"; then
+              if ! timeout "${sync_timeout}s" bash -c "cd \"$project\" && uv run --project \"$GITHUB_WORKSPACE\" loadout sync"; then
                 echo "::error::sync failed for ${name}"
                 rc=1
               else
@@ -89,12 +107,12 @@ jobs:
             return "${rc}"
           }
           for yaml in "${cheap[@]}"; do
-            run_one_loadout "$yaml" || failed=1
+            run_one_loadout "$yaml" 120 || failed=1
           done
           if [[ ${#cli_tools[@]} -gt 0 ]]; then
             pids=()
             for yaml in "${cli_tools[@]}"; do
-              run_one_loadout "$yaml" &
+              run_one_loadout "$yaml" 300 &
               pids+=("$!")
             done
             for pid in "${pids[@]}"; do

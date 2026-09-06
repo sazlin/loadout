@@ -63,16 +63,26 @@ def test_loadouts_job_globs_yaml_and_checks_clean_sync() -> None:
 def test_loadouts_job_runs_cheap_loadouts_before_parallel_cli_tools() -> None:
     script = _job_script("loadouts")
     assert "grep -qE '^cli_tools:'" in script
+    assert "loadout_resolves_cli_tools" in script
+    assert "loadout resolve --list\" | grep -qE '^cli_tools:'" in script
     assert 'for yaml in "${cheap[@]}"' in script
-    assert 'run_one_loadout "$yaml" &' in script
+    assert 'run_one_loadout "$yaml" 300 &' in script
     assert script.index('for yaml in "${cheap[@]}"') < script.index(
-        'run_one_loadout "$yaml" &'
+        'run_one_loadout "$yaml" 300 &'
     )
+
+
+def test_loadouts_uses_longer_sync_timeout_for_cli_tools_loadouts() -> None:
+    script = _job_script("loadouts")
+    assert 'run_one_loadout "$yaml" 120 || failed=1' in script
+    assert 'run_one_loadout "$yaml" 300 &' in script
+    assert 'timeout "${sync_timeout}s"' in script
 
 
 def test_loadouts_wraps_resolve_and_sync_with_per_iteration_timeout() -> None:
     script = _job_script("loadouts")
     assert script.count("timeout 120s") >= 2
+    assert 'timeout "${sync_timeout}s"' in script
     resolve_idx = script.index("loadout resolve --list")
     sync_idx = script.index("loadout sync")
     assert script.index("timeout 120s") < resolve_idx
