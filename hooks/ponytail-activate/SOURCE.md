@@ -22,7 +22,11 @@ install). Compared to the upstream Node SessionStart hook:
 4. **Mode** — `PONYTAIL_DEFAULT_MODE=off` skips injecting the skill body.
    lite/full/ultra still inject the full skill; intensity filtering from the
    upstream JS is not ported.
-5. **Out of scope** — no statusline nudge, no `~/.claude/.ponytail-active`
+5. **SessionStart matcher** — `startup` only. Upstream also runs on
+   `resume`, `clear`, and `compact`; loadout skips those so resume/compact
+   do not re-embed the full SKILL.md (avoids redundant I/O and token bloat
+   after compaction).
+6. **Out of scope** — no statusline nudge, no `~/.claude/.ponytail-active`
    flag file, no UserPromptSubmit mode tracker, no SubagentStart injector.
    Those stay plugin-only. The globbed rule plus this SessionStart hook cover
    always-on activation in loadout consumer projects.

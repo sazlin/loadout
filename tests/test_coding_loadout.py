@@ -97,6 +97,15 @@ def test_ponytail_rule_is_globbed_not_always_apply() -> None:
     assert "YAGNI" in path.read_text() or "yagni" in path.read_text().lower()
 
 
+def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
+    hook_yaml = REPO / HOOK_SRC / "hook.yaml"
+    data = yaml.safe_load(hook_yaml.read_text())
+    matcher = data["claude"]["matcher"]
+    assert matcher == "startup"
+    assert "compact" not in matcher
+    assert "resume" not in matcher
+
+
 def test_coding_sync_vendors_ponytail_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
@@ -125,7 +134,7 @@ loadouts: [coding]
     claude = json.loads((project / ".claude/settings.json").read_text())
     assert claude["hooks"]["SessionStart"] == [
         {
-            "matcher": "startup|resume|clear|compact",
+            "matcher": "startup",
             "hooks": [
                 {
                     "type": "command",
