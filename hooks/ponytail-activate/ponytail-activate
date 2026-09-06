@@ -8,9 +8,8 @@ set -euo pipefail
 # (loadout vendors each hook into hooks/<name>/; three levels up is project root).
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
-SKILL_PATH="${PROJECT_ROOT}/.claude/skills/ponytail/SKILL.md"
 
-mode="$(printf '%s' "${PONYTAIL_DEFAULT_MODE:-full}" | tr '[:upper:]' '[:lower:]')"
+RUNTIME_MODES=(off lite full ultra)
 
 escape_for_json() {
     local s="$1"
@@ -20,6 +19,156 @@ escape_for_json() {
     s="${s//$'\r'/\\r}"
     s="${s//$'\t'/\\t}"
     printf '%s' "$s"
+}
+
+is_runtime_mode() {
+    local candidate
+    candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    case "$candidate" in
+        off | lite | full | ultra) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+normalize_mode() {
+    local candidate
+    candidate="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    if is_runtime_mode "$candidate"; then
+        printf '%s' "$candidate"
+        return 0
+    fi
+    return 1
+}
+
+get_config_path() {
+    if [ -n "${XDG_CONFIG_HOME:-}" ]; then
+        printf '%s/ponytail/config.json' "${XDG_CONFIG_HOME}"
+        return 0
+    fi
+    case "$(uname -s 2>/dev/null || echo Linux)" in
+        MINGW* | MSYS* | CYGWIN* | Windows*)
+            if [ -n "${APPDATA:-}" ]; then
+                printf '%s/ponytail/config.json' "${APPDATA}"
+            else
+                printf '%s/AppData/Roaming/ponytail/config.json' "${HOME}"
+            fi
+            ;;
+        *)
+            printf '%s/.config/ponytail/config.json' "${HOME}"
+            ;;
+    esac
+}
+
+read_config_default_mode() {
+    local config_path mode
+    config_path="$(get_config_path)"
+    if [ ! -f "$config_path" ]; then
+        return 1
+    fi
+    mode="$(
+        grep -Eo '"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)"' "$config_path" 2>/dev/null \
+            | sed -E 's/.*"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)".*/\1/' \
+            | head -1
+    )"
+    if [ -n "$mode" ] && normalize_mode "$mode" >/dev/null; then
+        printf '%s' "$mode"
+        return 0
+    fi
+    return 1
+}
+
+get_default_mode() {
+    if [ -n "${PONYTAIL_DEFAULT_MODE:-}" ]; then
+        if mode="$(normalize_mode "${PONYTAIL_DEFAULT_MODE}")"; then
+            printf '%s' "$mode"
+            return 0
+        fi
+    fi
+    if mode="$(read_config_default_mode)"; then
+        printf '%s' "$mode"
+        return 0
+    fi
+    printf '%s' "full"
+}
+
+resolve_skills_dir() {
+    local manifest line parsed
+    manifest="${PROJECT_ROOT}/.loadout.yaml"
+    if [ -f "$manifest" ]; then
+        line="$(grep -E '^skills_dir:[[:space:]]*' "$manifest" 2>/dev/null | head -1 || true)"
+        if [ -n "$line" ]; then
+            parsed="$(printf '%s' "${line#skills_dir:}" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/^["'\'']//; s/["'\'']$//')"
+            if [ -n "$parsed" ]; then
+                printf '%s' "$parsed"
+                return 0
+            fi
+        fi
+    fi
+    printf '%s' ".claude/skills"
+}
+
+resolve_skill_path() {
+    local skills_dir
+    skills_dir="$(resolve_skills_dir)"
+    printf '%s/%s/ponytail/SKILL.md' "${PROJECT_ROOT}" "${skills_dir}"
+}
+
+strip_frontmatter() {
+    awk '
+        BEGIN { in_frontmatter = 0; seen_open = 0 }
+        /^---[[:space:]]*$/ {
+            if (!seen_open) {
+                seen_open = 1
+                in_frontmatter = 1
+                next
+            }
+            if (in_frontmatter) {
+                in_frontmatter = 0
+                next
+            }
+        }
+        !in_frontmatter { print }
+    ' "$1"
+}
+
+filter_skill_body_for_mode() {
+    local skill_file="$1"
+    local effective_mode="$2"
+    local line label normalized_label
+
+    if ! is_runtime_mode "$effective_mode" || [ "$effective_mode" = "off" ]; then
+        effective_mode="full"
+    fi
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        if [[ "$line" =~ ^\|[[:space:]]*\*\*(.+)\*\*[[:space:]]*\| ]]; then
+            label="${BASH_REMATCH[1]}"
+            normalized_label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]')"
+            case "$normalized_label" in
+                lite | full | ultra)
+                    if [ "$normalized_label" = "$effective_mode" ]; then
+                        printf '%s\n' "$line"
+                    fi
+                    continue
+                    ;;
+            esac
+        fi
+
+        if [[ "$line" =~ ^-[[:space:]]*([^:]+):[[:space:]]*\" ]]; then
+            label="${BASH_REMATCH[1]}"
+            normalized_label="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+            case "$normalized_label" in
+                lite | full | ultra)
+                    if [ "$normalized_label" = "$effective_mode" ]; then
+                        printf '%s\n' "$line"
+                    fi
+                    continue
+                    ;;
+            esac
+        fi
+
+        printf '%s\n' "$line"
+    done < <(strip_frontmatter "$skill_file")
 }
 
 emit_context() {
@@ -39,13 +188,16 @@ else
     HARNESS=claude
 fi
 
+SKILL_PATH="$(resolve_skill_path)"
+mode="$(get_default_mode)"
+
 if [ "$mode" = "off" ]; then
     emit_context ""
     exit 0
 fi
 
 if [ -f "$SKILL_PATH" ]; then
-    skill_content=$(cat "$SKILL_PATH")
+    skill_content="$(filter_skill_body_for_mode "$SKILL_PATH" "$mode")"
 else
     skill_content="Error: ponytail skill not found at ${SKILL_PATH}"
 fi

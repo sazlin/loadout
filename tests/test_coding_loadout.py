@@ -204,3 +204,74 @@ def test_ponytail_activate_missing_skill_emits_error_and_exits_zero(tmp_path: Pa
     assert isinstance(context, str)
     assert "Error: ponytail skill not found" in context
     assert ".claude/skills/ponytail/SKILL.md" in context
+
+
+def test_ponytail_activate_respects_config_file_default_mode(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Config mode marker\n")
+
+    config_dir = tmp_path / "config" / "ponytail"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.json").write_text('{"defaultMode": "off"}')
+    monkeypatch.delenv("PONYTAIL_DEFAULT_MODE", raising=False)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Config mode marker" not in context
+
+
+def test_ponytail_activate_lite_mode_filters_non_lite_examples(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(
+        "---\nname: ponytail\ndescription: test\n---\n\n"
+        "## Intensity\n\n"
+        "| Level | What change |\n"
+        "|-------|-------------|\n"
+        "| **lite** | Lite row kept. |\n"
+        "| **full** | Full row dropped. |\n"
+        "| **ultra** | Ultra row dropped. |\n\n"
+        'Example: "Add a cache."\n'
+        '- lite: "Lite example kept."\n'
+        '- full: "Full example dropped."\n'
+        '- ultra: "Ultra example dropped."\n'
+    )
+
+    payload = _run_ponytail_activate(project, "cursor", env={"PONYTAIL_DEFAULT_MODE": "lite"})
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "name: ponytail" not in context
+    assert "Lite row kept." in context
+    assert "Full row dropped." not in context
+    assert "Ultra row dropped." not in context
+    assert "Lite example kept." in context
+    assert "Full example dropped." not in context
+    assert "Ultra example dropped." not in context
+
+
+def test_ponytail_activate_finds_skill_when_skills_dir_relocated(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".agents" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Relocated marker\n")
+    write_manifest(
+        project,
+        """source: https://github.com/sazlin/loadout
+ref: main
+loadouts: [coding]
+skills_dir: .agents/skills
+""",
+    )
+
+    payload = _run_ponytail_activate(project, "cursor")
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Relocated marker" in context
+    assert "Error: ponytail skill not found" not in context
