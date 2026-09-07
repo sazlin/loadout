@@ -25,7 +25,7 @@ because the plugin is a multi-harness tree, not a skills.sh package.
    SKILL.md body per `PONYTAIL_DEFAULT_MODE` / config `defaultMode`
    (`off` skips injection; `lite`/`full`/`ultra` strip other intensity rows
    and examples). Same behavior as upstream JS filtering, vendored in bash.
-5. **Fail-open markup and CLI sync** — loadout-owned excerpts in
+5. **Fail-open markup, CLI, and API trust-boundary sync** — loadout-owned excerpts in
    `rules/coding/ponytail.mdc` must stay aligned with SKILL.md on bumps:
    ladder (see #3), fail-open markup (skip-depth tag walk, not
    match-until-close regex), CLI trust boundaries (required argc, URL

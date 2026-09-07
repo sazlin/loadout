@@ -16,7 +16,7 @@ def test_typescript_loadout_extends_base_and_coding() -> None:
     assert RULE_SRC in {entry["src"] for entry in loadout.rules}
 
 
-def test_typescript_rule_covers_html_text_and_cli_arity() -> None:
+def test_typescript_rule_covers_trust_boundaries_and_tooling() -> None:
     text = (REPO / RULE_SRC).read_text().lower()
     assert "skip-depth" in text
     assert "match-until-close" in text

@@ -25,7 +25,8 @@ globs:
 ---
 
 <!-- Sync contract: rule excerpts mirror skills/ponytail/SKILL.md (ladder, fail-open
-     markup, CLI trust boundaries, parser self-checks) and must stay aligned on bumps.
+     markup, CLI trust boundaries, API/request-body trust boundaries, parser self-checks)
+     and must stay aligned on bumps.
      Canonical source: skills/ponytail/SKILL.md — refresh this rule when those sections
      change (see skills/ponytail/SOURCE.md adaptation #5). -->
 
