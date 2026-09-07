@@ -148,6 +148,48 @@ def test_ponytail_rule_core_ladder_matches_skill() -> None:
         assert skill_marker.lower() in skill_lower, f"skill missing ladder rung: {skill_marker!r}"
 
 
+# Each tuple is (rule substring, skill substring) for fail-open/CLI/parser alignment.
+_FAIL_OPEN_MARKUP_MARKERS = (
+    ("match-until-close regex", "match-until-close regex"),
+    ("skip-depth tag walk", "skip-depth tag walk"),
+    ("unclosed and nested skip-tags leak", "unclosed and nested skip-tags leak"),
+    ("cheerio, jsdom", "cheerio, jsdom"),
+    ("wrong argc is usage on stderr", "usage on stderr and a non-zero exit"),
+    ("accept only `http:` and `https:`", "`http:` and `https:` unless the spec asks for more"),
+    ("AbortSignal.timeout(ms)", "AbortSignal.timeout(ms)"),
+    ("5 MiB (5_242_880 bytes)", "5 MiB (5_242_880 bytes)"),
+    ("reject larger bodies", "reject larger bodies"),
+    ("redirect: 'manual'", "redirect: 'manual'"),
+    ("do not load unbounded markup into memory", "do not load unbounded markup into memory"),
+    ("literal like `scrape.ts`", "literal like `scrape.ts`"),
+    ("an unclosed skip-tag and a nested skip-tag", "an unclosed skip-tag and a nested skip-tag"),
+    ("production CLI happy path", "production CLI happy path"),
+)
+
+
+def test_ponytail_rule_fail_open_markup_matches_skill() -> None:
+    rule_text = (REPO / RULE_SRC).read_text()
+    skill_text = (REPO / "skills" / "ponytail" / "SKILL.md").read_text()
+    rule_lower = rule_text.lower()
+    skill_lower = skill_text.lower()
+    for rule_marker, skill_marker in _FAIL_OPEN_MARKUP_MARKERS:
+        assert rule_marker.lower() in rule_lower, f"rule missing fail-open marker: {rule_marker!r}"
+        assert skill_marker.lower() in skill_lower, f"skill missing fail-open marker: {skill_marker!r}"
+
+
+def test_ponytail_markup_strip_eval_exists() -> None:
+    payload = json.loads((REPO / "skills" / "ponytail" / "evals" / "evals.json").read_text())
+    ids = {entry["id"] for entry in payload["evals"]}
+    assert 4 in ids
+    assert 5 in ids
+    assert 6 in ids
+    assert 7 in ids
+    blob = json.dumps(payload).lower()
+    assert "skip-depth" in blob
+    assert "process.argv[2]" in blob or "argv[2]" in blob
+    assert "redirect" in blob
+
+
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
     hook_yaml = REPO / PONYTAIL_HOOK_SRC / "hook.yaml"
     data = yaml.safe_load(hook_yaml.read_text())

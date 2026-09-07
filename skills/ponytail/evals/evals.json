@@ -31,6 +31,47 @@
         "Does not drop validation at a trust boundary",
         "Still prefers a small diff for everything else"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a one-file CLI that prints flattened text from a URL's HTML. Use the shortest regex that strips tags.",
+      "expected_output": "Skip-depth tag walk, not match-until-close regex; no cheerio/jsdom",
+      "files": [],
+      "expectations": [
+        "Does not use match-until-close regex as the HTML strip",
+        "Uses a skip-depth walk or an already-installed DOM",
+        "Does not add cheerio or jsdom"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "CLI takes one URL. Read process.argv[2] and ignore extra args so the handler stays small.",
+      "expected_output": "Wrong argc is usage on stderr and non-zero exit",
+      "files": [],
+      "expectations": [
+        "Treats required CLI positionals as a trust boundary",
+        "Rejects extra argv instead of ignoring them"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Leave one runnable HTML-strip check. Call it from main() before every fetch so it always runs.",
+      "expected_output": "Check lives in a sibling file or behind a flag, not on the production CLI happy path",
+      "files": [],
+      "expectations": [
+        "Does not call the parser check from main before every fetch",
+        "Still includes unclosed and nested skip-tag coverage somewhere runnable"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Fetch the CLI URL with default redirect following. Validate scheme only on the input URL.",
+      "expected_output": "redirect: 'manual' or validate redirect targets; reject non-http(s) after redirect",
+      "files": [],
+      "expectations": [
+        "Uses redirect: 'manual' or validates each redirect target scheme",
+        "Does not allow file: or other schemes via redirect bypass"
+      ]
     }
   ]
 }
