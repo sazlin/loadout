@@ -12,8 +12,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from loadout.frontmatter import parse_agent_md
-
 REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
@@ -425,24 +423,6 @@ def test_pr_review_harness_workflow_pins_grok_4_6_high_not_fast() -> None:
     assert "cursor-grok-4.6-high-fast" not in script
 
 
-def test_this_repo_vendors_pr_review_harness_grok_4_6_high_not_fast() -> None:
-    expected = "grok-4.6[effort=high,fast=false]"
-    names = (
-        "review_correctness",
-        "review_maintainability",
-        "review_scale",
-        "review_security",
-        "review_orchestrator",
-        "issue_resolver",
-        "verifier",
-        "risk_classifier",
-    )
-    for name in names:
-        path = REPO / ".claude" / "agents" / f"{name}.md"
-        meta = parse_agent_md(path, path.read_text(), file_stem=name)
-        assert meta.model == expected, path
-
-
 def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     prompt_script = _extract_workflow_script_block("PROMPT_BUILD") + "printf '%s' \"$prompt\""
     result = subprocess.run(
@@ -512,13 +492,6 @@ printf '%s' "$body"
     assert malicious_ref in prompt_part
     body = json.loads(body_part)
     assert body["envVars"]["PR_HEAD_REF"] == malicious_ref
-    assert body["model"] == {
-        "id": "grok-4.6",
-        "params": [
-            {"id": "effort", "value": "high"},
-            {"id": "fast", "value": "false"},
-        ],
-    }
 
 
 def test_dedupe_skips_dispatch_when_agents_list_unavailable() -> None:

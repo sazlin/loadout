@@ -370,6 +370,9 @@ def test_pr_review_harness_agent_pins_grok_4_6_high_not_fast(filename: str) -> N
     assert meta.model == PR_REVIEW_HARNESS_MODEL
     assert "fast=true" not in meta.model
     assert "-fast" not in meta.model
+    vendored = REPO / ".claude" / "agents" / filename
+    vendored_meta = parse_agent_md(vendored, vendored.read_text(), file_stem=path.stem)
+    assert vendored_meta.model == PR_REVIEW_HARNESS_MODEL
 
 
 def test_non_pr_review_harness_agents_keep_inherit() -> None:
