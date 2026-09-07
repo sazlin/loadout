@@ -3,7 +3,7 @@ name: risk_classifier
 description: >-
   Use when the review orchestrator asks to measure risk, or when asked
   whether a PR is safe to auto-merge. Never pass --admin. Do not fix code.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 tools:
   - Read
   - Grep

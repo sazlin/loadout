@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Pin every `pr_review_harness` agent and the GitHub Action orchestrator
+  dispatch to Grok 4.6 high, not Fast (`grok-4.6[effort=high,fast=false]`).
+
 - Treat malformed JSON request bodies and whitespace-only required text as
   trust-boundary failures (400 / trim-then-nonempty), not skippable
   boilerplate. Node ESM APIs use `NodeNext`/`Node16`, not `bundler`.

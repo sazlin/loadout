@@ -47,6 +47,9 @@ on:
 # After a successful POST, the job polls GET /v1/agents/{id}/runs/{runId} until the
 # run is terminal so the GitHub check stays pending for the full harness, not just
 # the create handshake.
+#
+# Model: Grok 4.6 high effort, standard speed (not Fast). Fast is the Cursor
+# default on Pro and higher; this POST sets model.params fast=false.
 concurrency:
   group: pr-review-${{ github.repository }}-${{ github.event.pull_request.head.ref }}
   cancel-in-progress: false
@@ -231,6 +234,13 @@ jobs:
               env: {type: "cloud", name: $cloud_env},
               workOnCurrentBranch: true,
               autoCreatePR: false,
+              model: {
+                id: "grok-4.6",
+                params: [
+                  {id: "effort", value: "high"},
+                  {id: "fast", value: "false"}
+                ]
+              },
               envVars: {
                 PR_HEAD_REF: $pr_head_ref,
                 PR_NUMBER: $pr_number

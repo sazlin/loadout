@@ -4,7 +4,7 @@ description: >-
   Use when the review orchestrator dispatches a security pass, or when
   asked for a security, privacy, injection, auth, or PII-leak review. Do
   not fix the code. Do not review other dimensions.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 readonly: true
 tools:
   - Read

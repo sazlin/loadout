@@ -43,6 +43,7 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "parallel" in panel
     assert "review_correctness" in panel
     assert "in-process" in panel or "in process" in panel
+    assert "not fast" in panel
 
     dedupe = (SKILLS / "dedupe-and-write-tasks" / "SKILL.md").read_text()
     assert "TASKS_TO_RESOLVE-" in dedupe

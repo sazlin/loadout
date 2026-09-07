@@ -3,7 +3,7 @@ name: review_scale
 description: Use when the review orchestrator dispatches a scale pass, or when asked
   for a performance, load, timeout, retry, or resilience review. Do not fix the code.
   Do not review other dimensions.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 readonly: true
 tools:
 - Read

@@ -56,6 +56,9 @@ ISSUE_RESOLVER = "issue_resolver.md"
 VERIFIER = "verifier.md"
 RISK_CLASSIFIER = "risk_classifier.md"
 HARNESS_AGENTS = frozenset({ISSUE_RESOLVER, VERIFIER, RISK_CLASSIFIER})
+PR_REVIEW_HARNESS_AGENT_FILES = frozenset(REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR})
+# Cursor subagent pin: Grok 4.6 high effort, standard (not Fast) speed.
+PR_REVIEW_HARNESS_MODEL = "grok-4.6[effort=high,fast=false]"
 IMPLEMENTATION_HARNESS_AGENTS = frozenset(
     {
         "implementation_orchestrator.md",
@@ -345,9 +348,7 @@ def test_base_loadout_does_not_include_dimensional_review_agents() -> None:
 def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
     loadout = load_loadout(REPO / "loadouts" / "pr_review_harness.yaml")
     srcs = {entry["src"] for entry in loadout.agents}
-    expected_agents = {
-        f"agents/{Path(name).stem}/{name}" for name in REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR}
-    }
+    expected_agents = {f"agents/{Path(name).stem}/{name}" for name in PR_REVIEW_HARNESS_AGENT_FILES}
     assert expected_agents <= srcs
     skill_srcs = {entry["src"] for entry in loadout.skills}
     assert skill_srcs == {
@@ -360,6 +361,24 @@ def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
     assert {entry["src"] for entry in loadout.rules} == {
         "rules/core/honor-check-intent.mdc",
     }
+
+
+@pytest.mark.parametrize("filename", sorted(PR_REVIEW_HARNESS_AGENT_FILES))
+def test_pr_review_harness_agent_pins_grok_4_6_high_not_fast(filename: str) -> None:
+    path = _agent_file(filename)
+    meta = parse_agent_md(path, path.read_text(), file_stem=path.stem)
+    assert meta.model == PR_REVIEW_HARNESS_MODEL
+    assert "fast=true" not in meta.model
+    assert "-fast" not in meta.model
+
+
+def test_non_pr_review_harness_agents_keep_inherit() -> None:
+    pinned = {Path(name).stem for name in PR_REVIEW_HARNESS_AGENT_FILES}
+    for path in sorted(AGENTS.glob("*/*.md")):
+        if path.name.startswith("_") or path.stem in pinned:
+            continue
+        meta = parse_agent_md(path, path.read_text(), file_stem=path.stem)
+        assert meta.model == "inherit", path
 
 
 @pytest.mark.parametrize("filename", sorted(REVIEW_DIMENSION_AGENTS))

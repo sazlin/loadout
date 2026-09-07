@@ -3,7 +3,7 @@ name: review_orchestrator
 description: Use when asked for a dimensional review, PR review harness, review orchestrator,
   or to run the pr_review_harness loop on a GitHub pull request. Do not start the
   four reviewers, the fixer, or the classifier yourself.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 tools:
 - Read
 - Grep
@@ -290,6 +290,8 @@ Each reviewer brief must include:
 
 Harness notes: Cursor — four `Task` calls in one message. Claude Code — four
 Agent calls using the custom agent names. Do not inherit session history.
+Do not pass inherit or a Fast model; harness agents are pinned to Grok 4.6
+high, not Fast (`grok-4.6[effort=high,fast=false]`).
 
 `issue_resolver`, `verifier`, and `risk_classifier` are **sequential**.
 
