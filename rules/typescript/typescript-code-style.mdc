@@ -95,7 +95,13 @@ export function formatStatus(input: any): string {
 - Keep `try` blocks small. Catch the narrowest failure you can handle; never swallow with an empty `catch`.
 - Use `async`/`await` instead of raw `Promise.then` chains. Do not mix styles in one flow.
 - Never log or embed secrets, tokens, or credentials.
-- When emitting human text from HTML, decode numeric entities (`&#N;`, `&#xH;`) and this named set: `amp`, `lt`, `gt`, `quot`, `apos`, `nbsp`, `copy`, `mdash`, `hellip`. Do not leave `&copy;` in stdout. Do not vendor a full entity table or a DOM package for that. Honor the requested document region: body text means descendants of `<body>` when present; do not print `<title>` / `<head>` as a fallback, and do not emit text from drop-tags (`script`, `style`, `iframe`, `noscript`, `svg`, `template`) even if they sit outside `<body>`. Use a skip-depth tag walk for that drop, not match-until-close regex.
+
+## HTML to text
+
+- Decode numeric entities (`&#N;`, `&#xH;`) and this named set: `amp`, `lt`, `gt`, `quot`, `apos`, `nbsp`, `copy`, `mdash`, `hellip`. Do not leave `&copy;` in stdout. Do not vendor a full entity table or a DOM package for that.
+- Honor the requested document region: body text means descendants of `<body>` when present; do not print `<title>` / `<head>` as a fallback.
+- Do not emit text from drop-tags (`script`, `style`, `iframe`, `noscript`, `svg`, `template`) even if they sit outside `<body>`.
+- Use a skip-depth tag walk for that drop, not match-until-close regex.
 
 ## Comments and docs
 
