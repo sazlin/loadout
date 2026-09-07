@@ -102,6 +102,14 @@ explicit fetch deadline (e.g. `AbortSignal.timeout(ms)`) so a stalled origin
 cannot hang the process. Cap fetched HTML at 5 MiB (5_242_880 bytes) before
 the skip-depth walk; reject larger bodies instead of buffering unbounded
 response data. If the file is a CLI, invoke `main` whenever it is the process entry — do not require the source filename to match a literal like `scrape.ts`.
+Parsed request bodies are a trust boundary: malformed JSON is 400 with the
+API's error body, not an unhandled 500 from the framework parser. Required
+text fields at a trust boundary reject whitespace-only values: trim, then
+check nonempty. `'   '` is not a valid title, name, or path.
+Fields named in the spec are not YAGNI: put them on the create/update
+schema. Omitting a named field so a client value is silently dropped is a
+spec miss. Extra unknown keys may be stripped; a named field with the
+wrong type is 400, not ignored.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the

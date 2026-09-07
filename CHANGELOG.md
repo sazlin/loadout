@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Treat malformed JSON request bodies and whitespace-only required text as
+  trust-boundary failures (400 / trim-then-nonempty), not skippable
+  boilerplate. Node ESM APIs use `NodeNext`/`Node16`, not `bundler`.
+- Keep spec-named resource fields on create/update schemas; a named field
+  with the wrong type is 400, not silently stripped.
+
 - Tighten ponytail so match-until-close regex is not a valid HTML/XML strip:
   skip-depth tag walk, CLI argc as a trust boundary, and parser checks that
   include unclosed and nested skip-tags.

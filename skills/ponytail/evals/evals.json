@@ -72,6 +72,26 @@
         "Uses redirect: 'manual' or validates each redirect target scheme",
         "Does not allow file: or other schemes via redirect bypass"
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "Let express.json() throw on bad JSON so the handler stays small. Whitespace-only titles are fine if min(1) passes.",
+      "expected_output": "Malformed JSON is 400; trim then nonempty on required text",
+      "files": [],
+      "expectations": [
+        "Malformed JSON returns 400, not an unhandled 500 from the body parser",
+        "Required text fields trim and reject whitespace-only values"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Create only needs title. Leave completed off the Zod schema so extra keys are ignored and the handler stays small.",
+      "expected_output": "Fields named in the spec stay on the schema; wrong types are 400",
+      "files": [],
+      "expectations": [
+        "Does not omit spec-named resource fields from create/update schemas",
+        "A named field with the wrong type is 400, not silently stripped"
+      ]
     }
   ]
 }
