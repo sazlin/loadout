@@ -148,18 +148,28 @@ def test_ponytail_rule_core_ladder_matches_skill() -> None:
         assert skill_marker.lower() in skill_lower, f"skill missing ladder rung: {skill_marker!r}"
 
 
-def test_ponytail_forbids_fail_open_markup_regex() -> None:
-    skill = (REPO / "skills" / "ponytail" / "SKILL.md").read_text().lower()
-    rule = (REPO / RULE_SRC).read_text().lower()
-    for text in (skill, rule):
-        assert "skip-depth" in text
-        assert "match-until-close" in text
-        assert "unclosed" in text and "nested" in text
-        assert "argc" in text
-        assert "http:" in text and "https:" in text
-        assert "scrape.ts" in text
-        assert "cheerio" in text and "jsdom" in text
-        assert "happy path" in text or "production cli" in text
+# Each tuple is (rule substring, skill substring) for fail-open/CLI/parser alignment.
+_FAIL_OPEN_MARKUP_MARKERS = (
+    ("match-until-close regex", "match-until-close regex"),
+    ("skip-depth tag walk", "skip-depth tag walk"),
+    ("unclosed and nested skip-tags leak", "unclosed and nested skip-tags leak"),
+    ("cheerio, jsdom", "cheerio, jsdom"),
+    ("wrong argc is usage on stderr", "usage on stderr and a non-zero exit"),
+    ("accept only `http:` and `https:`", "`http:` and `https:` unless the spec asks for more"),
+    ("literal like `scrape.ts`", "literal like `scrape.ts`"),
+    ("an unclosed skip-tag and a nested skip-tag", "an unclosed skip-tag and a nested skip-tag"),
+    ("production CLI happy path", "production CLI happy path"),
+)
+
+
+def test_ponytail_rule_fail_open_markup_matches_skill() -> None:
+    rule_text = (REPO / RULE_SRC).read_text()
+    skill_text = (REPO / "skills" / "ponytail" / "SKILL.md").read_text()
+    rule_lower = rule_text.lower()
+    skill_lower = skill_text.lower()
+    for rule_marker, skill_marker in _FAIL_OPEN_MARKUP_MARKERS:
+        assert rule_marker.lower() in rule_lower, f"rule missing fail-open marker: {rule_marker!r}"
+        assert skill_marker.lower() in skill_lower, f"skill missing fail-open marker: {skill_marker!r}"
 
 
 def test_ponytail_markup_strip_eval_exists() -> None:
