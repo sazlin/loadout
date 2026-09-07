@@ -156,6 +156,7 @@ def test_ponytail_forbids_fail_open_markup_regex() -> None:
         assert "match-until-close" in text
         assert "unclosed" in text and "nested" in text
         assert "argc" in text
+        assert "http:" in text and "https:" in text
         assert "cheerio" in text and "jsdom" in text
         assert "happy path" in text or "production cli" in text
 

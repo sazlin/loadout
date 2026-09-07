@@ -89,6 +89,7 @@ export function formatStatus(input: any): string {
 
 - Validate inputs and fail fast with a specific `Error` (or domain error class) whose message names the offending value.
 - Required CLI positionals are a trust boundary. Wrong argc: usage on stderr and a non-zero exit, not `process.argv[2]` while extras succeed. Do not run parser self-checks from `main()` on every invocation; put them in a sibling file or behind an explicit flag.
+- CLI URL arguments are a trust boundary. Accept only `http:` and `https:` unless the spec asks for more. Reject `file:`, `ftp:`, and other schemes before `fetch`.
 - Prefer throwing or returning a typed `Result` over sentinel `null`/`undefined` for unexpected failure. Reserve `null` for genuinely absent optional values.
 - Keep `try` blocks small. Catch the narrowest failure you can handle; never swallow with an empty `catch`.
 - Use `async`/`await` instead of raw `Promise.then` chains. Do not mix styles in one flow.

@@ -94,7 +94,8 @@ that prevents data loss, security measures, accessibility basics, anything
 explicitly requested. User insists on the full version → build it, no
 re-arguing. Required CLI positionals are a trust boundary: wrong argc is
 usage on stderr and a non-zero exit, not `process.argv[2]` / `sys.argv[1]`
-while extras succeed.
+while extras succeed. CLI URL arguments are a trust boundary too: accept
+only `http:` and `https:` unless the spec asks for more.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the

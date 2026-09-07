@@ -6,7 +6,7 @@
 | Commit | `974d940a1c5344210874150b98ff0d2c861fab6a` |
 | Upstream path | `skills/ponytail` |
 | Imported | 2026-09-06 |
-| Current SKILL.md sha256 | `91076bd05e11132e3675e2eb6420f54092a9a2c4c1c1018de261ec5cc5048878` |
+| Current SKILL.md sha256 | `b9cc09ce36d3179d017c2a7ebf46bd24efbe55dc6fcfcc7cfee8e2ab944d7a21` |
 
 Copied from the MIT-licensed ponytail plugin. Not imported with `just add_skill`
 because the plugin is a multi-harness tree, not a skills.sh package.
