@@ -44,7 +44,9 @@ projects. See [README.md](README.md) for full details.
 These are dynamic learnings an agent should consider.
 
 1. `just test` and other just recipes take no file arguments; run `uv run pytest <paths>` for a subset.
-2. Before pushing a shared feature branch, fetch `origin/<branch>` and rebase onto that tip. Do not push over newer remote commits.
+2. On a shared feature branch, fetch `origin/<branch>` and rebase or fast-forward onto that tip before pushing, and before treating local HEAD as the PR head after CI or review-harness commits. Do not push over newer remote commits.
+3. After editing a vendored skill body, refresh that skill's SOURCE.md content-hash pin before tests or commit.
+4. Write each walkthrough artifact once under a unique name; do not truncate or append to an artifact already written.
 
 ## Repo-local rules
 

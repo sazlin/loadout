@@ -18,3 +18,16 @@ def test_agents_md_documents_fetch_before_push_on_shared_branches() -> None:
     assert "shared feature" in text
     assert "fetch" in text
     assert "rebase" in text
+
+
+def test_agents_md_documents_skill_source_hash_pin_refresh() -> None:
+    text = AGENTS_MD.read_text().lower()
+    assert "vendored skill" in text
+    assert "source.md" in text
+    assert "pin" in text
+
+
+def test_agents_md_documents_unique_walkthrough_artifact_names() -> None:
+    text = AGENTS_MD.read_text().lower()
+    assert "walkthrough artifact" in text
+    assert "unique name" in text
