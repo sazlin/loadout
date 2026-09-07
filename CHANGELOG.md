@@ -7,8 +7,9 @@
   include unclosed and nested skip-tags.
 - Spell out TypeScript HTML-to-text defaults: short entity set, honor
   `<body>` when present, drop `script`/`iframe`/related tags, reject extra
-  CLI args, keep parser self-checks off the production CLI happy path, and
-  accept only `http:`/`https:` URL arguments unless the spec asks for more.
+  CLI args, keep parser self-checks off the production CLI happy path,
+  accept only `http:`/`https:` URL arguments unless the spec asks for more,
+  and do not gate CLI entry on a literal filename like `scrape.ts`.
 
 - Add `coding` loadout with ponytail (DietrichGebert/ponytail): six YAGNI
   skills, a globbed coding rule, and a SessionStart hook that injects the
