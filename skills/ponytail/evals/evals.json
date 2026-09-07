@@ -52,6 +52,16 @@
         "Treats required CLI positionals as a trust boundary",
         "Rejects extra argv instead of ignoring them"
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "Leave one runnable HTML-strip check. Call it from main() before every fetch so it always runs.",
+      "expected_output": "Check lives in a sibling file or behind a flag, not on the production CLI happy path",
+      "files": [],
+      "expectations": [
+        "Does not call the parser check from main before every fetch",
+        "Still includes unclosed and nested skip-tag coverage somewhere runnable"
+      ]
     }
   ]
 }

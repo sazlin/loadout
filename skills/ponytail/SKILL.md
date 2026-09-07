@@ -113,7 +113,9 @@ smallest thing that fails if the logic breaks: an `assert`-based
 fixtures, no per-function suites unless asked. Trivial one-liners need no
 test, YAGNI applies to tests too. For a parser, tokenizer, or markup strip,
 that check must include an unclosed skip-tag and a nested skip-tag. A
-happy-path round-trip is not a check.
+happy-path round-trip is not a check. Do not call that check from the
+production CLI happy path (`main()` before every fetch). Use a sibling
+`*.check.ts` / `test_*.py` or an explicit flag.
 
 ## Boundaries
 

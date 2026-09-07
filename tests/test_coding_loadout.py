@@ -157,6 +157,7 @@ def test_ponytail_forbids_fail_open_markup_regex() -> None:
         assert "unclosed" in text and "nested" in text
         assert "argc" in text
         assert "cheerio" in text and "jsdom" in text
+        assert "happy path" in text or "production cli" in text
 
 
 def test_ponytail_markup_strip_eval_exists() -> None:
@@ -164,6 +165,7 @@ def test_ponytail_markup_strip_eval_exists() -> None:
     ids = {entry["id"] for entry in payload["evals"]}
     assert 4 in ids
     assert 5 in ids
+    assert 6 in ids
     blob = json.dumps(payload).lower()
     assert "skip-depth" in blob
     assert "process.argv[2]" in blob or "argv[2]" in blob

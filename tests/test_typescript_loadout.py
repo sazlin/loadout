@@ -24,4 +24,5 @@ def test_typescript_rule_covers_html_text_and_cli_arity() -> None:
     assert "mdash" in text and "hellip" in text
     assert "iframe" in text
     assert "process.argv[2]" in text
+    assert "main()" in (REPO / RULE_SRC).read_text()
     assert "<body>" in (REPO / RULE_SRC).read_text()
