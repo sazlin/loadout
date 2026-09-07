@@ -13,11 +13,14 @@ def test_agents_md_documents_just_recipes_take_no_file_arguments() -> None:
     assert "uv run pytest" in text
 
 
-def test_agents_md_documents_fetch_before_push_on_shared_branches() -> None:
+def test_agents_md_documents_sync_shared_branch_before_push_and_pr_head() -> None:
     text = AGENTS_MD.read_text().lower()
     assert "shared feature" in text
     assert "fetch" in text
     assert "rebase" in text
+    assert "fast-forward" in text
+    assert "pr head" in text
+    assert "review-harness" in text
 
 
 def test_agents_md_documents_skill_source_hash_pin_refresh() -> None:
