@@ -166,6 +166,8 @@ _FAIL_OPEN_MARKUP_MARKERS = (
     ("production CLI happy path", "production CLI happy path"),
     ("malformed JSON is 400", "malformed JSON is 400"),
     ("whitespace-only values", "whitespace-only values"),
+    ("fields named in the spec", "fields named in the spec"),
+    ("wrong type is 400", "wrong type is 400"),
 )
 
 
@@ -187,6 +189,7 @@ def test_ponytail_markup_strip_eval_exists() -> None:
     assert 6 in ids
     assert 7 in ids
     assert 8 in ids
+    assert 9 in ids
     blob = json.dumps(payload).lower()
     assert "skip-depth" in blob
     assert "process.argv[2]" in blob or "argv[2]" in blob

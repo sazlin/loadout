@@ -37,4 +37,6 @@ def test_typescript_rule_covers_html_text_and_cli_arity() -> None:
     assert "trim()" in text or ".trim()" in (REPO / RULE_SRC).read_text()
     assert "nodenext" in text
     assert "bundler" in text
+    assert "fields named in the spec" in text
+    assert "wrong type is 400" in text
     assert "<body>" in (REPO / RULE_SRC).read_text()
