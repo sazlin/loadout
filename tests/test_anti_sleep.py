@@ -232,8 +232,17 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
         os.kill(new_pid, 0)
         _wait_until_dead(old_pid)
         assert "renewed" in stdout
-        args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
-        assert args == ["-i", "-t", "90"]
+        args_file = tmp_path / "caffeinate.args"
+        expected = ["-i", "-t", "90"]
+        deadline = time.monotonic() + 1.0
+        args: list[str] = []
+        while time.monotonic() < deadline:
+            if args_file.is_file():
+                args = args_file.read_text().split()
+                if args == expected:
+                    break
+            time.sleep(0.01)
+        assert args == expected
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
 
