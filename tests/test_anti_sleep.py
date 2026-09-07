@@ -225,6 +225,8 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
     _run(tmp_path, "start", "120", extra_path=bindir)
     try:
         old_pid = int(_pidfile(tmp_path).read_text().strip())
+        args_file = tmp_path / "caffeinate.args"
+        _wait_file(args_file).unlink()
         code, stdout, _stderr = _run(tmp_path, "renew", "90", extra_path=bindir)
         assert code == 0
         new_pid = int(_pidfile(tmp_path).read_text().strip())
@@ -232,7 +234,7 @@ def test_keep_awake_renew_replaces_the_running_process(tmp_path: Path) -> None:
         os.kill(new_pid, 0)
         _wait_until_dead(old_pid)
         assert "renewed" in stdout
-        args = _wait_file(tmp_path / "caffeinate.args").read_text().split()
+        args = _wait_file(args_file).read_text().split()
         assert args == ["-i", "-t", "90"]
     finally:
         _run(tmp_path, "stop", extra_path=bindir)
