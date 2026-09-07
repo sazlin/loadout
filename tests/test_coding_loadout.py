@@ -148,8 +148,8 @@ def test_ponytail_rule_core_ladder_matches_skill() -> None:
         assert skill_marker.lower() in skill_lower, f"skill missing ladder rung: {skill_marker!r}"
 
 
-# Each tuple is (rule substring, skill substring) for fail-open/CLI/parser alignment.
-_FAIL_OPEN_MARKUP_MARKERS = (
+# Each tuple is (rule substring, skill substring) for markup, CLI, parser, and API trust-boundary sync.
+_PONYTAIL_RULE_SKILL_SYNC_MARKERS = (
     ("match-until-close regex", "match-until-close regex"),
     ("skip-depth tag walk", "skip-depth tag walk"),
     ("unclosed and nested skip-tags leak", "unclosed and nested skip-tags leak"),
@@ -171,17 +171,17 @@ _FAIL_OPEN_MARKUP_MARKERS = (
 )
 
 
-def test_ponytail_rule_fail_open_markup_matches_skill() -> None:
+def test_ponytail_rule_excerpts_match_skill() -> None:
     rule_text = (REPO / RULE_SRC).read_text()
     skill_text = (REPO / "skills" / "ponytail" / "SKILL.md").read_text()
     rule_lower = rule_text.lower()
     skill_lower = skill_text.lower()
-    for rule_marker, skill_marker in _FAIL_OPEN_MARKUP_MARKERS:
-        assert rule_marker.lower() in rule_lower, f"rule missing fail-open marker: {rule_marker!r}"
-        assert skill_marker.lower() in skill_lower, f"skill missing fail-open marker: {skill_marker!r}"
+    for rule_marker, skill_marker in _PONYTAIL_RULE_SKILL_SYNC_MARKERS:
+        assert rule_marker.lower() in rule_lower, f"rule missing sync marker: {rule_marker!r}"
+        assert skill_marker.lower() in skill_lower, f"skill missing sync marker: {skill_marker!r}"
 
 
-def test_ponytail_markup_strip_eval_exists() -> None:
+def test_ponytail_trust_boundary_evals_exist() -> None:
     payload = json.loads((REPO / "skills" / "ponytail" / "evals" / "evals.json").read_text())
     ids = {entry["id"] for entry in payload["evals"]}
     assert 4 in ids
@@ -194,6 +194,9 @@ def test_ponytail_markup_strip_eval_exists() -> None:
     assert "skip-depth" in blob
     assert "process.argv[2]" in blob or "argv[2]" in blob
     assert "redirect" in blob
+    assert "malformed json" in blob
+    assert "whitespace-only" in blob
+    assert "fields named in the spec" in blob
 
 
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
