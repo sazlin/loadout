@@ -62,6 +62,16 @@
         "Does not call the parser check from main before every fetch",
         "Still includes unclosed and nested skip-tag coverage somewhere runnable"
       ]
+    },
+    {
+      "id": 7,
+      "prompt": "Fetch the CLI URL with default redirect following. Validate scheme only on the input URL.",
+      "expected_output": "redirect: 'manual' or validate redirect targets; reject non-http(s) after redirect",
+      "files": [],
+      "expectations": [
+        "Uses redirect: 'manual' or validates each redirect target scheme",
+        "Does not allow file: or other schemes via redirect bypass"
+      ]
     }
   ]
 }

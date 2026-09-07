@@ -95,11 +95,13 @@ explicitly requested. User insists on the full version → build it, no
 re-arguing. Required CLI positionals are a trust boundary: wrong argc is
 usage on stderr and a non-zero exit, not `process.argv[2]` / `sys.argv[1]`
 while extras succeed. CLI URL arguments are a trust boundary too: accept
-only `http:` and `https:` unless the spec asks for more. Set an explicit
-fetch deadline (e.g. `AbortSignal.timeout(ms)`) so a stalled origin cannot
-hang the process. Cap fetched HTML at 5 MiB (5_242_880 bytes) before the
-skip-depth walk; reject or truncate larger bodies instead of buffering
-unbounded response data. If the file is a CLI, invoke `main` whenever it is the process entry — do not require the source filename to match a literal like `scrape.ts`.
+only `http:` and `https:` unless the spec asks for more. Use
+`redirect: 'manual'` (or validate each redirect target's scheme) so a
+post-redirect `file:` URL cannot bypass the initial http(s) check. Set an
+explicit fetch deadline (e.g. `AbortSignal.timeout(ms)`) so a stalled origin
+cannot hang the process. Cap fetched HTML at 5 MiB (5_242_880 bytes) before
+the skip-depth walk; reject larger bodies instead of buffering unbounded
+response data. If the file is a CLI, invoke `main` whenever it is the process entry — do not require the source filename to match a literal like `scrape.ts`.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the

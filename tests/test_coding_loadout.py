@@ -158,6 +158,8 @@ _FAIL_OPEN_MARKUP_MARKERS = (
     ("accept only `http:` and `https:`", "`http:` and `https:` unless the spec asks for more"),
     ("AbortSignal.timeout(ms)", "AbortSignal.timeout(ms)"),
     ("5 MiB (5_242_880 bytes)", "5 MiB (5_242_880 bytes)"),
+    ("reject larger bodies", "reject larger bodies"),
+    ("redirect: 'manual'", "redirect: 'manual'"),
     ("do not load unbounded markup into memory", "do not load unbounded markup into memory"),
     ("literal like `scrape.ts`", "literal like `scrape.ts`"),
     ("an unclosed skip-tag and a nested skip-tag", "an unclosed skip-tag and a nested skip-tag"),
@@ -181,9 +183,11 @@ def test_ponytail_markup_strip_eval_exists() -> None:
     assert 4 in ids
     assert 5 in ids
     assert 6 in ids
+    assert 7 in ids
     blob = json.dumps(payload).lower()
     assert "skip-depth" in blob
     assert "process.argv[2]" in blob or "argv[2]" in blob
+    assert "redirect" in blob
 
 
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
