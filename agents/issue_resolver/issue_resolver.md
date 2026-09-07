@@ -4,7 +4,7 @@ description: >-
   Use when the review orchestrator dispatches resolve-next-task, or when
   asked to resolve the next PR review task. Do not merge. Do not start extra
   tasks.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 tools:
   - Read
   - Grep

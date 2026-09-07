@@ -4,7 +4,7 @@ description: >-
   Use when the review orchestrator dispatches a correctness pass, or when
   asked for a correctness, logic, data-loss, or data-integrity review. Do
   not fix the code. Do not review other dimensions.
-model: inherit
+model: grok-4.6[effort=high,fast=false]
 readonly: true
 tools:
   - Read

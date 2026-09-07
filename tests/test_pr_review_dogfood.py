@@ -396,7 +396,7 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert step_env["CURSOR_CLOUD_ENV"] == SAMPLE_CURSOR_CLOUD_ENV
     assert step_env["GITHUB_REPOSITORY"] == "${{ github.repository }}"
     assert "--arg cloud_env" in script
-    assert "env: {type: \"cloud\", name: $cloud_env}" in text
+    assert 'env: {type: "cloud", name: $cloud_env}' in text
     assert step_env["PR_HEAD_REF"] == "${{ github.event.pull_request.head.ref }}"
     assert "github.event.pull_request.head.ref" in text
     assert "gh pr checkout" in text
@@ -405,12 +405,22 @@ def test_pr_review_harness_workflow_smoke_dispatch_configuration() -> None:
     assert "--arg pr_head_ref" in text
     assert "env.PR_HEAD_REF as $pr_head_ref" not in text
     assert "\\u0027" in script
-    assert 'not \'" + $pr_head_ref' not in script
+    assert "not '\" + $pr_head_ref" not in script
     assert job["timeout-minutes"] == 360
     assert "--connect-timeout 10" in text
     assert "--max-time 60" in text
     assert "<<'EOF'" in script
     assert "cat <<EOF" not in script.replace("<<'EOF'", "")
+
+
+def test_pr_review_harness_workflow_pins_grok_4_6_high_not_fast() -> None:
+    script = _dispatch_step_script()
+    assert 'id: "grok-4.6"' in script
+    assert '{id: "effort", value: "high"}' in script
+    assert '{id: "fast", value: "false"}' in script
+    assert '{id: "fast", value: "true"}' not in script
+    assert "high-fast" not in script
+    assert "cursor-grok-4.6-high-fast" not in script
 
 
 def test_pr_review_harness_workflow_prompt_subprocess() -> None:
@@ -436,7 +446,7 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
 
 def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path: Path) -> None:
     marker_file = tmp_path / "pwned"
-    malicious_ref = f"feat/$(echo PWNED > {marker_file})`id`\"branch\""
+    malicious_ref = f'feat/$(echo PWNED > {marker_file})`id`"branch"'
     env = {**SAMPLE_HARNESS_ENV, "PR_HEAD_REF": malicious_ref}
     prompt_script = (
         _extract_workflow_script_block("PROMPT_BUILD")
@@ -453,6 +463,13 @@ body="$(jq -n \\
     env: {{type: "cloud", name: $cloud_env}},
     workOnCurrentBranch: true,
     autoCreatePR: false,
+    model: {{
+      id: "grok-4.6",
+      params: [
+        {{id: "effort", value: "high"}},
+        {{id: "fast", value: "false"}}
+      ]
+    }},
     envVars: {{
       PR_HEAD_REF: $pr_head_ref,
       PR_NUMBER: $pr_number

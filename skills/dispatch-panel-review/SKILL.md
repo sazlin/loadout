@@ -37,6 +37,8 @@ Launch `review_correctness`, `review_maintainability`, `review_scale`, and
 ## Harness
 
 - Cursor: four `Task` calls in one message (named agent type if available).
+  Do not pass inherit or a Fast model; reviewers are pinned to Grok 4.6 high,
+  not Fast.
 - Claude Code: four Agent calls using the custom agent names.
 
 ## Guardrails
