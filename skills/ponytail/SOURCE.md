@@ -18,14 +18,17 @@ because the plugin is a multi-harness tree, not a skills.sh package.
 2. **Adapted** — dropped `argument-hint` from SKILL.md frontmatter. Loadout
    skill lint allows only name, description, license, allowed-tools, metadata,
    and compatibility.
-3. **Rule excerpt** — `rules/coding/ponytail.mdc` mirrors the ladder section
-   here. On every bump, refresh that rule so rungs stay aligned (see
-   `test_ponytail_rule_core_ladder_matches_skill`).
+3. **Rule excerpt** — `rules/coding/ponytail.mdc` mirrors selected SKILL.md
+   sections. On every bump, refresh that rule per adaptation #5; ladder rungs
+   are validated by `test_ponytail_rule_core_ladder_matches_skill`.
 4. **Hook intensity** — the loadout `ponytail-activate` SessionStart hook filters
    SKILL.md body per `PONYTAIL_DEFAULT_MODE` / config `defaultMode`
    (`off` skips injection; `lite`/`full`/`ultra` strip other intensity rows
    and examples). Same behavior as upstream JS filtering, vendored in bash.
-5. **Fail-open markup** — skip-depth tag walk over match-until-close regex
-   for untrusted HTML/XML strip; CLI argc is a trust boundary; parser checks
-   must include unclosed and nested skip-tags. Loadout-owned. Keep the rule
-   excerpt in `rules/coding/ponytail.mdc` aligned.
+5. **Fail-open markup and CLI sync** — loadout-owned excerpts in
+   `rules/coding/ponytail.mdc` must stay aligned with SKILL.md on bumps:
+   ladder (see #3), fail-open markup (skip-depth tag walk, not
+   match-until-close regex), CLI trust boundaries (required argc, URL
+   http(s) scheme, redirect validation, fetch timeout, 5 MiB body cap with
+   reject-only), parser self-checks (unclosed and nested skip-tags), and
+   CLI `main` entry. Canonical source: `skills/ponytail/SKILL.md`.
