@@ -6,7 +6,7 @@
 | Commit | `974d940a1c5344210874150b98ff0d2c861fab6a` |
 | Upstream path | `skills/ponytail` |
 | Imported | 2026-09-06 |
-| Current SKILL.md sha256 | `c82647451ebdd5c59d3bd5c0d0600926d20fca2b9db30d0cd9e840ffeb76507c` |
+| Current SKILL.md sha256 | `128526cdc5e58f85c1248603ad9e02c33f9eb0b816c8318eca2c211d1cda4942` |
 
 Copied from the MIT-licensed ponytail plugin. Not imported with `just add_skill`
 because the plugin is a multi-harness tree, not a skills.sh package.
@@ -31,4 +31,5 @@ because the plugin is a multi-harness tree, not a skills.sh package.
    match-until-close regex), CLI trust boundaries (required argc, URL
    http(s) scheme, redirect validation, fetch timeout, 5 MiB body cap with
    reject-only), parser self-checks (unclosed and nested skip-tags), and
-   CLI `main` entry. Canonical source: `skills/ponytail/SKILL.md`.
+   CLI `main` entry, malformed JSON as 400, and whitespace-only text
+   rejection. Canonical source: `skills/ponytail/SKILL.md`.

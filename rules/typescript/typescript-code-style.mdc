@@ -95,6 +95,8 @@ export function formatStatus(input: any): string {
 - Keep `try` blocks small. Catch the narrowest failure you can handle; never swallow with an empty `catch`.
 - Use `async`/`await` instead of raw `Promise.then` chains. Do not mix styles in one flow.
 - Never log or embed secrets, tokens, or credentials.
+- Parsed request bodies are a trust boundary. Malformed JSON is 400 with the API's error body, not an unhandled 500 from `express.json()` / the body parser. Add one error-handling middleware for `SyntaxError`; do not wrap every route in try/catch/`next` for this (Express 5 already forwards async rejections). Use one 400 JSON shape for validation and malformed JSON.
+- When Zod (or equivalent) validates JSON strings the client sent, use `.trim().min(1)` (or trim then nonempty) on required text. `z.string().min(1)` still accepts `'   '`.
 
 ## HTML to text
 
@@ -119,6 +121,7 @@ export function formatStatus(input: any): string {
 ## Tooling
 
 - Match the repository's formatter and linter (typically Prettier/ESLint, Biome, or oxlint) instead of hand-formatting.
+- If `package.json` has `"type": "module"` and the app runs on Node (Express, Fastify, Prisma, not Vite/webpack), set `compilerOptions.module` and `moduleResolution` to `NodeNext` or `Node16`. Do not use `moduleResolution: "bundler"` for a Node server.
 - Keep `strict` TypeScript options on. Do not weaken `tsconfig` to silence errors.
 - Run the type checker, formatter, linter, and relevant tests before handing work off.
 

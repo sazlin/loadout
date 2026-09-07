@@ -164,6 +164,8 @@ _FAIL_OPEN_MARKUP_MARKERS = (
     ("literal like `scrape.ts`", "literal like `scrape.ts`"),
     ("an unclosed skip-tag and a nested skip-tag", "an unclosed skip-tag and a nested skip-tag"),
     ("production CLI happy path", "production CLI happy path"),
+    ("malformed JSON is 400", "malformed JSON is 400"),
+    ("whitespace-only values", "whitespace-only values"),
 )
 
 
@@ -184,6 +186,7 @@ def test_ponytail_markup_strip_eval_exists() -> None:
     assert 5 in ids
     assert 6 in ids
     assert 7 in ids
+    assert 8 in ids
     blob = json.dumps(payload).lower()
     assert "skip-depth" in blob
     assert "process.argv[2]" in blob or "argv[2]" in blob

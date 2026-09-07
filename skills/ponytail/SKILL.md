@@ -102,6 +102,10 @@ explicit fetch deadline (e.g. `AbortSignal.timeout(ms)`) so a stalled origin
 cannot hang the process. Cap fetched HTML at 5 MiB (5_242_880 bytes) before
 the skip-depth walk; reject larger bodies instead of buffering unbounded
 response data. If the file is a CLI, invoke `main` whenever it is the process entry — do not require the source filename to match a literal like `scrape.ts`.
+Parsed request bodies are a trust boundary: malformed JSON is 400 with the
+API's error body, not an unhandled 500 from the framework parser. Required
+text fields at a trust boundary reject whitespace-only values: trim, then
+check nonempty. `'   '` is not a valid title, name, or path.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the
