@@ -148,6 +148,27 @@ def test_ponytail_rule_core_ladder_matches_skill() -> None:
         assert skill_marker.lower() in skill_lower, f"skill missing ladder rung: {skill_marker!r}"
 
 
+def test_ponytail_forbids_fail_open_markup_regex() -> None:
+    skill = (REPO / "skills" / "ponytail" / "SKILL.md").read_text().lower()
+    rule = (REPO / RULE_SRC).read_text().lower()
+    for text in (skill, rule):
+        assert "skip-depth" in text
+        assert "match-until-close" in text
+        assert "unclosed" in text and "nested" in text
+        assert "argc" in text
+        assert "cheerio" in text and "jsdom" in text
+
+
+def test_ponytail_markup_strip_eval_exists() -> None:
+    payload = json.loads((REPO / "skills" / "ponytail" / "evals" / "evals.json").read_text())
+    ids = {entry["id"] for entry in payload["evals"]}
+    assert 4 in ids
+    assert 5 in ids
+    blob = json.dumps(payload).lower()
+    assert "skip-depth" in blob
+    assert "process.argv[2]" in blob or "argv[2]" in blob
+
+
 def test_ponytail_activate_hook_matcher_is_startup_only() -> None:
     hook_yaml = REPO / PONYTAIL_HOOK_SRC / "hook.yaml"
     data = yaml.safe_load(hook_yaml.read_text())

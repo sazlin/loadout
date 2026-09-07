@@ -60,6 +60,7 @@ every sibling caller still broken. Fix it once, where all callers route through.
 - Fewest files possible. Shortest working diff wins — but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
 - Complex request? Ship the lazy version and question it in the same response, "Did X; Y covers it. Need full X? Say so." Never stall on an answer you can default.
 - Two stdlib options, same size? Take the one that's correct on edge cases. Lazy means writing less code, not picking the flimsier algorithm.
+- A `ponytail:` comment does not license a fail-open parser. Match-until-close regex (`/<tag[\s\S]*?<\/tag>/`) is not an HTML or XML parser: unclosed and nested skip-tags leak into the output. For strip/drop of untrusted markup, use a skip-depth tag walk (on a drop-tag open, suppress text until the matching close or EOF) or an already-installed DOM. Do not add cheerio, jsdom, or a full HTML5 parser for a one-file strip.
 - Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a `ponytail:` comment naming the ceiling and upgrade path (`# ponytail: global lock, per-account locks if throughput matters`).
 
 ## Output
@@ -91,7 +92,9 @@ Example: "Add a cache for these API responses."
 Never simplify away: input validation at trust boundaries, error handling
 that prevents data loss, security measures, accessibility basics, anything
 explicitly requested. User insists on the full version → build it, no
-re-arguing.
+re-arguing. Required CLI positionals are a trust boundary: wrong argc is
+usage on stderr and a non-zero exit, not `process.argv[2]` / `sys.argv[1]`
+while extras succeed.
 
 Never lazy about understanding the problem. The ladder shortens the
 solution, never the reading. Trace the whole thing first — every file the
@@ -108,7 +111,9 @@ loop, a parser, a money/security path) leaves ONE runnable check behind, the
 smallest thing that fails if the logic breaks: an `assert`-based
 `demo()`/`__main__` self-check or one small `test_*.py`. No frameworks, no
 fixtures, no per-function suites unless asked. Trivial one-liners need no
-test, YAGNI applies to tests too.
+test, YAGNI applies to tests too. For a parser, tokenizer, or markup strip,
+that check must include an unclosed skip-tag and a nested skip-tag. A
+happy-path round-trip is not a check.
 
 ## Boundaries
 

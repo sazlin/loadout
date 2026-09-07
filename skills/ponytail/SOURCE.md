@@ -6,7 +6,7 @@
 | Commit | `974d940a1c5344210874150b98ff0d2c861fab6a` |
 | Upstream path | `skills/ponytail` |
 | Imported | 2026-09-06 |
-| Current SKILL.md sha256 | `40519c9eb29bcbfe225bdf1c3566ecea7916a958f4a65c9ffae2979743cd67e2` |
+| Current SKILL.md sha256 | `c2b95dec5594db06e3b9f3df7a316f723b2a94d95ec3b8fc09a2afcfb7ca1766` |
 
 Copied from the MIT-licensed ponytail plugin. Not imported with `just add_skill`
 because the plugin is a multi-harness tree, not a skills.sh package.
@@ -25,3 +25,7 @@ because the plugin is a multi-harness tree, not a skills.sh package.
    SKILL.md body per `PONYTAIL_DEFAULT_MODE` / config `defaultMode`
    (`off` skips injection; `lite`/`full`/`ultra` strip other intensity rows
    and examples). Same behavior as upstream JS filtering, vendored in bash.
+5. **Fail-open markup** — skip-depth tag walk over match-until-close regex
+   for untrusted HTML/XML strip; CLI argc is a trust boundary; parser checks
+   must include unclosed and nested skip-tags. Loadout-owned. Keep the rule
+   excerpt in `rules/coding/ponytail.mdc` aligned.

@@ -31,6 +31,27 @@
         "Does not drop validation at a trust boundary",
         "Still prefers a small diff for everything else"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Write a one-file CLI that prints flattened text from a URL's HTML. Use the shortest regex that strips tags.",
+      "expected_output": "Skip-depth tag walk, not match-until-close regex; no cheerio/jsdom",
+      "files": [],
+      "expectations": [
+        "Does not use match-until-close regex as the HTML strip",
+        "Uses a skip-depth walk or an already-installed DOM",
+        "Does not add cheerio or jsdom"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "CLI takes one URL. Read process.argv[2] and ignore extra args so the handler stays small.",
+      "expected_output": "Wrong argc is usage on stderr and non-zero exit",
+      "files": [],
+      "expectations": [
+        "Treats required CLI positionals as a trust boundary",
+        "Rejects extra argv instead of ignoring them"
+      ]
     }
   ]
 }

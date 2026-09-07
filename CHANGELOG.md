@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Tighten ponytail so match-until-close regex is not a valid HTML/XML strip:
+  skip-depth tag walk, CLI argc as a trust boundary, and parser checks that
+  include unclosed and nested skip-tags.
+- Spell out TypeScript HTML-to-text defaults: short entity set, honor
+  `<body>` when present, drop `script`/`iframe`/related tags, reject extra
+  CLI args.
+
 - Add `coding` loadout with ponytail (DietrichGebert/ponytail): six YAGNI
   skills, a globbed coding rule, and a SessionStart hook that injects the
   ladder. Compose with language loadouts; does not extend base.
