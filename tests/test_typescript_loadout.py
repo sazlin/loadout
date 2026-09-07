@@ -25,6 +25,9 @@ def test_typescript_rule_covers_html_text_and_cli_arity() -> None:
     assert "iframe" in text
     assert "process.argv[2]" in text
     assert "http:" in text and "https:" in text
+    assert "abortsignal.timeout" in text
+    assert "5_242_880" in text
+    assert "unbounded" in text
     assert "scrape.ts" in (REPO / RULE_SRC).read_text()
     assert "main()" in (REPO / RULE_SRC).read_text()
     assert "<body>" in (REPO / RULE_SRC).read_text()

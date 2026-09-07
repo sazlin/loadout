@@ -56,14 +56,14 @@ Rules:
 - Shortest working diff wins, but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
 - Question complex requests: "Do you actually need X, or does Y cover it?"
 - Pick the edge-case-correct option when two stdlib approaches are the same size, lazy means less code, not the flimsier algorithm.
-- A `ponytail:` comment does not license a fail-open parser. Match-until-close regex (`/<tag[\s\S]*?<\/tag>/`) is not an HTML or XML parser: unclosed and nested skip-tags leak into the output. For strip/drop of untrusted markup, use a skip-depth tag walk (on a drop-tag open, suppress text until the matching close or EOF) or an already-installed DOM. Do not add cheerio, jsdom, or a full HTML5 parser for a one-file strip.
+- A `ponytail:` comment does not license a fail-open parser. Match-until-close regex (`/<tag[\s\S]*?<\/tag>/`) is not an HTML or XML parser: unclosed and nested skip-tags leak into the output. For strip/drop of untrusted markup, use a skip-depth tag walk (on a drop-tag open, suppress text until the matching close or EOF) or an already-installed DOM. The walk is linear in input size — do not load unbounded markup into memory. Do not add cheerio, jsdom, or a full HTML5 parser for a one-file strip.
 - Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a `ponytail:` comment naming the ceiling and upgrade path.
 
 Not lazy about:
 
 - Input validation at trust boundaries, error handling that prevents data loss, security, accessibility, anything explicitly requested.
 - Required CLI positionals are a trust boundary: wrong argc is usage on stderr and a non-zero exit, not `process.argv[2]` / `sys.argv[1]` while extras succeed.
-- CLI URL arguments are a trust boundary too: accept only `http:` and `https:` unless the spec asks for more.
+- CLI URL arguments are a trust boundary too: accept only `http:` and `https:` unless the spec asks for more. Set an explicit fetch deadline (e.g. `AbortSignal.timeout(ms)`) so a stalled origin cannot hang the process. Cap fetched HTML at 5 MiB (5_242_880 bytes) before the skip-depth walk; reject or truncate larger bodies instead of buffering unbounded response data.
 - If the file is a CLI, invoke `main` whenever it is the process entry — do not require the source filename to match a literal like `scrape.ts`.
 - Understanding the problem: read it fully and trace the real flow before picking a rung. A small diff you don't understand is just laziness dressed up as efficiency.
 - Hardware calibration: the platform is never the spec ideal — a clock drifts, a sensor reads off. Leave the calibration knob, not just less code.
