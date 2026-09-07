@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.29.0
+
 - Pin every `pr_review_harness` agent and the GitHub Action orchestrator
   dispatch to Grok 4.6 high, not Fast (`grok-4.6[effort=high,fast=false]`).
 
