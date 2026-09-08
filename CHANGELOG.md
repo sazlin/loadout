@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.30.0
+
 ## 0.29.0
 
 - Pin every `pr_review_harness` agent and the GitHub Action orchestrator
