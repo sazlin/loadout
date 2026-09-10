@@ -10,6 +10,9 @@ IO_DEADLINE_SECS=2
 # GNU timeout(1) status; SIGTERM/SIGKILL wait statuses (143/137) map to this.
 TIMEOUT_EXIT=124
 KILL_AFTER_SECS=1
+# POLL_INTERVAL_SECS and POLLS_PER_SEC must stay in lockstep.
+POLL_INTERVAL_SECS=0.1
+POLLS_PER_SEC=10
 
 # Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
 # (loadout vendors each hook into hooks/<name>/; three levels up is project root).
@@ -70,13 +73,24 @@ signal_deadline_pid() {
 
 # kill -0 is true for zombies until wait; treat Z as done so success is fast.
 pid_is_zombie() {
-    local check_pid="$1" stat rest state
-    [ -r "/proc/${check_pid}/stat" ] || return 1
-    stat="$(cat "/proc/${check_pid}/stat" 2>/dev/null || true)"
-    rest="${stat##*)}"
-    rest="${rest#"${rest%%[![:space:]]*}"}"
-    state="${rest%% *}"
-    [ "$state" = "Z" ]
+    local check_pid="$1" proc_stat after_comm state
+    # /proc/<pid>/stat is `pid (comm) state ...`. comm may contain spaces and
+    # `)`; state is the first token after the last `)`. Do not awk field 3.
+    # Missing /proc (macOS) falls through to ps; kill -0 stays the live check.
+    if [ -r "/proc/${check_pid}/stat" ]; then
+        proc_stat="$(cat "/proc/${check_pid}/stat" 2>/dev/null || true)"
+        after_comm="${proc_stat##*)}"
+        after_comm="${after_comm#"${after_comm%%[![:space:]]*}"}"
+        state="${after_comm%% *}"
+        [ "$state" = "Z" ]
+        return
+    fi
+    state="$(ps -o state= -p "$check_pid" 2>/dev/null || true)"
+    state="${state#"${state%%[![:space:]]*}"}"
+    case "$state" in
+        Z*) return 0 ;;
+    esac
+    return 1
 }
 
 deadline_pid_live() {
@@ -111,18 +125,18 @@ reap_deadline_pid() {
         fi
     ) >/dev/null 2>&1 &
     local watcher=$!
-    local elapsed_ds=0
-    local limit_ds=$(((IO_DEADLINE_SECS + KILL_AFTER_SECS + 1) * 10))
+    local elapsed_ticks=0
+    local limit_ticks=$(((IO_DEADLINE_SECS + KILL_AFTER_SECS + 1) * POLLS_PER_SEC))
     # kill -0 sees D-state and pipeline-hidden jobs; jobs -r | grep can miss.
     while deadline_pid_live "$pid"; do
-        if [ "$elapsed_ds" -ge "$limit_ds" ]; then
+        if [ "$elapsed_ticks" -ge "$limit_ticks" ]; then
             kill "$watcher" 2>/dev/null || true
             wait "$watcher" 2>/dev/null || true
             signal_deadline_pid KILL "$pid" "$use_pgroup"
             return "$TIMEOUT_EXIT"
         fi
-        sleep 0.1
-        elapsed_ds=$((elapsed_ds + 1))
+        sleep "$POLL_INTERVAL_SECS"
+        elapsed_ticks=$((elapsed_ticks + 1))
     done
     wait "$pid" || rc=$?
     kill "$watcher" 2>/dev/null || true

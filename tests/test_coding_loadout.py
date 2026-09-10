@@ -307,6 +307,7 @@ _HOOK_PATH_TOOLS = (
     "rm",
     "chmod",
     "setsid",
+    "ps",
 )
 
 
@@ -500,6 +501,99 @@ def test_ponytail_activate_fail_open_when_timeout_binary_hangs(tmp_path: Path) -
     payload = json.loads(result.stdout)
     assert payload == {"additional_context": ""}
     assert elapsed < 4
+
+
+_PROC_STAT_READABLE = '[ -r "/proc/${check_pid}/stat" ]'
+
+
+def _force_skip_procfs(script: Path) -> None:
+    """Skip Linux /proc so pid_is_zombie must use the portable ps fallback."""
+    text = script.read_text()
+    assert _PROC_STAT_READABLE in text
+    script.write_text(text.replace(_PROC_STAT_READABLE, "false", 1))
+
+
+def _pid_is_zombie_source(*, skip_procfs: bool) -> str:
+    text = HOOK_SCRIPT.read_text()
+    start = text.index("pid_is_zombie() {")
+    end = text.index("\ndeadline_pid_live() {")
+    fn = text[start:end]
+    if skip_procfs:
+        assert _PROC_STAT_READABLE in fn
+        fn = fn.replace(_PROC_STAT_READABLE, "false", 1)
+    return fn
+
+
+def _spawn_zombie_holder(tmp_path: Path) -> tuple[subprocess.Popen[str], int]:
+    """Keep a zombie child alive until the holder is terminated."""
+    holder = tmp_path / "hold_zombie.py"
+    holder.write_text(
+        "import os, sys, time\n"
+        "pid = os.fork()\n"
+        "if pid == 0:\n"
+        "    os._exit(0)\n"
+        "sys.stdout.write(str(pid) + '\\n')\n"
+        "sys.stdout.flush()\n"
+        "time.sleep(30)\n"
+        "os.waitpid(pid, 0)\n"
+    )
+    proc = subprocess.Popen(
+        ["python3", str(holder)],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdout is not None
+    zombie_pid = int(proc.stdout.readline())
+    return proc, zombie_pid
+
+
+def _run_pid_is_zombie(tmp_path: Path, pid: int, *, skip_procfs: bool) -> int:
+    wrapper = tmp_path / "check-zombie.sh"
+    body = _pid_is_zombie_source(skip_procfs=skip_procfs)
+    wrapper.write_text(f"#!/usr/bin/env bash\nset -euo pipefail\n{body}pid_is_zombie {pid}\n")
+    wrapper.chmod(0o755)
+    return subprocess.run(["bash", str(wrapper)], check=False).returncode
+
+
+def test_ponytail_pid_is_zombie_detects_zombie_via_ps_without_procfs(tmp_path: Path) -> None:
+    holder, zombie_pid = _spawn_zombie_holder(tmp_path)
+    try:
+        assert _run_pid_is_zombie(tmp_path, zombie_pid, skip_procfs=True) == 0
+        assert _run_pid_is_zombie(tmp_path, zombie_pid, skip_procfs=False) == 0
+        live = subprocess.Popen(["sleep", "30"])
+        try:
+            assert _run_pid_is_zombie(tmp_path, live.pid, skip_procfs=True) == 1
+        finally:
+            live.kill()
+            live.wait(timeout=2)
+    finally:
+        holder.terminate()
+        holder.wait(timeout=2)
+
+
+def test_ponytail_activate_success_is_fast_without_procfs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Fast-without-procfs marker\n")
+    script = _install_ponytail_hook(project)
+    _force_skip_procfs(script)
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Fast-without-procfs marker" in context
+    assert elapsed < 1
 
 
 def test_ponytail_activate_fail_open_when_skill_body_read_hangs(tmp_path: Path) -> None:
