@@ -7,6 +7,8 @@ set -euo pipefail
 
 MAX_SKILL_BYTES=65536
 IO_DEADLINE_SECS=2
+# GNU timeout(1) status; the no-timeout fallback maps SIGTERM/SIGKILL (143/137) to this.
+TIMEOUT_EXIT=124
 
 # Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
 # (loadout vendors each hook into hooks/<name>/; three levels up is project root).
@@ -60,7 +62,7 @@ run_with_deadline() {
         kill "$watcher" 2>/dev/null || true
         wait "$watcher" 2>/dev/null || true
         if [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
-            rc=124
+            rc="$TIMEOUT_EXIT"
         fi
     fi
     return "$rc"
@@ -88,7 +90,7 @@ run_with_deadline_stdin() {
         wait "$watcher" 2>/dev/null || true
         rm -f "$tmp"
         if [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
-            rc=124
+            rc="$TIMEOUT_EXIT"
         fi
     fi
     return "$rc"
@@ -177,6 +179,7 @@ read_config_default_mode() {
     if [ ! -f "$config_path" ]; then
         return 1
     fi
+    # Hung config grep falls back to default mode instead of an empty payload.
     mode="$(
         run_with_deadline grep -Eo '"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)"' "$config_path" 2>/dev/null \
             | sed -E 's/.*"defaultMode"[[:space:]]*:[[:space:]]*"(off|lite|full|ultra)".*/\1/' \
@@ -238,6 +241,7 @@ resolve_skill_path() {
     printf '%s/ponytail/SKILL.md' "${skills_root}"
 }
 
+# Timeout (TIMEOUT_EXIT) fail-opens; other python3 failures return to the caller.
 canonical_path() {
     local rc=0
     run_with_deadline python3 -c '
@@ -252,13 +256,15 @@ try:
 except OSError:
     sys.exit(1)
 ' "$1" 2>/dev/null || rc=$?
-    if [ "$rc" -eq 124 ]; then
+    if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
         fail_open
     fi
     return "$rc"
 }
 
+# Timeout (TIMEOUT_EXIT) fail-opens; other awk failures return to the caller.
 strip_frontmatter() {
+    local rc=0
     run_with_deadline awk '
         BEGIN { in_frontmatter = 0; seen_open = 0 }
         /^---[[:space:]]*$/ {
@@ -273,7 +279,11 @@ strip_frontmatter() {
             }
         }
         !in_frontmatter { print }
-    ' "$1"
+    ' "$1" || rc=$?
+    if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
+        fail_open
+    fi
+    return "$rc"
 }
 
 # validate_skill_file_path PATH
@@ -299,17 +309,11 @@ validate_skill_file_path() {
     fi
     rc=0
     canonical_root="$(canonical_path "$skills_root")" || rc=$?
-    if [ "$rc" -eq 124 ]; then
-        fail_open
-    fi
     if [ "$rc" -ne 0 ]; then
         return 3
     fi
     rc=0
     canonical_skill="$(canonical_path "$skill_path")" || rc=$?
-    if [ "$rc" -eq 124 ]; then
-        fail_open
-    fi
     if [ "$rc" -ne 0 ]; then
         return 3
     fi
@@ -323,7 +327,7 @@ skill_file_byte_size() {
     local size rc
     rc=0
     size="$(run_with_deadline python3 -c 'import os, sys; print(os.path.getsize(sys.argv[1]))' "$1" 2>/dev/null)" || rc=$?
-    if [ "$rc" -eq 124 ]; then
+    if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
         fail_open
     fi
     if [ "$rc" -ne 0 ]; then
@@ -336,10 +340,16 @@ skill_file_byte_size() {
 filter_skill_body_for_mode() {
     local skill_file="$1"
     local effective_mode="$2"
-    local line label normalized_label
+    local line label normalized_label body rc
 
     if ! is_runtime_mode "$effective_mode" || [ "$effective_mode" = "off" ]; then
         effective_mode="full"
+    fi
+
+    rc=0
+    body="$(strip_frontmatter "$skill_file")" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+        return "$rc"
     fi
 
     while IFS= read -r line || [ -n "$line" ]; do
@@ -370,13 +380,13 @@ filter_skill_body_for_mode() {
         fi
 
         printf '%s\n' "$line"
-    done < <(strip_frontmatter "$skill_file")
+    done <<< "$body"
 }
 
 load_skill_content() {
     local skill_file="$1"
     local effective_mode="$2"
-    local size content rc
+    local size content
 
     if [ ! -r "$skill_file" ]; then
         printf '%s' "Error: unable to read ponytail skill file"
@@ -389,14 +399,9 @@ load_skill_content() {
         return 0
     fi
 
-    rc=0
     if content="$(filter_skill_body_for_mode "$skill_file" "$effective_mode" 2>/dev/null)"; then
         printf '%s' "$content"
     else
-        rc=$?
-        if [ "$rc" -eq 124 ]; then
-            fail_open
-        fi
         printf '%s' "Error: unable to read ponytail skill file"
     fi
     return 0

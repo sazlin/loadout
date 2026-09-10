@@ -428,6 +428,29 @@ def test_ponytail_activate_fail_open_when_python3_hangs(tmp_path: Path) -> None:
     assert elapsed < 3
 
 
+def test_ponytail_activate_fail_open_when_skill_body_read_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    os.mkfifo(skill)
+    script = _install_ponytail_hook(project)
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 3
+    assert "PONYTAIL MODE ACTIVE" not in result.stdout
+
+
 def test_ponytail_activate_fail_open_when_python3_exits_nonzero(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
