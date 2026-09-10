@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -264,15 +266,20 @@ loadouts: [coding]
     ]
 
 
-def _run_ponytail_activate(
-    project: Path, *args: str, env: dict[str, str] | None = None
-) -> dict[str, object]:
-    """Run the synced hook as if installed under project/.cursor/hooks/ponytail-activate/."""
+def _install_ponytail_hook(project: Path) -> Path:
     hook_dir = project / ".cursor" / "hooks" / "ponytail-activate"
     hook_dir.mkdir(parents=True)
     script = hook_dir / "ponytail-activate"
     script.write_bytes(HOOK_SCRIPT.read_bytes())
     script.chmod(0o755)
+    return script
+
+
+def _run_ponytail_activate(
+    project: Path, *args: str, env: dict[str, str] | None = None
+) -> dict[str, object]:
+    """Run the synced hook as if installed under project/.cursor/hooks/ponytail-activate/."""
+    script = _install_ponytail_hook(project)
     result = subprocess.run(
         [str(script), *args],
         check=True,
@@ -281,6 +288,43 @@ def _run_ponytail_activate(
         env={**os.environ, **(env or {})},
     )
     return json.loads(result.stdout)
+
+
+def _path_without_python3(tmp_path: Path) -> str:
+    """PATH with coreutils/bash but no python3 (python3 often shares /usr/bin with bash)."""
+    tools_dir = tmp_path / "path-tools"
+    tools_dir.mkdir()
+    for name in (
+        "bash",
+        "sh",
+        "timeout",
+        "grep",
+        "sed",
+        "awk",
+        "uname",
+        "tr",
+        "head",
+        "mktemp",
+        "kill",
+        "sleep",
+        "cat",
+        "rm",
+        "chmod",
+    ):
+        resolved = shutil.which(name)
+        if resolved is None:
+            continue
+        dest = tools_dir / name
+        if not dest.exists():
+            dest.symlink_to(resolved)
+    return str(tools_dir)
+
+
+def _write_fake_python3(bin_dir: Path, body: str) -> None:
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    script = bin_dir / "python3"
+    script.write_text(body)
+    script.chmod(0o755)
 
 
 def test_ponytail_activate_cursor_payload_includes_skill(tmp_path: Path) -> None:
@@ -337,6 +381,72 @@ def test_ponytail_activate_missing_skill_emits_error_and_exits_zero(tmp_path: Pa
     assert ".claude/skills/ponytail/SKILL.md" in context
     assert "/home/" not in context
     assert not context.startswith("/")
+
+
+def test_ponytail_activate_fail_open_when_python3_missing(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PATH": _path_without_python3(tmp_path)},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+
+
+def test_ponytail_activate_fail_open_when_python3_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nsleep 10\n")
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 3
+
+
+def test_ponytail_activate_fail_open_when_python3_exits_nonzero(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nexit 1\n")
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
 
 
 def test_ponytail_activate_json_safe_control_characters(tmp_path: Path) -> None:
