@@ -5,7 +5,7 @@ description: Use when starting any conversation - establishes how to find and us
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/using-superpowers/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 <SUBAGENT-STOP>

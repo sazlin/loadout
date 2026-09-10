@@ -7,7 +7,7 @@ description: Use when running long local tasks on a Mac or MacBook, waiting on C
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/anti-sleep/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Anti-sleep

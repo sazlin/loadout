@@ -6,7 +6,7 @@ description: Use when starting feature work that needs isolation from current wo
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/using-git-worktrees/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Using Git Worktrees

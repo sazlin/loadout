@@ -5,7 +5,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/finishing-a-development-branch/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Finishing a Development Branch

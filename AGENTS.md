@@ -77,6 +77,7 @@ repo, so read them at the start of a session.
 | `.cursor/rules/pr-ready-for-review.mdc` | Always | Open GitHub PRs ready for review, never as drafts. If the change is not ready, do not open a PR; ask the user what is blocking. |
 | `.cursor/rules/repo-conventions.mdc` | Always | Preserve repository conventions and verify scoped changes. |
 | `.cursor/rules/agent-authoring.mdc` | `agents/*/*.md`, `agents/_agent_template.md` | Author and import agents from agents/_agent_template.md. Applies only when working on files under agents/. |
+| `.cursor/rules/ponytail.mdc` | `**/*.py`, `**/*.pyi`, `**/*.ts`, `**/*.tsx`, `**/*.js`, `**/*.jsx`, `**/*.mjs`, `**/*.cjs`, `**/*.go`, `**/*.rs`, `**/*.rb`, `**/*.java`, `**/*.kt`, `**/*.swift`, `**/*.c`, `**/*.h`, `**/*.cpp`, `**/*.hpp`, `**/*.cs`, `**/*.php`, `**/*.sh` | Ponytail, lazy senior dev mode. Always pick the simplest solution that works. |
 | `.cursor/rules/pytest.mdc` | `**/test_*.py`, `**/*_test.py`, `tests/**/*.py` | Write reliable, focused pytest coverage for Python behavior. |
 | `.cursor/rules/python-code-style.mdc` | `**/*.py`, `**/*.pyi` | Write simple, readable, maintainable Python that a reviewer can quickly read and understand in one pass. |
 | `.cursor/rules/test-agents.mdc` | `specs/**/*.md`, `e2e/**/*.spec.ts`, `e2e/**/*.spec.js`, `playwright.config.*` | Playwright Test Agent conventions for specs/, seed tests, and generated specs. |

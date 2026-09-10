@@ -6,7 +6,7 @@ description: Dedupe panel or verifier issues and rewrite the hashed tasks file w
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/dedupe-and-write-tasks/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Dedupe and write tasks

@@ -6,7 +6,7 @@ description: Implement the first open hashed-tasks-file task, commit, and push t
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/resolve-next-task/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Resolve next task

@@ -6,7 +6,7 @@ description: Use when receiving code review feedback, before implementing sugges
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/receiving-code-review/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Code Review Reception

@@ -9,7 +9,7 @@ globs:
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/playwright/e2e-conventions.mdc
-  loadout.sha: local
+  loadout.sha: '5110187'
 ---
 
 # Playwright E2E conventions
