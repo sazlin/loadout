@@ -6,7 +6,9 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -264,15 +266,20 @@ loadouts: [coding]
     ]
 
 
-def _run_ponytail_activate(
-    project: Path, *args: str, env: dict[str, str] | None = None
-) -> dict[str, object]:
-    """Run the synced hook as if installed under project/.cursor/hooks/ponytail-activate/."""
+def _install_ponytail_hook(project: Path) -> Path:
     hook_dir = project / ".cursor" / "hooks" / "ponytail-activate"
     hook_dir.mkdir(parents=True)
     script = hook_dir / "ponytail-activate"
     script.write_bytes(HOOK_SCRIPT.read_bytes())
     script.chmod(0o755)
+    return script
+
+
+def _run_ponytail_activate(
+    project: Path, *args: str, env: dict[str, str] | None = None
+) -> dict[str, object]:
+    """Run the synced hook as if installed under project/.cursor/hooks/ponytail-activate/."""
+    script = _install_ponytail_hook(project)
     result = subprocess.run(
         [str(script), *args],
         check=True,
@@ -281,6 +288,57 @@ def _run_ponytail_activate(
         env={**os.environ, **(env or {})},
     )
     return json.loads(result.stdout)
+
+
+_HOOK_PATH_TOOLS = (
+    "bash",
+    "sh",
+    "timeout",
+    "grep",
+    "sed",
+    "awk",
+    "uname",
+    "tr",
+    "head",
+    "mktemp",
+    "kill",
+    "sleep",
+    "cat",
+    "rm",
+    "chmod",
+    "setsid",
+    "ps",
+)
+
+
+def _path_with_hook_tools(tmp_path: Path, *omit: str) -> str:
+    """PATH with hook runtime tools; omit names to hide python3 or GNU timeout."""
+    suffix = "-".join(omit) if omit else "all"
+    tools_dir = tmp_path / f"path-tools-{suffix}"
+    tools_dir.mkdir()
+    skipped = set(omit)
+    for name in _HOOK_PATH_TOOLS:
+        if name in skipped:
+            continue
+        resolved = shutil.which(name)
+        if resolved is None:
+            continue
+        dest = tools_dir / name
+        if not dest.exists():
+            dest.symlink_to(resolved)
+    return str(tools_dir)
+
+
+def _path_without_python3(tmp_path: Path) -> str:
+    """PATH with coreutils/bash but no python3 (python3 often shares /usr/bin with bash)."""
+    return _path_with_hook_tools(tmp_path, "python3")
+
+
+def _write_fake_python3(bin_dir: Path, body: str) -> None:
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    script = bin_dir / "python3"
+    script.write_text(body)
+    script.chmod(0o755)
 
 
 def test_ponytail_activate_cursor_payload_includes_skill(tmp_path: Path) -> None:
@@ -337,6 +395,249 @@ def test_ponytail_activate_missing_skill_emits_error_and_exits_zero(tmp_path: Pa
     assert ".claude/skills/ponytail/SKILL.md" in context
     assert "/home/" not in context
     assert not context.startswith("/")
+
+
+def test_ponytail_activate_fail_open_when_python3_missing(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PATH": _path_without_python3(tmp_path)},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+
+
+def test_ponytail_activate_fail_open_when_python3_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nsleep 10\n")
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 3
+
+
+@pytest.mark.parametrize(
+    "hide_timeout",
+    [False, True],
+    ids=["gnu_timeout", "no_timeout_fallback"],
+)
+def test_ponytail_activate_fail_open_when_python3_ignores_sigterm(tmp_path: Path, hide_timeout: bool) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\ntrap '' TERM\nsleep 30\n")
+    rest = _path_with_hook_tools(tmp_path, "timeout") if hide_timeout else os.environ["PATH"]
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{rest}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 4
+
+
+def test_ponytail_activate_fail_open_when_timeout_binary_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nsleep 30\n")
+    timeout_bin = bin_dir / "timeout"
+    timeout_bin.write_text("#!/bin/sh\ntrap '' TERM\nsleep 30\n")
+    timeout_bin.chmod(0o755)
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 4
+
+
+_PROC_STAT_READABLE = '[ -r "/proc/${check_pid}/stat" ]'
+
+
+def _force_skip_procfs(script: Path) -> None:
+    """Skip Linux /proc so pid_is_zombie must use the portable ps fallback."""
+    text = script.read_text()
+    assert _PROC_STAT_READABLE in text
+    script.write_text(text.replace(_PROC_STAT_READABLE, "false", 1))
+
+
+def _pid_is_zombie_source(*, skip_procfs: bool) -> str:
+    text = HOOK_SCRIPT.read_text()
+    start = text.index("pid_is_zombie() {")
+    end = text.index("\ndeadline_pid_live() {")
+    fn = text[start:end]
+    if skip_procfs:
+        assert _PROC_STAT_READABLE in fn
+        fn = fn.replace(_PROC_STAT_READABLE, "false", 1)
+    return fn
+
+
+def _spawn_zombie_holder(tmp_path: Path) -> tuple[subprocess.Popen[str], int]:
+    """Keep a zombie child alive until the holder is terminated."""
+    holder = tmp_path / "hold_zombie.py"
+    holder.write_text(
+        "import os, sys, time\n"
+        "pid = os.fork()\n"
+        "if pid == 0:\n"
+        "    os._exit(0)\n"
+        "sys.stdout.write(str(pid) + '\\n')\n"
+        "sys.stdout.flush()\n"
+        "time.sleep(30)\n"
+        "os.waitpid(pid, 0)\n"
+    )
+    proc = subprocess.Popen(
+        ["python3", str(holder)],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    assert proc.stdout is not None
+    zombie_pid = int(proc.stdout.readline())
+    return proc, zombie_pid
+
+
+def _run_pid_is_zombie(tmp_path: Path, pid: int, *, skip_procfs: bool) -> int:
+    wrapper = tmp_path / "check-zombie.sh"
+    body = _pid_is_zombie_source(skip_procfs=skip_procfs)
+    wrapper.write_text(f"#!/usr/bin/env bash\nset -euo pipefail\n{body}pid_is_zombie {pid}\n")
+    wrapper.chmod(0o755)
+    return subprocess.run(["bash", str(wrapper)], check=False).returncode
+
+
+def test_ponytail_pid_is_zombie_detects_zombie_via_ps_without_procfs(tmp_path: Path) -> None:
+    holder, zombie_pid = _spawn_zombie_holder(tmp_path)
+    try:
+        assert _run_pid_is_zombie(tmp_path, zombie_pid, skip_procfs=True) == 0
+        assert _run_pid_is_zombie(tmp_path, zombie_pid, skip_procfs=False) == 0
+        live = subprocess.Popen(["sleep", "30"])
+        try:
+            assert _run_pid_is_zombie(tmp_path, live.pid, skip_procfs=True) == 1
+        finally:
+            live.kill()
+            live.wait(timeout=2)
+    finally:
+        holder.terminate()
+        holder.wait(timeout=2)
+
+
+def test_ponytail_activate_success_is_fast_without_procfs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Fast-without-procfs marker\n")
+    script = _install_ponytail_hook(project)
+    _force_skip_procfs(script)
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    context = payload["additional_context"]
+    assert isinstance(context, str)
+    assert "Fast-without-procfs marker" in context
+    assert elapsed < 1
+
+
+def test_ponytail_activate_fail_open_when_skill_body_read_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    os.mkfifo(skill)
+    script = _install_ponytail_hook(project)
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 3
+    assert "PONYTAIL MODE ACTIVE" not in result.stdout
+
+
+def test_ponytail_activate_fail_open_when_python3_exits_nonzero(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nexit 1\n")
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
 
 
 def test_ponytail_activate_json_safe_control_characters(tmp_path: Path) -> None:
