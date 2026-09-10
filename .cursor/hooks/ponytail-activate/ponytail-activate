@@ -27,24 +27,25 @@ emit_empty_payload() {
     fi
 }
 
-on_fail_open() {
+handle_fail_open() {
+    # Must run in the top-level process, not inside $(); JSON would be swallowed.
     trap - ERR USR1
     emit_empty_payload
     exit 0
 }
 
-fail_open() {
+signal_fail_open() {
     # USR1 the top-level process so a failing command substitution cannot
     # swallow empty JSON ($$ is the parent even inside $() on bash 3.2).
     kill -USR1 "$HOOK_PID" 2>/dev/null || true
     exit 0
 }
 
-trap on_fail_open USR1
-trap fail_open ERR
+trap handle_fail_open USR1
+trap signal_fail_open ERR
 
 if ! command -v python3 >/dev/null 2>&1; then
-    fail_open
+    signal_fail_open
 fi
 
 map_deadline_rc() {
@@ -114,26 +115,26 @@ run_with_deadline() {
 }
 
 run_with_deadline_stdin() {
-    local data="$1"
+    local stdin_text="$1"
     shift
     local rc=0
     if command -v timeout >/dev/null 2>&1; then
-        printf '%s' "$data" | timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
+        printf '%s' "$stdin_text" | timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
         rc="$(map_deadline_rc "$rc")"
         return "$rc"
     fi
-    local tmp pid use_pgroup=0
-    tmp="$(mktemp)"
-    printf '%s' "$data" > "$tmp"
+    local stdin_file pid use_pgroup=0
+    stdin_file="$(mktemp)"
+    printf '%s' "$stdin_text" > "$stdin_file"
     if command -v setsid >/dev/null 2>&1; then
-        setsid "$@" < "$tmp" &
+        setsid "$@" < "$stdin_file" &
         use_pgroup=1
     else
-        "$@" < "$tmp" &
+        "$@" < "$stdin_file" &
     fi
     pid=$!
     reap_deadline_pid "$pid" "$use_pgroup" || rc=$?
-    rm -f "$tmp"
+    rm -f "$stdin_file"
     return "$rc"
 }
 
@@ -169,7 +170,7 @@ print(
     rc=0
     payload="$(run_with_deadline_stdin "$context" python3 -c "$script")" || rc=$?
     if [ "$rc" -ne 0 ]; then
-        fail_open
+        signal_fail_open
     fi
     printf '%s\n' "$payload"
 }
@@ -298,7 +299,7 @@ except OSError:
     sys.exit(1)
 ' "$1" 2>/dev/null || rc=$?
     if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
-        fail_open
+        signal_fail_open
     fi
     return "$rc"
 }
@@ -322,7 +323,7 @@ strip_frontmatter() {
         !in_frontmatter { print }
     ' "$1" || rc=$?
     if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
-        fail_open
+        signal_fail_open
     fi
     return "$rc"
 }
@@ -369,7 +370,7 @@ skill_file_byte_size() {
     rc=0
     size="$(run_with_deadline python3 -c 'import os, sys; print(os.path.getsize(sys.argv[1]))' "$1" 2>/dev/null)" || rc=$?
     if [ "$rc" -eq "$TIMEOUT_EXIT" ]; then
-        fail_open
+        signal_fail_open
     fi
     if [ "$rc" -ne 0 ]; then
         printf '%s' "0"
