@@ -290,27 +290,35 @@ def _run_ponytail_activate(
     return json.loads(result.stdout)
 
 
-def _path_without_python3(tmp_path: Path) -> str:
-    """PATH with coreutils/bash but no python3 (python3 often shares /usr/bin with bash)."""
-    tools_dir = tmp_path / "path-tools"
+_HOOK_PATH_TOOLS = (
+    "bash",
+    "sh",
+    "timeout",
+    "grep",
+    "sed",
+    "awk",
+    "uname",
+    "tr",
+    "head",
+    "mktemp",
+    "kill",
+    "sleep",
+    "cat",
+    "rm",
+    "chmod",
+    "setsid",
+)
+
+
+def _path_with_hook_tools(tmp_path: Path, *omit: str) -> str:
+    """PATH with hook runtime tools; omit names to hide python3 or GNU timeout."""
+    suffix = "-".join(omit) if omit else "all"
+    tools_dir = tmp_path / f"path-tools-{suffix}"
     tools_dir.mkdir()
-    for name in (
-        "bash",
-        "sh",
-        "timeout",
-        "grep",
-        "sed",
-        "awk",
-        "uname",
-        "tr",
-        "head",
-        "mktemp",
-        "kill",
-        "sleep",
-        "cat",
-        "rm",
-        "chmod",
-    ):
+    skipped = set(omit)
+    for name in _HOOK_PATH_TOOLS:
+        if name in skipped:
+            continue
         resolved = shutil.which(name)
         if resolved is None:
             continue
@@ -318,6 +326,11 @@ def _path_without_python3(tmp_path: Path) -> str:
         if not dest.exists():
             dest.symlink_to(resolved)
     return str(tools_dir)
+
+
+def _path_without_python3(tmp_path: Path) -> str:
+    """PATH with coreutils/bash but no python3 (python3 often shares /usr/bin with bash)."""
+    return _path_with_hook_tools(tmp_path, "python3")
 
 
 def _write_fake_python3(bin_dir: Path, body: str) -> None:
@@ -426,6 +439,38 @@ def test_ponytail_activate_fail_open_when_python3_hangs(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload == {"additional_context": ""}
     assert elapsed < 3
+
+
+@pytest.mark.parametrize(
+    "hide_timeout",
+    [False, True],
+    ids=["gnu_timeout", "no_timeout_fallback"],
+)
+def test_ponytail_activate_fail_open_when_python3_ignores_sigterm(tmp_path: Path, hide_timeout: bool) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\ntrap '' TERM\nsleep 30\n")
+    rest = _path_with_hook_tools(tmp_path, "timeout") if hide_timeout else os.environ["PATH"]
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{rest}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 4
 
 
 def test_ponytail_activate_fail_open_when_skill_body_read_hangs(tmp_path: Path) -> None:

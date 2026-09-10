@@ -7,8 +7,9 @@ set -euo pipefail
 
 MAX_SKILL_BYTES=65536
 IO_DEADLINE_SECS=2
-# GNU timeout(1) status; the no-timeout fallback maps SIGTERM/SIGKILL (143/137) to this.
+# GNU timeout(1) status; SIGTERM/SIGKILL wait statuses (143/137) map to this.
 TIMEOUT_EXIT=124
+KILL_AFTER_SECS=1
 
 # Script lives at <project>/.cursor/hooks/ponytail-activate/ponytail-activate
 # (loadout vendors each hook into hooks/<name>/; three levels up is project root).
@@ -46,25 +47,69 @@ if ! command -v python3 >/dev/null 2>&1; then
     fail_open
 fi
 
+map_deadline_rc() {
+    local rc="$1"
+    if [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
+        printf '%s' "$TIMEOUT_EXIT"
+    else
+        printf '%s' "$rc"
+    fi
+}
+
+# TERM at IO_DEADLINE_SECS, then KILL. If the pid is still running (D-state),
+# return TIMEOUT_EXIT without waiting so the hook can fail-open and orphan it.
+reap_deadline_pid() {
+    local pid="$1"
+    local use_pgroup="$2"
+    local rc=0
+    (
+        _signal() {
+            if [ "$use_pgroup" -eq 1 ]; then
+                kill -"$1" -- "-$pid" 2>/dev/null || true
+            else
+                kill -"$1" "$pid" 2>/dev/null || true
+            fi
+        }
+        sleep "$IO_DEADLINE_SECS"
+        _signal TERM
+        sleep "$KILL_AFTER_SECS"
+        _signal KILL
+    ) &
+    local watcher=$!
+    local elapsed=0
+    local limit=$((IO_DEADLINE_SECS + KILL_AFTER_SECS + 1))
+    while jobs -r -p 2>/dev/null | grep -qx "$pid"; do
+        if [ "$elapsed" -ge "$limit" ]; then
+            kill "$watcher" 2>/dev/null || true
+            wait "$watcher" 2>/dev/null || true
+            return "$TIMEOUT_EXIT"
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    wait "$pid" || rc=$?
+    kill "$watcher" 2>/dev/null || true
+    wait "$watcher" 2>/dev/null || true
+    rc="$(map_deadline_rc "$rc")"
+    return "$rc"
+}
+
 run_with_deadline() {
     local rc=0
     if command -v timeout >/dev/null 2>&1; then
-        timeout "$IO_DEADLINE_SECS" "$@" || rc=$?
+        timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
+        rc="$(map_deadline_rc "$rc")"
+        return "$rc"
+    fi
+    local pid use_pgroup=0
+    if command -v setsid >/dev/null 2>&1; then
+        setsid "$@" &
+        use_pgroup=1
     else
         "$@" &
-        local pid=$!
-        (
-            sleep "$IO_DEADLINE_SECS"
-            kill -TERM "$pid" 2>/dev/null || true
-        ) &
-        local watcher=$!
-        wait "$pid" || rc=$?
-        kill "$watcher" 2>/dev/null || true
-        wait "$watcher" 2>/dev/null || true
-        if [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
-            rc="$TIMEOUT_EXIT"
-        fi
     fi
+    pid=$!
+    reap_deadline_pid "$pid" "$use_pgroup" || rc=$?
     return "$rc"
 }
 
@@ -73,26 +118,22 @@ run_with_deadline_stdin() {
     shift
     local rc=0
     if command -v timeout >/dev/null 2>&1; then
-        printf '%s' "$data" | timeout "$IO_DEADLINE_SECS" "$@" || rc=$?
-    else
-        local tmp
-        tmp="$(mktemp)"
-        printf '%s' "$data" > "$tmp"
-        "$@" < "$tmp" &
-        local pid=$!
-        (
-            sleep "$IO_DEADLINE_SECS"
-            kill -TERM "$pid" 2>/dev/null || true
-        ) &
-        local watcher=$!
-        wait "$pid" || rc=$?
-        kill "$watcher" 2>/dev/null || true
-        wait "$watcher" 2>/dev/null || true
-        rm -f "$tmp"
-        if [ "$rc" -eq 143 ] || [ "$rc" -eq 137 ]; then
-            rc="$TIMEOUT_EXIT"
-        fi
+        printf '%s' "$data" | timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
+        rc="$(map_deadline_rc "$rc")"
+        return "$rc"
     fi
+    local tmp pid use_pgroup=0
+    tmp="$(mktemp)"
+    printf '%s' "$data" > "$tmp"
+    if command -v setsid >/dev/null 2>&1; then
+        setsid "$@" < "$tmp" &
+        use_pgroup=1
+    else
+        "$@" < "$tmp" &
+    fi
+    pid=$!
+    reap_deadline_pid "$pid" "$use_pgroup" || rc=$?
+    rm -f "$tmp"
     return "$rc"
 }
 
