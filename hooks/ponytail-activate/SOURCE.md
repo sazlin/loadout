@@ -40,6 +40,10 @@ install). Compared to the upstream Node SessionStart hook:
    after compaction).
 6. **Resilience** — refuse skill files over 64 KiB; unreadable or missing files
    emit a short error string in context and exit 0 (no absolute paths in errors).
+   Missing, failing, or hung `python3` (2s deadline per invocation, plus an ERR
+   trap) fail-opens with empty `additional_context` / `additionalContext` and
+   exit 0, so SessionStart never blocks the host or the stacked session-start
+   hook. File reads (skill body, config) use the same deadline.
 7. **Out of scope** — no statusline nudge, no `~/.claude/.ponytail-active`
    flag file, no UserPromptSubmit mode tracker, no SubagentStart injector.
    Those stay plugin-only. The globbed rule plus this SessionStart hook cover
