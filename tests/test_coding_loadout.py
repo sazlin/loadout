@@ -473,6 +473,35 @@ def test_ponytail_activate_fail_open_when_python3_ignores_sigterm(tmp_path: Path
     assert elapsed < 4
 
 
+def test_ponytail_activate_fail_open_when_timeout_binary_hangs(tmp_path: Path) -> None:
+    project = tmp_path / "proj"
+    skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text("---\nname: ponytail\ndescription: test\n---\n\n# Must not appear\n")
+    script = _install_ponytail_hook(project)
+    bin_dir = tmp_path / "bin"
+    _write_fake_python3(bin_dir, "#!/bin/sh\nsleep 30\n")
+    timeout_bin = bin_dir / "timeout"
+    timeout_bin.write_text("#!/bin/sh\ntrap '' TERM\nsleep 30\n")
+    timeout_bin.chmod(0o755)
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    started = time.monotonic()
+    result = subprocess.run(
+        [str(script), "cursor"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=5,
+    )
+    elapsed = time.monotonic() - started
+
+    assert result.returncode == 0
+    payload = json.loads(result.stdout)
+    assert payload == {"additional_context": ""}
+    assert elapsed < 4
+
+
 def test_ponytail_activate_fail_open_when_skill_body_read_hangs(tmp_path: Path) -> None:
     project = tmp_path / "proj"
     skill = project / ".claude" / "skills" / "ponytail" / "SKILL.md"

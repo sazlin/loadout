@@ -57,36 +57,72 @@ map_deadline_rc() {
     fi
 }
 
-# TERM at IO_DEADLINE_SECS, then KILL. If the pid is still running (D-state),
-# return TIMEOUT_EXIT without waiting so the hook can fail-open and orphan it.
+signal_deadline_pid() {
+    local sig="$1"
+    local pid="$2"
+    local use_pgroup="$3"
+    if [ "$use_pgroup" -eq 1 ]; then
+        kill -"$sig" -- "-$pid" 2>/dev/null || true
+    else
+        kill -"$sig" "$pid" 2>/dev/null || true
+    fi
+}
+
+# kill -0 is true for zombies until wait; treat Z as done so success is fast.
+pid_is_zombie() {
+    local check_pid="$1" stat rest state
+    [ -r "/proc/${check_pid}/stat" ] || return 1
+    stat="$(cat "/proc/${check_pid}/stat" 2>/dev/null || true)"
+    rest="${stat##*)}"
+    rest="${rest#"${rest%%[![:space:]]*}"}"
+    state="${rest%% *}"
+    [ "$state" = "Z" ]
+}
+
+deadline_pid_live() {
+    local check_pid="$1"
+    kill -0 "$check_pid" 2>/dev/null || return 1
+    if pid_is_zombie "$check_pid"; then
+        return 1
+    fi
+    return 0
+}
+
+# TERM at IO_DEADLINE_SECS (fallback only), then KILL. If the pid is still
+# running (D-state), return TIMEOUT_EXIT without waiting so the hook can
+# fail-open and orphan it. early_term=0 for GNU timeout: do not TERM the
+# timeout binary at IO_DEADLINE (it TERMs its child); KILL it after
+# IO+KILL_AFTER if it has not exited.
 reap_deadline_pid() {
     local pid="$1"
     local use_pgroup="$2"
+    local early_term="$3"
     local rc=0
+    # Redirect so a leftover grandchild cannot hold the $() pipe open.
     (
-        _signal() {
-            if [ "$use_pgroup" -eq 1 ]; then
-                kill -"$1" -- "-$pid" 2>/dev/null || true
-            else
-                kill -"$1" "$pid" 2>/dev/null || true
-            fi
-        }
-        sleep "$IO_DEADLINE_SECS"
-        _signal TERM
-        sleep "$KILL_AFTER_SECS"
-        _signal KILL
-    ) &
+        if [ "$early_term" -eq 1 ]; then
+            sleep "$IO_DEADLINE_SECS"
+            signal_deadline_pid TERM "$pid" "$use_pgroup"
+            sleep "$KILL_AFTER_SECS"
+            signal_deadline_pid KILL "$pid" "$use_pgroup"
+        else
+            sleep $((IO_DEADLINE_SECS + KILL_AFTER_SECS))
+            signal_deadline_pid KILL "$pid" "$use_pgroup"
+        fi
+    ) >/dev/null 2>&1 &
     local watcher=$!
-    local elapsed=0
-    local limit=$((IO_DEADLINE_SECS + KILL_AFTER_SECS + 1))
-    while jobs -r -p 2>/dev/null | grep -qx "$pid"; do
-        if [ "$elapsed" -ge "$limit" ]; then
+    local elapsed_ds=0
+    local limit_ds=$(((IO_DEADLINE_SECS + KILL_AFTER_SECS + 1) * 10))
+    # kill -0 sees D-state and pipeline-hidden jobs; jobs -r | grep can miss.
+    while deadline_pid_live "$pid"; do
+        if [ "$elapsed_ds" -ge "$limit_ds" ]; then
             kill "$watcher" 2>/dev/null || true
             wait "$watcher" 2>/dev/null || true
+            signal_deadline_pid KILL "$pid" "$use_pgroup"
             return "$TIMEOUT_EXIT"
         fi
-        sleep 1
-        elapsed=$((elapsed + 1))
+        sleep 0.1
+        elapsed_ds=$((elapsed_ds + 1))
     done
     wait "$pid" || rc=$?
     kill "$watcher" 2>/dev/null || true
@@ -95,45 +131,48 @@ reap_deadline_pid() {
     return "$rc"
 }
 
-run_with_deadline() {
-    local rc=0
+# stdout goes to a file so backgrounded timeout/python3 cannot keep $() blocked.
+run_deadline_capture() {
+    local stdin_file="$1"
+    shift
+    local rc=0 pid use_pgroup=0 outfile early_term=1
+    outfile="$(mktemp)"
+    if [ -z "$stdin_file" ]; then
+        stdin_file="/dev/null"
+    fi
     if command -v timeout >/dev/null 2>&1; then
-        timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
-        rc="$(map_deadline_rc "$rc")"
-        return "$rc"
-    fi
-    local pid use_pgroup=0
-    if command -v setsid >/dev/null 2>&1; then
-        setsid "$@" &
+        timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" <"$stdin_file" >"$outfile" &
+        pid=$!
+        early_term=0
+        reap_deadline_pid "$pid" 0 "$early_term" || rc=$?
+    elif command -v setsid >/dev/null 2>&1; then
         use_pgroup=1
+        setsid "$@" <"$stdin_file" >"$outfile" &
+        pid=$!
+        reap_deadline_pid "$pid" "$use_pgroup" "$early_term" || rc=$?
     else
-        "$@" &
+        "$@" <"$stdin_file" >"$outfile" &
+        pid=$!
+        reap_deadline_pid "$pid" 0 "$early_term" || rc=$?
     fi
-    pid=$!
-    reap_deadline_pid "$pid" "$use_pgroup" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+        cat "$outfile"
+    fi
+    rm -f "$outfile"
     return "$rc"
+}
+
+run_with_deadline() {
+    run_deadline_capture "" "$@"
 }
 
 run_with_deadline_stdin() {
     local stdin_text="$1"
     shift
-    local rc=0
-    if command -v timeout >/dev/null 2>&1; then
-        printf '%s' "$stdin_text" | timeout --kill-after="${KILL_AFTER_SECS}s" "$IO_DEADLINE_SECS" "$@" || rc=$?
-        rc="$(map_deadline_rc "$rc")"
-        return "$rc"
-    fi
-    local stdin_file pid use_pgroup=0
+    local stdin_file rc=0
     stdin_file="$(mktemp)"
-    printf '%s' "$stdin_text" > "$stdin_file"
-    if command -v setsid >/dev/null 2>&1; then
-        setsid "$@" < "$stdin_file" &
-        use_pgroup=1
-    else
-        "$@" < "$stdin_file" &
-    fi
-    pid=$!
-    reap_deadline_pid "$pid" "$use_pgroup" || rc=$?
+    printf '%s' "$stdin_text" >"$stdin_file"
+    run_deadline_capture "$stdin_file" "$@" || rc=$?
     rm -f "$stdin_file"
     return "$rc"
 }
