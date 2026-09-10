@@ -6,7 +6,7 @@ description: Dispatch the four dimensional PR reviewers in parallel. Use when re
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/dispatch-panel-review/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Dispatch panel review

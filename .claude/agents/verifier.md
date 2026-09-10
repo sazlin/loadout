@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/verifier/verifier.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 You are **verifier**, a read-only agent that judges project verifier claims.

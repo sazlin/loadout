@@ -4,9 +4,15 @@
     "beforeShellExecution": [
       {
         "command": ".cursor/hooks/deny-dangerous/deny-dangerous.sh cursor"
+      },
+      {
+        "command": ".cursor/hooks/rtk-rewrite/rtk-rewrite.sh cursor"
       }
     ],
     "sessionStart": [
+      {
+        "command": ".cursor/hooks/ponytail-activate/ponytail-activate cursor"
+      },
       {
         "command": ".cursor/hooks/session-start/session-start cursor"
       }

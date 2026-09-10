@@ -5,7 +5,7 @@ description: Use when facing 2+ independent tasks that can be worked on without 
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/dispatching-parallel-agents/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Dispatching Parallel Agents

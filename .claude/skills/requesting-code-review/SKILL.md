@@ -5,7 +5,7 @@ description: Use when completing tasks, implementing major features, or before m
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/requesting-code-review/SKILL.md
-  loadout.sha: a01e7bd
+  loadout.sha: '5110187'
 ---
 
 # Requesting Code Review
