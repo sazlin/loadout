@@ -150,6 +150,25 @@ def test_skillui_encodes_extract_modes_and_url_trust_boundary() -> None:
     assert "1.3.4" in text
 
 
+def test_skillui_treats_generated_skill_md_as_untrusted() -> None:
+    text = SKILL_MD.read_text().lower()
+    assert "untrusted" in text
+    assert "~/.claude/skills" in text
+    assert ".claude/skills" in text
+    assert "~/.agents/skills" in text
+    assert "do not invoke" in text
+    assert "--no-skill" in text
+    assert "single path segment" in text
+    assert "design.md" in text
+    assert "colors" in text
+    assert "read the generated" not in text
+    blob = json.dumps(json.loads((SKILL_ROOT / "evals" / "evals.json").read_text())).lower()
+    assert "untrusted" in blob
+    assert "~/.claude/skills" in blob
+    assert "does not follow" in blob or "does not copy" in blob
+    assert "design.md" in blob
+
+
 def test_uidesign_sync_vendors_skillui_and_not_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     _silence_cli_tools(monkeypatch)
