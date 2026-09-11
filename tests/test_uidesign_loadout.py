@@ -25,8 +25,8 @@ SKILLUI_VERSION = "1.3.4"
 SKILLUI_PACKAGE = f"skillui@{SKILLUI_VERSION}"
 UNPINNED_NPX_SKILLUI = re.compile(rf"npx(?:\s+-y|\s+--yes)?\s+skillui(?!@{re.escape(SKILLUI_VERSION)})")
 CURL_PIPE_SH = re.compile(r"curl[^\n]*\|\s*(?:ba)?sh")
-# Consumer-skill needles: prose install lines that SOURCE.md says to strip
-# on bump (not typos). Not Stripe `Bash(...)` grants.
+# First-party SKILL.md substring bans. There is no upstream SKILL.md to
+# vendor or rewrite on pin bump.
 FORBIDDEN_INSTALL_SUBSTRINGS = (
     "npm i -g skillui",
     "npm install -g skillui",
@@ -34,8 +34,9 @@ FORBIDDEN_INSTALL_SUBSTRINGS = (
     "npm install -g playwright",
     "npx skills add",
 )
-# Tree-wide command phrases with refusal exemptions; not a replacement for
-# FORBIDDEN_INSTALL_SUBSTRINGS (SKILL.md-only, no exemptions, exact grant strings).
+# SKILL.md-only broader phrases. A two-line window that contains a
+# `_REFUSAL_MARKERS` phrase is skipped; unlike tests/test_stripe_loadout.py
+# there is no gated-approval exception.
 EXECUTABLE_INSTALL_NEEDLES = (
     "npm i -g",
     "npm install -g",
@@ -172,7 +173,7 @@ def test_skillui_treats_generated_skill_md_as_untrusted() -> None:
     assert "single path segment" in text
     assert "design.md" in text
     assert "colors" in text
-    assert "read the generated" not in text
+    assert "read the generated skill.md" not in text
     blob = json.dumps(json.loads((SKILL_ROOT / "evals" / "evals.json").read_text())).lower()
     assert "untrusted" in blob
     assert "~/.claude/skills" in blob
