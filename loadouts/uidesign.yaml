@@ -1,0 +1,9 @@
+name: uidesign
+description: >-
+  SkillUI (amaancoderx/npxskillui) — extract a design system from a URL,
+  git repo, or local tree into Claude-ready SKILL.md / DESIGN.md.
+skills:
+  - src: skills/skillui
+cli_tools:
+  - name: skillui
+    command: (skillui --version 2>/dev/null || npx --no-install skillui --version 2>/dev/null) | grep -q 1.3.4 || npm install -D --no-fund --no-audit skillui@1.3.4
