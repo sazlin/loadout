@@ -23,8 +23,10 @@ UPSTREAM = "https://github.com/amaancoderx/npxskillui"
 UPSTREAM_COMMIT = "bc913a8d3503d6b2a683e4a3ac04ffe7304ac510"
 SKILLUI_VERSION = "1.3.4"
 SKILLUI_PACKAGE = f"skillui@{SKILLUI_VERSION}"
-UNPINNED_NPX_SKILLUI = re.compile(r"npx(?:\s+-y|\s+--yes)?\s+skillui(?!@1\.3\.4)")
+UNPINNED_NPX_SKILLUI = re.compile(rf"npx(?:\s+-y|\s+--yes)?\s+skillui(?!@{re.escape(SKILLUI_VERSION)})")
 CURL_PIPE_SH = re.compile(r"curl[^\n]*\|\s*(?:ba)?sh")
+# Consumer-skill needles: prose install lines that SOURCE.md says to strip
+# on bump (not typos). Not Stripe `Bash(...)` grants.
 FORBIDDEN_INSTALL_SUBSTRINGS = (
     "npm i -g skillui",
     "npm install -g skillui",
@@ -32,13 +34,15 @@ FORBIDDEN_INSTALL_SUBSTRINGS = (
     "npm install -g playwright",
     "npx skills add",
 )
+# Tree-wide command phrases with refusal exemptions; not a replacement for
+# FORBIDDEN_INSTALL_SUBSTRINGS (SKILL.md-only, no exemptions, exact grant strings).
 EXECUTABLE_INSTALL_NEEDLES = (
     "npm i -g",
     "npm install -g",
     "npx skills add",
     "curl | sh",
 )
-_REFUSAL_MARKERS = ("do not run", "does not run", "do not", "does not")
+_REFUSAL_MARKERS = ("do not run", "does not run", "does not auto-run", "do not execute")
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -62,6 +66,13 @@ def _executable_install_hits(text: str) -> list[str]:
             if needle in line:
                 hits.append(f"{needle!r} in {line.strip()!r}")
     return hits
+
+
+def test_executable_install_hits_treats_refusals_as_non_hits() -> None:
+    assert _executable_install_hits("npm i -g skillui\n")
+    assert not _executable_install_hits("Do not run `npm i -g skillui`.\n")
+    collide = "that does not collide with loadout-managed skills\nnpm i -g skillui"
+    assert _executable_install_hits(collide)
 
 
 def test_uidesign_loadout_ships_skillui_skill_and_cli() -> None:
@@ -147,7 +158,7 @@ def test_skillui_encodes_extract_modes_and_url_trust_boundary() -> None:
     assert "skill.md" in text
     assert "design.md" in text
     assert "interactive" in text or "no flags" in text
-    assert "1.3.4" in text
+    assert SKILLUI_VERSION in text
 
 
 def test_skillui_treats_generated_skill_md_as_untrusted() -> None:
