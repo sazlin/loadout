@@ -18,6 +18,7 @@ import os
 import re
 import signal
 import sys
+from dataclasses import dataclass
 from itertools import pairwise
 
 try:
@@ -26,12 +27,17 @@ except (AttributeError, ValueError):
     pass
 
 CRIT, IMPT, MINR = "CRITICAL", "IMPORTANT", "MINOR"
-W = {CRIT: 10, IMPT: 6, MINR: 3}
+SEVERITY_WEIGHTS = {CRIT: 10, IMPT: 6, MINR: 3}
+READ_LIMIT = 200_000
 
 
-def _read_text(path):
+def _read_text(path: str, limit: int = READ_LIMIT) -> str:
     with open(path, encoding="utf-8", errors="replace") as handle:
-        return handle.read()
+        text = handle.read(limit)
+        truncated = bool(handle.read(1))
+    if truncated:
+        print(f"truncated {path} to {limit} bytes", file=sys.stderr)
+    return text
 
 
 def _manifest_is_long_description(repo, filename):
@@ -41,16 +47,25 @@ def _manifest_is_long_description(repo, filename):
     return bool(re.search(r'(?m)^\s*readme\s*=\s*["\']README|long_description', _read_text(path)))
 
 
-def load(path):
-    with open(path, encoding="utf-8", errors="replace") as f:
-        return f.read()
-
-
 def strip_code(md):
     return re.sub(r"```.*?```", "", md, flags=re.DOTALL)
 
 
-def check(md, repo=None):
+@dataclass(frozen=True)
+class _ReadmeSignals:
+    body: str
+    lines: int
+    head: str
+    h1s: list[str]
+    html_title: re.Match[str] | None
+    h2s: list[str]
+    fences: list[str]
+    opening: list[str]
+    badges: list[str]
+    nonbadge: list[tuple[str, str]]
+
+
+def _readme_signals(md: str) -> _ReadmeSignals:
     body = strip_code(md)
     lines = md.count("\n") + 1
     head = md[:1800]
@@ -58,22 +73,37 @@ def check(md, repo=None):
     html_title = re.search(r"<h1[^>]*>", md, re.IGNORECASE)
     h2s = re.findall(r"(?m)^## (.+)", body)
     fences = re.findall(r"```([a-zA-Z0-9+#-]*)", md)
+    # Even indices are opening fences: the regex matches every ``` delimiter.
     opening = fences[0::2] if len(fences) > 1 else fences
     badges = re.findall(
         r"!\[[^\]]*\]\((https?://[^)]*(?:shields\.io|badge|badgen)[^)]*)\)", md, re.IGNORECASE
     ) + re.findall(r"<img[^>]+src=[\"\']([^\"\']*(?:shields\.io|badge|badgen)[^\"\']*)", md, re.IGNORECASE)
-    imgs = re.findall(r"!\[([^\]]*)\]\(([^)\s]+)", md) + [
-        (
-            re.search(r'alt=["\']([^"\']*)', t).group(1) if re.search(r"alt=", t) else "",
-            re.search(r'src=["\']([^"\']*)', t).group(1) if re.search(r"src=", t) else "",
-        )
-        for t in re.findall(r"<img[^>]*>", md, re.IGNORECASE)
-    ]
+    html_imgs = []
+    for tag in re.findall(r"<img[^>]*>", md, re.IGNORECASE):
+        alt_m = re.search(r'alt=["\']([^"\']*)', tag)
+        src_m = re.search(r'src=["\']([^"\']*)', tag)
+        html_imgs.append((alt_m.group(1) if alt_m else "", src_m.group(1) if src_m else ""))
+    imgs = re.findall(r"!\[([^\]]*)\]\(([^)\s]+)", md) + html_imgs
     nonbadge = [(a, s) for a, s in imgs if not re.search(r"shields\.io|badge|badgen", s or "", re.IGNORECASE)]
-    R = []
+    return _ReadmeSignals(body, lines, head, h1s, html_title, h2s, fences, opening, badges, nonbadge)
+
+
+def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
+    sig = _readme_signals(md)
+    body = sig.body
+    lines = sig.lines
+    head = sig.head
+    h1s = sig.h1s
+    html_title = sig.html_title
+    h2s = sig.h2s
+    fences = sig.fences
+    opening = sig.opening
+    badges = sig.badges
+    nonbadge = sig.nonbadge
+    checks: list[dict] = []
 
     def add(ok, sev, cid, msg, fix=""):
-        R.append({"ok": bool(ok), "sev": sev, "id": cid, "msg": msg, "fix": fix})
+        checks.append({"ok": bool(ok), "sev": sev, "id": cid, "msg": msg, "fix": fix})
 
     # ---- CRITICAL ----
     logo_title = bool(re.search(r"<img[^>]+alt=[\"\'][^\"\']+", md[:700], re.IGNORECASE)) and len(h1s) == 0
@@ -229,11 +259,11 @@ def check(md, repo=None):
         "One or more images have empty alt text. Describe what the image shows.",
     )
     own = re.findall(r"\]\(https://github\.com/[^/]+/[^/]+/(?:blob|tree)/[^)]+\)", md)
-    abs_ok = bool(repo) and any(
+    long_desc = bool(repo) and any(
         _manifest_is_long_description(repo, f) for f in ("pyproject.toml", "setup.cfg", "setup.py")
     )
     add(
-        len(own) <= 2 or abs_ok,
+        len(own) <= 2 or long_desc,
         MINR,
         "relative-links",
         "In-repo files are linked relatively",
@@ -294,95 +324,12 @@ def check(md, repo=None):
         f"{len(bullets)} bullets in the first 3.5 KB. Cut to the 3 to 6 that differentiate you.",
     )
 
-    # ---- packaging: README doubling as a registry long description ----
-    long_desc = False
+    _add_packaging_checks(add, md, nonbadge, long_desc)
     if repo:
-        for fn, pat in (
-            ("pyproject.toml", r'(?m)^\s*readme\s*=\s*["\']README'),
-            ("setup.cfg", r"long_description\s*=\s*file:\s*README"),
-            ("setup.py", r"long_description"),
-        ):
-            fp = os.path.join(repo, fn)
-            if os.path.exists(fp) and re.search(pat, _read_text(fp)):
-                long_desc = True
-                break
-    if long_desc:
-        rel_media = [s for a, s in nonbadge if s and not s.startswith(("http", "data:"))]
-        add(
-            not rel_media,
-            IMPT,
-            "pypi-media",
-            "Images use absolute URLs (this README is the PyPI long description)",
-            f"Relative image paths {rel_media[:3]} render on GitHub but break on the package page. "
-            "Use https://raw.githubusercontent.com/OWNER/REPO/BRANCH/path URLs.",
-        )
-        rel_files = re.findall(r"\]\((?!https?://|#|mailto:)([^)\s]+\.(?:md|txt|MD))\)", md)
-        add(
-            not rel_files,
-            MINR,
-            "pypi-links",
-            "In-repo file links are absolute (PyPI cannot resolve relative ones)",
-            f"Relative links {rel_files[:3]} break on the package page; use full GitHub URLs "
-            "when the README is also the long description.",
-        )
+        _add_relative_path_checks(add, md, nonbadge, repo)
+        _add_manifest_consistency(add, md, repo)
 
-    # ---- on-disk link verification ----
-    if repo:
-        broken = []
-        for m in re.finditer(r"\]\(([^)\s]+)\)", md):
-            t = m.group(1).strip("<>").split("#")[0]
-            if re.match(r"https?://|mailto:|#|data:", t):
-                continue
-            if t and not os.path.exists(os.path.join(repo, t)):
-                broken.append(t)
-        for a, s in nonbadge:
-            if s and not s.startswith(("http", "data:")) and not os.path.exists(os.path.join(repo, s)):
-                broken.append(s)
-        add(
-            not broken,
-            IMPT,
-            "broken-links",
-            "All relative links and images resolve",
-            f"Missing in repo: {sorted(set(broken))[:8]}",
-        )
-    # ---- manifest consistency ----
-    if repo:
-        claims = []
-        py = os.path.join(repo, "pyproject.toml")
-        if os.path.exists(py):
-            t = _read_text(py)
-            m = re.search(r'requires-python\s*=\s*["\'][^0-9]*([0-9]+\.[0-9]+)', t)
-            if m:
-                floor = m.group(1)
-                stated = re.findall(
-                    r"(?i)python\s*(?:version\s*)?(?:>=?\s*|3\.x\s*)?([0-9]+\.[0-9]+)\s*(?:or (?:above|later|newer|higher)|\+)?",
-                    md,
-                )
-                bad = [
-                    v
-                    for v in stated
-                    if v.startswith("3.") and tuple(map(int, v.split("."))) < tuple(map(int, floor.split(".")))
-                ]
-                claims.append(
-                    (not bad, f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else "")
-                )
-        pj = os.path.join(repo, "package.json")
-        if os.path.exists(pj):
-            try:
-                eng = (json.loads(_read_text(pj)).get("engines") or {}).get("node")
-            except json.JSONDecodeError:
-                eng = None
-            if eng:
-                m = re.search(r"(\d+)", eng)
-                stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
-                bad = [v for v in stated if int(v) < int(m.group(1))]
-                claims.append(
-                    (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
-                )
-        for ok, msg in claims:
-            add(ok, IMPT, "manifest-consistency", "Stated runtime versions match the manifest", msg)
-
-    return R, {
+    return checks, {
         "lines": lines,
         "h2": len(h2s),
         "badges": len(badges),
@@ -391,30 +338,108 @@ def check(md, repo=None):
     }
 
 
-def report(R, stats, as_json=False):
-    total = sum(W[c["sev"]] for c in R)
-    got = sum(W[c["sev"]] for c in R if c["ok"])
+def _add_packaging_checks(add, md: str, nonbadge: list[tuple[str, str]], long_desc: bool) -> None:
+    if not long_desc:
+        return
+    rel_media = [s for a, s in nonbadge if s and not s.startswith(("http", "data:"))]
+    add(
+        not rel_media,
+        IMPT,
+        "pypi-media",
+        "Images use absolute URLs (this README is the PyPI long description)",
+        f"Relative image paths {rel_media[:3]} render on GitHub but break on the package page. "
+        "Use https://raw.githubusercontent.com/OWNER/REPO/BRANCH/path URLs.",
+    )
+    rel_files = re.findall(r"\]\((?!https?://|#|mailto:)([^)\s]+\.(?:md|txt|MD))\)", md)
+    add(
+        not rel_files,
+        MINR,
+        "pypi-links",
+        "In-repo file links are absolute (PyPI cannot resolve relative ones)",
+        f"Relative links {rel_files[:3]} break on the package page; use full GitHub URLs "
+        "when the README is also the long description.",
+    )
+
+
+def _add_relative_path_checks(add, md: str, nonbadge: list[tuple[str, str]], repo: str) -> None:
+    broken = []
+    for m in re.finditer(r"\]\(([^)\s]+)\)", md):
+        t = m.group(1).strip("<>").split("#")[0]
+        if re.match(r"https?://|mailto:|#|data:", t):
+            continue
+        if t and not os.path.exists(os.path.join(repo, t)):
+            broken.append(t)
+    for a, s in nonbadge:
+        if s and not s.startswith(("http", "data:")) and not os.path.exists(os.path.join(repo, s)):
+            broken.append(s)
+    add(
+        not broken,
+        IMPT,
+        "broken-links",
+        "All relative links and images resolve",
+        f"Missing in repo: {sorted(set(broken))[:8]}",
+    )
+
+
+def _add_manifest_consistency(add, md: str, repo: str) -> None:
+    claims = []
+    py = os.path.join(repo, "pyproject.toml")
+    if os.path.exists(py):
+        t = _read_text(py)
+        m = re.search(r'requires-python\s*=\s*["\'][^0-9]*([0-9]+\.[0-9]+)', t)
+        if m:
+            floor = m.group(1)
+            stated = re.findall(
+                r"(?i)python\s*(?:version\s*)?(?:>=?\s*|3\.x\s*)?([0-9]+\.[0-9]+)\s*(?:or (?:above|later|newer|higher)|\+)?",
+                md,
+            )
+            bad = [
+                v
+                for v in stated
+                if v.startswith("3.") and tuple(map(int, v.split("."))) < tuple(map(int, floor.split(".")))
+            ]
+            claims.append((not bad, f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else ""))
+    pj = os.path.join(repo, "package.json")
+    if os.path.exists(pj):
+        try:
+            eng = (json.loads(_read_text(pj)).get("engines") or {}).get("node")
+        except json.JSONDecodeError:
+            eng = None
+        if eng:
+            m = re.search(r"(\d+)", eng)
+            stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
+            bad = [v for v in stated if int(v) < int(m.group(1))]
+            claims.append(
+                (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
+            )
+    for ok, msg in claims:
+        add(ok, IMPT, "manifest-consistency", "Stated runtime versions match the manifest", msg)
+
+
+def report(checks: list[dict], stats: dict, as_json: bool = False) -> tuple[int, list[dict]]:
+    total = sum(SEVERITY_WEIGHTS[c["sev"]] for c in checks)
+    got = sum(SEVERITY_WEIGHTS[c["sev"]] for c in checks if c["ok"])
     score = round(100 * got / total) if total else 0
     grade = "A" if score >= 90 else "B" if score >= 80 else "C" if score >= 70 else "D" if score >= 60 else "F"
     if as_json:
-        print(json.dumps({"score": score, "grade": grade, "stats": stats, "checks": R}, indent=2))
-        return score, R
+        print(json.dumps({"score": score, "grade": grade, "stats": stats, "checks": checks}, indent=2))
+        return score, checks
     print(f"README SCORE  {score}/100  (grade {grade})")
     print(
         f"  {stats['lines']} lines | {stats['h2']} sections | {stats['badges']} badges | "
         f"{stats['code_blocks']} code blocks | {stats['images']} images\n"
     )
     for sev in (CRIT, IMPT, MINR):
-        bad = [c for c in R if not c["ok"] and c["sev"] == sev]
+        bad = [c for c in checks if not c["ok"] and c["sev"] == sev]
         if bad:
             print(f"{sev} ({len(bad)})")
             for c in bad:
                 print(f"  [{c['id']}] {c['msg']}")
                 print(f"      FIX: {c['fix']}")
             print()
-    passed = [c["id"] for c in R if c["ok"]]
+    passed = [c["id"] for c in checks if c["ok"]]
     print(f"PASSED ({len(passed)}): {', '.join(passed)}")
-    return score, R
+    return score, checks
 
 
 if __name__ == "__main__":
@@ -424,7 +449,7 @@ if __name__ == "__main__":
     if "--repo" in sys.argv:
         i = sys.argv.index("--repo")
         repo = sys.argv[i + 1] if i + 1 < len(sys.argv) else None
-    R, stats = check(load(path), repo)
-    score, R = report(R, stats, "--json" in sys.argv)
-    if "--strict" in sys.argv and any(not c["ok"] and c["sev"] == CRIT for c in R):
+    checks, stats = check(_read_text(path), repo)
+    score, checks = report(checks, stats, "--json" in sys.argv)
+    if "--strict" in sys.argv and any(not c["ok"] and c["sev"] == CRIT for c in checks):
         sys.exit(1)

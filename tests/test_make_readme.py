@@ -283,6 +283,19 @@ def test_score_readme_cli_prints_score(tmp_path: Path) -> None:
     assert payload["score"] < 90
 
 
+def test_score_readme_caps_input_size(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A README larger than 200_000 bytes is truncated before scoring."""
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    readme = tmp_path / "README.md"
+    readme.write_text("a\n" * 600_000 + "```bash\npip install demo\n```\n")
+    text = score._read_text(str(readme))
+    assert len(text) <= 200_000
+    checks, stats = score.check(text)
+    assert checks
+    assert stats["lines"] > 0
+    assert "truncat" in capsys.readouterr().err.lower()
+
+
 def test_github_sync_vendors_make_readme_without_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
