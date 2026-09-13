@@ -57,10 +57,10 @@ python3 scripts/inspect_repo.py /path/to/repo
 
 This prints identity, binary names, justfile recipes, manifests, ecosystems, likely install
 commands, license detection, CI workflows, docs dirs, media assets, community links, health
-files, and a GAPS list. Use NAME and BINARIES for the H1 (the name people type), not the git
-slug, when they differ. Then read enough of the actual code to describe it honestly: the entry
-point, the main module or CLI definition, one real usage path. A README written from the
-manifest alone reads like it was written from the manifest alone.
+files, and a GAPS list. H1 is NAME (already BINARIES[0] when present). REPO is the git folder.
+Extra console scripts stay on BINARIES. Then read enough of the actual code to describe it
+honestly: the entry point, the main module or CLI definition, one real usage path. A README
+written from the manifest alone reads like it was written from the manifest alone.
 
 If a README already exists:
 

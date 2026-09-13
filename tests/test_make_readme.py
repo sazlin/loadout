@@ -711,7 +711,9 @@ def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
     (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "private": True, "bin": {"demo": "cli.js"}}))
     facts = inspect.inspect(str(tmp_path))
     assert facts["just_recipes"] == ["install", "build", "images"]
-    assert facts["suggested_install_commands"][:2] == ["just install", "just build"]
+    assert facts["suggested_install_commands"] == ["just install"]
+    assert "just build" not in facts["suggested_install_commands"]
+    assert facts["suggested_run_commands"][0] == "just build"
     sheet = inspect.human(facts)
     assert "JUST" in sheet
     assert "install" in sheet

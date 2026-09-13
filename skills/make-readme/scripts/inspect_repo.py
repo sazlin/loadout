@@ -97,7 +97,7 @@ def _top_justfile(root, top):
 def _with_just_install(install, recipes):
     if install:
         return install
-    return [f"just {name}" for name in ("install", "build") if name in recipes]
+    return [f"just {name}" for name in ("install",) if name in recipes]
 
 
 def _unique(items):
@@ -258,6 +258,7 @@ def _manifest_facts(root, files, facts):
 
     just_recipes = _top_justfile(root, top)
     binary_names = _unique(binary_names)
+    # NAME is the typed binary for H1 when bin/console_scripts exist; git slug stays REPO.
     if binary_names:
         name = binary_names[0]
 
@@ -269,6 +270,8 @@ def _manifest_facts(root, files, facts):
     facts["version"] = version
     facts["ecosystems"] = ecosystems
     facts["suggested_install_commands"] = _with_just_install(install, just_recipes)
+    if not install and "build" in just_recipes:
+        run_cmds.append("just build")
     facts["suggested_run_commands"] = run_cmds
     facts["test_commands"] = test_cmds
 
