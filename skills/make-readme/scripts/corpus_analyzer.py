@@ -15,9 +15,10 @@ import re
 import statistics as st
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
-from collections import Counter, defaultdict
+from collections import Counter
 
 PRIMARY = [
     "react/react",
@@ -190,7 +191,7 @@ def analyze(path):
         "has_code_block": len(re.findall(r"```", md)) // 2 > 0,
         "toc": bool(re.search(r"(?i)^#{1,4}\s*(table of contents|contents|toc)\b", body, flags=re.MULTILINE))
         or bool(re.search(r"(?i)<summary>\s*(table of contents|contents)", body)),
-        "emoji_headings": sum(1 for _, t in headings_raw(md) if re.search(r"[\U0001F300-\U0001FAFF☀-➿]", t)),
+        "emoji_headings": sum(1 for _, t in hs if re.search(r"[\U0001F300-\U0001FAFF☀-➿]", t)),
         "gif_or_video": bool(
             re.search(r"\.(gif|mp4|webm)\b|youtube\.com|youtu\.be|asciinema|loom\.com", body, flags=re.IGNORECASE)
         ),
@@ -201,8 +202,6 @@ def analyze(path):
         "translation_links": bool(
             re.search(r"README[._-](zh|cn|es|fr|de|ja|ko|pt|ru|it|tr|hi)[^\s)\"']*\.md", md, flags=re.IGNORECASE)
         ),
-        "license_shield_only": False,
-        "first_code_line": None,
         "install_cmd_in_first_2kb": bool(
             re.search(
                 r"(?m)^\s*(npm i|npm install|pip install|brew install|curl -|cargo install|go install|docker run|uv |yarn add|pnpm add|apt|winget|npx )",
@@ -243,11 +242,6 @@ def analyze(path):
     return feats
 
 
-def headings_raw(md):
-    body = strip_code(md)
-    return [(len(m.group(1)), m.group(2)) for m in re.finditer(r"^(#{1,6})\s+(.+?)$", body, flags=re.MULTILINE)]
-
-
 def run(names, label):
     rows = {}
     for repo in names:
@@ -269,8 +263,13 @@ def run(names, label):
     return {"label": label, "n": n, "sections": sec.most_common(), "bools": bools.most_common(), "rows": rows}
 
 
+MAX_BODY = 1_048_576
+MAX_CONSECUTIVE_FAILURES = 3
+
+
 def fetch_corpus(outdir="readmes"):
     os.makedirs(outdir, exist_ok=True)
+    consecutive_failures = 0
     for repo in PRIMARY + SECONDARY:
         try:
             ref = subprocess.run(
@@ -288,7 +287,7 @@ def fetch_corpus(outdir="readmes"):
             url = f"https://raw.githubusercontent.com/{repo}/{branch}/{name}"
             try:
                 with urllib.request.urlopen(url, timeout=30) as response:
-                    data = response.read()
+                    data = response.read(MAX_BODY)
             except (OSError, TimeoutError, urllib.error.URLError):
                 data = b""
             if len(data) > 40:
@@ -296,9 +295,15 @@ def fetch_corpus(outdir="readmes"):
                 with open(dest, "wb") as handle:
                     handle.write(data)
                 print("OK  ", repo, branch, name, len(data))
+                consecutive_failures = 0
                 break
         else:
             print("FAIL", repo, branch)
+            consecutive_failures += 1
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                print("Aborting fetch after 3 consecutive failures")
+                return
+            time.sleep(1)
 
 
 if __name__ == "__main__":
@@ -323,23 +328,3 @@ if __name__ == "__main__":
             )
     with open("analysis.json", "w", encoding="utf-8") as handle:
         json.dump(res, handle, indent=1)
-
-
-def order_report(all_rows):
-    """Average normalized position of each canonical section across corpus."""
-    pos = defaultdict(list)
-    for repo, path in all_rows:
-        md = _read_text(path)
-        hs = headings(md)
-        if len(hs) < 3:
-            continue
-        seen = {}
-        for i, (lvl, text) in enumerate(hs):
-            for name in classify(text):
-                seen.setdefault(name, i / max(1, len(hs) - 1))
-        for k, v in seen.items():
-            pos[k].append(v)
-    print("\n===== SECTION ORDER (0=top of README, 1=bottom) =====")
-    for k, v in sorted(pos.items(), key=lambda kv: st.median(kv[1])):
-        if len(v) >= 4:
-            print(f"  {st.median(v):.2f}  n={len(v):2d}  {k}")

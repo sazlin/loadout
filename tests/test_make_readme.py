@@ -6,6 +6,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -171,3 +172,37 @@ def test_github_sync_vendors_make_readme_without_evals(tmp_path: Path, monkeypat
     assert (dest / "scripts" / "corpus_analyzer.py").is_file()
     assert (dest / "README_TEMPLATE.md").is_file()
     assert not (dest / "evals").exists()
+
+
+def test_fetch_corpus_aborts_after_consecutive_github_failures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus = _load_module(CORPUS_SCRIPT, "corpus_analyzer")
+    ls_remote_calls = 0
+
+    def fail_run(*args, **kwargs):
+        nonlocal ls_remote_calls
+        ls_remote_calls += 1
+        raise subprocess.TimeoutExpired(cmd=["git"], timeout=30)
+
+    def fail_urlopen(*args, **kwargs):
+        raise urllib.error.URLError("mocked github failure")
+
+    monkeypatch.setattr(corpus.subprocess, "run", fail_run)
+    monkeypatch.setattr(corpus.urllib.request, "urlopen", fail_urlopen)
+    monkeypatch.setattr("time.sleep", lambda _seconds: None)
+
+    corpus.fetch_corpus(str(tmp_path))
+
+    assert ls_remote_calls <= 3
+    assert ls_remote_calls > 0
+    assert not any(tmp_path.iterdir())
+
+
+def test_analyze_omits_stub_feature_keys(tmp_path: Path) -> None:
+    corpus = _load_module(CORPUS_SCRIPT, "corpus_analyzer")
+    readme = tmp_path / "README.md"
+    readme.write_text("# Demo\n\nA short library description.\n")
+    feats = corpus.analyze(str(readme))
+    assert "license_shield_only" not in feats
+    assert "first_code_line" not in feats
