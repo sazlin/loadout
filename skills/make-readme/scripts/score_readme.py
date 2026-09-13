@@ -131,11 +131,11 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         add(False, IMPT, "single-h1", "Exactly one H1", f"{len(h1s)} H1s. Demote all but the first to H2.")
     tagline = next(
         (
-            l.strip()
-            for l in re.split(r"\n", re.sub(r"<[^>]+>", "", head))
-            if 20 <= len(l.strip()) <= 200
-            and not l.strip().startswith(("#", "!", "[", "<", "|", "-", "="))
-            and not re.search(r"shields\.io", l)
+            line.strip()
+            for line in re.split(r"\n", re.sub(r"<[^>]+>", "", head))
+            if 20 <= len(line.strip()) <= 200
+            and not line.strip().startswith(("#", "!", "[", "<", "|", "-", "="))
+            and not re.search(r"shields\.io", line)
         ),
         None,
     )
@@ -262,16 +262,16 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "Every non-badge image has alt text",
         "One or more images have empty alt text. Describe what the image shows.",
     )
-    own = re.findall(r"\]\(https://github\.com/[^/]+/[^/]+/(?:blob|tree)/[^)]+\)", md)
+    github_blob_links = re.findall(r"\]\(https://github\.com/[^/]+/[^/]+/(?:blob|tree)/[^)]+\)", md)
     long_desc = bool(repo) and any(
         _manifest_is_long_description(repo, f) for f in ("pyproject.toml", "setup.cfg", "setup.py")
     )
     add(
-        len(own) <= 2 or long_desc,
+        len(github_blob_links) <= 2 or long_desc,
         MINR,
         "relative-links",
         "In-repo files are linked relatively",
-        f"{len(own)} absolute github.com/blob links. Use relative links (LICENSE, docs/x.md); GitHub rewrites them per branch.",
+        f"{len(github_blob_links)} absolute github.com/blob links. Use relative links (LICENSE, docs/x.md); GitHub rewrites them per branch.",
     )
     toc = bool(re.search(r"(?im)^#{2,4}\s*(table of contents|contents)\b", body))
     add(
