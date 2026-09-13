@@ -79,7 +79,7 @@ _MAX_NAMES = 15
 def _npm_bin_names(pkg):
     bin_field = pkg.get("bin")
     if isinstance(bin_field, dict):
-        return [key for key in bin_field if isinstance(key, str) and key][:_MAX_NAMES]
+        return [key for key in bin_field if isinstance(key, str) and key]
     pkg_name = pkg.get("name")
     if isinstance(bin_field, str) and bin_field and isinstance(pkg_name, str) and pkg_name:
         return [pkg_name.rsplit("/", 1)[-1]]
@@ -222,7 +222,10 @@ def _manifest_facts(root, files, facts):
             install.append(f"pip install {manifests['pyproject.toml']['name']}")
         if "[project.scripts]" in text:
             scripts_table = re.split(r"(?m)^\[", text.split("[project.scripts]", 1)[1], maxsplit=1)[0]
-            facts["console_scripts"] = re.findall(r'(?m)^\s*([\w.-]+)\s*=\s*["\']', scripts_table)
+            facts["console_scripts"] = [
+                match.group(1)
+                for match in islice(re.finditer(r'(?m)^\s*([\w.-]+)\s*=\s*["\']', scripts_table), _MAX_NAMES)
+            ]
             binary_names.extend(facts["console_scripts"])
 
     if "cargo.toml" in lower:
@@ -262,7 +265,7 @@ def _manifest_facts(root, files, facts):
         facts["make_targets"] = _recipe_names(makefile_text)
 
     just_recipes = _top_justfile(root, top)
-    binary_names = _unique(binary_names)
+    binary_names = _unique(binary_names)[:_MAX_NAMES]
     # NAME is the typed binary for H1 when bin/console_scripts exist; git slug stays REPO.
     if binary_names:
         name = binary_names[0]

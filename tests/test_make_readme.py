@@ -759,6 +759,60 @@ def test_inspect_repo_empty_console_scripts_keep_project_name(tmp_path: Path) ->
     assert facts["name"] == "demo-lib"
 
 
+def test_inspect_repo_caps_console_scripts_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    scripts = "\n".join(f'script{i:02d} = "demo:main{i}"' for i in range(40))
+    (tmp_path / "pyproject.toml").write_text(
+        f'[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\n{scripts}\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    expected = [f"script{i:02d}" for i in range(15)]
+    assert facts["binary_names"] == expected
+    assert facts["console_scripts"] == expected
+    assert len(facts["binary_names"]) == 15
+    assert len(facts["console_scripts"]) == 15
+    assert facts["name"] == "script00"
+    sheet = inspect.human(facts)
+    dumped = json.dumps(facts)
+    assert "script00" in sheet and "script14" in sheet
+    assert "script15" not in sheet and "script39" not in sheet
+    assert "script00" in dumped and "script14" in dumped
+    assert "script15" not in dumped and "script39" not in dumped
+
+
+def test_inspect_repo_caps_pyproject_binary_names_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    scripts = "\n".join(f'script{i:02d} = "demo:main{i}"' for i in range(16))
+    (tmp_path / "pyproject.toml").write_text(
+        f'[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\n{scripts}\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == [f"script{i:02d}" for i in range(15)]
+    assert facts["name"] == "script00"
+
+
+def test_console_scripts_stops_after_fifteen_matches(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    def no_findall(*_args, **_kwargs):
+        raise AssertionError("findall materializes every console script name")
+
+    monkeypatch.setattr(inspect.re, "findall", no_findall)
+    lines = [f's{i} = "pkg:m{i}"\n' for i in range(15)]
+    extra = 0
+    size = sum(len(line) for line in lines)
+    while size < 200_000:
+        line = f'pad{extra} = "pkg:p{extra}"\n'
+        lines.append(line)
+        size += len(line)
+        extra += 1
+    (tmp_path / "pyproject.toml").write_text("[project.scripts]\n" + "".join(lines))
+    facts: dict = {}
+    inspect._manifest_facts(str(tmp_path), ["pyproject.toml"], facts)
+    assert facts["console_scripts"] == [f"s{i}" for i in range(15)]
+    assert facts["binary_names"] == [f"s{i}" for i in range(15)]
+
+
 def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     (tmp_path / "justfile").write_text("install:\n    npm ci\n\nbuild:\n    npm run build\n\nimages:\n    echo hi\n")
