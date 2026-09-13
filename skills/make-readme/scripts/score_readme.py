@@ -150,7 +150,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
             "Tagline is short enough to scan",
             f"Tagline is {len(tagline)} chars. Trim to <=120; move detail into Features.",
         )
-    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install)"
+    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|python3? -m pip|pip3 install|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install)"
     add(
         re.search(install_re, md),
         CRIT,
@@ -407,11 +407,12 @@ def _add_manifest_consistency(add, md: str, repo: str) -> None:
             eng = None
         if eng:
             m = re.search(r"(\d+)", eng)
-            stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
-            bad = [v for v in stated if int(v) < int(m.group(1))]
-            claims.append(
-                (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
-            )
+            if m:
+                stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
+                bad = [v for v in stated if int(v) < int(m.group(1))]
+                claims.append(
+                    (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
+                )
     for ok, msg in claims:
         add(ok, IMPT, "manifest-consistency", "Stated runtime versions match the manifest", msg)
 

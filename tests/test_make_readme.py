@@ -269,6 +269,37 @@ def test_score_readme_flags_placeholders_and_missing_install() -> None:
     assert stats["lines"] > 0
 
 
+def test_score_readme_accepts_python_m_pip_install() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    md = "# demo-lib\n\nInstall it.\n\n```bash\npython -m pip install demo-lib\n```\n"
+    checks, _stats = score.check(md)
+    install = next(item for item in checks if item["id"] == "install")
+    assert install["ok"] is True
+    assert install["sev"] == "CRITICAL"
+
+    no_cmd = "# demo-lib\n\nThis project has no install steps.\n"
+    missing, _ = score.check(no_cmd)
+    failed = {item["id"] for item in missing if not item["ok"]}
+    assert "install" in failed
+
+
+def test_score_readme_non_numeric_node_engines_does_not_crash(tmp_path: Path) -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    lts_repo = tmp_path / "lts"
+    lts_repo.mkdir()
+    (lts_repo / "package.json").write_text('{"name": "demo", "engines": {"node": "lts"}}\n')
+    checks, stats = score.check("# demo\n\nRequires Node 18.\n", repo=str(lts_repo))
+    assert isinstance(checks, list)
+    assert isinstance(stats, dict)
+
+    numeric_repo = tmp_path / "numeric"
+    numeric_repo.mkdir()
+    (numeric_repo / "package.json").write_text('{"name": "demo", "engines": {"node": ">=20"}}\n')
+    checks_old, _ = score.check("# demo\n\nRequires Node 16.\n", repo=str(numeric_repo))
+    failed = {item["id"] for item in checks_old if not item["ok"]}
+    assert "manifest-consistency" in failed
+
+
 def test_score_readme_cli_prints_score(tmp_path: Path) -> None:
     readme = tmp_path / "README.md"
     readme.write_text(WEAK_README.read_text())
