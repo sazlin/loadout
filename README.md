@@ -28,13 +28,13 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout init --loadouts python
+uvx --from git+https://github.com/sazlin/loadout@main loadout init --loadouts python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
 ```
 
 Every remote sync resolves the configured `ref` again. A branch such as `main`
@@ -49,17 +49,11 @@ git status   # also stage AGENTS.md / CLAUDE.md if sync touched them
 git commit -m "Add loadout-managed agent tooling"
 ```
 
-Pin a release tag instead of `main` once you want a fixed upgrade cadence:
-
-```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
-```
-
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.18.0
+ref: main
 loadouts:
   - python
 ```
@@ -70,7 +64,7 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: v0.18.0
+ref: main
 loadouts:
   - python
   - terraform   # add
@@ -81,7 +75,7 @@ Then re-sync and commit the diff. Sync removes files that the previous lockfile
 recorded for loadouts you removed, while leaving user-owned files alone:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -89,7 +83,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@main loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -108,13 +102,13 @@ exclude:
 `ref: main`, an ordinary sync pulls the current `main` head:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
 ```
 
 To move the manifest to the latest release tag, use:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout update
+uvx --from git+https://github.com/sazlin/loadout@main loadout update
 # or: just loadout-update
 ```
 
@@ -132,7 +126,7 @@ Fail CI, or a local check, if someone hand-edited vendored files, the lock is
 stale, or the configured remote ref advanced:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@v0.18.0 loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync --check
 # or: just loadout-check
 ```
 
