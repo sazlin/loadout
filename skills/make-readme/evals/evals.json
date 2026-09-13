@@ -1,0 +1,40 @@
+{
+  "skill_name": "make-readme",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "This repo has no README.md. Write one. Use the make-readme skill /make-readme.",
+      "expected_output": "Ran scripts/inspect_repo.py, classified the project type, wrote README.md from README_TEMPLATE.md with no leftover INSTRUCTIONS or {{placeholders}}, and listed assumptions instead of inventing license, Discord, or benchmark facts.",
+      "files": [],
+      "expectations": [
+        "Runs python3 scripts/inspect_repo.py against the target repo",
+        "Does not invent license, Discord, or benchmark numbers missing from the repo",
+        "Does not link CONTRIBUTING.md, SECURITY.md, LICENSE, or images that are not on disk",
+        "Deletes INSTRUCTIONS comment blocks and {{placeholders}} before shipping"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Improve the existing README.md. Keep its working badges and voice. Use make-readme.",
+      "expected_output": "Ran scripts/score_readme.py first, then edited section by section; preserved existing badges, community links, troubleshooting, and voice; reported before/after scores.",
+      "files": ["evals/files/weak-readme.md"],
+      "expectations": [
+        "Runs python3 scripts/score_readme.py on the existing README",
+        "Defaults to improve mode when a README is already present",
+        "Keeps working badges, real community links, and the author's voice",
+        "Does not replace the file wholesale from the template"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Score this README only. Do not rewrite it. Review /make-readme.",
+      "expected_output": "Ran scripts/score_readme.py and reported CRITICAL/IMPORTANT/MINOR findings. Did not write README.md.",
+      "files": ["evals/files/weak-readme.md"],
+      "expectations": [
+        "Uses review mode: inspect and score only",
+        "Does not overwrite README.md",
+        "Reports score and exact fixes from the linter"
+      ]
+    }
+  ]
+}
