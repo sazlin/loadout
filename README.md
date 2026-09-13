@@ -218,7 +218,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch to resolve on every remote sync (`v0.18.0`, `main`, …) |
+| `ref` | yes | Release tag or branch to resolve on every remote sync (`v0.35.0`, `main`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
@@ -332,7 +332,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.18.0   # on release/v0.18.0: validate, push, open PR; CI tags on merge
+just release 0.35.0   # on release/v0.35.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me

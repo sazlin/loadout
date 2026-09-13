@@ -28,14 +28,18 @@ Requires [uv](https://docs.astral.sh/uv/) (for `uvx`). Run these from any projec
 **1. Initialize a manifest** — choose the loadouts you want:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout init --loadouts base,python
+uvx --from git+https://github.com/sazlin/loadout@main loadout init --loadouts python
 ```
 
 **2. Sync** — vendor rules, skills, agents, hooks, and MCP configs into the repo:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
 ```
+
+Every remote sync resolves the configured `ref` again. A branch such as `main`
+follows its current remote head; a release tag stays on that release. The
+lockfile records the exact commit used and the managed files installed from it.
 
 **3. Commit the result** — teammates and CI get the same files with no extra setup:
 
@@ -45,19 +49,12 @@ git status   # also stage AGENTS.md / CLAUDE.md if sync touched them
 git commit -m "Add loadout-managed agent tooling"
 ```
 
-Pin a release tag instead of `main` once you want a fixed upgrade cadence:
-
-```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
-```
-
 `init` writes a starter `.loadout.yaml` like:
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: {{VERSION}}
+ref: main
 loadouts:
-  - base
   - python
 ```
 
@@ -67,18 +64,18 @@ Edit `.loadout.yaml` — the `loadouts:` list is the only control surface you ne
 
 ```yaml
 source: https://github.com/sazlin/loadout
-ref: {{VERSION}}
+ref: main
 loadouts:
-  - base
   - python
   - terraform   # add
   # - aws       # remove by deleting the line
 ```
 
-Then re-sync and commit the diff:
+Then re-sync and commit the diff. Sync removes files that the previous lockfile
+recorded for loadouts you removed, while leaving user-owned files alone:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
 # or, if your project justfile has the consumer recipes:
 just loadout-sync
 ```
@@ -86,7 +83,7 @@ just loadout-sync
 Preview what a manifest resolves to before writing:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout resolve --list
+uvx --from git+https://github.com/sazlin/loadout@main loadout resolve --list
 # or: just loadout-list
 ```
 
@@ -101,36 +98,35 @@ exclude:
 
 ## Pull loadout changes over time
 
-When this repo ships new rules/skills (or you want a newer pin), bump the manifest ref and re-sync.
-
-**Recommended — one command:**
+`sync` resolves the configured remote `ref` on every run. If the manifest uses
+`ref: main`, an ordinary sync pulls the current `main` head:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout update
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync
+```
+
+To move the manifest to the latest release tag, use:
+
+```bash
+uvx --from git+https://github.com/sazlin/loadout@main loadout update
 # or: just loadout-update
 ```
 
-`update` rewrites `ref:` to the latest release tag (or `--to vX.Y.Z`), re-runs `sync`, and prints the CHANGELOG entries that landed.
+`update` rewrites `ref:` to the latest release tag, or to the ref supplied with
+`--to`, then runs a fresh sync and prints the CHANGELOG entries that landed.
+`loadout update --to main` switches to `main` and resolves its current remote
+head even when the manifest already names `main`.
 
-**Manual alternative:**
-
-```yaml
-# .loadout.yaml
-ref: {{VERSION}}   # was: main or an older tag
-```
-
-```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync
-```
-
-Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the upgrade is reviewable in PRs.
+Commit `.loadout.yaml`, `.loadout.lock`, and the generated tree so the update is
+reviewable in a PR.
 
 ## Check for drift
 
-Fail CI (or a local check) if someone hand-edited vendored files or the lock is stale:
+Fail CI, or a local check, if someone hand-edited vendored files, the lock is
+stale, or the configured remote ref advanced:
 
 ```bash
-uvx --from git+https://github.com/sazlin/loadout@{{VERSION}} loadout sync --check
+uvx --from git+https://github.com/sazlin/loadout@main loadout sync --check
 # or: just loadout-check
 ```
 
@@ -147,7 +143,7 @@ Example GitHub Actions step:
 <!-- generated:loadouts-catalog:start -->
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `base,python-monorepo,terraform` or `base,typescript,playwright`. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
+Compose freely — for example `python-monorepo,terraform` or `typescript,playwright`. Language loadouts (`python`, `typescript`, `python-monorepo`) already extend `base` and `coding`; listing `base` again is redundant. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents
@@ -204,7 +200,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch pin (`{{VERSION}}`, …) |
+| `ref` | yes | Release tag or branch to resolve on every remote sync (`{{VERSION}}`, `main`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
@@ -257,6 +253,45 @@ Enable it only on machines that do **not** have the Superpowers plugin installed
 for Cursor and/or Claude Code on that project. Combining plugin + loadout causes
 double SessionStart bootstrap and duplicate skills. Prefer plugin **or** loadout,
 not both.
+
+</details>
+
+<details>
+<summary><strong>Python / TypeScript loadouts</strong> — two beforeShellExecution hooks</summary>
+
+`python` and `typescript` extend `base` and `coding`. Sync registers two
+`beforeShellExecution` hooks on the shell hot path:
+
+1. `deny-dangerous` (from `base`) — blocks catastrophic commands
+2. `rtk-rewrite` (from `coding`) — fail-open RTK compression
+
+List `python` or `typescript` alone in `.loadout.yaml`. Do not also list
+`base`; resolution deduplicates artifacts but the manifest stays clearer and
+matches what sync actually needs.
+
+Explicit `loadouts: [base, python]` still works for older manifests but adds
+no extra protection beyond `[python]` alone. Both stacks run the same two
+hooks sequentially on every shell command (~30ms p95 combined on a typical
+Linux runner; dominated by `deny-dangerous` pattern matching).
+
+</details>
+
+<details>
+<summary><strong>Coding + superpowers loadouts</strong> — stacked SessionStart hooks</summary>
+
+When you select both `coding` and `superpowers`, loadout registers two
+SessionStart hooks (`ponytail-activate` and `session-start`). Cursor and Claude
+Code run them **sequentially** on session start, so each hook reads its skill
+from disk and injects context. That doubles startup I/O and context size.
+
+If Superpowers bootstrap is enough for your workflow, disable ponytail injection:
+
+```bash
+export PONYTAIL_DEFAULT_MODE=off
+```
+
+Or set `"defaultMode": "off"` in `~/.config/ponytail/config.json` (see
+[`ponytail-help`](skills/ponytail-help/SKILL.md)).
 
 </details>
 

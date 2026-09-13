@@ -233,7 +233,9 @@ def test_readme_omits_loadout_spec_and_stale_version_pins() -> None:
     text = README.read_text()
     assert "loadout-spec.md" not in text
     assert "v0.5.0" not in text
-    assert "loadout@main" not in text
+    uvx_pins = re.findall(r"git\+https://github.com/sazlin/loadout@(\S+)", text)
+    assert uvx_pins
+    assert set(uvx_pins) == {"main"}
 
 
 def test_base_sync_does_not_vendor_readme_loadouts_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

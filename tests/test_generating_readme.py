@@ -291,7 +291,8 @@ def test_cli_writes_filled_readme(tmp_path: Path) -> None:
     assert BANNER not in text
     assert CATALOG_START in text
     assert "{{VERSION}}" not in text
-    assert f"loadout@{version}" in text
+    assert "loadout@main" in text
+    assert f"git+https://github.com/sazlin/loadout@{version}" not in text
     assert "loadout-spec.md" not in text
 
 
@@ -350,9 +351,12 @@ def test_template_examples_use_version_placeholder_not_stale_pins() -> None:
     text = TEMPLATE.read_text()
     assert "{{VERSION}}" in text
     assert "v0.5.0" not in text
-    assert "loadout@main" not in text
     assert "loadout-spec.md" not in text
-    assert "ref: {{VERSION}}" in text
+    uvx_pins = re.findall(r"git\+https://github.com/sazlin/loadout@(\S+)", text)
+    assert uvx_pins
+    assert set(uvx_pins) == {"main"}
+    assert "git+https://github.com/sazlin/loadout@{{VERSION}}" not in text
+    assert "ref: main" in text
 
 
 def test_fill_template_substitutes_version_placeholders() -> None:
