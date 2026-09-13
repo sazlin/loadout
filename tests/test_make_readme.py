@@ -213,6 +213,51 @@ def test_inspect_repo_skips_npm_install_when_package_json_invalid_or_unnamed(tmp
     assert "npm install -g demo-cli" in named_facts["suggested_install_commands"]
 
 
+def test_inspect_repo_omits_discord_webhook_urls_from_community_links(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    webhook = "https://discord.com/api/webhooks/111/exampletoken"
+    invite = "https://discord.gg/abcdef"
+    (tmp_path / "README.md").write_text(f"Join {invite} or hook {webhook}\n")
+    (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "homepage": webhook}))
+    facts = inspect.inspect(str(tmp_path))
+    assert invite in facts["community_links"]
+    assert webhook not in facts["community_links"]
+    assert "exampletoken" not in inspect.human(facts)
+    result = subprocess.run(
+        [sys.executable, str(INSPECT_SCRIPT), str(tmp_path), "--json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "exampletoken" not in result.stdout
+    assert invite in result.stdout
+
+
+def test_inspect_repo_www_homepage_is_not_docs(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    npm_url = "https://www.npmjs.com/package/demo"
+    docs_url = "https://docs.example.com"
+    no_docs = "No docs site or docs/ dir"
+
+    www_repo = tmp_path / "www"
+    www_repo.mkdir()
+    (www_repo / "pyproject.toml").write_text('[project]\nname = "demo"\nversion = "0.1.0"\n')
+    (www_repo / "README.md").write_text(f"See {npm_url}\n")
+    www_facts = inspect.inspect(str(www_repo))
+    assert npm_url not in www_facts["docs_links"]
+    assert any(no_docs in gap for gap in www_facts["gaps"])
+    assert www_facts["readme"]["links_docs_site"] is False
+
+    docs_repo = tmp_path / "with-docs"
+    docs_repo.mkdir()
+    (docs_repo / "pyproject.toml").write_text('[project]\nname = "demo"\nversion = "0.1.0"\n')
+    (docs_repo / "README.md").write_text(f"Docs: {docs_url}\n")
+    docs_facts = inspect.inspect(str(docs_repo))
+    assert docs_url in docs_facts["docs_links"]
+    assert not any(no_docs in gap for gap in docs_facts["gaps"])
+    assert docs_facts["readme"]["links_docs_site"] is True
+
+
 def test_score_readme_flags_placeholders_and_missing_install() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     checks, stats = score.check(WEAK_README.read_text(), repo=str(SKILL_ROOT / "evals" / "files"))

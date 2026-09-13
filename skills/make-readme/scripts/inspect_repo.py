@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 SKIP_DIRS = {
     ".git",
@@ -63,6 +64,44 @@ def walk(root, max_files=6000):
 def toml_get(text, key):
     m = re.search(rf'(?m)^\s*{re.escape(key)}\s*=\s*["\']([^"\']+)["\']', text)
     return m.group(1) if m else None
+
+
+_HTTP_URL = re.compile(r'https?://[^\s)\'"]+')
+_SECRET_HINT = re.compile(r"token|key|secret|code|access_token", re.IGNORECASE)
+
+
+def _redact_userinfo(url):
+    parsed = urlparse(url)
+    if "@" not in parsed.netloc:
+        return url
+    host = parsed.hostname or ""
+    if parsed.port:
+        host = f"{host}:{parsed.port}"
+    return parsed._replace(netloc=host).geturl()
+
+
+def _keep_community(url):
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    if "/api/webhooks" in path or "/api/" in path:
+        return False
+    if _SECRET_HINT.search(f"{parsed.username or ''} {parsed.password or ''} {parsed.query}"):
+        return False
+    if host in {"discord.gg", "join.slack.com", "matrix.to", "t.me"}:
+        return True
+    if host == "discord.com" and path.startswith(("/invite/", "/servers/")):
+        return True
+    return host == "reddit.com" or host.endswith(".reddit.com")
+
+
+def _is_docs_url(url):
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    if host.startswith("docs.") or host == "readthedocs.io" or host.endswith(".readthedocs.io"):
+        return True
+    return "/docs/" in (path.rstrip("/") + "/")
 
 
 def inspect(root):
@@ -281,6 +320,7 @@ def inspect(root):
 
     # ---------- existing README ----------
     rd = read(os.path.join(root, health["readme"])) if health["readme"] else ""
+    urls = _HTTP_URL.findall(rd)
     r["readme"] = {
         "exists": bool(rd),
         "bytes": len(rd),
@@ -290,19 +330,12 @@ def inspect(root):
         "badges": len(re.findall(r"img\.shields\.io|badge\.svg", rd)),
         "code_blocks": rd.count("```") // 2,
         "images": len(re.findall(r"!\[[^\]]*\]\(|<img ", rd)),
-        "links_docs_site": bool(re.search(r"https?://(docs?|www)\.", rd)),
+        "links_docs_site": any(_is_docs_url(u) for u in urls),
     }
 
-    # ---------- community links found anywhere ----------
-    blob = rd + read(os.path.join(root, "package.json"), 20000)
-    r["community_links"] = sorted(
-        set(
-            re.findall(
-                r'https?://(?:discord\.(?:gg|com)|join\.slack\.com|matrix\.to|t\.me|[\w.-]*reddit\.com)[^\s)\'"]*', blob
-            )
-        )
-    )[:5]
-    r["docs_links"] = sorted(set(re.findall(r'https?://(?:docs?|www)\.[^\s)\'"]+', blob)))[:5]
+    # ---------- community and docs links (README only) ----------
+    r["community_links"] = sorted({_redact_userinfo(u) for u in urls if _keep_community(u)})[:5]
+    r["docs_links"] = sorted({u for u in urls if _is_docs_url(u)})[:5]
 
     # ---------- gaps ----------
     gaps = []
