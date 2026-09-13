@@ -29,6 +29,7 @@ except (AttributeError, ValueError):
 CRIT, IMPT, MINR = "CRITICAL", "IMPORTANT", "MINOR"
 SEVERITY_WEIGHTS = {CRIT: 10, IMPT: 6, MINR: 3}
 READ_LIMIT = 200_000
+_BADGE_SRC = re.compile(r"shields\.io|badge|badgen", re.IGNORECASE)
 
 
 def _read_text(path: str, limit: int = READ_LIMIT) -> str:
@@ -78,14 +79,17 @@ def _readme_signals(md: str) -> _ReadmeSignals:
     badges = re.findall(
         r"!\[[^\]]*\]\((https?://[^)]*(?:shields\.io|badge|badgen)[^)]*)\)", md, re.IGNORECASE
     ) + re.findall(r"<img[^>]+src=[\"\']([^\"\']*(?:shields\.io|badge|badgen)[^\"\']*)", md, re.IGNORECASE)
+    return _ReadmeSignals(body, lines, head, h1s, html_title, h2s, fences, opening, badges, _nonbadge_images(md))
+
+
+def _nonbadge_images(text: str) -> list[tuple[str, str]]:
     html_imgs = []
-    for tag in re.findall(r"<img[^>]*>", md, re.IGNORECASE):
+    for tag in re.findall(r"<img[^>]*>", text, re.IGNORECASE):
         alt_m = re.search(r'alt=["\']([^"\']*)', tag)
         src_m = re.search(r'src=["\']([^"\']*)', tag)
         html_imgs.append((alt_m.group(1) if alt_m else "", src_m.group(1) if src_m else ""))
-    imgs = re.findall(r"!\[([^\]]*)\]\(([^)\s]+)", md) + html_imgs
-    nonbadge = [(a, s) for a, s in imgs if not re.search(r"shields\.io|badge|badgen", s or "", re.IGNORECASE)]
-    return _ReadmeSignals(body, lines, head, h1s, html_title, h2s, fences, opening, badges, nonbadge)
+    imgs = re.findall(r"!\[([^\]]*)\]\(([^)\s]+)", text) + html_imgs
+    return [(a, s) for a, s in imgs if not _BADGE_SRC.search(s or "")]
 
 
 def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
@@ -196,7 +200,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
             "Has badges",
             "No badges. Add 3 to 6 (CI, version, license) if the project is published or CI-tested; skip if neither.",
         )
-    visual_early = bool(nonbadge) and bool(re.search(r"(!\[|<img)", head))
+    visual_early = bool(_nonbadge_images(head))
     code_early = "```" in md[:2500]
     add(
         visual_early or code_early,

@@ -329,6 +329,31 @@ def test_inspect_walk_skips_bulky_dirs(tmp_path: Path) -> None:
     assert "chunk-0.bin" not in json.dumps(facts)
 
 
+def test_score_readme_hero_requires_nonbadge_image_in_first_screen() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    pad = "More context about this library. \n" * 80
+    late = (
+        "# demo-lib\n\n"
+        "A library for testers who need a late screenshot.\n\n"
+        "![ci](https://img.shields.io/badge/ci-passing-green)\n"
+        f"{pad}"
+        "![demo](docs/late.png)\n"
+    )
+    assert late.find("![demo](docs/late.png)") >= 1800
+    assert late.find("shields.io") < 1800
+    assert "```" not in late[:2500]
+    late_hero = next(item for item in score.check(late)[0] if item["id"] == "hero")
+    assert late_hero["ok"] is False
+
+    early = "# demo-lib\n\nA library for testers who need a demo screenshot.\n\n![demo](docs/demo.png)\n"
+    early_hero = next(item for item in score.check(early)[0] if item["id"] == "hero")
+    assert early_hero["ok"] is True
+
+    fenced = "# demo-lib\n\nA library for testers who read code first.\n\n```python\nprint('hello')\n```\n"
+    fenced_hero = next(item for item in score.check(fenced)[0] if item["id"] == "hero")
+    assert fenced_hero["ok"] is True
+
+
 def test_score_readme_flags_placeholders_and_missing_install() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     checks, stats = score.check(WEAK_README.read_text(), repo=str(SKILL_ROOT / "evals" / "files"))
