@@ -261,6 +261,27 @@ def test_inspect_repo_demo_media_includes_gif_beyond_first_20_images(tmp_path: P
     assert "session.cast" in facts["demo_media"]
 
 
+def test_inspect_repo_cast_or_mp4_only_does_not_emit_no_images_gap(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    no_images = "No images in repo"
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    empty_facts = inspect.inspect(str(empty))
+    assert empty_facts["images"] == []
+    assert empty_facts["demo_media"] == []
+    assert any(no_images in gap for gap in empty_facts["gaps"])
+
+    for name in ("session.cast", "demo.mp4"):
+        repo = tmp_path / name.replace(".", "-")
+        repo.mkdir()
+        (repo / name).write_bytes(b"")
+        facts = inspect.inspect(str(repo))
+        assert name in facts["demo_media"]
+        assert facts["images"] == []
+        assert not any(no_images in gap for gap in facts["gaps"])
+
+
 def test_inspect_repo_omits_discord_webhook_urls_from_community_links(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     webhook = "https://discord.com/api/webhooks/111/exampletoken"

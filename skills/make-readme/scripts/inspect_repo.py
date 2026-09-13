@@ -366,8 +366,10 @@ def _gaps(facts):
         gaps.append("No LICENSE file: add one before claiming a license in the README.")
     if not health["contributing"]:
         gaps.append("No CONTRIBUTING.md: either create it or do not link it.")
-    if not facts["images"]:
-        gaps.append("No images in repo: a demo GIF or screenshot must be created or the visual section cut.")
+    if not facts["images"] and not facts["demo_media"]:
+        gaps.append(
+            "No images in repo: a demo GIF, screenshot, video, or asciinema cast must be created or the visual section cut."
+        )
     if not facts["ci_workflows"]:
         gaps.append("No CI workflows: do not add a CI badge.")
     if not facts["ecosystems"]:
