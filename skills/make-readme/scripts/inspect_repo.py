@@ -131,7 +131,9 @@ def _git_identity(root, facts):
     facts["contributors"] = len([line for line in _run(["git", "shortlog", "-sn", "HEAD"], root).splitlines() if line])
 
 
-def _manifest_facts(root, files, lower, top, facts):
+def _manifest_facts(root, files, facts):
+    lower = {path.lower(): path for path in files}
+    top = [path for path in files if os.sep not in path]
     manifests = {}
     name = desc = version = None
     ecosystems, install, run_cmds, test_cmds = [], [], [], []
@@ -377,11 +379,9 @@ def _gaps(facts):
 
 def inspect(root: str) -> dict:
     files = walk(root)
-    lower = {path.lower(): path for path in files}
-    top = [path for path in files if os.sep not in path]
     facts = {"path": os.path.abspath(root)}
     _git_identity(root, facts)
-    _manifest_facts(root, files, lower, top, facts)
+    _manifest_facts(root, files, facts)
     _language_mix(files, facts)
     _health_files(root, files, facts)
     _ci(files, facts)
