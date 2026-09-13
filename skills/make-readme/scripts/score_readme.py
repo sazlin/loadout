@@ -403,13 +403,12 @@ def _add_relative_path_checks(add, md: str, nonbadge: list[tuple[str, str]], rep
 
 
 def _add_manifest_consistency(add, md: str, repo: str) -> None:
-    claims = []
-    py = os.path.join(repo, "pyproject.toml")
-    if os.path.exists(py):
-        t = _read_text(py)
-        m = re.search(r'requires-python\s*=\s*["\'][^0-9]*([0-9]+\.[0-9]+)', t)
-        if m:
-            floor = m.group(1)
+    pyproject_path = os.path.join(repo, "pyproject.toml")
+    if os.path.exists(pyproject_path):
+        pyproject_text = _read_text(pyproject_path)
+        python_floor_match = re.search(r'requires-python\s*=\s*["\'][^0-9]*([0-9]+\.[0-9]+)', pyproject_text)
+        if python_floor_match:
+            floor = python_floor_match.group(1)
             stated = re.findall(
                 r"(?i)python\s*(?:version\s*)?(?:>=?\s*|3\.x\s*)?([0-9]+\.[0-9]+)\s*(?:or (?:above|later|newer|higher)|\+)?",
                 md,
@@ -419,27 +418,33 @@ def _add_manifest_consistency(add, md: str, repo: str) -> None:
                 for v in stated
                 if v.startswith("3.") and tuple(map(int, v.split("."))) < tuple(map(int, floor.split(".")))
             ]
-            if stated or bad:
-                claims.append(
-                    (not bad, f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else "")
+            if stated:
+                add(
+                    not bad,
+                    IMPT,
+                    "manifest-consistency",
+                    "Stated runtime versions match the manifest",
+                    f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else "",
                 )
-    pj = os.path.join(repo, "package.json")
-    if os.path.exists(pj):
+    package_json_path = os.path.join(repo, "package.json")
+    if os.path.exists(package_json_path):
         try:
-            eng = (json.loads(_read_text(pj)).get("engines") or {}).get("node")
+            node_engines = (json.loads(_read_text(package_json_path)).get("engines") or {}).get("node")
         except json.JSONDecodeError:
-            eng = None
-        if eng:
-            m = re.search(r"(\d+)", eng)
-            if m:
+            node_engines = None
+        if node_engines:
+            node_major_match = re.search(r"(\d+)", node_engines)
+            if node_major_match:
                 stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
-                bad = [v for v in stated if int(v) < int(m.group(1))]
-                if stated or bad:
-                    claims.append(
-                        (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
+                bad = [v for v in stated if int(v) < int(node_major_match.group(1))]
+                if stated:
+                    add(
+                        not bad,
+                        IMPT,
+                        "manifest-consistency",
+                        "Stated runtime versions match the manifest",
+                        f"README states Node {bad[0]} but package.json engines requires {node_engines}" if bad else "",
                     )
-    for ok, msg in claims:
-        add(ok, IMPT, "manifest-consistency", "Stated runtime versions match the manifest", msg)
 
 
 def report(checks: list[dict], stats: dict, as_json: bool = False) -> tuple[int, list[dict]]:
