@@ -34,7 +34,7 @@ _SHELL_FENCE_LANGS = {"bash", "sh", "zsh", "shell"}
 _FENCE_BODY = re.compile(r"```([a-zA-Z0-9+#-]*)\n(.*?)```", re.DOTALL)
 _DETAILS = re.compile(r"<details\b[^>]*>(.*?)</details>", re.IGNORECASE | re.DOTALL)
 _SUMMARY = re.compile(r"<summary\b[^>]*>(.*?)</summary>", re.IGNORECASE | re.DOTALL)
-_WITHOUT = re.compile(r"(?i)\bwithout\s+([A-Za-z][\w.-]*)")
+_WITHOUT = re.compile(r"(?i)\bwithout(?:\s+(?:a|an|the|using))*\s+([A-Za-z][\w.-]*)")
 _CATALOG_SECTION = re.compile(r"(?i)^(quick\s*start|usage)\b")
 _INSTALL_RE = (
     r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|"
@@ -97,9 +97,11 @@ def _commented_shell_catalog(md: str) -> bool:
             continue
         if len(re.findall(r"(?m)^# .+", body)) < 2:
             continue
+        if _last_command_is_help(body):
+            return True
         if _all_install_commands(body):
             continue
-        if _last_command_is_help(body) or _CATALOG_SECTION.match(_heading_before(visible, match.start())):
+        if _CATALOG_SECTION.match(_heading_before(visible, match.start())):
             return True
     return False
 

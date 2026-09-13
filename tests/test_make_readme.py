@@ -977,6 +977,33 @@ def test_score_readme_getting_started_install_extras_are_not_a_catalog() -> None
     assert _expected_output_ok(score, quick_start) is True
 
 
+def test_score_readme_npx_or_uvx_catalog_ending_in_help_counts_as_expected_output() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    uvx_catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Run\nuvx ruff check\n\n# List options\nuvx ruff --help\n```\n"
+    )
+    assert _expected_output_ok(score, uvx_catalog) is True
+
+    npx_catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Run\nnpx eslint .\n\n# List options\nnpx eslint --help\n```\n"
+    )
+    assert _expected_output_ok(score, npx_catalog) is True
+
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    getting_started = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Getting started\n\n" + extras
+    assert _expected_output_ok(score, getting_started) is False
+
+    quick_start_extras = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Quick start\n\n" + extras
+    assert _expected_output_ok(score, quick_start_extras) is False
+
+
 def test_score_readme_accepts_just_install() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     md = "# demo\n\nInstall it.\n\n```bash\njust install\njust build\n```\n"
@@ -1008,3 +1035,31 @@ def test_score_readme_without_summary_must_not_reuse_token() -> None:
     none_item = next(item for item in score.check(none)[0] if item["id"] == "without-details")
     assert none_item["ok"] is True
     assert "Without X" in none_item["msg"]
+
+
+def test_score_readme_without_summary_skips_articles_and_using() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    gpu = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without a GPU</summary>\n\n"
+        "This path uses a laptop CPU only.\n\n"
+        "```bash\nnpm ci\nnpm run build\n```\n\n</details>\n"
+    )
+    gpu_item = next(item for item in score.check(gpu)[0] if item["id"] == "without-details")
+    assert gpu_item["ok"] is True
+
+    using_just = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without using just</summary>\n\n"
+        "```bash\njust images\n```\n\n</details>\n"
+    )
+    using_item = next(item for item in score.check(using_just)[0] if item["id"] == "without-details")
+    assert using_item["ok"] is False
+
+    existing = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\nnpm ci\njust images\n```\n\n</details>\n"
+    )
+    existing_item = next(item for item in score.check(existing)[0] if item["id"] == "without-details")
+    assert existing_item["ok"] is False
