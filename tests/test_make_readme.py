@@ -26,6 +26,7 @@ SCORE_SCRIPT = SKILL_ROOT / "scripts" / "score_readme.py"
 CORPUS_SCRIPT = SKILL_ROOT / "scripts" / "corpus_analyzer.py"
 EVALS = SKILL_ROOT / "evals" / "evals.json"
 WEAK_README = SKILL_ROOT / "evals" / "files" / "weak-readme.md"
+CLI_WEAK_README = SKILL_ROOT / "evals" / "files" / "cli-weak-readme.md"
 
 
 def _load_module(path: Path, name: str) -> ModuleType:
@@ -779,6 +780,10 @@ def test_capped_cli_catalog_with_overflow_stays_in_length_band() -> None:
     assert 50 <= md.count("\n") + 1 <= 320
 
 
+def _expected_output_ok(score: ModuleType, md: str) -> bool:
+    return next(item["ok"] for item in score.check(md)[0] if item["id"] == "expected-output")
+
+
 def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     catalog = (
@@ -786,12 +791,38 @@ def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
         "```bash\n# Start the tool in this directory\ndemo run\n\n"
         "# List all options and other usage\ndemo --help\n```\n"
     )
-    catalog_item = next(item for item in score.check(catalog)[0] if item["id"] == "expected-output")
-    assert catalog_item["ok"] is True
+    assert _expected_output_ok(score, catalog) is True
+
+    quick_start = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# Run a second real invocation\ndemo build\n```\n"
+    )
+    assert _expected_output_ok(score, quick_start) is True
+
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    extras_in_details = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        f"{extras}\n</details>\n"
+    )
+    assert _expected_output_ok(score, extras_in_details) is False
+
+    weak_details = (
+        "# demo-tool\n\nLaunch CLI coding agents inside guest VMs.\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\n# CLI only\ncd packages/demo && npm ci && npm run build\n\n"
+        "# Build images\njust images\n```\n\n</details>\n"
+    )
+    assert _expected_output_ok(score, weak_details) is False
+    assert score._commented_shell_catalog(CLI_WEAK_README.read_text()) is False
 
     lone = "# demo\n\nA library for testers.\n\n```python\nprint('hello')\n```\n"
-    lone_item = next(item for item in score.check(lone)[0] if item["id"] == "expected-output")
-    assert lone_item["ok"] is False
+    assert _expected_output_ok(score, lone) is False
 
 
 def test_score_readme_accepts_just_install() -> None:

@@ -35,6 +35,7 @@ _FENCE_BODY = re.compile(r"```([a-zA-Z0-9+#-]*)\n(.*?)```", re.DOTALL)
 _DETAILS = re.compile(r"<details\b[^>]*>(.*?)</details>", re.IGNORECASE | re.DOTALL)
 _SUMMARY = re.compile(r"<summary\b[^>]*>(.*?)</summary>", re.IGNORECASE | re.DOTALL)
 _WITHOUT = re.compile(r"(?i)\bwithout\s+([A-Za-z][\w.-]*)")
+_CATALOG_SECTION = re.compile(r"(?i)^(quick\s*start|usage|getting\s+started)\b")
 
 
 def _read_text(path: str, limit: int = READ_LIMIT) -> str:
@@ -57,9 +58,27 @@ def strip_code(md):
     return re.sub(r"```.*?```", "", md, flags=re.DOTALL)
 
 
+def _heading_before(md: str, pos: int) -> str:
+    heading = ""
+    for match in re.finditer(r"(?m)^#{2,3}\s+(.+)$", md[:pos]):
+        heading = match.group(1).strip()
+    return heading
+
+
+def _last_command_is_help(body: str) -> bool:
+    commands = [line.strip() for line in body.splitlines() if line.strip() and not re.match(r"^# ", line)]
+    return bool(commands) and commands[-1].endswith("--help")
+
+
 def _commented_shell_catalog(md: str) -> bool:
-    for lang, body in _FENCE_BODY.findall(md):
-        if lang.lower() in _SHELL_FENCE_LANGS and len(re.findall(r"(?m)^# .+", body)) >= 2:
+    visible = _DETAILS.sub("", md)
+    for match in _FENCE_BODY.finditer(visible):
+        lang, body = match.group(1).lower(), match.group(2)
+        if lang not in _SHELL_FENCE_LANGS:
+            continue
+        if len(re.findall(r"(?m)^# .+", body)) < 2:
+            continue
+        if _last_command_is_help(body) or _CATALOG_SECTION.match(_heading_before(visible, match.start())):
             return True
     return False
 
@@ -193,7 +212,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         CRIT,
         "example",
         "At least one fenced code block (usage example)",
-        "No fenced code block. Add a minimal runnable example, under ~15 lines, with its expected output.",
+        "No fenced code block. CLI: one commented command catalog. Library: a minimal runnable example plus what it prints.",
     )
     add(
         re.search(r"(?i)licen[sc]e", md),
@@ -359,8 +378,9 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         len(bullets) <= 12,
         MINR,
         "bullet-restraint",
-        "Feature list is 3 to 6 bullets, not a wall",
-        f"{len(bullets)} bullets in the first 3.5 KB. Cut to the 3 to 6 that differentiate you.",
+        "Feature list is 3 to 6 bullets (CLI/infra may keep 7–8 distinct shipped differentiators)",
+        f"{len(bullets)} bullets in the first 3.5 KB. Cut to 3 to 6 "
+        "(CLI/infra may keep 7–8 distinct shipped differentiators). This check fails only above 12.",
     )
 
     _add_packaging_checks(add, md, nonbadge, long_desc)
