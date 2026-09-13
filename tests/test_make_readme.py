@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import urllib.error
@@ -321,6 +322,62 @@ def test_score_readme_non_numeric_node_engines_does_not_crash(tmp_path: Path) ->
     checks_old, _ = score.check("# demo\n\nRequires Node 16.\n", repo=str(numeric_repo))
     failed = {item["id"] for item in checks_old if not item["ok"]}
     assert "manifest-consistency" in failed
+
+
+def test_score_readme_omits_manifest_consistency_when_readme_silent(tmp_path: Path) -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    repo = tmp_path / "py"
+    repo.mkdir()
+    (repo / "pyproject.toml").write_text('[project]\nname = "demo"\nrequires-python = ">=3.12"\n')
+
+    silent = "# demo\n\nA library for testers.\n\n```bash\npip install demo\n```\n"
+    silent_checks, _ = score.check(silent, repo=str(repo))
+    assert "manifest-consistency" not in {item["id"] for item in silent_checks}
+
+    stated = "# demo\n\nRequires Python 3.9.\n\n```bash\npip install demo\n```\n"
+    stated_checks, _ = score.check(stated, repo=str(repo))
+    failed = {item["id"] for item in stated_checks if not item["ok"]}
+    assert "manifest-consistency" in failed
+
+
+def test_score_readme_broken_links_do_not_follow_paths_outside_repo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    repo = tmp_path / "proj"
+    repo.mkdir()
+    (repo / "LICENSE").write_text("MIT\n")
+    repo_real = os.path.realpath(repo)
+
+    probed: list[str] = []
+    real_exists = score.os.path.exists
+
+    def tracking_exists(path):
+        probed.append(os.fspath(path))
+        return real_exists(path)
+
+    monkeypatch.setattr(score.os.path, "exists", tracking_exists)
+
+    escaped = (
+        "# demo\n\nA library for testers.\n\nSee [passwd](/etc/passwd) and [up](../../SomeFile).\n"
+        "![logo](/etc/passwd)\n"
+    )
+    escaped_checks, _ = score.check(escaped, repo=str(repo))
+    failed = {item["id"] for item in escaped_checks if not item["ok"]}
+    assert "broken-links" in failed
+    for path in probed:
+        resolved = os.path.realpath(path)
+        assert os.path.commonpath([repo_real, resolved]) == repo_real
+
+    license_md = "# demo\n\nA library for testers.\n\nSee the [license](LICENSE).\n"
+    present_checks, _ = score.check(license_md, repo=str(repo))
+    present = next(item for item in present_checks if item["id"] == "broken-links")
+    assert present["ok"] is True
+
+    (repo / "LICENSE").unlink()
+    missing_checks, _ = score.check(license_md, repo=str(repo))
+    missing = next(item for item in missing_checks if item["id"] == "broken-links")
+    assert missing["ok"] is False
 
 
 def test_score_readme_cli_prints_score(tmp_path: Path) -> None:

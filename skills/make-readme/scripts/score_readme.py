@@ -361,17 +361,34 @@ def _add_packaging_checks(add, md: str, nonbadge: list[tuple[str, str]], long_de
     )
 
 
+def _confined_repo_path(repo_real: str, target: str) -> str | None:
+    if os.path.isabs(target):
+        return None
+    candidate = os.path.realpath(os.path.join(repo_real, target))
+    try:
+        if os.path.commonpath([repo_real, candidate]) != repo_real:
+            return None
+    except ValueError:
+        return None
+    return candidate
+
+
 def _add_relative_path_checks(add, md: str, nonbadge: list[tuple[str, str]], repo: str) -> None:
+    repo_real = os.path.realpath(repo)
     broken = []
     for m in re.finditer(r"\]\(([^)\s]+)\)", md):
         t = m.group(1).strip("<>").split("#")[0]
         if re.match(r"https?://|mailto:|#|data:", t):
             continue
-        if t and not os.path.exists(os.path.join(repo, t)):
-            broken.append(t)
-    for a, s in nonbadge:
-        if s and not s.startswith(("http", "data:")) and not os.path.exists(os.path.join(repo, s)):
-            broken.append(s)
+        if t:
+            confined = _confined_repo_path(repo_real, t)
+            if confined is None or not os.path.exists(confined):
+                broken.append(t)
+    for _alt, src in nonbadge:
+        if src and not src.startswith(("http", "data:")):
+            confined = _confined_repo_path(repo_real, src)
+            if confined is None or not os.path.exists(confined):
+                broken.append(src)
     add(
         not broken,
         IMPT,
@@ -398,7 +415,10 @@ def _add_manifest_consistency(add, md: str, repo: str) -> None:
                 for v in stated
                 if v.startswith("3.") and tuple(map(int, v.split("."))) < tuple(map(int, floor.split(".")))
             ]
-            claims.append((not bad, f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else ""))
+            if stated or bad:
+                claims.append(
+                    (not bad, f"README states Python {bad[0]} but pyproject requires >= {floor}" if bad else "")
+                )
     pj = os.path.join(repo, "package.json")
     if os.path.exists(pj):
         try:
@@ -410,9 +430,10 @@ def _add_manifest_consistency(add, md: str, repo: str) -> None:
             if m:
                 stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
                 bad = [v for v in stated if int(v) < int(m.group(1))]
-                claims.append(
-                    (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
-                )
+                if stated or bad:
+                    claims.append(
+                        (not bad, f"README states Node {bad[0]} but package.json engines requires {eng}" if bad else "")
+                    )
     for ok, msg in claims:
         add(ok, IMPT, "manifest-consistency", "Stated runtime versions match the manifest", msg)
 
