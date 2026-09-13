@@ -123,6 +123,17 @@ def test_evals_cover_create_improve_and_review_modes() -> None:
     assert "review" in blob
     assert "does not invent" in blob or "instead of inventing" in blob
     assert "does not overwrite" in blob or "did not write readme.md" in blob
+    assert "commented command catalog" in blob
+    assert "git slug" in blob
+    assert "without x" in blob
+
+
+def test_body_requires_cli_catalog_rules() -> None:
+    text = SKILL_MD.read_text().lower()
+    assert "comment" in text and "--help" in text
+    assert "git slug" in text or "git folder" in text
+    assert "without x" in text
+    assert "differentiat" in text
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -622,3 +633,86 @@ def test_analyze_omits_stub_feature_keys(tmp_path: Path) -> None:
     feats = corpus.analyze(str(readme))
     assert "license_shield_only" not in feats
     assert "first_code_line" not in feats
+
+
+def test_inspect_repo_prefers_binary_name_over_git_slug(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    repo = tmp_path / "sandbox"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "remote", "add", "origin", "https://github.com/example/sandbox.git")
+    (repo / "package.json").write_text(
+        json.dumps({"name": "@org/sandbox", "private": True, "bin": {"msb-agent": "dist/cli.js"}})
+    )
+    facts = inspect.inspect(str(repo))
+    assert facts["repo"] == "sandbox"
+    assert facts["binary_names"] == ["msb-agent"]
+    assert facts["name"] == "msb-agent"
+    assert "msb-agent" in inspect.human(facts)
+
+
+def test_inspect_repo_prefers_console_scripts_over_project_name(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\ndemo = "demo:main"\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == ["demo"]
+    assert facts["name"] == "demo"
+
+
+def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "justfile").write_text("install:\n    npm ci\n\nbuild:\n    npm run build\n\nimages:\n    echo hi\n")
+    (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "private": True, "bin": {"demo": "cli.js"}}))
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["just_recipes"] == ["install", "build", "images"]
+    assert facts["suggested_install_commands"][:2] == ["just install", "just build"]
+    sheet = inspect.human(facts)
+    assert "JUST" in sheet
+    assert "install" in sheet
+
+
+def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# List all options and other usage\ndemo --help\n```\n"
+    )
+    catalog_item = next(item for item in score.check(catalog)[0] if item["id"] == "expected-output")
+    assert catalog_item["ok"] is True
+
+    lone = "# demo\n\nA library for testers.\n\n```python\nprint('hello')\n```\n"
+    lone_item = next(item for item in score.check(lone)[0] if item["id"] == "expected-output")
+    assert lone_item["ok"] is False
+
+
+def test_score_readme_accepts_just_install() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    md = "# demo\n\nInstall it.\n\n```bash\njust install\njust build\n```\n"
+    install = next(item for item in score.check(md)[0] if item["id"] == "install")
+    assert install["ok"] is True
+
+
+def test_score_readme_details_summary_must_match_body() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    bad = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\nnpm ci\njust images\n```\n\n</details>\n"
+    )
+    bad_item = next(item for item in score.check(bad)[0] if item["id"] == "details-consistency")
+    assert bad_item["ok"] is False
+
+    good = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\njust build\n```\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        "```bash\nbrew install demo\n```\n\n</details>\n"
+    )
+    good_item = next(item for item in score.check(good)[0] if item["id"] == "details-consistency")
+    assert good_item["ok"] is True
+
+    none = "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n"
+    none_item = next(item for item in score.check(none)[0] if item["id"] == "details-consistency")
+    assert none_item["ok"] is True

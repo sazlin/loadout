@@ -30,6 +30,11 @@ CRIT, IMPT, MINR = "CRITICAL", "IMPORTANT", "MINOR"
 SEVERITY_WEIGHTS = {CRIT: 10, IMPT: 6, MINR: 3}
 READ_LIMIT = 200_000
 _BADGE_SRC = re.compile(r"shields\.io|badge|badgen", re.IGNORECASE)
+_SHELL_FENCE_LANGS = {"bash", "sh", "zsh", "shell"}
+_FENCE_BODY = re.compile(r"```([a-zA-Z0-9+#-]*)\n(.*?)```", re.DOTALL)
+_DETAILS = re.compile(r"<details\b[^>]*>(.*?)</details>", re.IGNORECASE | re.DOTALL)
+_SUMMARY = re.compile(r"<summary\b[^>]*>(.*?)</summary>", re.IGNORECASE | re.DOTALL)
+_WITHOUT = re.compile(r"(?i)\bwithout\s+([A-Za-z][\w.-]*)")
 
 
 def _read_text(path: str, limit: int = READ_LIMIT) -> str:
@@ -50,6 +55,27 @@ def _manifest_is_long_description(repo, filename):
 
 def strip_code(md):
     return re.sub(r"```.*?```", "", md, flags=re.DOTALL)
+
+
+def _commented_shell_catalog(md: str) -> bool:
+    for lang, body in _FENCE_BODY.findall(md):
+        if lang.lower() in _SHELL_FENCE_LANGS and len(re.findall(r"(?m)^# .+", body)) >= 2:
+            return True
+    return False
+
+
+def _details_consistent(md: str) -> bool:
+    for block in _DETAILS.findall(md):
+        summary_m = _SUMMARY.search(block)
+        if not summary_m:
+            continue
+        without = _WITHOUT.search(re.sub(r"<[^>]+>", "", summary_m.group(1)))
+        if not without:
+            continue
+        token = re.escape(without.group(1))
+        if re.search(rf"(?i)(?<![\w.-]){token}(?![\w.-])", block[summary_m.end() :]):
+            return False
+    return True
 
 
 @dataclass(frozen=True)
@@ -154,7 +180,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
             "Tagline is short enough to scan",
             f"Tagline is {len(tagline)} chars. Trim to <=120; move detail into Features.",
         )
-    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|python3? -m pip|pip3 install|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install)"
+    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|python3? -m pip|pip3 install|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install|just install|just build)"
     add(
         re.search(install_re, md),
         CRIT,
@@ -253,6 +279,14 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "No template placeholders or TODOs left",
         f"Found: {sorted(set(placeholders))[:6]}. Remove every one before shipping.",
     )
+    add(
+        _details_consistent(md),
+        IMPT,
+        "details-consistency",
+        "Collapsible extras match their summaries",
+        "A <details> summary says 'without X' but the body still uses X. "
+        "Only emit extras that are real and internally consistent, or drop the dropdown.",
+    )
 
     # ---- MINOR ----
     add(
@@ -306,11 +340,12 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "No support route. Add 2 to 4 lines: bugs to Issues, questions to Discussions/chat, security to SECURITY.md.",
     )
     add(
-        len(fences) // 2 >= 2 or re.search(r"(?m)^(\$|>|#)?\s*(Output|=>|Result)", md),
+        len(fences) // 2 >= 2 or re.search(r"(?m)^(\$|>|#)?\s*(Output|=>|Result)", md) or _commented_shell_catalog(md),
         MINR,
         "expected-output",
         "Shows expected output for an example",
-        "No output shown. Add the result of your example so a reader can self-check.",
+        "No output shown. Add the result of your example so a reader can self-check, "
+        "or a commented command catalog for a CLI.",
     )
     add(
         not re.search(r"(?m)^\s*```\w*\s*\n\s*\$ ", md),

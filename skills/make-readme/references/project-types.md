@@ -8,11 +8,17 @@ docs links, community, contributing link, license.
 ---
 
 ## CLI tool
-**Add:** a terminal GIF or asciinema cast as the hero; a short command table if there are
-more than 3 subcommands; a one-line uninstall note when install writes outside the package dir.
-**Cut:** API reference, architecture.
-**Emphasis:** install command must cover the 3 platforms your users are actually on
-(Homebrew/curl, apt/dnf, winget/scoop). Put the extras in `<details>`.
+**Add:** a terminal GIF or asciinema cast as the hero; a short command table only if there
+are more than 3 subcommands *and* a table is clearer than the catalog; a one-line uninstall
+note when install writes outside the package dir.
+**Cut:** API reference, architecture; `--version` / `--help` stdout as Quick start.
+**Emphasis:** show how people use the tool. Quick start is one `bash` pane of commented
+real invocations, `--help` last. Companion CLIs and shell functions go in `<details>`.
+Install is the single documented primary path (Homebrew, curl, `just`, whatever the repo
+actually uses). Extra methods only if they are real, documented, and internally consistent;
+never title a dropdown "without X" if the body still uses X. Do not require three
+platforms. H1 is the binary people type, not the git slug. The first example is the
+launch the existing README, shims, or `--help` already treat as primary.
 **Corpus exemplars:** bat, lazygit, uv, ohmyzsh.
 
 ---
@@ -89,7 +95,8 @@ a link to the paper, and exact reproduction commands including seeds and hardwar
 "how to get access" (credentials, VPN, roles).
 **Cut:** badges, logo, contributing, license, community.
 **Emphasis:** the reader is a colleague who was paged at 3 a.m. Optimize for "how do I run it
-locally" and "who do I ask", not for adoption.
+locally" and "who do I ask", not for adoption. Use the product's own nouns from the existing
+README and `--help`; do not rename the product to match implementation jargon.
 
 ---
 
