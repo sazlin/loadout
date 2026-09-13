@@ -415,6 +415,44 @@ def test_score_readme_non_numeric_node_engines_does_not_crash(tmp_path: Path) ->
     assert "manifest-consistency" in failed
 
 
+def test_score_readme_numeric_or_non_dict_node_engines_does_not_crash(tmp_path: Path) -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    md = "# demo\n\nRequires Node 16.\n"
+
+    numeric_repo = tmp_path / "numeric"
+    numeric_repo.mkdir()
+    (numeric_repo / "package.json").write_text('{"name": "demo", "engines": {"node": 20}}\n')
+    numeric_checks, _ = score.check(md, repo=str(numeric_repo))
+    assert isinstance(numeric_checks, list)
+
+    string_engines_repo = tmp_path / "string-engines"
+    string_engines_repo.mkdir()
+    (string_engines_repo / "package.json").write_text('{"name": "demo", "engines": "node >= 20"}\n')
+    string_checks, _ = score.check(md, repo=str(string_engines_repo))
+    assert isinstance(string_checks, list)
+
+    range_repo = tmp_path / "range"
+    range_repo.mkdir()
+    (range_repo / "package.json").write_text('{"name": "demo", "engines": {"node": ">=20"}}\n')
+    range_checks, _ = score.check(md, repo=str(range_repo))
+    failed = {item["id"] for item in range_checks if not item["ok"]}
+    assert "manifest-consistency" in failed
+
+    lts_repo = tmp_path / "lts"
+    lts_repo.mkdir()
+    (lts_repo / "package.json").write_text('{"name": "demo", "engines": {"node": "lts"}}\n')
+    lts_checks, _ = score.check(md, repo=str(lts_repo))
+    assert isinstance(lts_checks, list)
+    assert "manifest-consistency" not in {item["id"] for item in lts_checks}
+
+    silent_repo = tmp_path / "silent"
+    silent_repo.mkdir()
+    (silent_repo / "package.json").write_text('{"name": "demo", "engines": {"node": ">=20"}}\n')
+    silent_md = "# demo\n\nA library for testers.\n\n```bash\nnpm i demo\n```\n"
+    silent_checks, _ = score.check(silent_md, repo=str(silent_repo))
+    assert "manifest-consistency" not in {item["id"] for item in silent_checks}
+
+
 def test_score_readme_omits_manifest_consistency_when_readme_silent(tmp_path: Path) -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     repo = tmp_path / "py"
@@ -469,6 +507,46 @@ def test_score_readme_broken_links_do_not_follow_paths_outside_repo(
     missing_checks, _ = score.check(license_md, repo=str(repo))
     missing = next(item for item in missing_checks if item["id"] == "broken-links")
     assert missing["ok"] is False
+
+
+def test_score_readme_github_image_fragments_are_not_broken_links(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    repo = tmp_path / "proj"
+    docs = repo / "docs"
+    docs.mkdir(parents=True)
+    (docs / "demo.png").write_text("png\n")
+    repo_real = os.path.realpath(repo)
+    md = "# demo\n\nA library for testers who need a screenshot.\n\n![demo](docs/demo.png#gh-dark-mode-only)\n"
+
+    present_checks, _ = score.check(md, repo=str(repo))
+    present = next(item for item in present_checks if item["id"] == "broken-links")
+    assert present["ok"] is True
+
+    (docs / "demo.png").unlink()
+    missing_checks, _ = score.check(md, repo=str(repo))
+    missing = next(item for item in missing_checks if item["id"] == "broken-links")
+    assert missing["ok"] is False
+
+    probed: list[str] = []
+    real_exists = score.os.path.exists
+
+    def tracking_exists(path):
+        probed.append(os.fspath(path))
+        return real_exists(path)
+
+    monkeypatch.setattr(score.os.path, "exists", tracking_exists)
+    escaped = (
+        "# demo\n\nA library for testers.\n\nSee [passwd](/etc/passwd) and [up](../../SomeFile).\n"
+        "![logo](/etc/passwd)\n"
+    )
+    escaped_checks, _ = score.check(escaped, repo=str(repo))
+    failed = {item["id"] for item in escaped_checks if not item["ok"]}
+    assert "broken-links" in failed
+    for path in probed:
+        resolved = os.path.realpath(path)
+        assert os.path.commonpath([repo_real, resolved]) == repo_real
 
 
 def test_score_readme_cli_prints_score(tmp_path: Path) -> None:

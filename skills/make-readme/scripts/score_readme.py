@@ -377,11 +377,15 @@ def _confined_repo_path(repo_real: str, target: str) -> str | None:
     return candidate
 
 
+def _relative_link_path(raw: str) -> str:
+    return raw.strip("<>").split("#")[0].split("?")[0]
+
+
 def _add_relative_path_checks(add, md: str, nonbadge: list[tuple[str, str]], repo: str) -> None:
     repo_real = os.path.realpath(repo)
     broken = []
     for m in re.finditer(r"\]\(([^)\s]+)\)", md):
-        t = m.group(1).strip("<>").split("#")[0]
+        t = _relative_link_path(m.group(1))
         if re.match(r"https?://|mailto:|#|data:", t):
             continue
         if t:
@@ -389,10 +393,11 @@ def _add_relative_path_checks(add, md: str, nonbadge: list[tuple[str, str]], rep
             if confined is None or not os.path.exists(confined):
                 broken.append(t)
     for _alt, src in nonbadge:
-        if src and not src.startswith(("http", "data:")):
-            confined = _confined_repo_path(repo_real, src)
+        t = _relative_link_path(src)
+        if t and not t.startswith(("http", "data:")):
+            confined = _confined_repo_path(repo_real, t)
             if confined is None or not os.path.exists(confined):
-                broken.append(src)
+                broken.append(t)
     add(
         not broken,
         IMPT,
@@ -429,11 +434,12 @@ def _add_manifest_consistency(add, md: str, repo: str) -> None:
     package_json_path = os.path.join(repo, "package.json")
     if os.path.exists(package_json_path):
         try:
-            node_engines = (json.loads(_read_text(package_json_path)).get("engines") or {}).get("node")
+            engines = json.loads(_read_text(package_json_path)).get("engines")
         except json.JSONDecodeError:
-            node_engines = None
+            engines = None
+        node_engines = engines.get("node") if isinstance(engines, dict) else None
         if node_engines:
-            node_major_match = re.search(r"(\d+)", node_engines)
+            node_major_match = re.search(r"(\d+)", str(node_engines))
             if node_major_match:
                 stated = re.findall(r"(?i)node(?:\.js)?\s*(?:>=?\s*)?v?(\d+)", md)
                 bad = [v for v in stated if int(v) < int(node_major_match.group(1))]
