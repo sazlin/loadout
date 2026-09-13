@@ -27,7 +27,7 @@ EVALS = SKILL_ROOT / "evals" / "evals.json"
 WEAK_README = SKILL_ROOT / "evals" / "files" / "weak-readme.md"
 
 
-def _load_module(path: Path, name: str):
+def _load_module(path: Path, name: str) -> object:
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -39,6 +39,22 @@ def _evals_payload() -> dict[str, object]:
     payload = json.loads(EVALS.read_text())
     assert isinstance(payload, dict)
     return payload
+
+
+def _eval_texts(payload: dict[str, object]) -> str:
+    raw = payload.get("evals")
+    if not isinstance(raw, list):
+        return ""
+    chunks: list[str] = []
+    for entry in raw:
+        if not isinstance(entry, dict):
+            continue
+        chunks.append(str(entry.get("prompt", "")))
+        chunks.append(str(entry.get("expected_output", "")))
+        expectations = entry.get("expectations")
+        if isinstance(expectations, list):
+            chunks.extend(str(item) for item in expectations)
+    return "\n".join(chunks).lower()
 
 
 def test_make_readme_skill_parses() -> None:
@@ -64,18 +80,22 @@ def test_base_loadout_does_not_include_make_readme_skill() -> None:
     assert f"skills/{SKILL_NAME}" not in srcs
 
 
-def test_body_requires_inspect_and_score_scripts() -> None:
+def test_body_requires_scripts_template_and_evidence() -> None:
     text = SKILL_MD.read_text()
     assert "scripts/inspect_repo.py" in text
     assert "scripts/score_readme.py" in text
     assert "scripts/corpus_analyzer.py" in text
     assert "README_TEMPLATE.md" in text
-    assert "never invent facts" in text.lower()
     assert INSPECT_SCRIPT.is_file()
     assert SCORE_SCRIPT.is_file()
     assert CORPUS_SCRIPT.is_file()
     assert (SKILL_ROOT / "README_TEMPLATE.md").is_file()
     assert (SKILL_ROOT / "references" / "evidence.md").is_file()
+
+
+def test_body_requires_never_invent_facts() -> None:
+    text = SKILL_MD.read_text()
+    assert "never invent facts" in text.lower()
 
 
 def test_has_colocated_evals() -> None:
@@ -95,26 +115,7 @@ def test_has_colocated_evals() -> None:
 
 
 def test_evals_cover_create_improve_and_review_modes() -> None:
-    payload = _evals_payload()
-    evals = payload.get("evals")
-    assert isinstance(evals, list)
-    texts = []
-    for entry in evals:
-        assert isinstance(entry, dict)
-        texts.append(
-            "\n".join(
-                [
-                    str(entry.get("prompt", "")),
-                    str(entry.get("expected_output", "")),
-                    *(
-                        [str(item) for item in entry["expectations"]]
-                        if isinstance(entry.get("expectations"), list)
-                        else []
-                    ),
-                ]
-            ).lower()
-        )
-    blob = "\n".join(texts)
+    blob = _eval_texts(_evals_payload())
     assert "inspect_repo.py" in blob
     assert "score_readme.py" in blob
     assert "improve" in blob
