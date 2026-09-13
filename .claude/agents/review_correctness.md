@@ -3,7 +3,7 @@ name: review_correctness
 description: Use when the review orchestrator dispatches a correctness pass, or when
   asked for a correctness, logic, data-loss, or data-integrity review. Do not fix
   the code. Do not review other dimensions.
-model: grok-4.6[effort=high,fast=false]
+model: grok-4.6[effort=medium,fast=false]
 readonly: true
 tools:
 - Read

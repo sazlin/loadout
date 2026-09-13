@@ -290,8 +290,10 @@ Each reviewer brief must include:
 
 Harness notes: Cursor — four `Task` calls in one message. Claude Code — four
 Agent calls using the custom agent names. Do not inherit session history.
-Do not pass inherit or a Fast model; harness agents are pinned to Grok 4.6
-high, not Fast (`grok-4.6[effort=high,fast=false]`).
+Do not pass inherit or a Fast model. Panel reviewers, `issue_resolver`, and
+`risk_classifier` are pinned to Grok 4.6 medium, not Fast
+(`grok-4.6[effort=medium,fast=false]`). `verifier` is Composer 2.5
+(`composer-2.5`). This orchestrator stays on Grok 4.6 high, not Fast.
 
 `issue_resolver`, `verifier`, and `risk_classifier` are **sequential**.
 

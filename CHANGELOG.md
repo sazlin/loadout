@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Pin `pr_review_harness` panel, `issue_resolver`, and `risk_classifier` to
+  Grok 4.6 medium, not Fast (`grok-4.6[effort=medium,fast=false]`). Pin
+  `verifier` to Composer 2.5. Leave `review_orchestrator` on Grok 4.6 high.
+
 ## 0.35.0
 
 ## 0.34.0
