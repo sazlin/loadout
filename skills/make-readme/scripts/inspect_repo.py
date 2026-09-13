@@ -32,6 +32,12 @@ SKIP_DIRS = {
     ".cache",
     "site-packages",
     ".tox",
+    "coverage",
+    "htmlcov",
+    ".gradle",
+    "Pods",
+    "data",
+    "datasets",
 }
 
 

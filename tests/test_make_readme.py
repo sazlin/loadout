@@ -260,6 +260,29 @@ def test_inspect_repo_www_homepage_is_not_docs(tmp_path: Path) -> None:
     assert docs_facts["readme"]["links_docs_site"] is True
 
 
+def test_inspect_walk_skips_bulky_dirs(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    bulky = {"coverage", "htmlcov", ".gradle", "Pods", "data", "datasets"}
+    assert bulky <= inspect.SKIP_DIRS
+
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "demo-lib"\nversion = "0.1.0"\n')
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    for index in range(8):
+        (data_dir / f"chunk-{index}.bin").write_bytes(b"x")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "main.py").write_text("print('ok')\n")
+
+    walked = inspect.walk(str(tmp_path))
+    assert not any(Path(path).parts[:1] == ("data",) for path in walked)
+    assert any(path.endswith("main.py") for path in walked)
+
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["name"] == "demo-lib"
+    assert facts["file_count"] == len(walked)
+    assert "chunk-0.bin" not in json.dumps(facts)
+
+
 def test_score_readme_flags_placeholders_and_missing_install() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     checks, stats = score.check(WEAK_README.read_text(), repo=str(SKILL_ROOT / "evals" / "files"))
