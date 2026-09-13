@@ -9,6 +9,7 @@ import subprocess
 import sys
 import urllib.error
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
@@ -27,7 +28,7 @@ EVALS = SKILL_ROOT / "evals" / "evals.json"
 WEAK_README = SKILL_ROOT / "evals" / "files" / "weak-readme.md"
 
 
-def _load_module(path: Path, name: str) -> object:
+def _load_module(path: Path, name: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
