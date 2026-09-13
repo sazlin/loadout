@@ -905,6 +905,15 @@ def test_orchestrator_scorer_rejects_keeping_a_known_duplicate() -> None:
     assert any("dropped_duplicates" in failure for failure in result.failures)
 
 
+def test_orchestrator_scorer_rejects_empty_deferred_minors() -> None:
+    spec = eval_by_id("review-orchestrator-group-findings")
+    report = load_golden("review_orchestrator")
+    report["deferred_minors"] = []
+    result = score_orchestrator_report(report, spec)
+    assert not result.ok
+    assert any("M-002" in failure for failure in result.failures)
+
+
 def test_parse_report_reads_fenced_json() -> None:
     report = parse_report('intro\n```json\n{"status": "ok", "agent": "review_correctness"}\n```\n')
     assert report["agent"] == "review_correctness"

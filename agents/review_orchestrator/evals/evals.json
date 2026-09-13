@@ -24,6 +24,7 @@
           "dropped": "C-003"
         }
       ],
+      "expected_deferred": ["M-002"],
       "expected_groups": [
         ["SEC-001"],
         ["SEC-002", "SEC-003"],

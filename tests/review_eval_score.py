@@ -182,8 +182,11 @@ def _score_orchestrator_behavior(report: dict[str, Any], spec: dict[str, Any]) -
         failures.append(f"dropped_duplicates {dropped} missing {expected_dropped}")
     tasks = report.get("tasks")
     if not isinstance(tasks, list):
-        return ScoreResult(False, tuple(failures + ["tasks must be a list"]))
+        failures.append("tasks must be a list")
+        failures.extend(_orchestrator_deferred_failures(report, spec, []))
+        return ScoreResult(False, tuple(failures))
     failures.extend(_orchestrator_group_failures(tasks, spec))
+    failures.extend(_orchestrator_deferred_failures(report, spec, tasks))
     return ScoreResult(not failures, tuple(failures))
 
 
@@ -235,6 +238,27 @@ def _orchestrator_group_failures(tasks: list[dict[str, Any]], spec: dict[str, An
     return failures
 
 
+def _orchestrator_deferred_failures(
+    report: dict[str, Any], spec: dict[str, Any], tasks: list[dict[str, Any]]
+) -> list[str]:
+    expected = {str(item_id) for item_id in spec.get("expected_deferred", [])}
+    deferred = report.get("deferred_minors")
+    if not isinstance(deferred, list):
+        return ["deferred_minors must be a list"]
+    actual_ids = {item.get("id") for item in deferred if isinstance(item, dict)}
+    failures: list[str] = []
+    missing = expected - actual_ids
+    if missing:
+        failures.append(f"deferred_minors missing {sorted(missing)}")
+    tasked: set[str] = set()
+    for item in tasks:
+        tasked.update(item.get("issue_ids", []))
+    overlap = expected & tasked
+    if overlap:
+        failures.append(f"deferred ids {sorted(overlap)} also in tasks")
+    return failures
+
+
 def score_orchestrator_report(report: dict[str, Any], spec: dict[str, Any]) -> ScoreResult:
     """Score an orchestrator JSON report against the grouping eval spec."""
     failures: list[str] = []
@@ -249,8 +273,11 @@ def score_orchestrator_report(report: dict[str, Any], spec: dict[str, Any]) -> S
         failures.append(f"dropped_duplicates {dropped} missing {expected_dropped}")
     tasks = report.get("tasks")
     if not isinstance(tasks, list):
-        return ScoreResult(False, tuple(failures + ["tasks must be a list"]))
+        failures.append("tasks must be a list")
+        failures.extend(_orchestrator_deferred_failures(report, spec, []))
+        return ScoreResult(False, tuple(failures))
     failures.extend(_orchestrator_group_failures(tasks, spec))
+    failures.extend(_orchestrator_deferred_failures(report, spec, tasks))
     return ScoreResult(not failures, tuple(failures))
 
 
