@@ -773,6 +773,22 @@ def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
     assert "install" in sheet
 
 
+def test_inspect_repo_parameterized_just_install_recipe(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "justfile").write_text(
+        'foo := "bar"\n\n'
+        "install *args:\n    uv sync {{args}}\n\n"
+        "release version:\n    echo {{version}}\n\n"
+        "add_skill *args:\n    echo {{args}}\n"
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert "install" in facts["just_recipes"]
+    assert "release" in facts["just_recipes"]
+    assert "add_skill" in facts["just_recipes"]
+    assert "foo" not in facts["just_recipes"]
+    assert facts["suggested_install_commands"] == ["just install"]
+
+
 def test_inspect_repo_registry_install_stays_ahead_of_just_recipes(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     justfile = "install:\n    npm ci\n\nbuild:\n    npm run build\n"

@@ -87,7 +87,7 @@ def _npm_bin_names(pkg):
 
 
 def _recipe_names(text):
-    matches = re.finditer(r"(?m)^([a-zA-Z][\w-]*):(?!=)", text)
+    matches = re.finditer(r"(?m)^([a-zA-Z][\w-]*)(?:[ \t]+\S+)*:(?!=)", text)
     return [match.group(1) for match in islice(matches, _MAX_NAMES)]
 
 
