@@ -95,8 +95,9 @@ def _top_justfile(root, top):
 
 
 def _with_just_install(install, recipes):
-    extras = [f"just {name}" for name in ("install", "build") if name in recipes]
-    return extras + [cmd for cmd in install if cmd not in extras]
+    if install:
+        return install
+    return [f"just {name}" for name in ("install", "build") if name in recipes]
 
 
 def _unique(items):
@@ -214,10 +215,9 @@ def _manifest_facts(root, files, facts):
         ecosystems.append("pypi")
         if manifests["pyproject.toml"]["name"]:
             install.append(f"pip install {manifests['pyproject.toml']['name']}")
-        if re.search(r"\[project\.scripts\]", text):
-            facts["console_scripts"] = re.findall(
-                r'(?m)^\s*([\w.-]+)\s*=\s*["\']', text.split("[project.scripts]", 1)[1][:500]
-            )
+        if "[project.scripts]" in text:
+            scripts_table = re.split(r"(?m)^\[", text.split("[project.scripts]", 1)[1], maxsplit=1)[0]
+            facts["console_scripts"] = re.findall(r'(?m)^\s*([\w.-]+)\s*=\s*["\']', scripts_table)
             binary_names.extend(facts["console_scripts"])
 
     if "cargo.toml" in lower:

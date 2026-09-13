@@ -654,11 +654,30 @@ def test_inspect_repo_prefers_binary_name_over_git_slug(tmp_path: Path) -> None:
 def test_inspect_repo_prefers_console_scripts_over_project_name(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\ndemo = "demo:main"\n'
+        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n'
+        '[project.scripts]\ndemo = "demo:main"\n\n'
+        '[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n'
+        'target-version = "3.12"\n'
     )
     facts = inspect.inspect(str(tmp_path))
     assert facts["binary_names"] == ["demo"]
     assert facts["name"] == "demo"
+    sheet = inspect.human(facts)
+    assert "demo" in sheet
+    assert "build-backend" not in sheet
+    assert "target-version" not in sheet
+
+
+def test_inspect_repo_empty_console_scripts_keep_project_name(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n'
+        "[project.scripts]\n# no entry points\n\n"
+        '[build-system]\nbuild-backend = "hatchling.build"\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == []
+    assert facts["name"] == "demo-lib"
 
 
 def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
@@ -671,6 +690,29 @@ def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
     sheet = inspect.human(facts)
     assert "JUST" in sheet
     assert "install" in sheet
+
+
+def test_inspect_repo_registry_install_stays_ahead_of_just_recipes(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    justfile = "install:\n    npm ci\n\nbuild:\n    npm run build\n"
+
+    npm = tmp_path / "npm"
+    npm.mkdir()
+    (npm / "justfile").write_text(justfile)
+    (npm / "package.json").write_text(json.dumps({"name": "demo", "bin": {"demo": "cli.js"}}))
+    npm_facts = inspect.inspect(str(npm))
+    assert npm_facts["suggested_install_commands"][0] == "npm install -g demo"
+    assert not any(cmd.startswith("just ") for cmd in npm_facts["suggested_install_commands"])
+    assert npm_facts["just_recipes"] == ["install", "build"]
+
+    pypi = tmp_path / "pypi"
+    pypi.mkdir()
+    (pypi / "justfile").write_text("install:\n    uv sync\n")
+    (pypi / "pyproject.toml").write_text('[project]\nname = "demo-lib"\n')
+    pypi_facts = inspect.inspect(str(pypi))
+    assert pypi_facts["suggested_install_commands"][0] == "pip install demo-lib"
+    assert not any(cmd.startswith("just ") for cmd in pypi_facts["suggested_install_commands"])
+    assert pypi_facts["just_recipes"] == ["install"]
 
 
 def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
