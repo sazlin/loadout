@@ -347,7 +347,7 @@ def test_latest_tag_falls_back_to_pyproject_version(tmp_path: Path) -> None:
     assert _generator().latest_tag(repo) == "v1.2.3"
 
 
-def test_template_examples_use_version_placeholder_not_stale_pins() -> None:
+def test_template_uvx_git_urls_pin_main() -> None:
     text = TEMPLATE.read_text()
     assert "{{VERSION}}" in text
     assert "v0.5.0" not in text

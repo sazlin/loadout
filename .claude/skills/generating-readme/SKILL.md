@@ -33,7 +33,9 @@ skill into `skills/` or attach it to `loadouts/*.yaml`.
    `docs/assets/loadout-banner.jpg` and existing pitch / quick start unless a
    fact changed.
 3. Run the generator script (fills or drops generated sections). It also
-   replaces `{{VERSION}}` / `{{VERSION_NUMBER}}` with the newest git tag:
+   replaces `{{VERSION}}` / `{{VERSION_NUMBER}}` with the newest git tag.
+   Do not put `{{VERSION}}` on uvx git URLs; those stay `@main`. Edit pins
+   in the template then regenerate; do not hand-edit README.md uvx lines.
 
 ```bash
 uv run python .claude/skills/generating-readme/scripts/generate_readme.py \
