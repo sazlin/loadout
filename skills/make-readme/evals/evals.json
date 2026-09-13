@@ -44,6 +44,7 @@
       "expectations": [
         "Runs python3 scripts/inspect_repo.py and python3 scripts/score_readme.py",
         "Writes one commented command catalog ending in --help; does not dump --version or --help stdout as extra fences",
+        "Caps Quick start at 8 invocations plus --help; extra subcommands go in details or docs",
         "Uses the binary or product name as H1, not the git slug",
         "Does not invent a second install path or ship a Without X details block that still uses X",
         "Moves companion CLIs and shell functions into a details extra",

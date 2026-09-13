@@ -96,7 +96,8 @@ your final summary. For the hero command, take the launch the existing README, s
 
 Work from `README_TEMPLATE.md`. Its inline instruction blocks carry the per-section rules;
 `references/section-playbook.md` carries the reasoning and the failure modes, and
-`references/badges.md` has copy-paste badge URLs.
+`references/badges.md` has copy-paste badge URLs. Keep only the CLI catalog or the library
+example; delete the unused skeleton so placeholders cannot leak.
 
 Canonical order (median positions from the corpus):
 
@@ -104,7 +105,7 @@ Canonical order (median positions from the corpus):
 2. Hero visual: GIF for a CLI, screenshot for an app, first code block for a library
 3. Features: 3 to 6 bullets, bold benefit first, differentiators only (7 to 8 only if each is a distinct shipped capability)
 4. Installation: one primary command, prerequisites on one line; extras only if they are real, documented, and internally consistent
-5. Quick start: CLI = one commented command catalog ending in `--help`; library = smallest example plus printed result
+5. Quick start: CLI = one commented command catalog, at most 8 invocations plus `--help` (overflow in `<details>` or docs/); library = smallest example plus printed result. Delete the unused template skeleton.
 6. At most one domain section: integrations table, deployment, comparison, or architecture
 7. Documentation: docs home plus up to 3 deep links
 8. Community and support: routed by intent, 2 to 4 lines
@@ -125,8 +126,8 @@ Writing rules that the corpus and the guides agree on:
 - Do not describe unreleased work in the present tense.
 - H1 is the binary or product name people type, not the git folder.
 - Copy the project's own nouns from the existing README and `--help`. Do not rename the product to match implementation jargon.
-- For a CLI, Quick start is one language-tagged pane of real invocations: a one-line `# comment` above each command, blank line between examples, `--help` last. Comments count as expected output. Do not dump `--version` or `--help` stdout. Companion CLIs and shell functions go in a `<details>`, same comment-then-command style.
-- For a library, Quick start stays a tiny example plus what it prints. Do not flatten a library README into a command catalog.
+- For a CLI, Quick start is one language-tagged pane of real invocations: a one-line `# comment` above each command, blank line between examples, `--help` last. At most 8 invocations plus `--help`; extra subcommands go in `<details>` or docs/. Comments count as expected output. Do not dump `--version` or `--help` stdout. Companion CLIs and shell functions go in a `<details>`, same comment-then-command style.
+- For a library, Quick start stays a tiny example plus what it prints. Do not flatten a library README into a command catalog. Delete the bash catalog skeleton.
 - Features sell the switch, not the implementation. Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the product.
 
 In `improve` mode, work section by section against the score report: fix every CRITICAL,

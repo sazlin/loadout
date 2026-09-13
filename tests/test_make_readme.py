@@ -126,6 +126,7 @@ def test_evals_cover_create_improve_and_review_modes() -> None:
     assert "commented command catalog" in blob
     assert "git slug" in blob
     assert "without x" in blob
+    assert "8 invocations" in blob
 
 
 def test_body_requires_cli_catalog_rules() -> None:
@@ -134,6 +135,30 @@ def test_body_requires_cli_catalog_rules() -> None:
     assert "git slug" in text or "git folder" in text
     assert "without x" in text
     assert "differentiat" in text
+    assert "at most 8 invocations" in text
+
+
+def test_template_has_cli_and_library_quick_start_fillins() -> None:
+    template = (SKILL_ROOT / "README_TEMPLATE.md").read_text()
+    assert "{{BINARY}} --help" in template
+    assert "{{HERO_COMMAND}}" in template
+    assert "```bash" in template
+    assert "{{LANGUAGE_TAG}}" in template
+    assert "{{MINIMAL_RUNNABLE_EXAMPLE}}" in template
+    assert "{{EXPECTED_OUTPUT}}" in template
+    assert "```{{LANGUAGE_TAG}}" in template
+    assert "delete the unused" in template.lower()
+
+
+def test_cli_catalog_cap_is_eight_plus_help() -> None:
+    for path in (
+        SKILL_ROOT / "README_TEMPLATE.md",
+        SKILL_MD,
+        SKILL_ROOT / "references" / "section-playbook.md",
+    ):
+        text = path.read_text().lower()
+        assert "at most 8 invocations" in text, path.name
+        assert "details" in text
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -713,6 +738,43 @@ def test_inspect_repo_registry_install_stays_ahead_of_just_recipes(tmp_path: Pat
     assert pypi_facts["suggested_install_commands"][0] == "pip install demo-lib"
     assert not any(cmd.startswith("just ") for cmd in pypi_facts["suggested_install_commands"])
     assert pypi_facts["just_recipes"] == ["install"]
+
+
+def _cli_catalog_fence(n_cmds: int) -> str:
+    chunks = [f"# Run command {i}\ndemo sub{i}\n" for i in range(n_cmds)]
+    chunks.append("# List all options and other usage\ndemo --help\n")
+    return "```bash\n" + "\n".join(chunks) + "```\n"
+
+
+def _cli_readme_body(quick_start: str) -> str:
+    return (
+        "# demo\n\n"
+        "A CLI for testers who need a command catalog.\n\n"
+        "## Features\n\n"
+        "- **Fast.** Starts in one command.\n"
+        "- **Offline.** No network required.\n"
+        "- **Single binary.** No runtime.\n\n"
+        "## Installation\n\n"
+        "```bash\npip install demo\n```\n\n"
+        "## Quick start\n\n"
+        f"{quick_start}\n"
+        "## Documentation\n\n"
+        "See [docs](https://example.com).\n\n"
+        "## Contributing\n\n"
+        "See CONTRIBUTING.md.\n\n"
+        "## License\n\n"
+        "MIT\n"
+    )
+
+
+def test_capped_cli_catalog_with_overflow_stays_in_length_band() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    extra = "\n".join(f"# Extra {i}\ndemo extra{i}\n" for i in range(32))
+    overflow = f"<details>\n<summary>More commands</summary>\n\n```bash\n{extra}```\n\n</details>\n"
+    md = _cli_readme_body(_cli_catalog_fence(8) + overflow)
+    length_item = next(item for item in score.check(md)[0] if item["id"] == "length")
+    assert length_item["ok"] is True
+    assert 50 <= md.count("\n") + 1 <= 320
 
 
 def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:

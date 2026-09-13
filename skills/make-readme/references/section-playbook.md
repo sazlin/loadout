@@ -162,9 +162,11 @@ directly, and in that case the clone command lives in Quick start instead.
   a blank line between examples, `--help` last. Escalate from the common case to the weird ones.
   Comments count as expected output. Do not dump `--version` or `--help` stdout as extra fences.
   The first command is the launch the existing README, shims, or `--help` already treat as
-  primary; do not infer a profile from the language or stack. Companion CLIs and shell functions
-  go in a `<details>` below the pane, same comment-then-command style. The 15-line / two-example
-  cap does not apply to this catalog.
+  primary; do not infer a profile from the language or stack. At most 8 invocations plus
+  `--help`, common-case first. Extra subcommands go in a `<details>` below the pane or in docs/.
+  Companion CLIs and shell functions go in a `<details>` below the pane, same
+  comment-then-command style. The 15-line / two-example cap does not apply to this catalog; the
+  8-plus-`--help` cap does.
 - Library / SDK: one minimal, runnable example. It must run against the current version,
   unmodified. Show the printed result ("Use examples liberally, and show the expected output
   if you can" (makeareadme)). Keep the first example under ~15 lines. Two examples maximum if

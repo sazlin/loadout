@@ -174,19 +174,24 @@ STATUS: Required. 52% have this exact heading; 77% of the top 40 ship a fenced c
         block. With Installation, this is the highest-value section in the file.
 
 STEPS
-  1. Pick the shape by project type:
+  1. Pick the shape by project type. Keep only one skeleton below. Delete the unused
+     skeleton entirely so leftover {{placeholders}} cannot leak.
 
-     CLI: one language-tagged ```bash pane of real invocations. A one-line `# comment`
-     above each command, a blank line between examples, `--help` last. Escalate from
-     the common case to the weird ones. Comments count as expected output; do not add a
-     second fence of `--version` or `--help` stdout. Do not prove the binary exists.
-     The first command is the launch the existing README, shims, or `--help` already
-     treat as primary. Companion CLIs and shell functions go in a <details> below the
-     pane, same comment-then-command style. The 15-line / two-example cap does not apply
-     to this catalog.
+     CLI: keep the bash catalog; delete the library skeleton. One language-tagged
+     ```bash pane of real invocations. A one-line `# comment` above each command, a
+     blank line between examples, `--help` last. Escalate from the common case to the
+     weird ones. Comments count as expected output; do not add a second fence of
+     `--version` or `--help` stdout. Do not prove the binary exists. The first command
+     is the launch the existing README, shims, or `--help` already treat as primary.
+     At most 8 invocations plus `--help`, common-case first. Extra subcommands go in
+     a <details> below the pane or in docs/. Companion CLIs and shell functions go in
+     a <details> below the pane, same comment-then-command style. The 15-line /
+     two-example cap does not apply to this catalog; the 8-plus-`--help` cap does.
 
-     Library / SDK: the SMALLEST COMPLETE thing that works, under ~15 lines, plus the
-     printed result (comment in the block or a second fence). Two examples maximum.
+     Library / SDK: keep the language-tagged example; delete the bash catalog. Do not
+     leave `{{BINARY}} --help`. The SMALLEST COMPLETE thing that works, under ~15 lines,
+     plus the printed result (comment in the block or a second fence). LANGUAGE_TAG
+     is python, ts, or go, not bash. Two examples maximum.
 
   2. It must run as written against the current release. Copy it out and run it.
   3. Tag the fence with a language (```bash, ```python, ```ts, ```go). 75% of the
@@ -208,6 +213,14 @@ END INSTRUCTIONS -->
 
 # List all options and other usage
 {{BINARY}} --help
+```
+
+```{{LANGUAGE_TAG}}
+{{MINIMAL_RUNNABLE_EXAMPLE}}
+```
+
+```
+{{EXPECTED_OUTPUT}}
 ```
 
 <!-- INSTRUCTIONS: OPTIONAL DOMAIN SECTION --------------------------------------
