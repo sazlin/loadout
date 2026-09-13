@@ -12,10 +12,11 @@
       "expectations": [
         "Drops C-003 as a duplicate of SEC-001",
         "Groups the two PII leaks together",
-        "Groups the two maintainability issues together",
+        "Tasks the important maintainability issue; defers minor M-002",
         "Groups the timeout and swallowed-error scale issues together",
         "Never puts more than 3 issues in one task",
-        "Every surviving issue appears in exactly one task"
+        "Every surviving significant issue appears in exactly one task",
+        "Does not write M-002 as an open task"
       ],
       "expected_dropped": [
         {
@@ -28,7 +29,7 @@
         ["SEC-002", "SEC-003"],
         ["C-001"],
         ["C-002"],
-        ["M-001", "M-002"],
+        ["M-001"],
         ["R-001"],
         ["R-002", "R-003"]
       ]

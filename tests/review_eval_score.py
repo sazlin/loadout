@@ -40,7 +40,7 @@ SEVERITIES = frozenset({"critical", "important", "minor"})
 MAX_ISSUES_PER_TASK = 3
 _JSON_FENCE = re.compile(r"```json\s*(.*?)\s*```", re.DOTALL)
 _REPORT_KEYS = ("status", "agent", "charter", "inputs", "issues")
-_ORCH_KEYS = ("status", "agent", "tasks", "dropped_duplicates", "reviewers")
+_ORCH_KEYS = ("status", "agent", "tasks", "dropped_duplicates", "deferred_minors", "reviewers")
 
 
 @dataclass(frozen=True)

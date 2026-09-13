@@ -297,6 +297,7 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "https://cursor.com/agents/" in started
     assert "cursor cloud dashboard for this harness" in started.lower()
     assert RESUME_STARTUP_MARKER in text
+    assert "deferred minors" in lowered
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -492,6 +493,44 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "do not implement" in lowered
     assert "gh pr merge" in lowered
     assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
+    assert "deferred_minors" in text
+
+
+def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "open tasks are `critical` and `important` only" in lowered or (
+            "critical" in lowered and "important" in lowered and "never" in lowered and "minor" in lowered
+        )
+        assert "deferred minors" in lowered or "deferred_minors" in text
+        assert "REVIEW_HISTORY.md" in text
+        assert "issue_resolver" in lowered
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "minor" in anti and "open task" in anti
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "deferred minors" in comments
+        history = text.split("### Significant issues and caps", 1)[1].split("### Dispatch", 1)[0].lower()
+        assert "never become" in lowered or "do not become" in lowered
+        assert "open task" in history or "open tasks" in lowered
+
+
+def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "loop 2" in lowered or "loops 2" in lowered
+        assert "issue_resolver" in lowered
+        assert "resolver commit" in lowered or "resolver commits" in lowered
+        assert "all four" in lowered
+        guidance = text.split("## Agent-specific guidance", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "regression" in guidance
+        assert "four" in guidance
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "never skip a reviewer" in anti
+        assert "loop 2" in anti or "later panel" in anti or "panel loop" in anti
 
 
 def test_orchestrator_hashes_and_deletes_the_tasks_file() -> None:
@@ -724,6 +763,13 @@ def test_dimension_reviewers_do_not_write_harness_files() -> None:
         assert "do not write files" in text
         assert "tasks_to_resolve.md" in text
         assert "rally point" not in text
+
+
+def test_dimension_reviewers_honor_resolver_commit_range() -> None:
+    for filename in REVIEW_DIMENSION_AGENTS:
+        text = _agent_file(filename).read_text().lower()
+        assert "resolver commit" in text or "issue_resolver" in text
+        assert "only that range" in text or "only this range" in text or "review only that range" in text
 
 
 def test_evals_json_files_exist_and_cover_each_review_agent() -> None:

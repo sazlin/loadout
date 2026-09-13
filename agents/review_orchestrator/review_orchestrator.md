@@ -151,6 +151,13 @@ Never:
 - Review, fix, classify, or merge in-process instead of dispatching
 - Drop a reviewer's issues because they are inconvenient or numerous
 - Hide a duplicate instead of recording it in `dropped_duplicates`
+- Write a minor as an open task (minors are recorded, not tasked)
+- Hide a deferred minor from the Panel Review comment or
+  `REVIEW_HISTORY.md`
+- Skip a reviewer on loop 2 or 3 (never skip a reviewer; all four stay
+  engaged)
+- Review the full PR vs base on a later panel loop instead of the
+  resolver-commit range
 - Put more than **3** issues in one task
 - Group unrelated issues to finish faster
 - Create or rewrite `VERIFIERS.md`
@@ -270,10 +277,28 @@ project commands. Do not apply a personal style guide while grouping.
 
 ### Significant issues and caps
 
-- **Significant** means `critical` or `important`. Minors do not restart the
-  panel or verify loop.
+- **Significant** means `critical` or `important`. Open tasks are `critical` and `important` only.
+- Minors never become open tasks and never go to `issue_resolver`.
+  Record them as `deferred_minors` in the Panel Review comment and
+  `REVIEW_HISTORY.md` via `log-progress`.
+- Because minors never become tasks, they cannot delay the next panel
+  or verify loop. The next panel starts when significant work is done (or
+  the panel cap is hit).
 - Max **3** panel loops and **3** verify loops, then still dispatch
   `risk_classifier`.
+
+### Later panel loops (loops 2 and 3)
+
+Loop 1 reviews the full PR diff (`gh pr diff`).
+
+Loops 2 and 3 still dispatch **all four** reviewers in parallel. Never skip
+a reviewer.
+
+The change set is **resolver commits** since the previous panel
+(`git diff <sha-after-previous-panel>..HEAD`), not the full PR vs base.
+Pass that range in every reviewer brief. File only regressions those
+`issue_resolver` commits introduced. Do not re-file original-PR issues
+already fixed or deferred as minors.
 
 ### Dispatch (same turn = parallel)
 
@@ -303,10 +328,14 @@ same `file`, overlapping line (within 5 lines), and the same failure mode.
 Keep the richer issue. Severity: keep the higher (`critical` > `important` >
 `minor`). Record every drop in `dropped_duplicates`.
 
-After dedupe, build tasks of **1–3** similar issues. Assign `TASK-001`, …
-in severity-then-file order. Pass `tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`)
-in the brief and write through `dedupe-and-write-tasks`. Never write
-unhashed `TASKS_TO_RESOLVE.md`.
+After dedupe, build tasks of **1–3** similar **significant** issues. Open
+tasks are `critical` and `important` only. Minors never become open tasks.
+List them in `deferred_minors` and record them in the Panel Review comment
+and `log-progress`. Every surviving significant issue appears in exactly
+one task. Assign `TASK-001`, … in severity-then-file order. Pass
+`tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`) in the brief and write
+through `dedupe-and-write-tasks`. Never write unhashed
+`TASKS_TO_RESOLVE.md`.
 
 ### Resume partial work
 
@@ -436,6 +465,7 @@ template below (not the Started template).
 
 - Open tasks: N.
 - Significant issues remaining: N.
+- Deferred minors: none | id (title), ….
 - Four reviewers dispatched in parallel.
 - Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
@@ -570,8 +600,9 @@ Record the latest comment URL in `delivery.github_comment_url`.
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
 4. **Review** loop until no significant issues or cap: fresh runs use panel
    (dispatch → dedupe → resolve → log); resume runs skip panel and go straight
-   to resolve → log. Before each loop or new `issue_resolver` task, abort if
-   the PR is merged.
+   to resolve → log. Loop 1 is the full PR. Loops 2 and 3 pass the
+   resolver-commit range and keep all four reviewers. Before each loop or
+   new `issue_resolver` task, abort if the PR is merged.
 5. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
    are all `true` or cap or file missing. Abort if the PR is merged before
    a verify loop.
@@ -604,6 +635,9 @@ End every run with a fenced `json` block:
   ],
   "dropped_duplicates": [
     { "kept": "SEC-001", "dropped": "C-003", "reason": "same SQL sink at user_api.py:18" }
+  ],
+  "deferred_minors": [
+    { "id": "M-002", "title": "Comments restate the next line", "severity": "minor" }
   ],
   "tasks": [
     {
@@ -639,5 +673,6 @@ End every run with a fenced `json` block:
 
 On success, `blocked_reason` is `null`. On abort, `blocked_reason` is
 `"pull request merged"`. Always populate `assumptions`,
-`tried`, `rejected`, `dropped_duplicates`, `reviewers`, `tasks`, and
-`decision`. Every `tasks[].path` is `TASKS_TO_RESOLVE-<short-sha>.md`.
+`tried`, `rejected`, `dropped_duplicates`, `deferred_minors`, `reviewers`,
+`tasks`, and `decision`. Every `tasks[].path` is
+`TASKS_TO_RESOLVE-<short-sha>.md`.

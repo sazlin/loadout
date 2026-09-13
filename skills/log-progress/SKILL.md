@@ -27,7 +27,7 @@ Append-only history for the PR-review harness.
 3. Fill: timestamp (ISO), agent, phase (`panel` | `resolve` | `verify` |
    `decision` | `abort`), optional task id, one-paragraph summary, outcome
    (`ok` | `blocked` | `false_claim` | `merged` | `wait_for_human` |
-   `aborted`).
+   `aborted`). Panel summaries list deferred minors by id (or `none`).
 
 Do not commit this file as part of a product fix. Do not edit
 `VERIFIERS.md` or source.

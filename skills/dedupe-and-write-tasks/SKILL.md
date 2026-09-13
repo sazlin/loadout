@@ -31,7 +31,12 @@ fix steps from the dropped one. Record every drop. Severity: keep the higher
   verifiable together.
 - **1-3 issues per task.** Never 4+. A single critical may stand alone.
 - Do not mix a security sink with a rename just because they share a file.
-- Every surviving issue appears in exactly one task.
+- Open tasks are `critical` and `important` only. Minors never become
+  open tasks and never go to `issue_resolver`. Record every deferred
+  minor (id, title, file) for the Panel Review comment and
+  `REVIEW_HISTORY.md`.
+- Every surviving **significant** (`critical` / `important`) issue appears
+  in exactly one task.
 - Assign `TASK-001`, `TASK-002`, … in severity-then-file order (`critical`
   first). Status `open`.
 
@@ -48,6 +53,8 @@ tasks file (the orchestrator deletes it on exit).
 ## Guardrails
 
 - Never hide a duplicate without recording it
+- Never write a minor as an open task
+- Never hide a minor without recording it
 - Never put more than 3 issues in one task
 - Never leave a half-written tasks file
 - Never invent a path; use the brief's `TASKS_TO_RESOLVE-<short-sha>.md`

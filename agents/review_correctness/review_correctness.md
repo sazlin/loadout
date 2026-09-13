@@ -157,7 +157,10 @@ Treat these as primary detection targets:
 
 ### When invoked
 
-1. Scope the change set from the brief.
+1. Scope the change set from the brief. If the brief names a
+   resolver-commit range (`issue_resolver` commits since the previous
+   panel), review **only that range**. File regressions those commits
+   introduced. Do not re-file original-PR issues already fixed or deferred.
 2. Trace inputs → transforms → writes/responses for each touched path.
 3. Ask, for every write and every dropped element: is that intentional and total?
 4. File only defects you can point at with a file and line.
