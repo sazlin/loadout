@@ -894,6 +894,35 @@ def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
     assert _expected_output_ok(score, lone) is False
 
 
+def test_score_readme_getting_started_install_extras_are_not_a_catalog() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+
+    getting_started = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Getting started\n\n" + extras
+    assert _expected_output_ok(score, getting_started) is False
+
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    extras_in_details = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        f"{extras}\n</details>\n"
+    )
+    assert _expected_output_ok(score, extras_in_details) is False
+
+    quick_start_extras = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Quick start\n\n" + extras
+    assert _expected_output_ok(score, quick_start_extras) is False
+
+    quick_start = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# List all options and other usage\ndemo --help\n```\n"
+    )
+    assert _expected_output_ok(score, quick_start) is True
+
+
 def test_score_readme_accepts_just_install() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     md = "# demo\n\nInstall it.\n\n```bash\njust install\njust build\n```\n"

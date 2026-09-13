@@ -35,7 +35,16 @@ _FENCE_BODY = re.compile(r"```([a-zA-Z0-9+#-]*)\n(.*?)```", re.DOTALL)
 _DETAILS = re.compile(r"<details\b[^>]*>(.*?)</details>", re.IGNORECASE | re.DOTALL)
 _SUMMARY = re.compile(r"<summary\b[^>]*>(.*?)</summary>", re.IGNORECASE | re.DOTALL)
 _WITHOUT = re.compile(r"(?i)\bwithout\s+([A-Za-z][\w.-]*)")
-_CATALOG_SECTION = re.compile(r"(?i)^(quick\s*start|usage|getting\s+started)\b")
+_CATALOG_SECTION = re.compile(r"(?i)^(quick\s*start|usage)\b")
+_INSTALL_RE = (
+    r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|"
+    r"python3? -m pip|pip3 install|pip install|pipx install|"
+    r"uv (tool )?(add|install|pip)|brew install|cargo install|"
+    r"go install|go get|docker run|docker compose|apt(-get)? install|"
+    r"dnf install|winget install|scoop install|choco install|"
+    r"gem install|composer require|curl [^\n|]*\| ?(sh|bash)|"
+    r"git clone|npx |uvx |make install|just install|just build)"
+)
 
 
 def _read_text(path: str, limit: int = READ_LIMIT) -> str:
@@ -65,18 +74,30 @@ def _heading_before(md: str, pos: int) -> str:
     return heading
 
 
+def _shell_commands(body: str) -> list[str]:
+    return [line.strip() for line in body.splitlines() if line.strip() and not re.match(r"^# ", line)]
+
+
 def _last_command_is_help(body: str) -> bool:
-    commands = [line.strip() for line in body.splitlines() if line.strip() and not re.match(r"^# ", line)]
+    commands = _shell_commands(body)
     return bool(commands) and commands[-1].endswith("--help")
 
 
+def _all_install_commands(body: str) -> bool:
+    commands = _shell_commands(body)
+    return bool(commands) and all(re.search(_INSTALL_RE, cmd) for cmd in commands)
+
+
 def _commented_shell_catalog(md: str) -> bool:
+    # Sufficient: last command is --help, or a Quick start/Usage fence that is not only install extras.
     visible = _DETAILS.sub("", md)
     for match in _FENCE_BODY.finditer(visible):
         lang, body = match.group(1).lower(), match.group(2)
         if lang not in _SHELL_FENCE_LANGS:
             continue
         if len(re.findall(r"(?m)^# .+", body)) < 2:
+            continue
+        if _all_install_commands(body):
             continue
         if _last_command_is_help(body) or _CATALOG_SECTION.match(_heading_before(visible, match.start())):
             return True
@@ -199,9 +220,8 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
             "Tagline is short enough to scan",
             f"Tagline is {len(tagline)} chars. Trim to <=120; move detail into Features.",
         )
-    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|python3? -m pip|pip3 install|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install|just install|just build)"
     add(
-        re.search(install_re, md),
+        re.search(_INSTALL_RE, md),
         CRIT,
         "install",
         "An install or run command is present",
