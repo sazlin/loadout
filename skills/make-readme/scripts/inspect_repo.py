@@ -187,12 +187,13 @@ def _manifest_facts(root, files, lower, top, facts):
 
     if "cargo.toml" in lower:
         text = _read_text(os.path.join(root, lower["cargo.toml"]))
-        name = name or toml_get(text, "name")
+        cargo_name = toml_get(text, "name")
+        name = name or cargo_name
         desc = desc or toml_get(text, "description")
         version = version or toml_get(text, "version")
         ecosystems.append("crates.io")
-        if name:
-            install.append(f"cargo install {name}")
+        if isinstance(cargo_name, str) and cargo_name:
+            install.append(f"cargo install {cargo_name}")
     if "go.mod" in lower:
         text = _read_text(os.path.join(root, lower["go.mod"]))
         module_match = re.search(r"(?m)^module\s+(\S+)", text)
@@ -328,9 +329,7 @@ def _docs_and_media(files, facts):
         if os.path.splitext(path)[1].lower() in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
         and not path.startswith("node_modules")
     ][:20]
-    facts["demo_media"] = [path for path in facts["images"] if path.lower().endswith((".gif", ".webp"))] + [
-        path for path in files if path.lower().endswith((".mp4", ".webm", ".cast"))
-    ]
+    facts["demo_media"] = [path for path in files if path.lower().endswith((".gif", ".webp", ".mp4", ".webm", ".cast"))]
 
 
 def _readme_stats(root, facts):

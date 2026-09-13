@@ -217,6 +217,50 @@ def test_inspect_repo_skips_npm_install_when_package_json_invalid_or_unnamed(tmp
     assert "npm install -g demo-cli" in named_facts["suggested_install_commands"]
 
 
+def test_inspect_repo_cargo_install_uses_crate_name_not_npm_or_pypi_name(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    polyglot = tmp_path / "polyglot"
+    polyglot.mkdir()
+    (polyglot / "package.json").write_text(json.dumps({"name": "@org/web"}))
+    (polyglot / "Cargo.toml").write_text('[package]\nname = "native-core"\n')
+    polyglot_facts = inspect.inspect(str(polyglot))
+    assert "cargo install native-core" in polyglot_facts["suggested_install_commands"]
+    assert "cargo install @org/web" not in polyglot_facts["suggested_install_commands"]
+
+    rust_only = tmp_path / "rust-only"
+    rust_only.mkdir()
+    (rust_only / "Cargo.toml").write_text('[package]\nname = "demo-cli"\n')
+    rust_facts = inspect.inspect(str(rust_only))
+    assert "cargo install demo-cli" in rust_facts["suggested_install_commands"]
+
+    unnamed_crate = tmp_path / "unnamed-crate"
+    unnamed_crate.mkdir()
+    (unnamed_crate / "package.json").write_text(json.dumps({"name": "@org/web"}))
+    (unnamed_crate / "pyproject.toml").write_text('[project]\nname = "demo-lib"\n')
+    (unnamed_crate / "Cargo.toml").write_text("[package]\n")
+    unnamed_facts = inspect.inspect(str(unnamed_crate))
+    assert not any(cmd.startswith("cargo install") for cmd in unnamed_facts["suggested_install_commands"])
+
+
+def test_inspect_repo_demo_media_includes_gif_beyond_first_20_images(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    for index in range(20):
+        (tmp_path / f"shot-{index:02d}.png").write_bytes(b"")
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "demo.gif").write_bytes(b"")
+    (tmp_path / "clip.mp4").write_bytes(b"")
+    (tmp_path / "loop.webm").write_bytes(b"")
+    (tmp_path / "session.cast").write_bytes(b"")
+    facts = inspect.inspect(str(tmp_path))
+    assert "docs/demo.gif" in facts["demo_media"]
+    assert len(facts["images"]) == 20
+    assert "clip.mp4" in facts["demo_media"]
+    assert "loop.webm" in facts["demo_media"]
+    assert "session.cast" in facts["demo_media"]
+
+
 def test_inspect_repo_omits_discord_webhook_urls_from_community_links(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     webhook = "https://discord.com/api/webhooks/111/exampletoken"
