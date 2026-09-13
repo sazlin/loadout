@@ -546,8 +546,16 @@ def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
         assert "all four" in lowered
         later = text.split("### Later panel loops", 1)[1].split("### Dispatch", 1)[0]
         later_lower = later.lower()
-        assert "review_history" in later_lower or "git log" in later_lower
-        assert "git diff" in later_lower
+        assert "frozen" in later_lower
+        assert "TASKS_TO_RESOLVE-<short-sha>.md" in later
+        assert "git rev-parse" in later
+        assert "git diff <left-sha>..HEAD" in later
+        assert "wins" in later_lower
+        obtain = later.split("Obtain it:", 1)[1].split("Diff with", 1)[0]
+        assert "--after" not in obtain.split("Do not find left SHA", 1)[0]
+        assert "git log --reverse --format='%H' --after=" not in later
+        assert "--max-count=1" in later
+        assert "<left-sha>..HEAD" in later
         assert "sha-after-previous-panel" not in later_lower
         guidance = text.split("## Agent-specific guidance", 1)[1].split("## Output schema", 1)[0].lower()
         assert "regression" in guidance

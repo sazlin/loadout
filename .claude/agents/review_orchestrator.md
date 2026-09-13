@@ -299,19 +299,27 @@ a reviewer.
 The change set is **resolver commits** since the previous panel, not
 the full PR vs base.
 
-**Left SHA.** The commit that was `HEAD` on the PR branch when the previous
-panel's `log-progress` entry was written. That is also the parent of the
-first `issue_resolver` commit after that panel.
+**Left SHA.** The frozen panel SHA: `HEAD` at that panel's dispatch, which
+is the `<short-sha>` in `TASKS_TO_RESOLVE-<short-sha>.md`. That commit is
+the parent of the first `issue_resolver` commit after that panel.
+
+If a `log-progress` timestamp, a recorded branch HEAD, and the hashed-tasks
+`<short-sha>` would name different objects, the frozen hashed-tasks SHA
+wins.
 
 Obtain it:
 
-1. In `REVIEW_HISTORY.md`, take the latest heading with phase `panel` and
-   copy its ISO timestamp.
-2. First resolver commit after that write:
-   `git log --reverse --format='%H' --after='<panel-iso-timestamp>' HEAD`
-3. Left SHA is that commit's parent: `git rev-parse <first-hash>^`
-   If that panel summary already recorded the branch HEAD SHA, use that
-   value and skip steps 2–3.
+1. Shortcut: if that panel's `log-progress` entry already recorded the
+   branch HEAD SHA at dispatch, use it.
+2. Otherwise take `<short-sha>` from that panel's
+   `TASKS_TO_RESOLVE-<short-sha>.md` filename and run
+   `git rev-parse <short-sha>`.
+
+Do not find left SHA with `git log --after=<panel-iso-timestamp>`. Panel
+`log-progress` is written after `issue_resolver` commits, so `--after` that
+stamp can skip the resolver range this loop must review. If you need the
+first resolver commit as a check, cap a revision range, not dates:
+`git log --reverse --max-count=1 --format='%H' <left-sha>..HEAD`
 
 Diff with **two dots** (`git diff <left-sha>..HEAD`): tree of left SHA vs
 tree of `HEAD`. Do not use three-dot `git diff <left-sha>...HEAD`. If
