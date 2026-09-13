@@ -356,9 +356,9 @@ Keep the richer issue. Severity: keep the higher (`critical` > `important` >
 
 After dedupe, build tasks of **1–3** similar **significant** issues. Open
 tasks are `critical` and `important` only. Minors never become open tasks.
-List them in `deferred_minors` and record them in the Panel Review comment
-and `log-progress`. Every surviving significant issue appears in exactly
-one task. Assign `TASK-001`, … in severity-then-file order. Pass
+List them in `deferred_minors` (`id`, `title`, `severity`, `file`) and
+record them in the Panel Review comment and `log-progress`. Every
+surviving significant issue appears in exactly one task. Assign `TASK-001`, … in severity-then-file order. Pass
 `tasks_path` (`TASKS_TO_RESOLVE-<short-sha>.md`) in the brief and write
 through `dedupe-and-write-tasks`. Never write unhashed
 `TASKS_TO_RESOLVE.md`.
@@ -495,6 +495,9 @@ template below (not the Started template).
 - Four reviewers dispatched in parallel.
 - Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
+
+`id (title)` is the display form of each `deferred_minors[]` object
+(`id`, `title`, `severity`, `file`), not a second schema.
 
 **Resolve Issues**
 
@@ -663,7 +666,12 @@ End every run with a fenced `json` block:
     { "kept": "SEC-001", "dropped": "C-003", "reason": "same SQL sink at user_api.py:18" }
   ],
   "deferred_minors": [
-    { "id": "M-002", "title": "Comments restate the next line", "severity": "minor" }
+    {
+      "id": "M-002",
+      "title": "Comments restate the next line",
+      "severity": "minor",
+      "file": "files/maintainability/report_builder.py"
+    }
   ],
   "tasks": [
     {

@@ -516,6 +516,25 @@ def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:
         assert "open task" in history or "open tasks" in lowered
 
 
+_DEFERRED_MINOR_KEYS = frozenset({"id", "title", "severity", "file"})
+
+
+def test_deferred_minors_record_shape_matches_golden_and_dedupe() -> None:
+    golden = load_golden("review_orchestrator")["deferred_minors"][0]
+    assert set(golden) == _DEFERRED_MINOR_KEYS
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        report = parse_report(text.split("## Output schema", 1)[1])
+        assert set(report["deferred_minors"][0]) == _DEFERRED_MINOR_KEYS
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0]
+        assert "display form" in comments.lower()
+        assert "deferred_minors[]" in comments
+    dedupe = (REPO / "skills" / "dedupe-and-write-tasks" / "SKILL.md").read_text()
+    for key in ("id", "title", "severity", "file"):
+        assert f"`{key}`" in dedupe
+
+
 def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
     source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()

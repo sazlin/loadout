@@ -10,7 +10,7 @@
         "Appends an entry",
         "Does not rewrite or truncate prior entries",
         "Does not log secrets",
-        "Panel summaries list deferred minors by id or none"
+        "Fills Deferred minors with none or id (title); does not repeat those ids in the summary"
       ]
     }
   ]

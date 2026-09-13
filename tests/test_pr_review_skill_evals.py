@@ -59,6 +59,8 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "never" in dedupe_lower and "open task" in dedupe_lower
     assert "critical" in dedupe_lower and "important" in dedupe_lower
     assert "review_history.md" in dedupe_lower or "panel comment" in dedupe_lower
+    for key in ("id", "title", "severity", "file"):
+        assert f"`{key}`" in dedupe
 
     resolve = (SKILLS / "resolve-next-task" / "SKILL.md").read_text().lower()
     assert "git push" in resolve
@@ -73,9 +75,14 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "review_orchestrator" in history.lower()
     assert "aborted" in history.lower()
     assert "deferred minor" in history.lower() or "deferred_minors" in history.lower()
+    assert "deferred minors:" in history.lower()
+    assert "summary paragraph" in history.lower()
     assert (SKILLS / "log-progress" / "scripts" / "trim_review_history.py").is_file()
     template = (SKILLS / "log-progress" / "references" / "review-history-template.md").read_text()
     assert "aborted" in template.lower()
+    assert "id (title)" in template
+    assert "deferred_minors[]" in template
+    assert "display form" in template.lower()
 
     verifiers = (SKILLS / "dispatch-verifiers" / "SKILL.md").read_text()
     assert "VERIFIERS.md" in verifiers

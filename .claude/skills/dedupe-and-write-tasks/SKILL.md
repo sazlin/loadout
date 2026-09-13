@@ -35,8 +35,8 @@ fix steps from the dropped one. Record every drop. Severity: keep the higher
 - Do not mix a security sink with a rename just because they share a file.
 - Open tasks are `critical` and `important` only. Minors never become
   open tasks and never go to `issue_resolver`. Record every deferred
-  minor (id, title, file) for the Panel Review comment and
-  `REVIEW_HISTORY.md`.
+  minor (`id`, `title`, `severity`, `file`) for `deferred_minors[]`,
+  the Panel Review comment, and `REVIEW_HISTORY.md`.
 - Every surviving **significant** (`critical` / `important`) issue appears
   in exactly one task.
 - Assign `TASK-001`, `TASK-002`, … in severity-then-file order (`critical`
