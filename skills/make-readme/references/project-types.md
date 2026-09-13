@@ -12,13 +12,10 @@ docs links, community, contributing link, license.
 are more than 3 subcommands *and* a table is clearer than the catalog; a one-line uninstall
 note when install writes outside the package dir.
 **Cut:** API reference, architecture; `--version` / `--help` stdout as Quick start.
-**Emphasis:** show how people use the tool. Quick start is one `bash` pane of commented
-real invocations, `--help` last. Companion CLIs and shell functions go in `<details>`.
-Install is the single documented primary path (Homebrew, curl, `just`, whatever the repo
-actually uses). Extra methods only if they are real, documented, and internally consistent;
-never title a dropdown "without X" if the body still uses X. Do not require three
-platforms. H1 is the binary people type, not the git slug. The first example is the
-launch the existing README, shims, or `--help` already treat as primary.
+**Emphasis:** show how people use the tool. Follow `references/section-playbook.md` §7
+for the Quick start catalog. Install is the single documented primary path (Homebrew,
+curl, `just`, whatever the repo actually uses). Extra methods only if they are real,
+documented, and internally consistent. Do not require three platforms.
 **Corpus exemplars:** bat, lazygit, uv, ohmyzsh.
 
 ---

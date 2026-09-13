@@ -35,9 +35,7 @@ is contested, the corpus wins.
    that exists because a template had it is worse than no section.
 6. **Preserve what already works.** When improving an existing README, keep its working badges,
    real community links, hard-won troubleshooting notes, its voice, and the product's own
-   nouns. You are editing, not replacing a person's work. The first example is the launch the
-   existing README, shims, or `--help` already treat as primary, not a guess from the language
-   or stack.
+   nouns. You are editing, not replacing a person's work.
 
 ## Workflow
 
@@ -89,7 +87,7 @@ your best guess with each question so the user can confirm rather than compose.
 
 If the user is unavailable (unattended run), pick the most conservative reading, omit any
 element that would require an unverified claim, and list every assumption at the top of
-your final summary. For the hero command, take the launch the existing README, shims, or
+your final summary. For the hero command, use the launch that the existing README, shims, or
 `--help` already treat as primary; do not infer a profile from the language or stack.
 
 ### Step 5: Write
@@ -126,7 +124,7 @@ Writing rules that the corpus and the guides agree on:
 - Do not describe unreleased work in the present tense.
 - H1 is the binary or product name people type, not the git folder.
 - Copy the project's own nouns from the existing README and `--help`. Do not rename the product to match implementation jargon.
-- For a CLI, Quick start is one language-tagged pane of real invocations: a one-line `# comment` above each command, blank line between examples, `--help` last. At most 8 invocations plus `--help`; extra subcommands go in `<details>` or docs/. Comments count as expected output. Do not dump `--version` or `--help` stdout. Companion CLIs and shell functions go in a `<details>`, same comment-then-command style.
+- The first CLI command is the launch that the existing README, shims, or `--help` already treat as primary; do not infer it from the language or stack.
 - For a library, Quick start stays a tiny example plus what it prints. Do not flatten a library README into a command catalog. Delete the bash catalog skeleton.
 - Features sell the switch, not the implementation. Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the product.
 
@@ -180,7 +178,7 @@ user should create next. Offer to draft those files.
 | `--version` / `--help` stdout as Quick start | Proves the binary exists, not how to use it | One pane of commented real invocations, `--help` last |
 | Dropdown titled "Without X" that still uses X | Invented extra path, internally false | One primary path; extras only if real and consistent |
 | Git slug as H1 when the binary differs | Readers type the binary | Name from `bin` / console_scripts |
-| Hero guessed from language or stack | Wrong first example | Use the launch the existing README, shims, or `--help` already treat as primary |
+| Hero guessed from language or stack | Wrong first example | Use the launch that the existing README, shims, or `--help` already treat as primary |
 | Features that inventory flags, quotas, merge order | Implementation trivia, not a switch reason | Bold differentiators; internals go to docs |
 
 ## Files in this skill

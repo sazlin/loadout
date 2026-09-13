@@ -161,8 +161,8 @@ directly, and in that case the clone command lives in Quick start instead.
 - CLI: one language-tagged pane of real invocations. A one-line `# comment` above each command,
   a blank line between examples, `--help` last. Escalate from the common case to the weird ones.
   Comments count as expected output. Do not dump `--version` or `--help` stdout as extra fences.
-  The first command is the launch the existing README, shims, or `--help` already treat as
-  primary; do not infer a profile from the language or stack. At most 8 invocations plus
+  The first command is the launch that the existing README, shims, or `--help` already treat
+  as primary; do not infer a profile from the language or stack. At most 8 invocations plus
   `--help`, common-case first. Extra subcommands go in a `<details>` below the pane or in docs/.
   Companion CLIs and shell functions go in a `<details>` below the pane, same
   comment-then-command style. The 15-line / two-example cap does not apply to this catalog; the

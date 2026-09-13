@@ -67,10 +67,7 @@ STATUS: Strongly recommended. 87% of the top 40 have a visual above the fold, an
 
 STEPS
   1. Pick ONE, by project type:
-       CLI            -> terminal GIF or asciinema cast of a real session. The first
-                         command in Quick start is the launch the existing README, shims,
-                         or `--help` already treat as primary. Do not infer a profile from
-                         the language or stack.
+       CLI            -> terminal GIF or asciinema cast of a real session
        Web / GUI app  -> a single screenshot of the main screen
        Library / SDK  -> no image; the Quick start code block below IS the visual,
                          so DELETE this whole visual section
@@ -182,7 +179,8 @@ STEPS
      blank line between examples, `--help` last. Escalate from the common case to the
      weird ones. Comments count as expected output; do not add a second fence of
      `--version` or `--help` stdout. Do not prove the binary exists. The first command
-     is the launch the existing README, shims, or `--help` already treat as primary.
+     is the launch that the existing README, shims, or `--help` already treat as primary.
+     Do not infer a profile from the language or stack.
      At most 8 invocations plus `--help`, common-case first. Extra subcommands go in
      a <details> below the pane or in docs/. Companion CLIs and shell functions go in
      a <details> below the pane, same comment-then-command style. The 15-line /
