@@ -122,6 +122,16 @@ def test_evals_cover_create_improve_and_review_modes() -> None:
     assert "does not overwrite" in blob or "did not write readme.md" in blob
 
 
+def _git(cwd: Path, *args: str) -> str:
+    result = subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return result.stdout.strip()
+
+
 def test_inspect_repo_reports_gaps_from_disk(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     (tmp_path / "pyproject.toml").write_text(
@@ -134,6 +144,73 @@ def test_inspect_repo_reports_gaps_from_disk(tmp_path: Path) -> None:
     assert facts["license_guess"] == "MIT"
     assert "pypi" in facts["ecosystems"]
     assert any("No README" in gap for gap in facts["gaps"])
+
+
+def test_inspect_repo_keeps_dotted_github_repo_slug(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    https_repo = tmp_path / "https"
+    ssh_repo = tmp_path / "ssh"
+    https_repo.mkdir()
+    ssh_repo.mkdir()
+    _git(https_repo, "init")
+    _git(https_repo, "remote", "add", "origin", "https://github.com/vercel/next.js.git")
+    https_facts = inspect.inspect(str(https_repo))
+    assert https_facts["owner"] == "vercel"
+    assert https_facts["repo"] == "next.js"
+
+    _git(ssh_repo, "init")
+    _git(ssh_repo, "remote", "add", "origin", "git@github.com:foo/bar.git")
+    ssh_facts = inspect.inspect(str(ssh_repo))
+    assert ssh_facts["owner"] == "foo"
+    assert ssh_facts["repo"] == "bar"
+
+
+def test_inspect_repo_default_branch_follows_origin_head(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    repo = tmp_path / "with-origin"
+    repo.mkdir()
+    _git(repo, "init", "-b", "main")
+    _git(repo, "config", "user.email", "dev@example.com")
+    _git(repo, "config", "user.name", "Dev")
+    _git(repo, "commit", "--allow-empty", "-m", "init")
+    _git(repo, "checkout", "-b", "feat/foo")
+    _git(repo, "remote", "add", "origin", "https://github.com/example/demo.git")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "main")
+    _git(repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+    facts = inspect.inspect(str(repo))
+    assert facts["default_branch"] == "main"
+
+    lonely = tmp_path / "no-remotes"
+    lonely.mkdir()
+    _git(lonely, "init", "-b", "main")
+    lonely_facts = inspect.inspect(str(lonely))
+    assert lonely_facts["default_branch"] == "main"
+
+
+def test_inspect_repo_skips_npm_install_when_package_json_invalid_or_unnamed(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    broken = tmp_path / "broken"
+    broken.mkdir()
+    (broken / "package.json").write_text("{")
+    broken_facts = inspect.inspect(str(broken))
+    assert "npm" not in broken_facts["ecosystems"]
+    assert broken_facts["suggested_install_commands"] == []
+    assert "None" not in " ".join(broken_facts["suggested_install_commands"])
+
+    unnamed = tmp_path / "unnamed"
+    unnamed.mkdir()
+    (unnamed / "package.json").write_text("{}")
+    unnamed_facts = inspect.inspect(str(unnamed))
+    assert not any("npm install" in cmd for cmd in unnamed_facts["suggested_install_commands"])
+    assert "None" not in " ".join(unnamed_facts["suggested_install_commands"])
+
+    named = tmp_path / "named"
+    named.mkdir()
+    (named / "package.json").write_text(json.dumps({"name": "demo-cli", "bin": {"demo": "cli.js"}}))
+    named_facts = inspect.inspect(str(named))
+    assert "npm" in named_facts["ecosystems"]
+    assert "npm install -g demo-cli" in named_facts["suggested_install_commands"]
 
 
 def test_score_readme_flags_placeholders_and_missing_install() -> None:
@@ -174,9 +251,7 @@ def test_github_sync_vendors_make_readme_without_evals(tmp_path: Path, monkeypat
     assert not (dest / "evals").exists()
 
 
-def test_fetch_corpus_aborts_after_consecutive_github_failures(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fetch_corpus_aborts_after_consecutive_github_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     corpus = _load_module(CORPUS_SCRIPT, "corpus_analyzer")
     ls_remote_calls = 0
 

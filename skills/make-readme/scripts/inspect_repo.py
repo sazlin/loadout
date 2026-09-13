@@ -73,10 +73,20 @@ def inspect(root):
 
     # ---------- identity ----------
     remote = sh(["git", "remote", "get-url", "origin"], root)
-    m = re.search(r"github\.com[:/]([^/]+)/([^/.\s]+)", remote)
+    m = re.search(r"github\.com[:/]([^/]+)/([^/\s]+)", remote)
     r["owner"] = m.group(1) if m else None
-    r["repo"] = m.group(2) if m else os.path.basename(os.path.abspath(root))
-    r["default_branch"] = sh(["git", "symbolic-ref", "--short", "HEAD"], root) or None
+    if m:
+        r["repo"] = m.group(2).removesuffix(".git")
+    else:
+        r["repo"] = os.path.basename(os.path.abspath(root))
+    origin_head = sh(["git", "rev-parse", "--abbrev-ref", "origin/HEAD"], root)
+    if origin_head.startswith("origin/"):
+        origin_head = origin_head.removeprefix("origin/")
+    # Failed rev-parse still prints origin/HEAD; that is not a branch name.
+    if origin_head == "HEAD":
+        origin_head = ""
+    current_branch = sh(["git", "symbolic-ref", "--short", "HEAD"], root)
+    r["default_branch"] = origin_head or current_branch or None
     r["last_commit"] = sh(["git", "log", "-1", "--format=%ci"], root) or None
     r["commit_count"] = sh(["git", "rev-list", "--count", "HEAD"], root) or None
     r["contributors"] = len([l for l in sh(["git", "shortlog", "-sn", "HEAD"], root).splitlines() if l])
@@ -90,27 +100,30 @@ def inspect(root):
         try:
             pkg = json.loads(read(os.path.join(root, lower["package.json"])))
         except json.JSONDecodeError:
-            pkg = {}
-        man["package.json"] = {
-            k: pkg.get(k) for k in ("name", "version", "description", "license", "bin", "private", "workspaces")
-        }
-        name = name or pkg.get("name")
-        desc = desc or pkg.get("description")
-        version = version or pkg.get("version")
-        if not pkg.get("private"):
-            ecosystems.append("npm")
-            if pkg.get("bin"):
-                install.append(f"npm install -g {pkg.get('name')}")
-            else:
-                install.append(f"npm install {pkg.get('name')}")
-        scripts = pkg.get("scripts") or {}
-        for k in ("dev", "start", "build"):
-            if k in scripts:
-                run_cmds.append(f"npm run {k}")
-        for k in ("test", "test:unit"):
-            if k in scripts:
-                test_cmds.append(f"npm run {k}")
-        r["node_engines"] = (pkg.get("engines") or {}).get("node")
+            pkg = None
+        if pkg is not None:
+            man["package.json"] = {
+                k: pkg.get(k) for k in ("name", "version", "description", "license", "bin", "private", "workspaces")
+            }
+            name = name or pkg.get("name")
+            desc = desc or pkg.get("description")
+            version = version or pkg.get("version")
+            pkg_name = pkg.get("name")
+            if not pkg.get("private"):
+                ecosystems.append("npm")
+                if isinstance(pkg_name, str) and pkg_name:
+                    if pkg.get("bin"):
+                        install.append(f"npm install -g {pkg_name}")
+                    else:
+                        install.append(f"npm install {pkg_name}")
+            scripts = pkg.get("scripts") or {}
+            for k in ("dev", "start", "build"):
+                if k in scripts:
+                    run_cmds.append(f"npm run {k}")
+            for k in ("test", "test:unit"):
+                if k in scripts:
+                    test_cmds.append(f"npm run {k}")
+            r["node_engines"] = (pkg.get("engines") or {}).get("node")
 
     if "pyproject.toml" in lower:
         t = read(os.path.join(root, lower["pyproject.toml"]))
