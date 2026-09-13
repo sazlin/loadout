@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import sys
+from itertools import islice
 from urllib.parse import urlparse
 
 SKIP_DIRS = {
@@ -70,6 +71,42 @@ def walk(root, max_files=6000):
 def toml_get(text, key):
     match = re.search(rf'(?m)^\s*{re.escape(key)}\s*=\s*["\']([^"\']+)["\']', text)
     return match.group(1) if match else None
+
+
+_MAX_NAMES = 15
+
+
+def _npm_bin_names(pkg):
+    bin_field = pkg.get("bin")
+    if isinstance(bin_field, dict):
+        return [key for key in bin_field if isinstance(key, str) and key]
+    pkg_name = pkg.get("name")
+    if isinstance(bin_field, str) and bin_field and isinstance(pkg_name, str) and pkg_name:
+        return [pkg_name.rsplit("/", 1)[-1]]
+    return []
+
+
+def _recipe_names(text):
+    matches = re.finditer(r"(?m)^([a-zA-Z][\w-]*)(?:[ \t]+\S+)*:(?!=)", text)
+    return [match.group(1) for match in islice(matches, _MAX_NAMES)]
+
+
+def _top_justfile(root, top):
+    names = {path.lower(): path for path in top}
+    rel = names.get("justfile")
+    if not rel:
+        return []
+    return _recipe_names(_read_text(os.path.join(root, rel)))
+
+
+def _with_just_install(install, recipes):
+    if install:
+        return install
+    return [f"just {name}" for name in ("install",) if name in recipes]
+
+
+def _unique(items):
+    return list(dict.fromkeys(items))
 
 
 _HTTP_URL = re.compile(r'https?://[^\s)\'"]+')
@@ -136,7 +173,7 @@ def _manifest_facts(root, files, facts):
     top = [path for path in files if os.sep not in path]
     manifests = {}
     name = desc = version = None
-    ecosystems, install, run_cmds, test_cmds = [], [], [], []
+    ecosystems, install, run_cmds, test_cmds, binary_names = [], [], [], [], []
 
     if "package.json" in lower:
         try:
@@ -167,6 +204,7 @@ def _manifest_facts(root, files, facts):
                 if script in scripts:
                     test_cmds.append(f"npm run {script}")
             facts["node_engines"] = (pkg.get("engines") or {}).get("node")
+            binary_names.extend(_npm_bin_names(pkg))
 
     if "pyproject.toml" in lower:
         text = _read_text(os.path.join(root, lower["pyproject.toml"]))
@@ -182,10 +220,13 @@ def _manifest_facts(root, files, facts):
         ecosystems.append("pypi")
         if manifests["pyproject.toml"]["name"]:
             install.append(f"pip install {manifests['pyproject.toml']['name']}")
-        if re.search(r"\[project\.scripts\]", text):
-            facts["console_scripts"] = re.findall(
-                r'(?m)^\s*([\w.-]+)\s*=\s*["\']', text.split("[project.scripts]", 1)[1][:500]
-            )
+        if "[project.scripts]" in text:
+            scripts_table = re.split(r"(?m)^\[", text.split("[project.scripts]", 1)[1], maxsplit=1)[0]
+            facts["console_scripts"] = [
+                match.group(1)
+                for match in islice(re.finditer(r'(?m)^\s*([\w.-]+)\s*=\s*["\']', scripts_table), _MAX_NAMES)
+            ]
+            binary_names.extend(facts["console_scripts"])
 
     if "cargo.toml" in lower:
         text = _read_text(os.path.join(root, lower["cargo.toml"]))
@@ -221,14 +262,24 @@ def _manifest_facts(root, files, facts):
             run_cmds.append("docker compose up")
     if "makefile" in lower:
         makefile_text = _read_text(os.path.join(root, lower["makefile"]))
-        facts["make_targets"] = re.findall(r"(?m)^([a-zA-Z][\w-]*):(?!=)", makefile_text)[:15]
+        facts["make_targets"] = _recipe_names(makefile_text)
+
+    just_recipes = _top_justfile(root, top)
+    binary_names = _unique(binary_names)[:_MAX_NAMES]
+    # NAME is the typed binary for H1 when bin/console_scripts exist; git slug stays REPO.
+    if binary_names:
+        name = binary_names[0]
 
     facts["manifests"] = manifests
     facts["name"] = name
+    facts["binary_names"] = binary_names
+    facts["just_recipes"] = just_recipes
     facts["description_from_manifest"] = desc
     facts["version"] = version
     facts["ecosystems"] = ecosystems
-    facts["suggested_install_commands"] = install
+    facts["suggested_install_commands"] = _with_just_install(install, just_recipes)
+    if not install and "build" in just_recipes:
+        run_cmds.append("just build")
     facts["suggested_run_commands"] = run_cmds
     facts["test_commands"] = test_cmds
 
@@ -400,6 +451,8 @@ def human(facts: dict) -> str:
         f"REPO        {facts['owner'] or '?'}/{facts['repo']}   branch={facts['default_branch']}  commits={facts['commit_count']}  contributors={facts['contributors']}"
     )
     lines.append(f"NAME        {facts['name']}")
+    lines.append(f"BINARIES    {facts['binary_names']}")
+    lines.append(f"JUST        {facts['just_recipes']}")
     lines.append(f"DESCRIPTION {facts['description_from_manifest']}")
     lines.append(f"VERSION     {facts['version']}    ECOSYSTEMS: {', '.join(facts['ecosystems']) or 'none'}")
     lines.append(f"LANGUAGES   {facts['language_mix']}   files={facts['file_count']}")

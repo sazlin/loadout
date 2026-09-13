@@ -4,6 +4,10 @@ One entry per POPULAR element from `evidence.md`. Each entry gives the job the s
 the include/omit test, the rules that make it good, and the failure modes seen in the corpus.
 Quoted examples are real, from the 40-repo corpus.
 
+## Contents
+
+1. Title · 2. Tagline · 3. Badges · 4. Hero · 5. Features · 6. Installation · 7. Quick start · 8. Documentation · 9. Community · 10. Contributing · 11. License · 12. Cross-cutting
+
 ---
 
 ## 1. Title
@@ -17,11 +21,15 @@ name (70% use a centered header). Never both.
 - The title is the project name, nothing else. No tagline appended, no version, no emoji.
 - Match the name to the package/binary name users will type. If the repo name differs, show the
   canonical name and put the other in italic parentheses: `# Standard Readme Style _(standard-readme)_`.
+  Default the H1 to the binary (`bin` keys, `[project.scripts]`), not the git slug. A product plus
+  a checkout may use `product workspace` if that is how the existing README names it; do not invent
+  a compound title. Copy the project's own nouns from the existing README and `--help`.
 - If a logo exists, the logo replaces nothing: logo first, then the name as text so search and
   screen readers still find it.
 
 **Failure modes:** H1 that repeats the org name; multiple H1s (33% of corpus, which breaks
-GitHub's auto-outline); a title that is a sentence.
+GitHub's auto-outline); a title that is a sentence; H1 that is the git folder when people type a
+different binary.
 
 ---
 
@@ -102,11 +110,14 @@ most of the time. 55% of the corpus has a bullet list within the first 3 KB.
 **Omit** when the project is a single-purpose utility whose name says everything.
 
 **Rules**
-- 3 to 6 bullets. Not 12.
+- 3 to 6 bullets. Not 12. CLI and infra tools may keep a seventh or eighth bullet only when each
+  is a distinct shipped differentiator.
 - Lead each bullet with the benefit in bold, then one clause of detail:
   `**Zero config.** Detects your framework and picks sane defaults.`
 - Prefer differentiators over table stakes. "Written in Rust", "works offline",
-  "no telemetry", "single static binary" are differentiators. "Easy to use" is not.
+  "no telemetry", "single static binary", host integration, auth, isolation are differentiators.
+  "Easy to use" is not. Flag names, quotas, merge order, and yaml trivia belong in docs unless
+  that *is* the product.
 - Numbers beat adjectives: "starts in 40 ms", "installs in one command", "supports 40+ providers".
 - Never use this section as a roadmap. Features that do not exist yet belong nowhere near it.
 
@@ -124,10 +135,14 @@ directly, and in that case the clone command lives in Quick start instead.
   ```bash
   npm install -g my-tool
   ```
+  That path is whatever the repo actually documents (`just install`, `make install`, Homebrew,
+  a published package). Do not invent a second manager because another ecosystem file exists.
 - Prerequisites go as one line above the command, not as their own section
   (own-section requirements appear in only 15% of the corpus): "Requires Node 20+."
 - Additional platforms/managers (Homebrew, Docker, Windows, build from source) go in a
-  `<details>` block or a small table, not as five more H3s.
+  `<details>` block or a small table, not as five more H3s. Only emit extras that are real,
+  documented, first-class paths. Never title a dropdown "Without X" if the body still uses X.
+  One honest primary path beats a fake extra.
 - Verify the command on a clean machine. An install command that fails is the fastest way to
   lose a user, and both 2026 guides name it as the top mistake.
 - Never use `$` prompt prefixes inside a copyable block; they break paste.
@@ -138,18 +153,30 @@ directly, and in that case the clone command lives in Quick start instead.
 
 ## 7. Quick start / usage
 
-**Job:** show the smallest complete thing that works, and what it prints.
+**Job:** show how people use the tool, not that it exists.
 
 **Include:** always. This plus Installation are the only two near-universal substantive sections.
 
 **Rules**
-- One minimal, runnable example. It must run against the current version, unmodified.
-- Show the output. "Use examples liberally, and show the expected output if you can"
-  (makeareadme). Expected output turns an example into a self-test for the reader.
+- CLI: one language-tagged pane of real invocations. A one-line `# comment` above each command,
+  a blank line between examples, `--help` last. Escalate from the common case to the weird ones.
+  Comments count as expected output. Do not dump `--version` or `--help` stdout as extra fences.
+  The first command is the launch that the existing README, shims, or `--help` already treat
+  as primary; do not infer a profile from the language or stack. At most 8 invocations plus
+  `--help`, common-case first. Extra subcommands go in a `<details>` below the pane or in docs/.
+  Companion CLIs and shell functions go in a `<details>` below the pane, same
+  comment-then-command style. The 15-line / two-example cap does not apply to this catalog; the
+  8-plus-`--help` cap does.
+- Library / SDK: one minimal, runnable example. It must run against the current version,
+  unmodified. Show the printed result ("Use examples liberally, and show the expected output
+  if you can" (makeareadme)). Keep the first example under ~15 lines. Two examples maximum if
+  the project has both a CLI and a library face.
 - Language-tag every fence (75% of the corpus does): ```bash, ```python, ```ts, ```go.
-- Keep the first example under ~15 lines. Depth goes to the docs site or an `examples/` folder.
-- Two examples maximum above the fold: one CLI, one library call, if the project has both faces.
 - Don't teach the domain. Assume the reader knows their language; they need *your* API shape.
+
+**Failure modes:** `--version` then a version fence, then `--help` plus a usage dump; zsh
+functions or companion CLIs inline with the main pane; a library README flattened into a
+command catalog.
 
 ---
 

@@ -35,6 +35,21 @@
         "Does not overwrite README.md",
         "Reports score and exact fixes from the linter"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Improve this CLI README. Use the make-readme skill /make-readme.",
+      "expected_output": "Ran inspect_repo.py and score_readme.py, treated the project as a CLI, rewrote Quick start as one commented command catalog ending in --help, used the binary name as H1 instead of the git slug, dropped the contradictory Without-just details block, and sold differentiators instead of implementation trivia.",
+      "files": ["evals/files/cli-weak-readme.md"],
+      "expectations": [
+        "Runs python3 scripts/inspect_repo.py and python3 scripts/score_readme.py",
+        "Writes one commented command catalog ending in --help; does not dump --version or --help stdout as extra fences",
+        "Caps Quick start at 8 invocations plus --help; extra subcommands go in details or docs",
+        "Uses the binary or product name as H1, not the git slug",
+        "Does not invent a second install path or ship a Without X details block that still uses X",
+        "Moves companion CLIs and shell functions into a details extra",
+        "Features are differentiators, not flag names, quotas, or merge order"
+      ]
     }
   ]
 }

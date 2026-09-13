@@ -30,6 +30,21 @@ CRIT, IMPT, MINR = "CRITICAL", "IMPORTANT", "MINOR"
 SEVERITY_WEIGHTS = {CRIT: 10, IMPT: 6, MINR: 3}
 READ_LIMIT = 200_000
 _BADGE_SRC = re.compile(r"shields\.io|badge|badgen", re.IGNORECASE)
+_SHELL_FENCE_LANGS = {"bash", "sh", "zsh", "shell"}
+_FENCE_BODY = re.compile(r"```([a-zA-Z0-9+#-]*)\n(.*?)```", re.DOTALL)
+_DETAILS = re.compile(r"<details\b[^>]*>(.*?)</details>", re.IGNORECASE | re.DOTALL)
+_SUMMARY = re.compile(r"<summary\b[^>]*>(.*?)</summary>", re.IGNORECASE | re.DOTALL)
+_WITHOUT = re.compile(r"(?i)\bwithout(?:\s+(?:a|an|the|using))*\s+([A-Za-z][\w.-]*)")
+_CATALOG_SECTION = re.compile(r"(?i)^(quick\s*start|usage)\b")
+_INSTALL_RE = (
+    r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|"
+    r"python3? -m pip|pip3 install|pip install|pipx install|"
+    r"uv (tool )?(add|install|pip)|brew install|cargo install|"
+    r"go install|go get|docker run|docker compose|apt(-get)? install|"
+    r"dnf install|winget install|scoop install|choco install|"
+    r"gem install|composer require|curl [^\n|]*\| ?(sh|bash)|"
+    r"git clone|npx |uvx |make install|just install|just build)"
+)
 
 
 def _read_text(path: str, limit: int = READ_LIMIT) -> str:
@@ -50,6 +65,59 @@ def _manifest_is_long_description(repo, filename):
 
 def strip_code(md):
     return re.sub(r"```.*?```", "", md, flags=re.DOTALL)
+
+
+def _heading_before(md: str, pos: int) -> str:
+    heading = ""
+    for match in re.finditer(r"(?m)^#{2,3}\s+(.+)$", md[:pos]):
+        heading = match.group(1).strip()
+    return heading
+
+
+def _shell_commands(body: str) -> list[str]:
+    return [line.strip() for line in body.splitlines() if line.strip() and not re.match(r"^# ", line)]
+
+
+def _last_command_is_help(body: str) -> bool:
+    commands = _shell_commands(body)
+    return bool(commands) and commands[-1].endswith("--help")
+
+
+def _all_install_commands(body: str) -> bool:
+    commands = _shell_commands(body)
+    return bool(commands) and all(re.search(_INSTALL_RE, cmd) for cmd in commands)
+
+
+def _commented_shell_catalog(md: str) -> bool:
+    # Sufficient: last command is --help, or a Quick start/Usage fence that is not only install extras.
+    visible = _DETAILS.sub("", md)
+    for match in _FENCE_BODY.finditer(visible):
+        lang, body = match.group(1).lower(), match.group(2)
+        if lang not in _SHELL_FENCE_LANGS:
+            continue
+        if len(re.findall(r"(?m)^# .+", body)) < 2:
+            continue
+        if _last_command_is_help(body):
+            return True
+        if _all_install_commands(body):
+            continue
+        if _CATALOG_SECTION.match(_heading_before(visible, match.start())):
+            return True
+    return False
+
+
+def _without_summary_reuses_token(md: str) -> bool:
+    for block in _DETAILS.findall(md):
+        summary_m = _SUMMARY.search(block)
+        if not summary_m:
+            continue
+        without = _WITHOUT.search(re.sub(r"<[^>]+>", "", summary_m.group(1)))
+        if not without:
+            continue
+        token = re.escape(without.group(1))
+        if re.search(rf"(?i)(?<![\w.-]){token}(?![\w.-])", block[summary_m.end() :]):
+            return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -154,9 +222,8 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
             "Tagline is short enough to scan",
             f"Tagline is {len(tagline)} chars. Trim to <=120; move detail into Features.",
         )
-    install_re = r"(?m)^\s*(npm i |npm install|pnpm add|yarn add|bun add|python3? -m pip|pip3 install|pip install|pipx install|uv (tool )?(add|install|pip)|brew install|cargo install|go install|go get|docker run|docker compose|apt(-get)? install|dnf install|winget install|scoop install|choco install|gem install|composer require|curl [^\n|]*\| ?(sh|bash)|git clone|npx |uvx |make install)"
     add(
-        re.search(install_re, md),
+        re.search(_INSTALL_RE, md),
         CRIT,
         "install",
         "An install or run command is present",
@@ -167,7 +234,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         CRIT,
         "example",
         "At least one fenced code block (usage example)",
-        "No fenced code block. Add a minimal runnable example, under ~15 lines, with its expected output.",
+        "No fenced code block. CLI: one commented command catalog. Library: a minimal runnable example plus what it prints.",
     )
     add(
         re.search(r"(?i)licen[sc]e", md),
@@ -253,6 +320,14 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "No template placeholders or TODOs left",
         f"Found: {sorted(set(placeholders))[:6]}. Remove every one before shipping.",
     )
+    add(
+        not _without_summary_reuses_token(md),
+        IMPT,
+        "without-details",
+        "'Without X' summaries do not reuse X in the body",
+        "A <details> summary says 'without X' but the body still uses X. "
+        "Only emit extras that are real and internally consistent, or drop the dropdown.",
+    )
 
     # ---- MINOR ----
     add(
@@ -306,11 +381,12 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "No support route. Add 2 to 4 lines: bugs to Issues, questions to Discussions/chat, security to SECURITY.md.",
     )
     add(
-        len(fences) // 2 >= 2 or re.search(r"(?m)^(\$|>|#)?\s*(Output|=>|Result)", md),
+        len(fences) // 2 >= 2 or re.search(r"(?m)^(\$|>|#)?\s*(Output|=>|Result)", md) or _commented_shell_catalog(md),
         MINR,
         "expected-output",
         "Shows expected output for an example",
-        "No output shown. Add the result of your example so a reader can self-check.",
+        "No output shown. Add the result of your example so a reader can self-check, "
+        "or a commented command catalog for a CLI.",
     )
     add(
         not re.search(r"(?m)^\s*```\w*\s*\n\s*\$ ", md),
@@ -324,8 +400,9 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         len(bullets) <= 12,
         MINR,
         "bullet-restraint",
-        "Feature list is 3 to 6 bullets, not a wall",
-        f"{len(bullets)} bullets in the first 3.5 KB. Cut to the 3 to 6 that differentiate you.",
+        "Feature list is 3 to 6 bullets (CLI/infra may keep 7–8 distinct shipped differentiators)",
+        f"{len(bullets)} bullets in the first 3.5 KB. Cut to 3 to 6 "
+        "(CLI/infra may keep 7–8 distinct shipped differentiators).",
     )
 
     _add_packaging_checks(add, md, nonbadge, long_desc)

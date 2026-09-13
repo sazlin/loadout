@@ -26,6 +26,7 @@ SCORE_SCRIPT = SKILL_ROOT / "scripts" / "score_readme.py"
 CORPUS_SCRIPT = SKILL_ROOT / "scripts" / "corpus_analyzer.py"
 EVALS = SKILL_ROOT / "evals" / "evals.json"
 WEAK_README = SKILL_ROOT / "evals" / "files" / "weak-readme.md"
+CLI_WEAK_README = SKILL_ROOT / "evals" / "files" / "cli-weak-readme.md"
 
 
 def _load_module(path: Path, name: str) -> ModuleType:
@@ -123,6 +124,42 @@ def test_evals_cover_create_improve_and_review_modes() -> None:
     assert "review" in blob
     assert "does not invent" in blob or "instead of inventing" in blob
     assert "does not overwrite" in blob or "did not write readme.md" in blob
+    assert "commented command catalog" in blob
+    assert "git slug" in blob
+    assert "without x" in blob
+    assert "8 invocations" in blob
+
+
+def test_body_requires_cli_catalog_rules() -> None:
+    text = SKILL_MD.read_text().lower()
+    assert "comment" in text and "--help" in text
+    assert "git slug" in text or "git folder" in text
+    assert "without x" in text
+    assert "differentiat" in text
+    assert "at most 8 invocations" in text
+
+
+def test_template_has_cli_and_library_quick_start_fillins() -> None:
+    template = (SKILL_ROOT / "README_TEMPLATE.md").read_text()
+    assert "{{BINARY}} --help" in template
+    assert "{{HERO_COMMAND}}" in template
+    assert "```bash" in template
+    assert "{{LANGUAGE_TAG}}" in template
+    assert "{{MINIMAL_RUNNABLE_EXAMPLE}}" in template
+    assert "{{EXPECTED_OUTPUT}}" in template
+    assert "```{{LANGUAGE_TAG}}" in template
+    assert "delete the unused" in template.lower()
+
+
+def test_cli_catalog_cap_is_eight_plus_help() -> None:
+    for path in (
+        SKILL_ROOT / "README_TEMPLATE.md",
+        SKILL_MD,
+        SKILL_ROOT / "references" / "section-playbook.md",
+    ):
+        text = path.read_text().lower()
+        assert "at most 8 invocations" in text, path.name
+        assert "details" in text
 
 
 def _git(cwd: Path, *args: str) -> str:
@@ -622,3 +659,407 @@ def test_analyze_omits_stub_feature_keys(tmp_path: Path) -> None:
     feats = corpus.analyze(str(readme))
     assert "license_shield_only" not in feats
     assert "first_code_line" not in feats
+
+
+def test_inspect_repo_prefers_binary_name_over_git_slug(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    repo = tmp_path / "sandbox"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "remote", "add", "origin", "https://github.com/example/sandbox.git")
+    (repo / "package.json").write_text(
+        json.dumps({"name": "@org/sandbox", "private": True, "bin": {"msb-agent": "dist/cli.js"}})
+    )
+    facts = inspect.inspect(str(repo))
+    assert facts["repo"] == "sandbox"
+    assert facts["binary_names"] == ["msb-agent"]
+    assert facts["name"] == "msb-agent"
+    assert "msb-agent" in inspect.human(facts)
+
+
+def test_inspect_repo_caps_binary_names_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    repo = tmp_path / "sandbox"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "remote", "add", "origin", "https://github.com/example/sandbox.git")
+    bins = {f"cli{i:02d}": "cli.js" for i in range(40)}
+    (repo / "package.json").write_text(json.dumps({"name": "@org/sandbox", "private": True, "bin": bins}))
+    facts = inspect.inspect(str(repo))
+    expected = [f"cli{i:02d}" for i in range(15)]
+    assert facts["binary_names"] == expected
+    assert facts["name"] == "cli00"
+    assert facts["repo"] == "sandbox"
+    sheet = inspect.human(facts)
+    assert "cli00" in sheet
+    assert "cli39" not in sheet
+    assert "cli15" not in sheet
+
+
+def test_inspect_repo_caps_just_recipes_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    recipes = ["install:\n    npm ci\n", "build:\n    npm run build\n"]
+    extra = 0
+    size = sum(len(chunk) + 1 for chunk in recipes)
+    while size < 200_000:
+        line = f"r{extra}:\n    true\n"
+        recipes.append(line)
+        size += len(line) + 1
+        extra += 1
+    (tmp_path / "justfile").write_text("\n".join(recipes))
+    (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "private": True, "bin": {"demo": "cli.js"}}))
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["just_recipes"] == ["install", "build"] + [f"r{i}" for i in range(13)]
+    assert len(facts["just_recipes"]) == 15
+    assert facts["suggested_install_commands"] == ["just install"]
+    assert "just build" not in facts["suggested_install_commands"]
+    assert facts["suggested_run_commands"][0] == "just build"
+    sheet = inspect.human(facts)
+    assert "r12" in sheet
+    assert f"r{extra - 1}" not in sheet
+
+
+def test_recipe_names_stops_after_fifteen_matches(monkeypatch: pytest.MonkeyPatch) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    def no_findall(*_args, **_kwargs):
+        raise AssertionError("findall materializes every recipe name")
+
+    monkeypatch.setattr(inspect.re, "findall", no_findall)
+    text = "".join(f"r{i}:\n" for i in range(40))
+    assert inspect._recipe_names(text) == [f"r{i}" for i in range(15)]
+
+
+def test_inspect_repo_prefers_console_scripts_over_project_name(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n'
+        '[project.scripts]\ndemo = "demo:main"\n\n'
+        '[build-system]\nrequires = ["hatchling"]\nbuild-backend = "hatchling.build"\n'
+        'target-version = "3.12"\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == ["demo"]
+    assert facts["name"] == "demo"
+    sheet = inspect.human(facts)
+    assert "demo" in sheet
+    assert "build-backend" not in sheet
+    assert "target-version" not in sheet
+
+
+def test_inspect_repo_empty_console_scripts_keep_project_name(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n'
+        "[project.scripts]\n# no entry points\n\n"
+        '[build-system]\nbuild-backend = "hatchling.build"\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == []
+    assert facts["name"] == "demo-lib"
+
+
+def test_inspect_repo_caps_console_scripts_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    scripts = "\n".join(f'script{i:02d} = "demo:main{i}"' for i in range(40))
+    (tmp_path / "pyproject.toml").write_text(
+        f'[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\n{scripts}\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    expected = [f"script{i:02d}" for i in range(15)]
+    assert facts["binary_names"] == expected
+    assert facts["console_scripts"] == expected
+    assert len(facts["binary_names"]) == 15
+    assert len(facts["console_scripts"]) == 15
+    assert facts["name"] == "script00"
+    sheet = inspect.human(facts)
+    dumped = json.dumps(facts)
+    assert "script00" in sheet and "script14" in sheet
+    assert "script15" not in sheet and "script39" not in sheet
+    assert "script00" in dumped and "script14" in dumped
+    assert "script15" not in dumped and "script39" not in dumped
+
+
+def test_inspect_repo_caps_pyproject_binary_names_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    scripts = "\n".join(f'script{i:02d} = "demo:main{i}"' for i in range(16))
+    (tmp_path / "pyproject.toml").write_text(
+        f'[project]\nname = "demo-lib"\nversion = "0.1.0"\n\n[project.scripts]\n{scripts}\n'
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["binary_names"] == [f"script{i:02d}" for i in range(15)]
+    assert facts["name"] == "script00"
+
+
+def test_console_scripts_stops_after_fifteen_matches(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    def no_findall(*_args, **_kwargs):
+        raise AssertionError("findall materializes every console script name")
+
+    monkeypatch.setattr(inspect.re, "findall", no_findall)
+    lines = [f's{i} = "pkg:m{i}"\n' for i in range(15)]
+    extra = 0
+    size = sum(len(line) for line in lines)
+    while size < 200_000:
+        line = f'pad{extra} = "pkg:p{extra}"\n'
+        lines.append(line)
+        size += len(line)
+        extra += 1
+    (tmp_path / "pyproject.toml").write_text("[project.scripts]\n" + "".join(lines))
+    facts: dict = {}
+    inspect._manifest_facts(str(tmp_path), ["pyproject.toml"], facts)
+    assert facts["console_scripts"] == [f"s{i}" for i in range(15)]
+    assert facts["binary_names"] == [f"s{i}" for i in range(15)]
+
+
+def test_inspect_repo_reports_justfile_recipes(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "justfile").write_text("install:\n    npm ci\n\nbuild:\n    npm run build\n\nimages:\n    echo hi\n")
+    (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "private": True, "bin": {"demo": "cli.js"}}))
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["just_recipes"] == ["install", "build", "images"]
+    assert facts["suggested_install_commands"] == ["just install"]
+    assert "just build" not in facts["suggested_install_commands"]
+    assert facts["suggested_run_commands"][0] == "just build"
+    sheet = inspect.human(facts)
+    assert "JUST" in sheet
+    assert "install" in sheet
+
+
+def test_inspect_repo_parameterized_just_install_recipe(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    (tmp_path / "justfile").write_text(
+        'foo := "bar"\n\n'
+        "install *args:\n    uv sync {{args}}\n\n"
+        "release version:\n    echo {{version}}\n\n"
+        "add_skill *args:\n    echo {{args}}\n"
+    )
+    facts = inspect.inspect(str(tmp_path))
+    assert "install" in facts["just_recipes"]
+    assert "release" in facts["just_recipes"]
+    assert "add_skill" in facts["just_recipes"]
+    assert "foo" not in facts["just_recipes"]
+    assert facts["suggested_install_commands"] == ["just install"]
+
+
+def test_inspect_repo_registry_install_stays_ahead_of_just_recipes(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    justfile = "install:\n    npm ci\n\nbuild:\n    npm run build\n"
+
+    npm = tmp_path / "npm"
+    npm.mkdir()
+    (npm / "justfile").write_text(justfile)
+    (npm / "package.json").write_text(json.dumps({"name": "demo", "bin": {"demo": "cli.js"}}))
+    npm_facts = inspect.inspect(str(npm))
+    assert npm_facts["suggested_install_commands"][0] == "npm install -g demo"
+    assert not any(cmd.startswith("just ") for cmd in npm_facts["suggested_install_commands"])
+    assert npm_facts["just_recipes"] == ["install", "build"]
+
+    pypi = tmp_path / "pypi"
+    pypi.mkdir()
+    (pypi / "justfile").write_text("install:\n    uv sync\n")
+    (pypi / "pyproject.toml").write_text('[project]\nname = "demo-lib"\n')
+    pypi_facts = inspect.inspect(str(pypi))
+    assert pypi_facts["suggested_install_commands"][0] == "pip install demo-lib"
+    assert not any(cmd.startswith("just ") for cmd in pypi_facts["suggested_install_commands"])
+    assert pypi_facts["just_recipes"] == ["install"]
+
+
+def _cli_catalog_fence(n_cmds: int) -> str:
+    chunks = [f"# Run command {i}\ndemo sub{i}\n" for i in range(n_cmds)]
+    chunks.append("# List all options and other usage\ndemo --help\n")
+    return "```bash\n" + "\n".join(chunks) + "```\n"
+
+
+def _cli_readme_body(quick_start: str) -> str:
+    return (
+        "# demo\n\n"
+        "A CLI for testers who need a command catalog.\n\n"
+        "## Features\n\n"
+        "- **Fast.** Starts in one command.\n"
+        "- **Offline.** No network required.\n"
+        "- **Single binary.** No runtime.\n\n"
+        "## Installation\n\n"
+        "```bash\npip install demo\n```\n\n"
+        "## Quick start\n\n"
+        f"{quick_start}\n"
+        "## Documentation\n\n"
+        "See [docs](https://example.com).\n\n"
+        "## Contributing\n\n"
+        "See CONTRIBUTING.md.\n\n"
+        "## License\n\n"
+        "MIT\n"
+    )
+
+
+def test_capped_cli_catalog_with_overflow_stays_in_length_band() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    extra = "\n".join(f"# Extra {i}\ndemo extra{i}\n" for i in range(32))
+    overflow = f"<details>\n<summary>More commands</summary>\n\n```bash\n{extra}```\n\n</details>\n"
+    md = _cli_readme_body(_cli_catalog_fence(8) + overflow)
+    length_item = next(item for item in score.check(md)[0] if item["id"] == "length")
+    assert length_item["ok"] is True
+    assert 50 <= md.count("\n") + 1 <= 320
+
+
+def _expected_output_ok(score: ModuleType, md: str) -> bool:
+    return next(item["ok"] for item in score.check(md)[0] if item["id"] == "expected-output")
+
+
+def test_score_readme_commented_cli_catalog_counts_as_expected_output() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# List all options and other usage\ndemo --help\n```\n"
+    )
+    assert _expected_output_ok(score, catalog) is True
+
+    quick_start = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# Run a second real invocation\ndemo build\n```\n"
+    )
+    assert _expected_output_ok(score, quick_start) is True
+
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    extras_in_details = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        f"{extras}\n</details>\n"
+    )
+    assert _expected_output_ok(score, extras_in_details) is False
+
+    weak_details = (
+        "# demo-tool\n\nLaunch CLI coding agents inside guest VMs.\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\n# CLI only\ncd packages/demo && npm ci && npm run build\n\n"
+        "# Build images\njust images\n```\n\n</details>\n"
+    )
+    assert _expected_output_ok(score, weak_details) is False
+    assert score._commented_shell_catalog(CLI_WEAK_README.read_text()) is False
+
+    lone = "# demo\n\nA library for testers.\n\n```python\nprint('hello')\n```\n"
+    assert _expected_output_ok(score, lone) is False
+
+
+def test_score_readme_getting_started_install_extras_are_not_a_catalog() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+
+    getting_started = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Getting started\n\n" + extras
+    assert _expected_output_ok(score, getting_started) is False
+
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    extras_in_details = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        f"{extras}\n</details>\n"
+    )
+    assert _expected_output_ok(score, extras_in_details) is False
+
+    quick_start_extras = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Quick start\n\n" + extras
+    assert _expected_output_ok(score, quick_start_extras) is False
+
+    quick_start = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Start the tool in this directory\ndemo run\n\n"
+        "# List all options and other usage\ndemo --help\n```\n"
+    )
+    assert _expected_output_ok(score, quick_start) is True
+
+
+def test_score_readme_npx_or_uvx_catalog_ending_in_help_counts_as_expected_output() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    uvx_catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Run\nuvx ruff check\n\n# List options\nuvx ruff --help\n```\n"
+    )
+    assert _expected_output_ok(score, uvx_catalog) is True
+
+    npx_catalog = (
+        "# demo\n\nA CLI for testers who need a command catalog.\n\n"
+        "## Quick start\n\n"
+        "```bash\n# Run\nnpx eslint .\n\n# List options\nnpx eslint --help\n```\n"
+    )
+    assert _expected_output_ok(score, npx_catalog) is True
+
+    extras = "```bash\n# Homebrew\nbrew install demo\n\n# Docker\ndocker run demo\n\n# From source\nmake install\n```\n"
+    extras_only = "# demo\n\nA CLI for testers who need a command catalog.\n\n" + extras
+    assert _expected_output_ok(score, extras_only) is False
+
+    getting_started = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Getting started\n\n" + extras
+    assert _expected_output_ok(score, getting_started) is False
+
+    quick_start_extras = "# demo\n\nA CLI for testers who need a command catalog.\n\n## Quick start\n\n" + extras
+    assert _expected_output_ok(score, quick_start_extras) is False
+
+
+def test_score_readme_accepts_just_install() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    md = "# demo\n\nInstall it.\n\n```bash\njust install\njust build\n```\n"
+    install = next(item for item in score.check(md)[0] if item["id"] == "install")
+    assert install["ok"] is True
+
+
+def test_score_readme_without_summary_must_not_reuse_token() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    bad = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\nnpm ci\njust images\n```\n\n</details>\n"
+    )
+    bad_item = next(item for item in score.check(bad)[0] if item["id"] == "without-details")
+    assert bad_item["ok"] is False
+    assert "Without X" in bad_item["msg"]
+
+    good = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\njust build\n```\n\n"
+        "<details>\n<summary>Other install methods</summary>\n\n"
+        "```bash\nbrew install demo\n```\n\n</details>\n"
+    )
+    good_item = next(item for item in score.check(good)[0] if item["id"] == "without-details")
+    assert good_item["ok"] is True
+    assert "Without X" in good_item["msg"]
+
+    none = "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n"
+    none_item = next(item for item in score.check(none)[0] if item["id"] == "without-details")
+    assert none_item["ok"] is True
+    assert "Without X" in none_item["msg"]
+
+
+def test_score_readme_without_summary_skips_articles_and_using() -> None:
+    score = _load_module(SCORE_SCRIPT, "score_readme")
+    gpu = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without a GPU</summary>\n\n"
+        "This path uses a laptop CPU only.\n\n"
+        "```bash\nnpm ci\nnpm run build\n```\n\n</details>\n"
+    )
+    gpu_item = next(item for item in score.check(gpu)[0] if item["id"] == "without-details")
+    assert gpu_item["ok"] is True
+
+    using_just = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without using just</summary>\n\n"
+        "```bash\njust images\n```\n\n</details>\n"
+    )
+    using_item = next(item for item in score.check(using_just)[0] if item["id"] == "without-details")
+    assert using_item["ok"] is False
+
+    existing = (
+        "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
+        "<details>\n<summary>Without just, and extra images</summary>\n\n"
+        "```bash\nnpm ci\njust images\n```\n\n</details>\n"
+    )
+    existing_item = next(item for item in score.check(existing)[0] if item["id"] == "without-details")
+    assert existing_item["ok"] is False

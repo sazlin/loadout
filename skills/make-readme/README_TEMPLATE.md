@@ -29,8 +29,10 @@ STEPS
   1. LOGO (optional): if you have one, keep the <img> line and point src at a file
      committed in this repo (docs/ or assets/). Use a relative path so forks render it.
      Height 80 to 120 px. No logo? Delete the <img> line entirely.
-  2. NAME: replace {{PROJECT_NAME}}. Use the name users type to install or import,
-     not the repo slug, if they differ. Exactly one H1 in the whole file.
+  2. NAME: replace {{PROJECT_NAME}}. Use the name users type to run, install, or import:
+     the binary (`bin` / `[project.scripts]`), not the git slug, if they differ. A product
+     plus a checkout may be `tool workspace` style; do not invent a compound title. Exactly
+     one H1 in the whole file. Copy the project's own nouns from the existing README and `--help`.
   3. TAGLINE: one sentence, under 120 characters, no period-ending marketing fluff.
      Formula: [what it is] + [for whom / what it beats].
      Good: "An extremely fast Python package manager, written in Rust."
@@ -92,12 +94,15 @@ CUT IF:  the project is a one-purpose utility whose name says everything, or the
          bullets would all be table stakes.
 
 STEPS
-  1. Write 3 to 6 bullets. Never more than 6.
+  1. Write 3 to 6 bullets. Never more than 6 unless this is a CLI or infra tool and every
+     extra bullet is a distinct shipped differentiator (cap 8).
   2. Each bullet: bold benefit, then one clause of detail. Lead with the verb or noun,
      not with "It".
        **Zero config.** Detects your framework and picks working defaults.
-  3. Prefer what makes you DIFFERENT: speed numbers, offline, single binary, no
-     telemetry, works with X. Delete any bullet that a competitor could copy verbatim.
+  3. Prefer what makes you DIFFERENT: speed, host integration, auth, isolation, offline,
+     single binary, no telemetry. Delete any bullet that a competitor could copy verbatim.
+     Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the
+     product.
   4. Use real numbers where you have them ("cold start 40 ms", "40+ providers").
   5. Never list unreleased work here. Shipped only.
   6. Rename the heading to "Why {{PROJECT_NAME}}" if the bullets are comparative
@@ -130,6 +135,9 @@ STEPS
   4. Do not pin a version in the primary command unless the project requires it.
   5. Extra platforms (Homebrew, Docker, Windows, build from source) go inside the
      <details> block below. Delete the <details> block if you have only one path.
+     Only emit extras that are real, documented, first-class paths. Never invent npm
+     because a justfile exists, or curl because Homebrew exists.
+     Never title a dropdown "Without X" if the body still uses X.
   6. VERIFY: run the exact command in a clean container or fresh VM before shipping.
      A failing install command is the single most damaging README defect.
 END INSTRUCTIONS -->
@@ -163,21 +171,47 @@ STATUS: Required. 52% have this exact heading; 77% of the top 40 ship a fenced c
         block. With Installation, this is the highest-value section in the file.
 
 STEPS
-  1. Show the SMALLEST COMPLETE thing that works. Under ~15 lines.
+  1. Pick the shape by project type. Keep only one skeleton below. Delete the unused
+     skeleton entirely so leftover {{placeholders}} cannot leak.
+
+     CLI: keep the bash catalog; delete the library skeleton. One language-tagged
+     ```bash pane of real invocations. A one-line `# comment` above each command, a
+     blank line between examples, `--help` last. Escalate from the common case to the
+     weird ones. Comments count as expected output; do not add a second fence of
+     `--version` or `--help` stdout. Do not prove the binary exists. The first command
+     is the launch that the existing README, shims, or `--help` already treat as primary.
+     Do not infer a profile from the language or stack.
+     At most 8 invocations plus `--help`, common-case first. Extra subcommands go in
+     a <details> below the pane or in docs/. Companion CLIs and shell functions go in
+     a <details> below the pane, same comment-then-command style. The 15-line /
+     two-example cap does not apply to this catalog; the 8-plus-`--help` cap does.
+
+     Library / SDK: keep the language-tagged example; delete the bash catalog. Do not
+     leave `{{BINARY}} --help`. The SMALLEST COMPLETE thing that works, under ~15 lines,
+     plus the printed result (comment in the block or a second fence). LANGUAGE_TAG
+     is python, ts, or go, not bash. Two examples maximum.
+
   2. It must run as written against the current release. Copy it out and run it.
-  3. Show the expected output, either as a comment in the block or in a second block.
-     Output turns your example into a test the reader can self-check.
-  4. Tag the fence with a language (```bash, ```python, ```ts, ```go). 75% of the
+  3. Tag the fence with a language (```bash, ```python, ```ts, ```go). 75% of the
      top 40 do; untagged fences lose syntax highlighting.
-  5. If the project has both a CLI and a library face, show one example of each and
-     stop there. Two examples maximum.
-  6. Do not teach the language or the domain. Show YOUR shape: the import, the call,
+  4. Do not teach the language or the domain. Show YOUR shape: the import, the call,
      the flags, the result.
-  7. Anything longer belongs in docs/ or examples/, linked from the Documentation
-     section below.
+  5. Anything longer than a CLI catalog or a tiny library example belongs in docs/ or
+     examples/, linked from the Documentation section below.
 END INSTRUCTIONS -->
 
 ## Quick start
+
+```bash
+# {{COMMENT_FOR_THE_MOST_COMMON_LAUNCH}}
+{{HERO_COMMAND}}
+
+# {{COMMENT_FOR_A_REALISTIC_VARIANT}}
+{{NEXT_COMMAND}}
+
+# List all options and other usage
+{{BINARY}} --help
+```
 
 ```{{LANGUAGE_TAG}}
 {{MINIMAL_RUNNABLE_EXAMPLE}}
@@ -308,7 +342,8 @@ Licensed under the [{{LICENSE_NAME}}]({{LICENSE_FILE_PATH}}).
        [ ] Exactly one H1 in the file.
        [ ] Install command was run on a clean machine and worked.
        [ ] Quick start example was copy-pasted and run against the current version.
-       [ ] Expected output shown.
+       [ ] CLI: one commented command catalog, `--help` last, no `--version` dump.
+           Library: expected output shown.
        [ ] Every fenced block has a language tag.
        [ ] 3 to 6 badges, every one links somewhere, every one renders.
        [ ] Every linked in-repo file exists (LICENSE, CONTRIBUTING.md, SECURITY.md,

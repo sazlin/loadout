@@ -19,8 +19,9 @@ is contested, the corpus wins.
 ## Non-negotiable rules
 
 1. **Never invent facts.** No benchmark numbers, no feature you have not seen in the code,
-   no license you have not read in the LICENSE file, no Discord link you cannot verify. If a
-   fact is missing, either omit the element or ask. An impressive lie in a README is a bug report.
+   no license you have not read in the LICENSE file, no Discord link you cannot verify, no
+   install method the repo does not document. If a fact is missing, either omit the element or
+   ask. An impressive lie in a README is a bug report.
 2. **Never link a file that does not exist.** CONTRIBUTING.md, SECURITY.md, LICENSE, docs/,
    images: check each one on disk before linking it. Offer to create the missing file instead.
 3. **Read the manifest for every version claim.** Runtime floors, package names, extras, and
@@ -33,8 +34,8 @@ is contested, the corpus wins.
 5. **Cut before you add.** The median top-tier README is ~128 lines and ~10 sections. A section
    that exists because a template had it is worse than no section.
 6. **Preserve what already works.** When improving an existing README, keep its working badges,
-   real community links, hard-won troubleshooting notes, and its voice. You are editing, not
-   replacing a person's work.
+   real community links, hard-won troubleshooting notes, its voice, and the product's own
+   nouns. You are editing, not replacing a person's work.
 
 ## Workflow
 
@@ -54,11 +55,12 @@ user's answers alone, and say plainly that repo facts were unverified.
 python3 scripts/inspect_repo.py /path/to/repo
 ```
 
-This prints identity, manifests, ecosystems, likely install commands, license detection, CI
-workflows, docs dirs, media assets, community links, health files, and a GAPS list.
-Then read enough of the actual code to describe it honestly: the entry point, the main
-module or CLI definition, one real usage path. A README written from the manifest alone
-reads like it was written from the manifest alone.
+This prints identity, binary names, justfile recipes, manifests, ecosystems, likely install
+commands, license detection, CI workflows, docs dirs, media assets, community links, health
+files, and a GAPS list. H1 is NAME (already BINARIES[0] when present). REPO is the git folder.
+Extra console scripts stay on BINARIES. Then read enough of the actual code to describe it
+honestly: the entry point, the main module or CLI definition, one real usage path. A README
+written from the manifest alone reads like it was written from the manifest alone.
 
 If a README already exists:
 
@@ -85,21 +87,23 @@ your best guess with each question so the user can confirm rather than compose.
 
 If the user is unavailable (unattended run), pick the most conservative reading, omit any
 element that would require an unverified claim, and list every assumption at the top of
-your final summary.
+your final summary. For the hero command, use the launch that the existing README, shims, or
+`--help` already treat as primary; do not infer a profile from the language or stack.
 
 ### Step 5: Write
 
 Work from `README_TEMPLATE.md`. Its inline instruction blocks carry the per-section rules;
 `references/section-playbook.md` carries the reasoning and the failure modes, and
-`references/badges.md` has copy-paste badge URLs.
+`references/badges.md` has copy-paste badge URLs. Keep only the CLI catalog or the library
+example; delete the unused skeleton so placeholders cannot leak.
 
 Canonical order (median positions from the corpus):
 
-1. Header block: logo (optional), name, one-sentence tagline, 3 to 6 badges
+1. Header block: logo (optional), binary or product name (not the git slug), tagline, 3 to 6 badges
 2. Hero visual: GIF for a CLI, screenshot for an app, first code block for a library
-3. Features: 3 to 6 bullets, bold benefit first, differentiators only
-4. Installation: one primary command, prerequisites on one line, extras in `<details>`
-5. Quick start: smallest runnable example plus its expected output
+3. Features: 3 to 6 bullets, bold benefit first, differentiators only (7 to 8 only if each is a distinct shipped capability)
+4. Installation: one primary command, prerequisites on one line; extras only if they are real, documented, and internally consistent
+5. Quick start: CLI = one commented command catalog, at most 8 invocations plus `--help` (overflow in `<details>` or docs/); library = smallest example plus printed result. Delete the unused template skeleton.
 6. At most one domain section: integrations table, deployment, comparison, or architecture
 7. Documentation: docs home plus up to 3 deep links
 8. Community and support: routed by intent, 2 to 4 lines
@@ -118,6 +122,11 @@ Writing rules that the corpus and the guides agree on:
 - No table of contents under ~150 lines; GitHub generates an outline automatically.
 - Tables only for genuinely tabular reference data, capped at ~12 rows.
 - Do not describe unreleased work in the present tense.
+- H1 is the binary or product name people type, not the git folder.
+- Copy the project's own nouns from the existing README and `--help`. Do not rename the product to match implementation jargon.
+- The first CLI command is the launch that the existing README, shims, or `--help` already treat as primary; do not infer it from the language or stack.
+- For a library, Quick start stays a tiny example plus what it prints. Do not flatten a library README into a command catalog. Delete the bash catalog skeleton.
+- Features sell the switch, not the implementation. Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the product.
 
 In `improve` mode, work section by section against the score report: fix every CRITICAL,
 then every IMPORTANT, then the MINORs that do not cost the author's voice. Keep a short list
@@ -134,7 +143,7 @@ grep -n "{{" README.md             # must return nothing
 Then check by hand what the linter cannot:
 
 - [ ] The install command was actually run, or is traceable to a published package.
-- [ ] The quick-start example was run and its output is what the README claims.
+- [ ] The quick-start example was run. A CLI catalog needs comments that match the commands, not a `--version` dump. A library example needs the printed result.
 - [ ] Every badge URL resolves and its link target is correct.
 - [ ] Every claim in Features is backed by code you read.
 - [ ] The tagline matches the GitHub repo description and the package manifest description;
@@ -166,6 +175,11 @@ user should create next. Offer to draft those files.
 | Emoji headings and decorative dividers | Break anchors, age badly, cost scannability | Plain headings |
 | A screenshot of code | Unsearchable, unreadable on mobile | A fenced code block |
 | Install instructions for six package managers up top | Buries the 90% path | Primary command, rest in `<details>` |
+| `--version` / `--help` stdout as Quick start | Proves the binary exists, not how to use it | One pane of commented real invocations, `--help` last |
+| Dropdown titled "Without X" that still uses X | Invented extra path, internally false | One primary path; extras only if real and consistent |
+| Git slug as H1 when the binary differs | Readers type the binary | Name from `bin` / console_scripts |
+| Hero guessed from language or stack | Wrong first example | Use the launch that the existing README, shims, or `--help` already treat as primary |
+| Features that inventory flags, quotas, merge order | Implementation trivia, not a switch reason | Bold differentiators; internals go to docs |
 
 ## Files in this skill
 
