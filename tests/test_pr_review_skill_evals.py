@@ -44,6 +44,8 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "review_correctness" in panel
     assert "in-process" in panel or "in process" in panel
     assert "not fast" in panel
+    assert "effort=medium" in panel
+    assert "composer-2.5" not in panel
 
     dedupe = (SKILLS / "dedupe-and-write-tasks" / "SKILL.md").read_text()
     assert "TASKS_TO_RESOLVE-" in dedupe
@@ -72,6 +74,7 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "empty" in lowered
     assert "never create" in lowered or "never creates" in lowered
     assert "true" in lowered and "false" in lowered
+    assert "composer-2.5" in lowered
 
 
 def test_pr_review_skills_are_not_orphans() -> None:

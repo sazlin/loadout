@@ -57,8 +57,13 @@ VERIFIER = "verifier.md"
 RISK_CLASSIFIER = "risk_classifier.md"
 HARNESS_AGENTS = frozenset({ISSUE_RESOLVER, VERIFIER, RISK_CLASSIFIER})
 PR_REVIEW_HARNESS_AGENT_FILES = frozenset(REVIEW_DIMENSION_AGENTS | HARNESS_AGENTS | {REVIEW_ORCHESTRATOR})
-# Cursor subagent pin: Grok 4.6 high effort, standard (not Fast) speed.
-PR_REVIEW_HARNESS_MODEL = "grok-4.6[effort=high,fast=false]"
+# Cursor subagent pins. Fast stays off. Orchestrator keeps high effort.
+PR_REVIEW_HARNESS_ORCHESTRATOR_MODEL = "grok-4.6[effort=high,fast=false]"
+PR_REVIEW_HARNESS_GROK_MODEL = "grok-4.6[effort=medium,fast=false]"
+PR_REVIEW_HARNESS_VERIFIER_MODEL = "composer-2.5"
+PR_REVIEW_HARNESS_GROK_AGENT_FILES = frozenset(
+    REVIEW_DIMENSION_AGENTS | {ISSUE_RESOLVER, RISK_CLASSIFIER}
+)
 IMPLEMENTATION_HARNESS_AGENTS = frozenset(
     {
         "implementation_orchestrator.md",
@@ -363,16 +368,35 @@ def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
     }
 
 
-@pytest.mark.parametrize("filename", sorted(PR_REVIEW_HARNESS_AGENT_FILES))
-def test_pr_review_harness_agent_pins_grok_4_6_high_not_fast(filename: str) -> None:
+def _assert_model_pin(filename: str, expected: str) -> None:
     path = _agent_file(filename)
     meta = parse_agent_md(path, path.read_text(), file_stem=path.stem)
-    assert meta.model == PR_REVIEW_HARNESS_MODEL
-    assert "fast=true" not in meta.model
-    assert "-fast" not in meta.model
+    assert meta.model == expected
+    assert "fast=true" not in (meta.model or "")
+    assert "-fast" not in (meta.model or "")
     vendored = REPO / ".claude" / "agents" / filename
     vendored_meta = parse_agent_md(vendored, vendored.read_text(), file_stem=path.stem)
-    assert vendored_meta.model == PR_REVIEW_HARNESS_MODEL
+    assert vendored_meta.model == expected
+
+
+@pytest.mark.parametrize("filename", sorted(PR_REVIEW_HARNESS_GROK_AGENT_FILES))
+def test_pr_review_harness_grok_agents_pin_medium_not_fast(filename: str) -> None:
+    _assert_model_pin(filename, PR_REVIEW_HARNESS_GROK_MODEL)
+
+
+def test_pr_review_harness_orchestrator_stays_on_grok_high_not_fast() -> None:
+    _assert_model_pin(REVIEW_ORCHESTRATOR, PR_REVIEW_HARNESS_ORCHESTRATOR_MODEL)
+    text = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    assert PR_REVIEW_HARNESS_GROK_MODEL in text
+    assert PR_REVIEW_HARNESS_VERIFIER_MODEL in text
+    assert "effort=high,fast=false" in text.split("## Charter", 1)[0]
+    lowered = text.lower()
+    assert "do not pass inherit" in lowered
+    assert "fast model" in lowered or "a fast model" in lowered
+
+
+def test_pr_review_harness_verifier_pins_composer() -> None:
+    _assert_model_pin(VERIFIER, PR_REVIEW_HARNESS_VERIFIER_MODEL)
 
 
 def test_non_pr_review_harness_agents_keep_inherit() -> None:

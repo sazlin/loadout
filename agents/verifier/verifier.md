@@ -3,7 +3,7 @@ name: verifier
 description: >-
   Use when the review orchestrator runs dispatch-verifiers, or when asked to
   check project verifier claims. Do not fix the code.
-model: grok-4.6[effort=high,fast=false]
+model: composer-2.5
 readonly: true
 tools:
   - Read

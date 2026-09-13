@@ -32,7 +32,8 @@ rewrites it.
 2. Parse claim lines in file order.
 3. Dispatch `verifier` to judge **each claim individually, sequentially**.
    Do not parallelize lines. Do not skip a later claim because an earlier
-   one was `false`.
+   one was `false`. Do not pass inherit, Fast, or Grok; `verifier` is
+   Composer 2.5 (`composer-2.5`).
 4. Collect JSON. Each `false` is an issue for `dedupe-and-write-tasks`.
 5. Follow `log-progress`.
 
