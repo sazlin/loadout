@@ -64,7 +64,7 @@ def _commented_shell_catalog(md: str) -> bool:
     return False
 
 
-def _details_consistent(md: str) -> bool:
+def _without_summary_reuses_token(md: str) -> bool:
     for block in _DETAILS.findall(md):
         summary_m = _SUMMARY.search(block)
         if not summary_m:
@@ -74,8 +74,8 @@ def _details_consistent(md: str) -> bool:
             continue
         token = re.escape(without.group(1))
         if re.search(rf"(?i)(?<![\w.-]){token}(?![\w.-])", block[summary_m.end() :]):
-            return False
-    return True
+            return True
+    return False
 
 
 @dataclass(frozen=True)
@@ -280,10 +280,10 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         f"Found: {sorted(set(placeholders))[:6]}. Remove every one before shipping.",
     )
     add(
-        _details_consistent(md),
+        not _without_summary_reuses_token(md),
         IMPT,
-        "details-consistency",
-        "Collapsible extras match their summaries",
+        "without-details",
+        "'Without X' summaries do not reuse X in the body",
         "A <details> summary says 'without X' but the body still uses X. "
         "Only emit extras that are real and internally consistent, or drop the dropdown.",
     )

@@ -801,24 +801,27 @@ def test_score_readme_accepts_just_install() -> None:
     assert install["ok"] is True
 
 
-def test_score_readme_details_summary_must_match_body() -> None:
+def test_score_readme_without_summary_must_not_reuse_token() -> None:
     score = _load_module(SCORE_SCRIPT, "score_readme")
     bad = (
         "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n\n"
         "<details>\n<summary>Without just, and extra images</summary>\n\n"
         "```bash\nnpm ci\njust images\n```\n\n</details>\n"
     )
-    bad_item = next(item for item in score.check(bad)[0] if item["id"] == "details-consistency")
+    bad_item = next(item for item in score.check(bad)[0] if item["id"] == "without-details")
     assert bad_item["ok"] is False
+    assert "Without X" in bad_item["msg"]
 
     good = (
         "# demo\n\nA CLI for testers.\n\n```bash\njust install\njust build\n```\n\n"
         "<details>\n<summary>Other install methods</summary>\n\n"
         "```bash\nbrew install demo\n```\n\n</details>\n"
     )
-    good_item = next(item for item in score.check(good)[0] if item["id"] == "details-consistency")
+    good_item = next(item for item in score.check(good)[0] if item["id"] == "without-details")
     assert good_item["ok"] is True
+    assert "Without X" in good_item["msg"]
 
     none = "# demo\n\nA CLI for testers.\n\n```bash\njust install\n```\n"
-    none_item = next(item for item in score.check(none)[0] if item["id"] == "details-consistency")
+    none_item = next(item for item in score.check(none)[0] if item["id"] == "without-details")
     assert none_item["ok"] is True
+    assert "Without X" in none_item["msg"]
