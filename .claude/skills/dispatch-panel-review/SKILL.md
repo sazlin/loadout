@@ -25,9 +25,11 @@ Launch `review_correctness`, `review_maintainability`, `review_scale`, and
 
 1. Resolve the change set. Loop 1 is the full PR diff (`gh pr view` /
    `gh pr diff` or the git range in the brief). Loop 2+ uses the
-   resolver-commit range the orchestrator named (`issue_resolver`
-   commits since the previous panel), not the full PR vs base. Every
-   reviewer gets the **same** summary, paths, PR id, and range.
+   two-dot resolver-commit range the orchestrator named
+   (`git diff <left-sha>..HEAD` for `issue_resolver` commits since the
+   previous panel), not the full PR vs base. Use that range as written.
+   Do not recompute the left SHA. Every reviewer gets the **same**
+   summary, paths, PR id, and range.
 2. Issue **four** isolated subagent calls in a **single** response. One call
    per response is a protocol failure. Loops 2+ still dispatch **all four**
    reviewers. Never skip a reviewer.

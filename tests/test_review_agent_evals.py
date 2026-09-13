@@ -525,6 +525,11 @@ def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
         assert "issue_resolver" in lowered
         assert "resolver commit" in lowered or "resolver commits" in lowered
         assert "all four" in lowered
+        later = text.split("### Later panel loops", 1)[1].split("### Dispatch", 1)[0]
+        later_lower = later.lower()
+        assert "review_history" in later_lower or "git log" in later_lower
+        assert "git diff" in later_lower
+        assert "sha-after-previous-panel" not in later_lower
         guidance = text.split("## Agent-specific guidance", 1)[1].split("## Output schema", 1)[0].lower()
         assert "regression" in guidance
         assert "four" in guidance

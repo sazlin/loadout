@@ -296,11 +296,35 @@ Loop 1 reviews the full PR diff (`gh pr diff`).
 Loops 2 and 3 still dispatch **all four** reviewers in parallel. Never skip
 a reviewer.
 
-The change set is **resolver commits** since the previous panel
-(`git diff <sha-after-previous-panel>..HEAD`), not the full PR vs base.
-Pass that range in every reviewer brief. File only regressions those
-`issue_resolver` commits introduced. Do not re-file original-PR issues
-already fixed or deferred as minors.
+The change set is **resolver commits** since the previous panel, not
+the full PR vs base.
+
+**Left SHA.** The commit that was `HEAD` on the PR branch when the previous
+panel's `log-progress` entry was written. That is also the parent of the
+first `issue_resolver` commit after that panel.
+
+Obtain it:
+
+1. In `REVIEW_HISTORY.md`, take the latest heading with phase `panel` and
+   copy its ISO timestamp.
+2. First resolver commit after that write:
+   `git log --reverse --format='%H' --after='<panel-iso-timestamp>' HEAD`
+3. Left SHA is that commit's parent: `git rev-parse <first-hash>^`
+   If that panel summary already recorded the branch HEAD SHA, use that
+   value and skip steps 2–3.
+
+Diff with **two dots** (`git diff <left-sha>..HEAD`): tree of left SHA vs
+tree of `HEAD`. Do not use three-dot `git diff <left-sha>...HEAD`. If
+left SHA were not an ancestor of `HEAD`, three-dot would merge-base
+against the original PR and re-open files later panels must ignore.
+
+Put that exact two-dot range (`<left-sha>..HEAD`) in the
+`dispatch-panel-review` brief and in every reviewer brief. The skill and
+reviewers consume the range as written. They must not pick a different
+left SHA (merge-base with main, GitHub last-panel HEAD, reflog).
+
+File only regressions those `issue_resolver` commits introduced. Do not
+re-file original-PR issues already fixed or deferred as minors.
 
 ### Dispatch (same turn = parallel)
 
