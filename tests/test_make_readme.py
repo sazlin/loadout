@@ -677,6 +677,59 @@ def test_inspect_repo_prefers_binary_name_over_git_slug(tmp_path: Path) -> None:
     assert "msb-agent" in inspect.human(facts)
 
 
+def test_inspect_repo_caps_binary_names_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    repo = tmp_path / "sandbox"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "remote", "add", "origin", "https://github.com/example/sandbox.git")
+    bins = {f"cli{i:02d}": "cli.js" for i in range(40)}
+    (repo / "package.json").write_text(json.dumps({"name": "@org/sandbox", "private": True, "bin": bins}))
+    facts = inspect.inspect(str(repo))
+    expected = [f"cli{i:02d}" for i in range(15)]
+    assert facts["binary_names"] == expected
+    assert facts["name"] == "cli00"
+    assert facts["repo"] == "sandbox"
+    sheet = inspect.human(facts)
+    assert "cli00" in sheet
+    assert "cli39" not in sheet
+    assert "cli15" not in sheet
+
+
+def test_inspect_repo_caps_just_recipes_at_fifteen(tmp_path: Path) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+    recipes = ["install:\n    npm ci\n", "build:\n    npm run build\n"]
+    extra = 0
+    size = sum(len(chunk) + 1 for chunk in recipes)
+    while size < 200_000:
+        line = f"r{extra}:\n    true\n"
+        recipes.append(line)
+        size += len(line) + 1
+        extra += 1
+    (tmp_path / "justfile").write_text("\n".join(recipes))
+    (tmp_path / "package.json").write_text(json.dumps({"name": "demo", "private": True, "bin": {"demo": "cli.js"}}))
+    facts = inspect.inspect(str(tmp_path))
+    assert facts["just_recipes"] == ["install", "build"] + [f"r{i}" for i in range(13)]
+    assert len(facts["just_recipes"]) == 15
+    assert facts["suggested_install_commands"] == ["just install"]
+    assert "just build" not in facts["suggested_install_commands"]
+    assert facts["suggested_run_commands"][0] == "just build"
+    sheet = inspect.human(facts)
+    assert "r12" in sheet
+    assert f"r{extra - 1}" not in sheet
+
+
+def test_recipe_names_stops_after_fifteen_matches(monkeypatch: pytest.MonkeyPatch) -> None:
+    inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
+
+    def no_findall(*_args, **_kwargs):
+        raise AssertionError("findall materializes every recipe name")
+
+    monkeypatch.setattr(inspect.re, "findall", no_findall)
+    text = "".join(f"r{i}:\n" for i in range(40))
+    assert inspect._recipe_names(text) == [f"r{i}" for i in range(15)]
+
+
 def test_inspect_repo_prefers_console_scripts_over_project_name(tmp_path: Path) -> None:
     inspect = _load_module(INSPECT_SCRIPT, "inspect_repo")
     (tmp_path / "pyproject.toml").write_text(

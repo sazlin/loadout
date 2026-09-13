@@ -16,6 +16,7 @@ import os
 import re
 import subprocess
 import sys
+from itertools import islice
 from urllib.parse import urlparse
 
 SKIP_DIRS = {
@@ -72,10 +73,13 @@ def toml_get(text, key):
     return match.group(1) if match else None
 
 
+_MAX_NAMES = 15
+
+
 def _npm_bin_names(pkg):
     bin_field = pkg.get("bin")
     if isinstance(bin_field, dict):
-        return [key for key in bin_field if isinstance(key, str) and key]
+        return [key for key in bin_field if isinstance(key, str) and key][:_MAX_NAMES]
     pkg_name = pkg.get("name")
     if isinstance(bin_field, str) and bin_field and isinstance(pkg_name, str) and pkg_name:
         return [pkg_name.rsplit("/", 1)[-1]]
@@ -83,7 +87,8 @@ def _npm_bin_names(pkg):
 
 
 def _recipe_names(text):
-    return re.findall(r"(?m)^([a-zA-Z][\w-]*):(?!=)", text)[:15]
+    matches = re.finditer(r"(?m)^([a-zA-Z][\w-]*):(?!=)", text)
+    return [match.group(1) for match in islice(matches, _MAX_NAMES)]
 
 
 def _top_justfile(root, top):
