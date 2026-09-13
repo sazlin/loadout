@@ -144,6 +144,8 @@ def test_inspect_repo_reports_gaps_from_disk(tmp_path: Path) -> None:
     assert facts["license_guess"] == "MIT"
     assert "pypi" in facts["ecosystems"]
     assert any("No README" in gap for gap in facts["gaps"])
+    assert isinstance(facts["demo_media"], list)
+    assert "has_demo_media" not in facts
 
 
 def test_inspect_repo_keeps_dotted_github_repo_slug(tmp_path: Path) -> None:

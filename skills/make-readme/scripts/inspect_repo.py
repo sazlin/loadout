@@ -35,17 +35,17 @@ SKIP_DIRS = {
 }
 
 
-def sh(cmd, cwd):
+def _run(cmd, cwd):
     try:
         return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=15, check=False).stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
         return ""
 
 
-def read(path, limit=200000):
+def _read_text(path, limit=200000):
     try:
-        with open(path, encoding="utf-8", errors="replace") as f:
-            return f.read(limit)
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            return handle.read(limit)
     except OSError:
         return ""
 
@@ -53,17 +53,17 @@ def read(path, limit=200000):
 def walk(root, max_files=6000):
     out = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and d != ".git"]
-        for fn in filenames:
-            out.append(os.path.relpath(os.path.join(dirpath, fn), root))
+        dirnames[:] = [name for name in dirnames if name not in SKIP_DIRS and name != ".git"]
+        for filename in filenames:
+            out.append(os.path.relpath(os.path.join(dirpath, filename), root))
             if len(out) >= max_files:
                 return out
     return out
 
 
 def toml_get(text, key):
-    m = re.search(rf'(?m)^\s*{re.escape(key)}\s*=\s*["\']([^"\']+)["\']', text)
-    return m.group(1) if m else None
+    match = re.search(rf'(?m)^\s*{re.escape(key)}\s*=\s*["\']([^"\']+)["\']', text)
+    return match.group(1) if match else None
 
 
 _HTTP_URL = re.compile(r'https?://[^\s)\'"]+')
@@ -104,45 +104,41 @@ def _is_docs_url(url):
     return "/docs/" in (path.rstrip("/") + "/")
 
 
-def inspect(root):
-    files = walk(root)
-    lower = {f.lower(): f for f in files}
-    top = [f for f in files if os.sep not in f]
-    r = {"path": os.path.abspath(root)}
-
-    # ---------- identity ----------
-    remote = sh(["git", "remote", "get-url", "origin"], root)
-    m = re.search(r"github\.com[:/]([^/]+)/([^/\s]+)", remote)
-    r["owner"] = m.group(1) if m else None
-    if m:
-        r["repo"] = m.group(2).removesuffix(".git")
+def _git_identity(root, facts):
+    remote = _run(["git", "remote", "get-url", "origin"], root)
+    match = re.search(r"github\.com[:/]([^/]+)/([^/\s]+)", remote)
+    facts["owner"] = match.group(1) if match else None
+    if match:
+        facts["repo"] = match.group(2).removesuffix(".git")
     else:
-        r["repo"] = os.path.basename(os.path.abspath(root))
-    origin_head = sh(["git", "rev-parse", "--abbrev-ref", "origin/HEAD"], root)
+        facts["repo"] = os.path.basename(os.path.abspath(root))
+    origin_head = _run(["git", "rev-parse", "--abbrev-ref", "origin/HEAD"], root)
     if origin_head.startswith("origin/"):
         origin_head = origin_head.removeprefix("origin/")
     # Failed rev-parse still prints origin/HEAD; that is not a branch name.
     if origin_head == "HEAD":
         origin_head = ""
-    current_branch = sh(["git", "symbolic-ref", "--short", "HEAD"], root)
-    r["default_branch"] = origin_head or current_branch or None
-    r["last_commit"] = sh(["git", "log", "-1", "--format=%ci"], root) or None
-    r["commit_count"] = sh(["git", "rev-list", "--count", "HEAD"], root) or None
-    r["contributors"] = len([l for l in sh(["git", "shortlog", "-sn", "HEAD"], root).splitlines() if l])
+    current_branch = _run(["git", "symbolic-ref", "--short", "HEAD"], root)
+    facts["default_branch"] = origin_head or current_branch or None
+    facts["last_commit"] = _run(["git", "log", "-1", "--format=%ci"], root) or None
+    facts["commit_count"] = _run(["git", "rev-list", "--count", "HEAD"], root) or None
+    facts["contributors"] = len([line for line in _run(["git", "shortlog", "-sn", "HEAD"], root).splitlines() if line])
 
-    # ---------- manifests ----------
-    man = {}
+
+def _manifest_facts(root, files, lower, top, facts):
+    manifests = {}
     name = desc = version = None
     ecosystems, install, run_cmds, test_cmds = [], [], [], []
 
     if "package.json" in lower:
         try:
-            pkg = json.loads(read(os.path.join(root, lower["package.json"])))
+            pkg = json.loads(_read_text(os.path.join(root, lower["package.json"])))
         except json.JSONDecodeError:
             pkg = None
         if pkg is not None:
-            man["package.json"] = {
-                k: pkg.get(k) for k in ("name", "version", "description", "license", "bin", "private", "workspaces")
+            manifests["package.json"] = {
+                key: pkg.get(key)
+                for key in ("name", "version", "description", "license", "bin", "private", "workspaces")
             }
             name = name or pkg.get("name")
             desc = desc or pkg.get("description")
@@ -156,82 +152,83 @@ def inspect(root):
                     else:
                         install.append(f"npm install {pkg_name}")
             scripts = pkg.get("scripts") or {}
-            for k in ("dev", "start", "build"):
-                if k in scripts:
-                    run_cmds.append(f"npm run {k}")
-            for k in ("test", "test:unit"):
-                if k in scripts:
-                    test_cmds.append(f"npm run {k}")
-            r["node_engines"] = (pkg.get("engines") or {}).get("node")
+            for script in ("dev", "start", "build"):
+                if script in scripts:
+                    run_cmds.append(f"npm run {script}")
+            for script in ("test", "test:unit"):
+                if script in scripts:
+                    test_cmds.append(f"npm run {script}")
+            facts["node_engines"] = (pkg.get("engines") or {}).get("node")
 
     if "pyproject.toml" in lower:
-        t = read(os.path.join(root, lower["pyproject.toml"]))
-        man["pyproject.toml"] = {
-            "name": toml_get(t, "name"),
-            "version": toml_get(t, "version"),
-            "description": toml_get(t, "description"),
-            "requires-python": toml_get(t, "requires-python"),
+        text = _read_text(os.path.join(root, lower["pyproject.toml"]))
+        manifests["pyproject.toml"] = {
+            "name": toml_get(text, "name"),
+            "version": toml_get(text, "version"),
+            "description": toml_get(text, "description"),
+            "requires-python": toml_get(text, "requires-python"),
         }
-        name = name or man["pyproject.toml"]["name"]
-        desc = desc or man["pyproject.toml"]["description"]
-        version = version or man["pyproject.toml"]["version"]
+        name = name or manifests["pyproject.toml"]["name"]
+        desc = desc or manifests["pyproject.toml"]["description"]
+        version = version or manifests["pyproject.toml"]["version"]
         ecosystems.append("pypi")
-        if man["pyproject.toml"]["name"]:
-            install.append(f"pip install {man['pyproject.toml']['name']}")
-        if re.search(r"\[project\.scripts\]", t):
-            r["console_scripts"] = re.findall(
-                r'(?m)^\s*([\w.-]+)\s*=\s*["\']', t.split("[project.scripts]", 1)[1][:500]
+        if manifests["pyproject.toml"]["name"]:
+            install.append(f"pip install {manifests['pyproject.toml']['name']}")
+        if re.search(r"\[project\.scripts\]", text):
+            facts["console_scripts"] = re.findall(
+                r'(?m)^\s*([\w.-]+)\s*=\s*["\']', text.split("[project.scripts]", 1)[1][:500]
             )
 
     if "cargo.toml" in lower:
-        t = read(os.path.join(root, lower["cargo.toml"]))
-        name = name or toml_get(t, "name")
-        desc = desc or toml_get(t, "description")
-        version = version or toml_get(t, "version")
+        text = _read_text(os.path.join(root, lower["cargo.toml"]))
+        name = name or toml_get(text, "name")
+        desc = desc or toml_get(text, "description")
+        version = version or toml_get(text, "version")
         ecosystems.append("crates.io")
         if name:
             install.append(f"cargo install {name}")
     if "go.mod" in lower:
-        t = read(os.path.join(root, lower["go.mod"]))
-        mod = re.search(r"(?m)^module\s+(\S+)", t)
-        if mod:
-            man["go.mod"] = mod.group(1)
-            name = name or mod.group(1).split("/")[-1]
+        text = _read_text(os.path.join(root, lower["go.mod"]))
+        module_match = re.search(r"(?m)^module\s+(\S+)", text)
+        if module_match:
+            manifests["go.mod"] = module_match.group(1)
+            name = name or module_match.group(1).split("/")[-1]
             ecosystems.append("go")
-            install.append(f"go install {mod.group(1)}@latest")
-        gov = re.search(r"(?m)^go\s+([\d.]+)", t)
-        r["go_version"] = gov.group(1) if gov else None
-    if "gemfile" in lower or any(f.endswith(".gemspec") for f in top):
+            install.append(f"go install {module_match.group(1)}@latest")
+        go_version_match = re.search(r"(?m)^go\s+([\d.]+)", text)
+        facts["go_version"] = go_version_match.group(1) if go_version_match else None
+    if "gemfile" in lower or any(path.endswith(".gemspec") for path in top):
         ecosystems.append("rubygems")
     if "composer.json" in lower:
         ecosystems.append("packagist")
-    if any(f.lower() in ("pom.xml", "build.gradle", "build.gradle.kts") for f in top):
+    if any(path.lower() in ("pom.xml", "build.gradle", "build.gradle.kts") for path in top):
         ecosystems.append("maven/gradle")
 
-    dockerfiles = [f for f in files if os.path.basename(f).lower().startswith("dockerfile")]
-    composes = [f for f in files if re.match(r"(docker-)?compose\.ya?ml$", os.path.basename(f).lower())]
+    dockerfiles = [path for path in files if os.path.basename(path).lower().startswith("dockerfile")]
+    composes = [path for path in files if re.match(r"(docker-)?compose\.ya?ml$", os.path.basename(path).lower())]
     if dockerfiles or composes:
         ecosystems.append("docker")
         if composes:
             run_cmds.append("docker compose up")
     if "makefile" in lower:
-        mk = read(os.path.join(root, lower["makefile"]))
-        r["make_targets"] = re.findall(r"(?m)^([a-zA-Z][\w-]*):(?!=)", mk)[:15]
+        makefile_text = _read_text(os.path.join(root, lower["makefile"]))
+        facts["make_targets"] = re.findall(r"(?m)^([a-zA-Z][\w-]*):(?!=)", makefile_text)[:15]
 
-    r["manifests"] = man
-    r["name"] = name
-    r["description_from_manifest"] = desc
-    r["version"] = version
-    r["ecosystems"] = ecosystems
-    r["suggested_install_commands"] = install
-    r["suggested_run_commands"] = run_cmds
-    r["test_commands"] = test_cmds
+    facts["manifests"] = manifests
+    facts["name"] = name
+    facts["description_from_manifest"] = desc
+    facts["version"] = version
+    facts["ecosystems"] = ecosystems
+    facts["suggested_install_commands"] = install
+    facts["suggested_run_commands"] = run_cmds
+    facts["test_commands"] = test_cmds
 
-    # ---------- language mix ----------
-    ext = {}
-    for f in files:
-        e = os.path.splitext(f)[1].lower()
-        if e in (
+
+def _language_mix(files, facts):
+    counts = {}
+    for path in files:
+        suffix = os.path.splitext(path)[1].lower()
+        if suffix in (
             ".py",
             ".js",
             ".ts",
@@ -252,16 +249,17 @@ def inspect(root):
             ".ex",
             ".scala",
         ):
-            ext[e] = ext.get(e, 0) + 1
-    r["language_mix"] = sorted(ext.items(), key=lambda kv: -kv[1])[:5]
-    r["file_count"] = len(files)
+            counts[suffix] = counts.get(suffix, 0) + 1
+    facts["language_mix"] = sorted(counts.items(), key=lambda item: -item[1])[:5]
+    facts["file_count"] = len(files)
 
-    # ---------- health files ----------
+
+def _health_files(root, files, facts):
     def find(*names):
-        for n in names:
-            for f in files:
-                if os.path.basename(f).lower() == n and f.count(os.sep) <= 1:
-                    return f
+        for name in names:
+            for path in files:
+                if os.path.basename(path).lower() == name and path.count(os.sep) <= 1:
+                    return path
         return None
 
     health = {
@@ -272,12 +270,12 @@ def inspect(root):
         "security": find("security.md"),
         "changelog": find("changelog.md", "changes.md", "history.md"),
         "citation": find("citation.cff"),
-        "issue_templates": [f for f in files if "issue_template" in f.lower()][:5],
+        "issue_templates": [path for path in files if "issue_template" in path.lower()][:5],
     }
-    r["health_files"] = health
-    lic_text = read(os.path.join(root, health["license"]), 4000) if health["license"] else ""
-    r["license_guess"] = None
-    for pat, nm in (
+    facts["health_files"] = health
+    license_text = _read_text(os.path.join(root, health["license"]), 4000) if health["license"] else ""
+    facts["license_guess"] = None
+    for pattern, license_name in (
         (r"MIT License", "MIT"),
         (r"Apache License.*2\.0", "Apache-2.0"),
         (r"GNU AFFERO", "AGPL-3.0"),
@@ -289,55 +287,71 @@ def inspect(root):
         (r"Business Source License", "BUSL-1.1"),
         (r"The Unlicense", "Unlicense"),
     ):
-        if re.search(pat, lic_text, flags=re.IGNORECASE | re.DOTALL):
-            r["license_guess"] = nm
+        if re.search(pattern, license_text, flags=re.IGNORECASE | re.DOTALL):
+            facts["license_guess"] = license_name
             break
 
-    # ---------- CI ----------
-    wf = [f for f in files if f.startswith(os.path.join(".github", "workflows"))]
-    r["ci_workflows"] = wf[:10]
-    r["ci_primary"] = next(
-        (os.path.basename(w) for w in wf if re.search(r"ci|test|build|main", os.path.basename(w), re.IGNORECASE)),
-        os.path.basename(wf[0]) if wf else None,
+
+def _ci(files, facts):
+    workflows = [path for path in files if path.startswith(os.path.join(".github", "workflows"))]
+    facts["ci_workflows"] = workflows[:10]
+    facts["ci_primary"] = next(
+        (
+            os.path.basename(workflow)
+            for workflow in workflows
+            if re.search(r"ci|test|build|main", os.path.basename(workflow), re.IGNORECASE)
+        ),
+        os.path.basename(workflows[0]) if workflows else None,
     )
 
-    # ---------- docs and assets ----------
-    r["docs_dirs"] = sorted(
-        {f.split(os.sep)[0] for f in files if f.split(os.sep)[0] in ("docs", "doc", "website", "documentation")}
+
+def _docs_and_media(files, facts):
+    facts["docs_dirs"] = sorted(
+        {
+            path.split(os.sep)[0]
+            for path in files
+            if path.split(os.sep)[0] in ("docs", "doc", "website", "documentation")
+        }
     )
-    r["examples_dirs"] = sorted(
-        {f.split(os.sep)[0] for f in files if f.split(os.sep)[0] in ("examples", "example", "samples", "demo")}
+    facts["examples_dirs"] = sorted(
+        {path.split(os.sep)[0] for path in files if path.split(os.sep)[0] in ("examples", "example", "samples", "demo")}
     )
-    r["images"] = [
-        f
-        for f in files
-        if os.path.splitext(f)[1].lower() in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
-        and not f.startswith("node_modules")
+    facts["images"] = [
+        path
+        for path in files
+        if os.path.splitext(path)[1].lower() in (".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp")
+        and not path.startswith("node_modules")
     ][:20]
-    r["has_demo_media"] = [f for f in r["images"] if f.lower().endswith((".gif", ".webp"))] + [
-        f for f in files if f.lower().endswith((".mp4", ".webm", ".cast"))
+    facts["demo_media"] = [path for path in facts["images"] if path.lower().endswith((".gif", ".webp"))] + [
+        path for path in files if path.lower().endswith((".mp4", ".webm", ".cast"))
     ]
 
-    # ---------- existing README ----------
-    rd = read(os.path.join(root, health["readme"])) if health["readme"] else ""
-    urls = _HTTP_URL.findall(rd)
-    r["readme"] = {
-        "exists": bool(rd),
-        "bytes": len(rd),
-        "lines": rd.count("\n") + 1 if rd else 0,
-        "h1_count": len(re.findall(r"(?m)^# ", rd)),
-        "headings": re.findall(r"(?m)^#{2,3}\s+(.+)$", rd)[:40],
-        "badges": len(re.findall(r"img\.shields\.io|badge\.svg", rd)),
-        "code_blocks": rd.count("```") // 2,
-        "images": len(re.findall(r"!\[[^\]]*\]\(|<img ", rd)),
-        "links_docs_site": any(_is_docs_url(u) for u in urls),
+
+def _readme_stats(root, facts):
+    health = facts["health_files"]
+    readme_text = _read_text(os.path.join(root, health["readme"])) if health["readme"] else ""
+    urls = _HTTP_URL.findall(readme_text)
+    facts["readme"] = {
+        "exists": bool(readme_text),
+        "bytes": len(readme_text),
+        "lines": readme_text.count("\n") + 1 if readme_text else 0,
+        "h1_count": len(re.findall(r"(?m)^# ", readme_text)),
+        "headings": re.findall(r"(?m)^#{2,3}\s+(.+)$", readme_text)[:40],
+        "badges": len(re.findall(r"img\.shields\.io|badge\.svg", readme_text)),
+        "code_blocks": readme_text.count("```") // 2,
+        "images": len(re.findall(r"!\[[^\]]*\]\(|<img ", readme_text)),
+        "links_docs_site": any(_is_docs_url(url) for url in urls),
     }
+    return urls
 
-    # ---------- community and docs links (README only) ----------
-    r["community_links"] = sorted({_redact_userinfo(u) for u in urls if _keep_community(u)})[:5]
-    r["docs_links"] = sorted({u for u in urls if _is_docs_url(u)})[:5]
 
-    # ---------- gaps ----------
+def _community_links(urls, facts):
+    facts["community_links"] = sorted({_redact_userinfo(url) for url in urls if _keep_community(url)})[:5]
+    facts["docs_links"] = sorted({url for url in urls if _is_docs_url(url)})[:5]
+
+
+def _gaps(facts):
+    health = facts["health_files"]
     gaps = []
     if not health["readme"]:
         gaps.append("No README at all.")
@@ -345,60 +359,77 @@ def inspect(root):
         gaps.append("No LICENSE file: add one before claiming a license in the README.")
     if not health["contributing"]:
         gaps.append("No CONTRIBUTING.md: either create it or do not link it.")
-    if not r["images"]:
+    if not facts["images"]:
         gaps.append("No images in repo: a demo GIF or screenshot must be created or the visual section cut.")
-    if not wf:
+    if not facts["ci_workflows"]:
         gaps.append("No CI workflows: do not add a CI badge.")
-    if not ecosystems:
+    if not facts["ecosystems"]:
         gaps.append("No package manifest found: install instructions must be clone-and-run.")
-    if not r["docs_dirs"] and not r["docs_links"]:
+    if not facts["docs_dirs"] and not facts["docs_links"]:
         gaps.append("No docs site or docs/ dir: Documentation section should link in-repo files or be cut.")
-    r["gaps"] = gaps
-    return r
+    facts["gaps"] = gaps
 
 
-def human(r):
-    L = []
-    a = L.append
-    a(
-        f"REPO        {r['owner'] or '?'}/{r['repo']}   branch={r['default_branch']}  commits={r['commit_count']}  contributors={r['contributors']}"
+def inspect(root: str) -> dict:
+    files = walk(root)
+    lower = {path.lower(): path for path in files}
+    top = [path for path in files if os.sep not in path]
+    facts = {"path": os.path.abspath(root)}
+    _git_identity(root, facts)
+    _manifest_facts(root, files, lower, top, facts)
+    _language_mix(files, facts)
+    _health_files(root, files, facts)
+    _ci(files, facts)
+    _docs_and_media(files, facts)
+    urls = _readme_stats(root, facts)
+    _community_links(urls, facts)
+    _gaps(facts)
+    return facts
+
+
+def human(facts: dict) -> str:
+    lines: list[str] = []
+    lines.append(
+        f"REPO        {facts['owner'] or '?'}/{facts['repo']}   branch={facts['default_branch']}  commits={facts['commit_count']}  contributors={facts['contributors']}"
     )
-    a(f"NAME        {r['name']}")
-    a(f"DESCRIPTION {r['description_from_manifest']}")
-    a(f"VERSION     {r['version']}    ECOSYSTEMS: {', '.join(r['ecosystems']) or 'none'}")
-    a(f"LANGUAGES   {r['language_mix']}   files={r['file_count']}")
-    a(f"LICENSE     file={r['health_files']['license']}  detected={r['license_guess']}")
-    a(f"CI          {r['ci_primary']}  ({len(r['ci_workflows'])} workflows)")
-    a(f"DOCS        dirs={r['docs_dirs']}  links={r['docs_links']}")
-    a(f"EXAMPLES    {r['examples_dirs']}")
-    a(f"MEDIA       demo={r['has_demo_media'][:3]}  images={len(r['images'])}")
-    a(f"COMMUNITY   {r['community_links']}")
-    a(
+    lines.append(f"NAME        {facts['name']}")
+    lines.append(f"DESCRIPTION {facts['description_from_manifest']}")
+    lines.append(f"VERSION     {facts['version']}    ECOSYSTEMS: {', '.join(facts['ecosystems']) or 'none'}")
+    lines.append(f"LANGUAGES   {facts['language_mix']}   files={facts['file_count']}")
+    lines.append(f"LICENSE     file={facts['health_files']['license']}  detected={facts['license_guess']}")
+    lines.append(f"CI          {facts['ci_primary']}  ({len(facts['ci_workflows'])} workflows)")
+    lines.append(f"DOCS        dirs={facts['docs_dirs']}  links={facts['docs_links']}")
+    lines.append(f"EXAMPLES    {facts['examples_dirs']}")
+    lines.append(f"MEDIA       demo={facts['demo_media'][:3]}  images={len(facts['images'])}")
+    lines.append(f"COMMUNITY   {facts['community_links']}")
+    lines.append(
         "HEALTH      "
-        + ", ".join(f"{k}={'Y' if v else 'N'}" for k, v in r["health_files"].items() if k != "issue_templates")
-    )
-    a(f"INSTALL?    {r['suggested_install_commands']}")
-    a(f"RUN?        {r['suggested_run_commands']}   TEST? {r['test_commands']}")
-    if r["readme"]["exists"]:
-        rd = r["readme"]
-        a(
-            f"README      {rd['lines']} lines, {rd['badges']} badges, {rd['code_blocks']} code blocks, {rd['images']} images, h1={rd['h1_count']}"
+        + ", ".join(
+            f"{key}={'Y' if value else 'N'}" for key, value in facts["health_files"].items() if key != "issue_templates"
         )
-        a(f"  sections: {rd['headings']}")
+    )
+    lines.append(f"INSTALL?    {facts['suggested_install_commands']}")
+    lines.append(f"RUN?        {facts['suggested_run_commands']}   TEST? {facts['test_commands']}")
+    if facts["readme"]["exists"]:
+        readme = facts["readme"]
+        lines.append(
+            f"README      {readme['lines']} lines, {readme['badges']} badges, {readme['code_blocks']} code blocks, {readme['images']} images, h1={readme['h1_count']}"
+        )
+        lines.append(f"  sections: {readme['headings']}")
     else:
-        a("README      none")
-    if r["gaps"]:
-        a("GAPS (resolve before writing; ask the user rather than inventing):")
-        for g in r["gaps"]:
-            a(f"  - {g}")
-    return "\n".join(L)
+        lines.append("README      none")
+    if facts["gaps"]:
+        lines.append("GAPS (resolve before writing; ask the user rather than inventing):")
+        for gap in facts["gaps"]:
+            lines.append(f"  - {gap}")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    args = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
     root = args[0] if args else "."
-    res = inspect(root)
+    facts = inspect(root)
     if "--json" in sys.argv:
-        print(json.dumps(res, indent=2))
+        print(json.dumps(facts, indent=2))
     else:
-        print(human(res))
+        print(human(facts))
