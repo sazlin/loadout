@@ -400,7 +400,7 @@ def check(md: str, repo: str | None = None) -> tuple[list[dict], dict]:
         "bullet-restraint",
         "Feature list is 3 to 6 bullets (CLI/infra may keep 7–8 distinct shipped differentiators)",
         f"{len(bullets)} bullets in the first 3.5 KB. Cut to 3 to 6 "
-        "(CLI/infra may keep 7–8 distinct shipped differentiators). This check fails only above 12.",
+        "(CLI/infra may keep 7–8 distinct shipped differentiators).",
     )
 
     _add_packaging_checks(add, md, nonbadge, long_desc)
