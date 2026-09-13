@@ -1,8 +1,10 @@
 name: github
 description: >-
   GitHub pull-request media attach via Cursor Cloud ManagePullRequest
-  (images and videos).
+  (images and videos), plus evidence-based README authoring for consumer
+  repos.
 extends:
   - base
 skills:
   - src: skills/github-upload-media-to-pr
+  - src: skills/make-readme

@@ -68,7 +68,10 @@ def test_github_loadout_ships_upload_media_skill() -> None:
     loadout = load_loadout(REPO / "loadouts" / "github.yaml")
     assert loadout.name == "github"
     assert loadout.extends == ["base"]
-    assert {entry["src"] for entry in loadout.skills} == {f"skills/{SKILL_NAME}"}
+    assert {entry["src"] for entry in loadout.skills} == {
+        f"skills/{SKILL_NAME}",
+        "skills/make-readme",
+    }
     assert loadout.rules == []
     assert loadout.agents == []
     assert loadout.mcps == []
