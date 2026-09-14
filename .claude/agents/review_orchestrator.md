@@ -299,21 +299,25 @@ a reviewer.
 The change set is **resolver commits** since the previous panel, not
 the full PR vs base.
 
-**Left SHA.** The frozen panel SHA: `HEAD` at that panel's dispatch, which
-is the `<short-sha>` in `TASKS_TO_RESOLVE-<short-sha>.md`. That commit is
-the parent of the first `issue_resolver` commit after that panel.
+**Left SHA** is `HEAD` at the previous panel's dispatch: the parent of the
+first `issue_resolver` commit after that panel.
 
-If a `log-progress` timestamp, a recorded branch HEAD, and the hashed-tasks
-`<short-sha>` would name different objects, the frozen hashed-tasks SHA
-wins.
+The run-wide `TASKS_TO_RESOLVE-<short-sha>.md` suffix is harness startup
+`HEAD`. Later loops rewrite that same file; they do not re-hash it, so
+the suffix is not left SHA on loop 3.
+
+If a `log-progress` SHA, a recorded branch HEAD, and the hashed-tasks
+`<short-sha>` would name different objects, the previous panel's dispatch
+`HEAD` wins. Hashed-tasks must not override it.
 
 Obtain it:
 
-1. Shortcut: if that panel's `log-progress` entry already recorded the
-   branch HEAD SHA at dispatch, use it.
-2. Otherwise take `<short-sha>` from that panel's
-   `TASKS_TO_RESOLVE-<short-sha>.md` filename and run
-   `git rev-parse <short-sha>`.
+1. Use the previous panel's recorded dispatch HEAD (`log-progress` or
+   prior dispatch brief).
+2. If that record is missing, take the first `issue_resolver` commit from
+   a capped revision-range log and run `git rev-parse <first-resolver>^`.
+
+Any shortcut is an optional cache of that same object.
 
 Do not find left SHA with `git log --after=<panel-iso-timestamp>`. Panel
 `log-progress` is written after `issue_resolver` commits, so `--after` that

@@ -546,17 +546,42 @@ def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
         assert "all four" in lowered
         later = text.split("### Later panel loops", 1)[1].split("### Dispatch", 1)[0]
         later_lower = later.lower()
-        assert "frozen" in later_lower
+        left_def = later.split("**Left SHA**", 1)[1].split("\n\n", 1)[0]
+        assert later.count("**Left SHA**") == 1
+        assert "previous panel's dispatch" in left_def.lower()
+        assert "parent of the first" in left_def.lower()
+        assert "TASKS_TO_RESOLVE" not in left_def
         assert "TASKS_TO_RESOLVE-<short-sha>.md" in later
-        assert "git rev-parse" in later
+        assert "loop 3" in later_lower
+        assert "do not re-hash" in later_lower
+        assert "not left sha" in later_lower
+        assert "hashed-tasks sha wins" not in later_lower
+        assert "frozen hashed-tasks" not in later_lower
+        disagree = later.split("would name different objects", 1)[1].split("Obtain", 1)[0]
+        assert "dispatch" in disagree.lower() and "wins" in disagree.lower()
+        assert "hashed-tasks must not override" in later_lower
+        assert "git rev-parse <first-resolver>^" in later
         assert "git diff <left-sha>..HEAD" in later
-        assert "wins" in later_lower
+        assert "optional cache" in later_lower or "cache of that same object" in later_lower
         obtain = later.split("Obtain it:", 1)[1].split("Diff with", 1)[0]
+        obtain_lower = obtain.lower()
+        assert "recorded dispatch head" in obtain_lower
+        assert "TASKS_TO_RESOLVE" not in obtain
         assert "--after" not in obtain.split("Do not find left SHA", 1)[0]
         assert "git log --reverse --format='%H' --after=" not in later
         assert "--max-count=1" in later
         assert "<left-sha>..HEAD" in later
         assert "sha-after-previous-panel" not in later_lower
+        # Loop 3 fixture: hashed TASKS_TO_RESOLVE-aaa1111.md vs loop-2 dispatch bbb2222.
+        hashed_suffix, dispatch_head = "aaa1111", "bbb2222"
+        left_sha = (
+            dispatch_head
+            if "hashed-tasks must not override" in later_lower
+            and "recorded dispatch head" in obtain_lower
+            else hashed_suffix
+        )
+        assert left_sha == dispatch_head
+        assert left_sha != hashed_suffix
         guidance = text.split("## Agent-specific guidance", 1)[1].split("## Output schema", 1)[0].lower()
         assert "regression" in guidance
         assert "four" in guidance
