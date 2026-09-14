@@ -132,7 +132,10 @@ Treat these as primary detection targets:
 
 ### When invoked
 
-1. Scope the change set from the brief.
+1. Scope the change set from the brief. If the brief names a
+   resolver-commit range (`issue_resolver` commits since the previous
+   panel), review **only that range**. File regressions those commits
+   introduced. Do not re-file original-PR issues already fixed or deferred.
 2. Find every remote call, loop, buffer, and process-lifetime hook.
 3. Ask: what happens at 100x traffic, when the callee 500s, and during a
    rolling restart?

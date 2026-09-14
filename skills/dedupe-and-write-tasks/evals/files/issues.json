@@ -1,6 +1,7 @@
 {
   "issues": [
-    {"id": "SEC-001", "file": "user_api.py", "line": 16, "title": "SQL interpolation"},
-    {"id": "C-003", "file": "user_api.py", "line": 16, "title": "SQL from user_id"}
+    {"id": "SEC-001", "file": "user_api.py", "line": 16, "title": "SQL interpolation", "severity": "critical"},
+    {"id": "C-003", "file": "user_api.py", "line": 16, "title": "SQL from user_id", "severity": "critical"},
+    {"id": "M-002", "file": "report_builder.py", "line": 10, "title": "Comments restate the next line", "severity": "minor"}
   ]
 }

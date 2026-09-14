@@ -297,6 +297,7 @@ def _assert_orchestrator_github_comment_spec(text: str) -> None:
     assert "https://cursor.com/agents/" in started
     assert "cursor cloud dashboard for this harness" in started.lower()
     assert RESUME_STARTUP_MARKER in text
+    assert "deferred minors" in lowered
 
 
 def _assert_risk_classifier_github_comment_spec(text: str) -> None:
@@ -492,6 +493,102 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "do not implement" in lowered
     assert "gh pr merge" in lowered
     assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
+    assert "deferred_minors" in text
+
+
+def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "open tasks are `critical` and `important` only" in lowered or (
+            "critical" in lowered and "important" in lowered and "never" in lowered and "minor" in lowered
+        )
+        assert "deferred minors" in lowered or "deferred_minors" in text
+        assert "REVIEW_HISTORY.md" in text
+        assert "issue_resolver" in lowered
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "minor" in anti and "open task" in anti
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0].lower()
+        assert "deferred minors" in comments
+        history = text.split("### Significant issues and caps", 1)[1].split("### Dispatch", 1)[0].lower()
+        assert "never become" in lowered or "do not become" in lowered
+        assert "open task" in history or "open tasks" in lowered
+
+
+_DEFERRED_MINOR_KEYS = frozenset({"id", "title", "severity", "file"})
+
+
+def test_deferred_minors_record_shape_matches_golden_and_dedupe() -> None:
+    golden = load_golden("review_orchestrator")["deferred_minors"][0]
+    assert set(golden) == _DEFERRED_MINOR_KEYS
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        report = parse_report(text.split("## Output schema", 1)[1])
+        assert set(report["deferred_minors"][0]) == _DEFERRED_MINOR_KEYS
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0]
+        assert "display form" in comments.lower()
+        assert "deferred_minors[]" in comments
+    dedupe = (REPO / "skills" / "dedupe-and-write-tasks" / "SKILL.md").read_text()
+    for key in ("id", "title", "severity", "file"):
+        assert f"`{key}`" in dedupe
+
+
+def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "loop 2" in lowered or "loops 2" in lowered
+        assert "issue_resolver" in lowered
+        assert "resolver commit" in lowered or "resolver commits" in lowered
+        assert "all four" in lowered
+        later = text.split("### Later panel loops", 1)[1].split("### Dispatch", 1)[0]
+        later_lower = later.lower()
+        left_def = later.split("**Left SHA**", 1)[1].split("\n\n", 1)[0]
+        left_one_line = " ".join(left_def.split())
+        assert later.count("**Left SHA**") == 1
+        assert "previous panel's dispatch" in left_one_line.lower()
+        assert "parent of the first" in left_one_line.lower()
+        assert "TASKS_TO_RESOLVE" not in left_def
+        assert "TASKS_TO_RESOLVE-<short-sha>.md" in later
+        assert "loop 3" in later_lower
+        assert "do not re-hash" in later_lower
+        assert "not left sha" in later_lower
+        assert "hashed-tasks sha wins" not in later_lower
+        assert "frozen hashed-tasks" not in later_lower
+        disagree = later.split("would name different objects", 1)[1].split("Obtain", 1)[0]
+        assert "dispatch" in disagree.lower() and "wins" in disagree.lower()
+        assert "hashed-tasks must not override" in later_lower
+        assert "git rev-parse <first-resolver>^" in later
+        assert "git diff <left-sha>..HEAD" in later
+        assert "optional cache" in later_lower or "cache of that same object" in later_lower
+        obtain = later.split("Obtain it:", 1)[1].split("Diff with", 1)[0]
+        obtain_lower = obtain.lower()
+        assert "recorded dispatch head" in obtain_lower
+        assert "TASKS_TO_RESOLVE" not in obtain
+        assert "--after" not in obtain.split("Do not find left SHA", 1)[0]
+        assert "git log --reverse --format='%H' --after=" not in later
+        assert "--max-count=1" in later
+        assert "<left-sha>..HEAD" in later
+        assert "sha-after-previous-panel" not in later_lower
+        # Loop 3 fixture: hashed TASKS_TO_RESOLVE-aaa1111.md vs loop-2 dispatch bbb2222.
+        hashed_suffix, dispatch_head = "aaa1111", "bbb2222"
+        left_sha = (
+            dispatch_head
+            if "hashed-tasks must not override" in later_lower
+            and "recorded dispatch head" in obtain_lower
+            else hashed_suffix
+        )
+        assert left_sha == dispatch_head
+        assert left_sha != hashed_suffix
+        guidance = text.split("## Agent-specific guidance", 1)[1].split("## Output schema", 1)[0].lower()
+        assert "regression" in guidance
+        assert "four" in guidance
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "never skip a reviewer" in anti
+        assert "loop 2" in anti or "later panel" in anti or "panel loop" in anti
 
 
 def test_orchestrator_hashes_and_deletes_the_tasks_file() -> None:
@@ -726,6 +823,13 @@ def test_dimension_reviewers_do_not_write_harness_files() -> None:
         assert "rally point" not in text
 
 
+def test_dimension_reviewers_honor_resolver_commit_range() -> None:
+    for filename in REVIEW_DIMENSION_AGENTS:
+        text = _agent_file(filename).read_text().lower()
+        assert "resolver commit" in text or "issue_resolver" in text
+        assert "only that range" in text or "only this range" in text or "review only that range" in text
+
+
 def test_evals_json_files_exist_and_cover_each_review_agent() -> None:
     suite = load_evals()
     agents = {entry["agent"] for entry in suite["evals"]}
@@ -833,6 +937,15 @@ def test_orchestrator_scorer_rejects_keeping_a_known_duplicate() -> None:
     result = score_orchestrator_report(report, spec)
     assert not result.ok
     assert any("dropped_duplicates" in failure for failure in result.failures)
+
+
+def test_orchestrator_scorer_rejects_empty_deferred_minors() -> None:
+    spec = eval_by_id("review-orchestrator-group-findings")
+    report = load_golden("review_orchestrator")
+    report["deferred_minors"] = []
+    result = score_orchestrator_report(report, spec)
+    assert not result.ok
+    assert any("M-002" in failure for failure in result.failures)
 
 
 def test_parse_report_reads_fenced_json() -> None:

@@ -4,4 +4,5 @@
 
 - **Task:** none
 - **Outcome:** ok
+- **Deferred minors:** none
 - **Summary:** First panel completed.

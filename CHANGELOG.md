@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Defer PR-review harness `minor` findings: they appear in the Panel
+  Review comment and `REVIEW_HISTORY.md`, never as open tasks for
+  `issue_resolver`. Loops 2 and 3 still run all four reviewers, scoped to
+  `issue_resolver` commits since the previous panel (regression-only).
 - Pin `pr_review_harness` panel, `issue_resolver`, and `risk_classifier` to
   Grok 4.6 medium, not Fast (`grok-4.6[effort=medium,fast=false]`). Pin
   `verifier` to Composer 2.5. Leave `review_orchestrator` on Grok 4.6 high.

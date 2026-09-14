@@ -9,7 +9,9 @@
       "expectations": [
         "Dispatches review_correctness, review_maintainability, review_scale, and review_security",
         "All four calls in one turn",
-        "Does not review the diff in-process"
+        "Does not review the diff in-process",
+        "Loops 2+ still dispatch all four reviewers",
+        "Later loops review resolver commits, not the full PR"
       ]
     }
   ]

@@ -24,6 +24,14 @@
       "reason": "same SQL sink at user_api.py:16"
     }
   ],
+  "deferred_minors": [
+    {
+      "id": "M-002",
+      "title": "Comments restate the next line",
+      "severity": "minor",
+      "file": "files/maintainability/report_builder.py"
+    }
+  ],
   "tasks": [
     {
       "id": "TASK-001",
@@ -59,11 +67,11 @@
     },
     {
       "id": "TASK-005",
-      "title": "Rename and uncomment report_builder",
+      "title": "Rename report_builder helpers",
       "path": "TASKS_TO_RESOLVE-abc1234.md",
-      "issue_ids": ["M-001", "M-002"],
+      "issue_ids": ["M-001"],
       "severity_peak": "important",
-      "rationale": "same-file readability fixes"
+      "rationale": "important readability fix; M-002 deferred as minor"
     },
     {
       "id": "TASK-006",

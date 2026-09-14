@@ -9,7 +9,9 @@
       "expectations": [
         "At most 3 issues per task",
         "Duplicate C-003 dropped in favor of SEC-001",
-        "Rewrites TASKS_TO_RESOLVE-<short-sha>.md rather than review-work-items"
+        "Rewrites TASKS_TO_RESOLVE-<short-sha>.md rather than review-work-items",
+        "Does not write M-002 as an open task",
+        "Records deferred minor M-002 for the panel comment or REVIEW_HISTORY.md"
       ]
     }
   ]

@@ -46,11 +46,21 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "not fast" in panel
     assert "effort=medium" in panel
     assert "composer-2.5" not in panel
+    assert "loop 2" in panel or "loop 2+" in panel or "loops 2" in panel
+    assert "issue_resolver" in panel or "resolver commit" in panel
+    assert "all four" in panel or "four reviewers" in panel
 
     dedupe = (SKILLS / "dedupe-and-write-tasks" / "SKILL.md").read_text()
     assert "TASKS_TO_RESOLVE-" in dedupe
     assert "1-3" in dedupe or "1–3" in dedupe
     assert "brief" in dedupe.lower()
+    dedupe_lower = dedupe.lower()
+    assert "minor" in dedupe_lower
+    assert "never" in dedupe_lower and "open task" in dedupe_lower
+    assert "critical" in dedupe_lower and "important" in dedupe_lower
+    assert "review_history.md" in dedupe_lower or "panel comment" in dedupe_lower
+    for key in ("id", "title", "severity", "file"):
+        assert f"`{key}`" in dedupe
 
     resolve = (SKILLS / "resolve-next-task" / "SKILL.md").read_text().lower()
     assert "git push" in resolve
@@ -64,9 +74,15 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "30 days" in history.lower()
     assert "review_orchestrator" in history.lower()
     assert "aborted" in history.lower()
+    assert "deferred minor" in history.lower() or "deferred_minors" in history.lower()
+    assert "deferred minors:" in history.lower()
+    assert "summary paragraph" in history.lower()
     assert (SKILLS / "log-progress" / "scripts" / "trim_review_history.py").is_file()
     template = (SKILLS / "log-progress" / "references" / "review-history-template.md").read_text()
     assert "aborted" in template.lower()
+    assert "id (title)" in template
+    assert "deferred_minors[]" in template
+    assert "display form" in template.lower()
 
     verifiers = (SKILLS / "dispatch-verifiers" / "SKILL.md").read_text()
     assert "VERIFIERS.md" in verifiers

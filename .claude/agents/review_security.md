@@ -164,7 +164,10 @@ Treat these as primary detection targets:
 
 ### When invoked
 
-1. Scope the change set from the brief.
+1. Scope the change set from the brief. If the brief names a
+   resolver-commit range (`issue_resolver` commits since the previous
+   panel), review **only that range**. File regressions those commits
+   introduced. Do not re-file original-PR issues already fixed or deferred.
 2. Mark each new input, query, log line, and response field as trusted or not.
 3. Ask: can an outsider change control flow, and can private data leave?
 4. File only defects you can point at with a file and line.

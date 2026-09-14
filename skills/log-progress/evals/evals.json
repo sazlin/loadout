@@ -9,7 +9,8 @@
       "expectations": [
         "Appends an entry",
         "Does not rewrite or truncate prior entries",
-        "Does not log secrets"
+        "Does not log secrets",
+        "Fills Deferred minors with none or id (title); does not repeat those ids in the summary"
       ]
     }
   ]
