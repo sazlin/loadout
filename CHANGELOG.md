@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.36.0
+
 - Defer PR-review harness `minor` findings: they appear in the Panel
   Review comment and `REVIEW_HISTORY.md`, never as open tasks for
   `issue_resolver`. Loops 2 and 3 still run all four reviewers, scoped to
