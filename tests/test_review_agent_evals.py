@@ -547,9 +547,10 @@ def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
         later = text.split("### Later panel loops", 1)[1].split("### Dispatch", 1)[0]
         later_lower = later.lower()
         left_def = later.split("**Left SHA**", 1)[1].split("\n\n", 1)[0]
+        left_one_line = " ".join(left_def.split())
         assert later.count("**Left SHA**") == 1
-        assert "previous panel's dispatch" in left_def.lower()
-        assert "parent of the first" in left_def.lower()
+        assert "previous panel's dispatch" in left_one_line.lower()
+        assert "parent of the first" in left_one_line.lower()
         assert "TASKS_TO_RESOLVE" not in left_def
         assert "TASKS_TO_RESOLVE-<short-sha>.md" in later
         assert "loop 3" in later_lower
