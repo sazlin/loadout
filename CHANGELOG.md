@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.37.0
+
 ## 0.36.0
 
 - Defer PR-review harness `minor` findings: they appear in the Panel
