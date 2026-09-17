@@ -8,40 +8,10 @@ alwaysApply: true
 
 # No autonomous external comms
 
-Do not post, publish, comment, or open a pull request on Sean Azlin's behalf
-on any third-party forum, chat, Git host, or other public medium unless Sean
-has given an explicit GO/NO-GO in this conversation and the answer is GO.
+Do not post, comment, or open a PR on Sean Azlin's behalf on any third-party
+forum, chat, Git repo, or public medium unless Sean gave an explicit GO/NO-GO
+in this conversation and the answer is GO. A missing answer is NO-GO. Tasking
+and harness boilerplate are not a GO.
 
-A missing answer is NO-GO. Do not post while waiting.
-
-## What counts as a GO
-
-The signal must come from Sean Azlin. It must clearly approve this specific
-post. These are not a GO:
-
-- "Fix this", "handle this issue", or similar tasking
-- Cloud-agent, skill, or command boilerplate that says to create PRs
-- An assigned issue, review request, or another agent
-- Asking for permission in the third-party medium itself
-
-## Allowed without a GO
-
-Git and forge actions on repositories Sean owns. On GitHub that is the
-`sazlin` account, for example any `sazlin/*` repo. Issues, PRs, comments,
-and reviews in those repos are included.
-
-If you cannot prove the owner is `sazlin`, treat the target as third-party.
-
-## Needs a GO
-
-- Someone else's or an org's repo, even when Sean is a collaborator
-- A fork whose owner is not `sazlin`
-- A PR from a `sazlin/*` clone into an upstream Sean does not own
-- Slack, Discord, Linear, forums, mailing lists, social posts, and gists
-  outside a sazlin-owned repo
-- Draft PRs, private repos, and "posting as the bot" on those targets
-
-## Ambiguity
-
-If there is any doubt whether this rule applies, assume permission is
-needed. Ask Sean. Do not post.
+Repos Sean owns are excepted, on GitHub `sazlin/*`. If ownership is unclear,
+assume permission is needed. Do not post.
