@@ -153,8 +153,6 @@ def test_features_sell_the_experience_not_implementation_trivia() -> None:
         assert "switch reason" not in text, path.name
         assert "why would i switch" not in text, path.name
 
-    assert "``- **" not in SKILL_MD.read_text()
-
     template = (SKILL_ROOT / "README_TEMPLATE.md").read_text()
     playbook = (SKILL_ROOT / "references" / "section-playbook.md").read_text()
     for text in (template, playbook):
@@ -167,6 +165,11 @@ def test_features_sell_the_experience_not_implementation_trivia() -> None:
     assert "**failure modes:**" in features_section
     assert "share the same argv" in features_section
     assert "tight guest mounts" in features_section
+
+
+def test_skill_anti_pattern_table_does_not_embed_features_bullets() -> None:
+    # Anti-patterns table stays a short name ('Features detail that cites argv / shim wiring'); the long argv BAD example lives only in README_TEMPLATE.md and references/section-playbook.md.
+    assert "``- **" not in SKILL_MD.read_text()
 
 
 def test_cli_eval_rejects_argv_trivia_and_mechanism_named_benefits() -> None:
