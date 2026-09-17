@@ -152,11 +152,13 @@ def test_features_sell_the_experience_not_implementation_trivia() -> None:
         assert "sell the switch" not in text, path.name
         assert "switch reason" not in text, path.name
         assert "why would i switch" not in text, path.name
-        assert "share the same argv" in text, path.name
+
+    assert "``- **" not in SKILL_MD.read_text()
 
     template = (SKILL_ROOT / "README_TEMPLATE.md").read_text()
     playbook = (SKILL_ROOT / "references" / "section-playbook.md").read_text()
     for text in (template, playbook):
+        assert "share the same argv" in text.lower()
         assert "**Tight guest mounts.**" in text
         assert "**Secure guest mounts.**" in text
         assert "`ro,noexec`" in text

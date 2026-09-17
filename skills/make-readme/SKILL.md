@@ -180,7 +180,7 @@ user should create next. Offer to draft those files.
 | Git slug as H1 when the binary differs | Readers type the binary | Name from `bin` / console_scripts |
 | Hero guessed from language or stack | Wrong first example | Use the launch that the existing README, shims, or `--help` already treat as primary |
 | Features that inventory flags, quotas, merge order, argv, or mount flags | Implementation trivia, not the experience the target user cares about | Sell the experience in terms the target user will appreciate; internals go to docs |
-| ``- **One launcher for Cursor, OMP, or any CLI agent.** `msb-agent` plus the zsh shims `agent-sb` and `omp-sb` share the same argv.`` | `argv` is process-argument jargon, not the experience | Stop at the bold benefit if the extra clause is only wiring |
+| Features detail that cites argv / shim wiring | `argv` is process-argument jargon, not the experience | Stop at the bold benefit if the extra clause is only wiring |
 
 ## Files in this skill
 
