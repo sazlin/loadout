@@ -180,6 +180,15 @@ def test_cli_eval_rejects_argv_trivia_and_mechanism_named_benefits() -> None:
     fixture = CLI_WEAK_README.read_text()
     assert "**Tight guest mounts.**" in fixture
     assert "share the same argv" in fixture
+    for foreign in ("msb-agent", "agent-sb", "omp-sb"):
+        assert foreign not in fixture
+    features = fixture.split("## Features", 1)[1].split("##", 1)[0]
+    assert "`demo`" in features
+    assert "demo-sb" in features
+    tight_line = next(line for line in features.splitlines() if "Tight guest mounts" in line)
+    argv_line = next(line for line in features.splitlines() if "share the same argv" in line)
+    assert tight_line != argv_line
+    assert "share the same argv" not in tight_line
 
 
 def test_template_has_cli_and_library_quick_start_fillins() -> None:
