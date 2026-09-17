@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add `rules/core/no-autonomous-external-comms.mdc` to `base`: agents must
+  get an explicit go/no-go for each outbound Slack, GitHub, Linear, email,
+  or other external message. Linked context and standing charters are not
+  permission to send.
+
 ## 0.38.0
 
 ## 0.37.0

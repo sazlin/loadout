@@ -1,0 +1,28 @@
+---
+description: >-
+  Get an explicit go/no-go for each outbound message. Do not send Slack,
+  GitHub, Linear, email, or other external comms on your own.
+alwaysApply: true
+---
+
+# No autonomous external comms
+
+Do not send a message outside this conversation until the user gives an explicit
+go for that send.
+
+Each Slack post, GitHub comment, Linear comment, email, Discord or Teams
+message, tweet, SMS, or other outbound human-facing message needs its own
+go/no-go. Ask first. Name the channel, the destination, and that this message
+may go out. Wait for the answer. If it is no or missing, do not send.
+
+A linked Slack thread, GitHub issue, or Linear ticket used as context is not a
+request to reply. Tool access is not permission. A standing charter, an earlier
+yes, or "you may comment on PRs" is not a go for this send.
+
+The current user message is the go only when it names the destination and tells
+you to send that message. That yes covers that one send. It does not cover a
+second comment, a different channel, or a follow-up.
+
+This rule does not block replies in this conversation, local edits, tests, git
+commits, or opening or updating the pull request that delivers the requested
+work (title and body). Comments on that PR still need a go.
