@@ -6,6 +6,8 @@ Launch CLI coding agents inside guest VMs.
 
 - **Least-privilege mounts.** `/work` stays executable; staged state has a `256M` guest-write quota.
 - **Layered config.** `tool.yaml`, then profile, then variant; launch flags override every file.
+- **Tight guest mounts.** The work dir is executable. Clipboard is `ro,noexec`.
+- **One launcher for Cursor or any CLI agent.** `demo` plus the zsh shim `demo-sb` share the same argv.
 - **Throwaway guest state.** Config is copied into a temp dir and removed on exit.
 
 ## Installation

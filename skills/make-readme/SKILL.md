@@ -126,7 +126,7 @@ Writing rules that the corpus and the guides agree on:
 - Copy the project's own nouns from the existing README and `--help`. Do not rename the product to match implementation jargon.
 - The first CLI command is the launch that the existing README, shims, or `--help` already treat as primary; do not infer it from the language or stack.
 - For a library, Quick start stays a tiny example plus what it prints. Do not flatten a library README into a command catalog. Delete the bash catalog skeleton.
-- Features sell the switch, not the implementation. Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the product.
+- Features sell the experience in terms the target user will appreciate. Flag names, quotas, merge order, argv, and yaml trivia belong in docs unless that *is* the product. Copying the project's own nouns is about not renaming the product, not a license to paste `--help` vocabulary (`argv`, `quota=`, vsock ports) into Features.
 
 In `improve` mode, work section by section against the score report: fix every CRITICAL,
 then every IMPORTANT, then the MINORs that do not cost the author's voice. Keep a short list
@@ -179,7 +179,8 @@ user should create next. Offer to draft those files.
 | Dropdown titled "Without X" that still uses X | Invented extra path, internally false | One primary path; extras only if real and consistent |
 | Git slug as H1 when the binary differs | Readers type the binary | Name from `bin` / console_scripts |
 | Hero guessed from language or stack | Wrong first example | Use the launch that the existing README, shims, or `--help` already treat as primary |
-| Features that inventory flags, quotas, merge order | Implementation trivia, not a switch reason | Bold differentiators; internals go to docs |
+| Features that inventory flags, quotas, merge order, argv, or mount flags | Implementation trivia, not the experience the target user cares about | Sell the experience in terms the target user will appreciate; internals go to docs |
+| Features detail that cites argv / shim wiring | `argv` is process-argument jargon, not the experience | Stop at the bold benefit if the extra clause is only wiring |
 
 ## Files in this skill
 

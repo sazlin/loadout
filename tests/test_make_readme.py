@@ -27,6 +27,11 @@ CORPUS_SCRIPT = SKILL_ROOT / "scripts" / "corpus_analyzer.py"
 EVALS = SKILL_ROOT / "evals" / "evals.json"
 WEAK_README = SKILL_ROOT / "evals" / "files" / "weak-readme.md"
 CLI_WEAK_README = SKILL_ROOT / "evals" / "files" / "cli-weak-readme.md"
+FEATURES_GUIDES = (
+    SKILL_MD,
+    SKILL_ROOT / "README_TEMPLATE.md",
+    SKILL_ROOT / "references" / "section-playbook.md",
+)
 
 
 def _load_module(path: Path, name: str) -> ModuleType:
@@ -137,6 +142,60 @@ def test_body_requires_cli_catalog_rules() -> None:
     assert "without x" in text
     assert "differentiat" in text
     assert "at most 8 invocations" in text
+
+
+def test_features_sell_the_experience_not_implementation_trivia() -> None:
+    slogan = "sell the experience in terms the target user will appreciate"
+    for path in FEATURES_GUIDES:
+        text = path.read_text().lower()
+        assert slogan in text, path.name
+        assert "sell the switch" not in text, path.name
+        assert "switch reason" not in text, path.name
+        assert "why would i switch" not in text, path.name
+
+    template = (SKILL_ROOT / "README_TEMPLATE.md").read_text()
+    playbook = (SKILL_ROOT / "references" / "section-playbook.md").read_text()
+    for text in (template, playbook):
+        assert "share the same argv" in text.lower()
+        assert "**Tight guest mounts.**" in text
+        assert "**Secure guest mounts.**" in text
+        assert "`ro,noexec`" in text
+
+    features_section = playbook.lower().split("## 5. features")[1].split("## 6.")[0]
+    assert "**failure modes:**" in features_section
+    assert "share the same argv" in features_section
+    assert "tight guest mounts" in features_section
+
+
+def test_skill_anti_pattern_table_does_not_embed_features_bullets() -> None:
+    # Anti-patterns table stays a short name ('Features detail that cites argv / shim wiring'); the long argv BAD example lives only in README_TEMPLATE.md and references/section-playbook.md.
+    skill = SKILL_MD.read_text()
+    assert "``- **" not in skill
+    assert "Features detail that cites argv / shim wiring" in skill
+
+
+def test_cli_eval_rejects_argv_trivia_and_mechanism_named_benefits() -> None:
+    payload = _evals_payload()
+    evals = payload["evals"]
+    assert isinstance(evals, list)
+    eval4 = next(entry for entry in evals if isinstance(entry, dict) and entry.get("id") == 4)
+    blob = "\n".join(
+        [str(eval4.get("expected_output", ""))] + [str(item) for item in eval4.get("expectations", [])]
+    ).lower()
+    assert "argv" in blob
+    assert "tight guest mounts" in blob
+    fixture = CLI_WEAK_README.read_text()
+    assert "**Tight guest mounts.**" in fixture
+    assert "share the same argv" in fixture
+    for foreign in ("msb-agent", "agent-sb", "omp-sb"):
+        assert foreign not in fixture
+    features = fixture.split("## Features", 1)[1].split("##", 1)[0]
+    assert "`demo`" in features
+    assert "demo-sb" in features
+    tight_line = next(line for line in features.splitlines() if "Tight guest mounts" in line)
+    argv_line = next(line for line in features.splitlines() if "share the same argv" in line)
+    assert tight_line != argv_line
+    assert "share the same argv" not in tight_line
 
 
 def test_template_has_cli_and_library_quick_start_fillins() -> None:

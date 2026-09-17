@@ -97,12 +97,18 @@ STEPS
   1. Write 3 to 6 bullets. Never more than 6 unless this is a CLI or infra tool and every
      extra bullet is a distinct shipped differentiator (cap 8).
   2. Each bullet: bold benefit, then one clause of detail. Lead with the verb or noun,
-     not with "It".
+     not with "It". The bold benefit names the experience, not the mechanism. If it only
+     makes sense to someone who already read the mount code, rewrite it.
        **Zero config.** Detects your framework and picks working defaults.
-  3. Prefer what makes you DIFFERENT: speed, host integration, auth, isolation, offline,
-     single binary, no telemetry. Delete any bullet that a competitor could copy verbatim.
-     Flag names, quotas, merge order, and yaml trivia belong in docs unless that *is* the
-     product.
+       BAD:  **Tight guest mounts.** The work dir is executable. Clipboard is `ro,noexec`.
+       GOOD: **Secure guest mounts.** The guest can run the project and cannot write the host clipboard.
+  3. Sell the experience in terms the target user will appreciate. Prefer what makes you
+     DIFFERENT: speed, host integration, auth, isolation, offline, single binary, no
+     telemetry. Delete any bullet that a competitor could copy verbatim. Flag names,
+     quotas, merge order, and yaml trivia belong in docs unless that *is* the product.
+     Do not put `--help` vocabulary (`argv`, `quota=`, vsock ports) in Features, including
+     in the clause after a good bold benefit.
+       BAD: - **One launcher for Cursor, OMP, or any CLI agent.** `msb-agent` plus the zsh shims `agent-sb` and `omp-sb` share the same argv.
   4. Use real numbers where you have them ("cold start 40 ms", "40+ providers").
   5. Never list unreleased work here. Shipped only.
   6. Rename the heading to "Why {{PROJECT_NAME}}" if the bullets are comparative
