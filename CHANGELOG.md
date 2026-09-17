@@ -3,9 +3,9 @@
 ## Unreleased
 
 - Add `rules/core/no-autonomous-external-comms.mdc` to `base`: agents must
-  get an explicit GO/NO-GO from Sean Azlin before posting on his behalf to
-  any third-party or public medium. Does not apply to sazlin-owned repos
-  such as `sazlin/*`. When unsure, assume permission is required.
+  get an explicit GO/NO-GO from the User before posting on their behalf to
+  any third-party or public medium. Does not apply to repos the User owns.
+  When unsure, assume permission is required.
 
 ## 0.39.0
 
