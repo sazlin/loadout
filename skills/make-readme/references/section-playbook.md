@@ -103,7 +103,7 @@ READMEs praised in awesome-readme cite a visual as the reason.
 
 ## 5. Features / why
 
-**Job:** convert "what is this" into "why would I switch".
+**Job:** sell the experience in terms the target user will appreciate.
 
 **Include:** when the one-liner plus the demo do not already make the value obvious, which is
 most of the time. 55% of the corpus has a bullet list within the first 3 KB.
@@ -112,14 +112,25 @@ most of the time. 55% of the corpus has a bullet list within the first 3 KB.
 **Rules**
 - 3 to 6 bullets. Not 12. CLI and infra tools may keep a seventh or eighth bullet only when each
   is a distinct shipped differentiator.
-- Lead each bullet with the benefit in bold, then one clause of detail:
+- Lead each bullet with the benefit in bold, then one clause of detail. The bold benefit
+  names the experience, not the mechanism. If it only makes sense to someone who already
+  read the mount code, rewrite it:
   `**Zero config.** Detects your framework and picks sane defaults.`
-- Prefer differentiators over table stakes. "Written in Rust", "works offline",
-  "no telemetry", "single static binary", host integration, auth, isolation are differentiators.
-  "Easy to use" is not. Flag names, quotas, merge order, and yaml trivia belong in docs unless
-  that *is* the product.
+  BAD:  **Tight guest mounts.** The work dir is executable. Clipboard is `ro,noexec`.
+  GOOD: **Secure guest mounts.** The guest can run the project and cannot write the host clipboard.
+- Sell the experience in terms the target user will appreciate. Prefer differentiators over
+  table stakes. "Written in Rust", "works offline", "no telemetry", "single static binary",
+  host integration, auth, isolation are differentiators. "Easy to use" is not. Flag names,
+  quotas, merge order, and yaml trivia belong in docs unless that *is* the product. Do not
+  put `--help` vocabulary (`argv`, `quota=`, vsock ports) in Features, including after a
+  good bold benefit:
+  BAD: - **One launcher for Cursor, OMP, or any CLI agent.** `msb-agent` plus the zsh shims `agent-sb` and `omp-sb` share the same argv.
 - Numbers beat adjectives: "starts in 40 ms", "installs in one command", "supports 40+ providers".
 - Never use this section as a roadmap. Features that do not exist yet belong nowhere near it.
+
+**Failure modes:** `share the same argv` as Feature detail; bolding `Tight guest mounts`
+because the mounts are flagged `ro,noexec`. Those are wiring. The reader wants the
+experience (`Secure guest mounts`, one launcher for any agent CLI).
 
 ---
 
