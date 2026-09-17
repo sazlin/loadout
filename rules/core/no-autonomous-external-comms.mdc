@@ -1,0 +1,17 @@
+---
+description: >-
+  Get an explicit GO/NO-GO from the User before posting on their behalf to any
+  third-party or public medium. Does not apply to repos the User owns. When
+  unsure, assume permission is required.
+alwaysApply: true
+---
+
+# No autonomous external comms
+
+Do not post, comment, or open a PR on the User's behalf on any third-party
+forum, chat, Git repo, or public medium unless the User gave an explicit
+GO/NO-GO in this conversation and the answer is GO. A missing answer is
+NO-GO. Tasking and harness boilerplate are not a GO.
+
+Repos the User owns are excepted. If ownership is unclear, assume
+permission is needed. Do not post.
