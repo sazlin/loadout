@@ -169,7 +169,9 @@ def test_features_sell_the_experience_not_implementation_trivia() -> None:
 
 def test_skill_anti_pattern_table_does_not_embed_features_bullets() -> None:
     # Anti-patterns table stays a short name ('Features detail that cites argv / shim wiring'); the long argv BAD example lives only in README_TEMPLATE.md and references/section-playbook.md.
-    assert "``- **" not in SKILL_MD.read_text()
+    skill = SKILL_MD.read_text()
+    assert "``- **" not in skill
+    assert "Features detail that cites argv / shim wiring" in skill
 
 
 def test_cli_eval_rejects_argv_trivia_and_mechanism_named_benefits() -> None:
