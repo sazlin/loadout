@@ -62,6 +62,7 @@ GC_SKIP_NAMES = frozenset({"gc", "gc.lock", "debug.log"})
 GC_UNLINK_SUFFIXES = frozenset({".json", ".lock", ".exporting", ".dirty"})
 GC_MAX_UNLINKS = 256
 EXPORT_CLAIM_GRACE_S = 1.0
+EXPORT_POST_CAP = 3
 BOOL_ATTRS = frozenset({"agent.is_subagent"})
 
 AttrValue = str | bool
@@ -1285,7 +1286,8 @@ def _export_state(state: State, mode: str, state_dir: Path) -> None:
     except OSError as exc:
         _debug(f"export spawn: {exc}")
         _unlink_quiet(Path(name))
-        _unlink_quiet(claim)
+        _unlink_owned_claim(str(claim))
+        _export_if_dirty(str(claim))
 
 
 def _claim_export(state_dir: Path, session_id: str) -> Path | None:
@@ -1307,17 +1309,83 @@ def _claim_export(state_dir: Path, session_id: str) -> Path | None:
         return None
     try:
         os.fchmod(fd, STATE_FILE_MODE)
+        payload = str(os.getpid()).encode()
+        os.write(fd, payload)
+        os.ftruncate(fd, len(payload))
     finally:
         os.close(fd)
     return path
 
 
 def _export_in_flight(path: Path) -> bool:
+    pid = _claim_pid(path)
+    if pid is not None and _pid_alive(pid):
+        return True
     try:
         age = time.time() - path.stat().st_mtime
     except OSError:
         return False
     return age < (_timeout_ms() / 1000.0) + EXPORT_CLAIM_GRACE_S
+
+
+def _claim_pid(path: Path) -> int | None:
+    try:
+        raw = path.read_bytes().strip()
+    except OSError:
+        return None
+    if not raw.isdigit():
+        return None
+    return int(raw)
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _write_claim_pid(path: Path) -> None:
+    payload = str(os.getpid()).encode()
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT, STATE_FILE_MODE)
+    try:
+        os.fchmod(fd, STATE_FILE_MODE)
+        os.write(fd, payload)
+        os.ftruncate(fd, len(payload))
+    finally:
+        os.close(fd)
+
+
+def _hold_export_claim(raw: str) -> bool:
+    located = _export_session_dir(raw)
+    if located is None:
+        return False
+    path = _state_child(located[0], located[1], ".exporting")
+    if path is None:
+        return False
+    pid = _claim_pid(path)
+    if pid is not None and pid != os.getpid() and _pid_alive(pid):
+        return False
+    try:
+        _write_claim_pid(path)
+    except OSError:
+        return False
+    return True
+
+
+def _unlink_owned_claim(raw: str) -> None:
+    located = _export_session_dir(raw)
+    if located is None:
+        return
+    path = _state_child(located[0], located[1], ".exporting")
+    if path is None or _claim_pid(path) != os.getpid():
+        return
+    _unlink_quiet(path)
 
 
 def _export_file(path: str, claim: str = "") -> None:
@@ -1328,16 +1396,23 @@ def _export_file(path: str, claim: str = "") -> None:
         except OSError as exc:
             _debug(f"export read: {exc}")
             return
+        _hold_export_claim(claim)
         _post_snapshot_until_clean(blob, claim)
     finally:
         _unlink_quiet(target)
-        _unlink_export_claim(claim)
+        _unlink_owned_claim(claim)
         _export_if_dirty(claim)
 
 
 def _post_snapshot_until_clean(blob: bytes, claim: str) -> None:
-    while True:
-        _post_otlp(blob)
+    deadline = time.monotonic() + (_timeout_ms() / 1000.0)
+    for posted in range(EXPORT_POST_CAP):
+        if not _hold_export_claim(claim):
+            return
+        if not _post_otlp(blob):
+            return
+        if posted + 1 >= EXPORT_POST_CAP or time.monotonic() >= deadline:
+            return
         if not _consume_export_dirty(claim):
             return
         follow = _snapshot_for_claim(claim)
@@ -1391,23 +1466,24 @@ def _snapshot_for_claim(raw: str) -> bytes | None:
 
 
 def _export_if_dirty(raw: str) -> None:
-    located = _export_session_dir(raw)
-    if located is None:
-        return
-    state_dir, session_id = located
-    dirty = _state_child(state_dir, session_id, ".dirty")
-    if dirty is None or not dirty.is_file():
-        return
-    held = _claim_export(state_dir, session_id)
-    if held is None:
-        return
-    try:
-        blob = _snapshot_for_claim(str(held))
-        if blob is None:
+    for _ in range(EXPORT_POST_CAP):
+        located = _export_session_dir(raw)
+        if located is None:
             return
-        _post_snapshot_until_clean(blob, str(held))
-    finally:
-        _unlink_quiet(held)
+        state_dir, session_id = located
+        dirty = _state_child(state_dir, session_id, ".dirty")
+        if dirty is None or not dirty.is_file():
+            return
+        held = _claim_export(state_dir, session_id)
+        if held is None:
+            return
+        try:
+            blob = _snapshot_for_claim(str(held))
+            if blob is None:
+                continue
+            _post_snapshot_until_clean(blob, str(held))
+        finally:
+            _unlink_owned_claim(str(held))
 
 
 def _export_session_dir(raw: str) -> tuple[Path, str] | None:
@@ -1426,16 +1502,6 @@ def _export_session_dir(raw: str) -> tuple[Path, str] | None:
     return state_dir, candidate.stem
 
 
-def _unlink_export_claim(raw: str) -> None:
-    located = _export_session_dir(raw)
-    if located is None:
-        return
-    expected = _state_child(located[0], located[1], ".exporting")
-    if expected is None:
-        return
-    _unlink_quiet(expected)
-
-
 def _unlink_quiet(path: Path) -> None:
     try:
         path.unlink()
@@ -1443,10 +1509,10 @@ def _unlink_quiet(path: Path) -> None:
         return
 
 
-def _post_otlp(blob: bytes) -> None:
+def _post_otlp(blob: bytes) -> bool:
     url = _metrics_url()
     if not url:
-        return
+        return False
     timeout_ms = _timeout_ms()
     request = urllib.request.Request(url, data=blob, method="POST")
     request.add_header("Content-Type", "application/x-protobuf")
@@ -1456,8 +1522,10 @@ def _post_otlp(blob: bytes) -> None:
         with urllib.request.urlopen(request, timeout=timeout_ms / 1000.0) as response:
             response.read()
         _debug(f"export ok {url}")
+        return True
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         _debug(f"export fail {exc}")
+        return False
 
 
 def _metrics_url() -> str | None:

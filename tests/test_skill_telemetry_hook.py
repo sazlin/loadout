@@ -879,6 +879,150 @@ def test_export_coalesces_under_burst(
     assert _max_otlp_skill_reads(bodies) == burst
 
 
+def test_failed_otlp_post_does_not_spin(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
+    monkeypatch.delenv("SKILL_TELEMETRY_SYNC_EXPORT", raising=False)
+    state_dir = telemetry_env["state"]
+    claim = state_dir / "conv-1.exporting"
+    claim.write_text(str(os.getpid()), encoding="utf-8")
+    (state_dir / "conv-1.dirty").write_bytes(b"")
+    posts = {"n": 0}
+
+    def fail(_blob: bytes) -> bool:
+        posts["n"] += 1
+        (state_dir / "conv-1.dirty").write_bytes(b"")
+        return False
+
+    monkeypatch.setattr(hook, "_post_otlp", fail)
+    finished = threading.Event()
+
+    def run() -> None:
+        hook._post_snapshot_until_clean(b"x", str(claim))
+        finished.set()
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    thread.join(1.5)
+    assert finished.is_set()
+    assert posts["n"] == 1
+    assert (state_dir / "conv-1.dirty").is_file()
+
+
+def test_export_if_dirty_flushes_late_dirty(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = telemetry_env["ws"]
+    _run(hook, telemetry_env, _payload("sessionStart", workspace))
+    _run(
+        hook,
+        telemetry_env,
+        _payload("beforeReadFile", workspace, file_path=str(workspace / ".claude/skills/foo/SKILL.md")),
+    )
+    monkeypatch.delenv("SKILL_TELEMETRY_SYNC_EXPORT", raising=False)
+    bodies: list[bytes] = []
+
+    def fake_post(blob: bytes) -> bool:
+        bodies.append(blob)
+        return True
+
+    monkeypatch.setattr(hook, "_post_otlp", fake_post)
+    state_dir = telemetry_env["state"]
+    dirty = state_dir / "conv-1.dirty"
+    dirty.write_bytes(b"")
+    path = state_dir / "conv-1.json"
+    original = hook._post_snapshot_until_clean
+    injected = {"done": False}
+
+    def inject_late_dirty(blob: bytes, claim: str) -> None:
+        original(blob, claim)
+        if injected["done"]:
+            return
+        injected["done"] = True
+        data = json.loads(path.read_text())
+        data["series"] = {key: int(value) + 4 for key, value in data["series"].items()}
+        path.write_text(json.dumps(data))
+        dirty.write_bytes(b"")
+
+    monkeypatch.setattr(hook, "_post_snapshot_until_clean", inject_late_dirty)
+    hook._export_if_dirty(str(state_dir / "conv-1.exporting"))
+    assert not dirty.exists()
+    assert not (state_dir / "conv-1.exporting").exists()
+    assert _max_otlp_skill_reads(bodies) == _series_value(_state(telemetry_env), "skill.reads")
+
+
+def test_sustained_dirty_keeps_one_export_process(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inflight = {"n": 0, "max": 0}
+    lock = threading.Lock()
+    bodies: list[bytes] = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            length = int(self.headers.get("Content-Length", "0"))
+            body = self.rfile.read(length)
+            with lock:
+                bodies.append(body)
+                inflight["n"] += 1
+                inflight["max"] = max(inflight["max"], inflight["n"])
+            time.sleep(2)
+            self.send_response(200)
+            self.end_headers()
+            with lock:
+                inflight["n"] -= 1
+
+        def log_message(self, format: str, *args: Any) -> None:
+            del format, args
+
+    _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.delenv("SKILL_TELEMETRY_SYNC_EXPORT", raising=False)
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_TIMEOUT", "2500")
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", f"http://127.0.0.1:{server.server_address[1]}")
+    workspace = telemetry_env["ws"]
+    payload = json.dumps(
+        _payload("beforeReadFile", workspace, file_path=str(workspace / ".claude/skills/foo/SKILL.md"))
+    ).encode()
+    env = os.environ.copy()
+    seen = 0
+    stop_at = time.monotonic() + 6
+    while time.monotonic() < stop_at:
+        proc = subprocess.Popen(
+            ["python3", str(HOOK_PY), "cursor"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        stdout, _stderr = proc.communicate(payload, timeout=5)
+        assert proc.returncode == 0
+        assert json.loads(stdout) == {"permission": "allow"}
+        seen = max(seen, _count_export_procs())
+        time.sleep(0.1)
+    idle = 0
+    deadline = time.monotonic() + 12
+    while time.monotonic() < deadline:
+        n = _count_export_procs()
+        seen = max(seen, n)
+        if n == 0 and bodies:
+            idle += 1
+            if idle >= 3:
+                break
+        else:
+            idle = 0
+        time.sleep(0.05)
+    server.shutdown()
+    assert inflight["max"] <= 1
+    assert seen <= 1
+    assert len(bodies) <= 9
+    reads = _series_value(_state(telemetry_env), "skill.reads")
+    assert _max_otlp_skill_reads(bodies) == reads
+
+
 def test_export_spawn_failure_unlinks_blob(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
