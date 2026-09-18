@@ -34,8 +34,10 @@ the brief.
 2. Complete the assigned `task_id` from the brief. If `task_id` is omitted
    (manual `/resolve_next_task`), take the first `open` task. Do not start
    others.
-3. Work in the brief's worktree path when present; otherwise the current
-   checkout.
+3. Work in the brief's worktree path. Do not `git checkout` the task
+   branch in the PR worktree. If the brief omits a worktree path, stay in
+   a throwaway checkout already on the task branch; do not use the
+   orchestrator PR worktree.
 4. Implement the listed issues only. Run the task's verification commands.
 5. `git add` **source paths only**. Do not stage `TASKS_TO_RESOLVE-<short-sha>.md`,
    unhashed `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or `VERIFIERS.md`.
@@ -57,4 +59,5 @@ Do not delete the tasks file. The orchestrator deletes it on exit.
 - Never glob when multiple `TASKS_TO_RESOLVE-*.md` files exist; emit
   `blocked` and require `tasks_path`
 - Never push PR head
+- Never `git checkout` the task branch in the PR worktree
 - Never mark the task done

@@ -105,6 +105,9 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
     assert "same turn" in skill or "single" in skill and "parallel" in skill
     assert "origin/<pr-head>" in skill or "pr head" in skill
     assert "do not implement" in skill or "do not become" in skill
+    assert "old path" not in skill
+    assert "git checkout" in skill
+    assert "pr worktree" in skill
 
 
 def test_resolve_next_task_does_not_push_pr_head() -> None:
@@ -114,6 +117,8 @@ def test_resolve_next_task_does_not_push_pr_head() -> None:
     assert "pr head" in resolve or "pr-head" in resolve or "pr branch" in resolve
     assert "tasks_to_resolve-" in resolve
     assert "review_history.md" in resolve
+    assert "git checkout" in resolve
+    assert "pr worktree" in resolve
 
 
 def test_pr_review_skills_are_not_orphans() -> None:

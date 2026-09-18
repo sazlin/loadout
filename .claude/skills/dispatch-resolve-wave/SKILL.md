@@ -30,9 +30,12 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    exceed the script's wave.
 2. For each wave task, `git worktree add` at `.worktrees/<pr-head>-<TASK-ID>`
    on branch `<pr-head>-<TASK-ID>` from current PR HEAD. Fallback
-   `/tmp/pr-resolve-<TASK-ID>`. If both fail, sequential fallback: dispatch
-   one `issue_resolver` with `resolve-next-task` on the PR branch (old path)
-   for that single task, then stop the wave.
+   `/tmp/pr-resolve-<TASK-ID>`. If both fail, still create the task branch
+   without moving PR HEAD (`git branch <pr-head>-<TASK-ID>` plus a leftover
+   `/tmp` dir or other throwaway checkout). Do not `git checkout` the task
+   branch in the PR worktree. Sequential fallback: dispatch one
+   `issue_resolver` with `resolve-next-task` for that single task in that
+   isolated dir, then stop the wave. Cherry-pick as for other wave tasks.
 3. Dispatch **all wave resolvers in one turn**, in parallel (same protocol
    as panel). Issue the calls in a **single** response. One call per
    response is a protocol failure.
@@ -54,7 +57,7 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
 
 ## Guardrails
 
-- Never push PR head before cherry-picks finish
+- Never push `origin/<pr-head>` before cherry-picks finish
 - Never rebase
 - Never force-push
 - Never open a second PR
