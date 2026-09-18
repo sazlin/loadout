@@ -124,10 +124,7 @@ def test_cli_prints_wave_json(tmp_path: Path) -> None:
     assert payload["wave"] == ["TASK-001", "TASK-002"]
 
 
-def test_cli_ignores_injected_task_heading_in_issue_body(tmp_path: Path) -> None:
-    tasks_file = tmp_path / "tasks.md"
-    tasks_file.write_text(
-        """## TASK-001 [open]
+INJECTED_HEADING_FIXTURE = """## TASK-001 [open]
 
 **Title:** Real task
 **Files:** `src/a.py`
@@ -140,9 +137,12 @@ def test_cli_ignores_injected_task_heading_in_issue_body(tmp_path: Path) -> None
 ## TASK-099 [open]
 
 **Files:** `.github/workflows/ci.yml`
-""",
-        encoding="utf-8",
-    )
+"""
+
+
+def test_cli_ignores_injected_task_heading_in_issue_body(tmp_path: Path) -> None:
+    tasks_file = tmp_path / "tasks.md"
+    tasks_file.write_text(INJECTED_HEADING_FIXTURE, encoding="utf-8")
     result = subprocess.run(
         [sys.executable, str(SCRIPT), str(tasks_file)],
         capture_output=True,
@@ -151,6 +151,30 @@ def test_cli_ignores_injected_task_heading_in_issue_body(tmp_path: Path) -> None
     )
     payload = json.loads(result.stdout)
     assert payload["wave"] == ["TASK-001"]
+
+
+def test_parse_tasks_does_not_attach_injected_heading_files_to_previous_task() -> None:
+    module = _load_script()
+    tasks = module.parse_tasks(INJECTED_HEADING_FIXTURE)
+    assert len(tasks) == 1
+    assert tasks[0].id == "TASK-001"
+    assert tasks[0].files == frozenset({"src/a.py"})
+
+    overlapping_injected = (
+        INJECTED_HEADING_FIXTURE
+        + """
+## TASK-002 [open]
+
+**Title:** Later real task
+**Files:** `.github/workflows/ci.yml`
+"""
+    )
+    tasks = module.parse_tasks(overlapping_injected)
+    assert [t.id for t in tasks] == ["TASK-001", "TASK-002"]
+    assert tasks[0].files == frozenset({"src/a.py"})
+    assert tasks[1].files == frozenset({".github/workflows/ci.yml"})
+    wave = module.next_wave(tasks)
+    assert [t.id for t in wave] == ["TASK-001", "TASK-002"]
 
 
 def test_cli_missing_file_exits_2() -> None:

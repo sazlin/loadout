@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 WAVE_CAP = 4
+# Title+Files must appear in this many lines after a sequential TASK heading.
 TEMPLATE_LOOKAHEAD = 8
 
 HEADING_RE = re.compile(r"^##\s+(TASK-\d+)\s+\[(open|done|blocked)\]")
@@ -54,7 +55,13 @@ def _is_template_heading(lines: list[str], index: int, task_id: str) -> bool:
 
 
 def parse_tasks(text: str) -> list[TaskSpec]:
-    """Parse hashed tasks markdown into TaskSpec rows."""
+    """Parse sequential TASK-00N template headings into TaskSpec rows.
+
+    Only sequential template headings count. An injected TASK-099 body heading
+    is skipped unless it is the next id and has Title plus Files in the next
+    TEMPLATE_LOOKAHEAD lines. Any TASK-digits heading still ends Files collection
+    for the previous task so forged paths do not attach to it.
+    """
     tasks: list[TaskSpec] = []
     lines = text.splitlines()
     expected_n = 1
@@ -68,8 +75,7 @@ def parse_tasks(text: str) -> list[TaskSpec]:
         status = heading.group(2)
         index += 1
         files: set[str] = set()
-        next_id = _task_id_for(expected_n + 1)
-        while index < len(lines) and not _is_template_heading(lines, index, next_id):
+        while index < len(lines) and HEADING_RE.match(lines[index]) is None:
             files_match = FILES_LINE_RE.match(lines[index].strip())
             if files_match is not None:
                 files.update(BACKTICK_PATH_RE.findall(files_match.group(1)))
