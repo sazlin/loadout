@@ -397,13 +397,12 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
         path=path,
         event_name=event_name,
         roots=roots,
-        deadline=deadline,
         workspaces=workspaces,
     )
     if event_name == "subagentStart":
         return state, False
     before = dict(state.series)
-    _dispatch(mode, state, payload, roots, deadline)
+    _dispatch(mode, state, payload, roots)
     serialized = json.dumps(_state_to_dict(state), separators=(",", ":"))
     try:
         unchanged = path.is_file() and path.read_text() == serialized
@@ -424,7 +423,6 @@ def _load_or_create_state(
     path: Path,
     event_name: str,
     roots: list[tuple[Path, str]],
-    deadline: float,
     workspaces: list[Path],
 ) -> State:
     if event_name == "subagentStart":
@@ -441,18 +439,18 @@ def _load_or_create_state(
         return state
     state = _load_state(path)
     if state is None:
-        return _lazy_state(mode, payload, session_id, state_dir, roots, deadline, workspaces=workspaces)
+        return _lazy_state(mode, payload, session_id, state_dir, roots, workspaces=workspaces)
     _refresh_model(state, payload)
     return state
 
 
-def _dispatch(mode: str, state: State, payload: dict[str, Any], roots: list[tuple[Path, str]], deadline: float) -> None:
+def _dispatch(mode: str, state: State, payload: dict[str, Any], roots: list[tuple[Path, str]]) -> None:
     event_name = _event_name(payload) or ""
     attrs = _ctx_attrs(state)
     if mode == "cursor":
-        _dispatch_cursor(state, payload, event_name, roots, attrs, deadline)
+        _dispatch_cursor(state, payload, event_name, roots, attrs)
         return
-    _dispatch_claude(state, payload, event_name, roots, attrs, deadline)
+    _dispatch_claude(state, payload, event_name, roots, attrs)
 
 
 def _dispatch_cursor(
@@ -461,10 +459,9 @@ def _dispatch_cursor(
     event_name: str,
     roots: list[tuple[Path, str]],
     attrs: Attrs,
-    deadline: float,
 ) -> None:
     if event_name == "sessionStart":
-        _apply_session_start(state, payload, roots, attrs, deadline, emit=True)
+        _apply_session_start(state, payload, roots, attrs, emit=True)
         return
     if event_name == "beforeReadFile":
         _apply_model_read(state, payload.get("file_path"), roots, attrs)
@@ -490,12 +487,11 @@ def _dispatch_claude(
     event_name: str,
     roots: list[tuple[Path, str]],
     attrs: Attrs,
-    deadline: float,
 ) -> None:
     if event_name == "SessionStart":
         source = payload.get("source")
         emit = source == "startup" or source is None
-        _apply_session_start(state, payload, roots, attrs, deadline, emit=emit)
+        _apply_session_start(state, payload, roots, attrs, emit=emit)
         return
     if event_name == "UserPromptSubmit":
         _apply_prompt(state, payload, roots, attrs)
@@ -513,12 +509,11 @@ def _apply_session_start(
     payload: dict[str, Any],
     roots: list[tuple[Path, str]],
     attrs: Attrs,
-    deadline: float,
     *,
     emit: bool,
 ) -> None:
     del payload
-    providers, count, offered = _scan_skills(roots, deadline)
+    providers, count, offered = _scan_skills(roots)
     event = {
         "type": "session_start",
         "skillCount": count,
@@ -690,7 +685,6 @@ def _lazy_state(
     session_id: str,
     state_dir: Path,
     roots: list[tuple[Path, str]],
-    deadline: float,
     *,
     workspaces: list[Path] | None = None,
 ) -> State:
@@ -698,8 +692,8 @@ def _lazy_state(
     child = index.get(session_id)
     state = _blank_state(mode, payload, session_id, workspaces=workspaces)
     if child:
-        return _state_for_known_subagent(state, child, state_dir, roots, deadline=deadline)
-    return _state_for_unseen_root(state, roots, session_id, deadline=deadline)
+        return _state_for_known_subagent(state, child, state_dir, roots)
+    return _state_for_unseen_root(state, roots, session_id)
 
 
 def _state_for_known_subagent(
@@ -707,8 +701,6 @@ def _state_for_known_subagent(
     child: Any,
     state_dir: Path,
     roots: list[tuple[Path, str]],
-    *,
-    deadline: float,
 ) -> State:
     state.is_subagent = True
     parent_id = child.get("parent") if isinstance(child, dict) else None
@@ -722,7 +714,7 @@ def _state_for_known_subagent(
         state.providers = dict(parent.providers)
         state.discovered_count = parent.discovered_count
     else:
-        providers, count, offered = _scan_skills(roots, deadline)
+        providers, count, offered = _scan_skills(roots)
         state.providers = providers
         state.discovered_count = count
         state.offered = offered
@@ -734,10 +726,8 @@ def _state_for_unseen_root(
     state: State,
     roots: list[tuple[Path, str]],
     session_id: str,
-    *,
-    deadline: float,
 ) -> State:
-    providers, count, offered = _scan_skills(roots, deadline)
+    providers, count, offered = _scan_skills(roots)
     state.providers = providers
     state.discovered_count = count
     state.offered = offered
@@ -987,7 +977,7 @@ def _walk_plugin_skill_dirs(base: Path, deadline: float) -> list[Path]:
     return found
 
 
-def _scan_skills(roots: list[tuple[Path, str]], deadline: float | None = None) -> tuple[dict[str, str], int, bool]:
+def _scan_skills(roots: list[tuple[Path, str]]) -> tuple[dict[str, str], int, bool]:
     providers: dict[str, str] = {}
     offered = False
     # Directory walks already spent SCAN_BUDGET_S. Listing collected roots
