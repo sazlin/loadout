@@ -916,8 +916,9 @@ def _walk_plugin_skill_dirs(base: Path, deadline: float) -> list[Path]:
 def _scan_skills(roots: list[tuple[Path, str]], deadline: float | None = None) -> tuple[dict[str, str], int, bool]:
     providers: dict[str, str] = {}
     offered = False
-    if deadline is None:
-        deadline = time.monotonic() + SCAN_BUDGET_S
+    # Directory walks already spent SCAN_BUDGET_S. Listing collected roots
+    # gets a fresh window so a slow plugin tree cannot skip workspace skills.
+    deadline = time.monotonic() + SCAN_BUDGET_S
     for root, provider in roots:
         if time.monotonic() >= deadline:
             break

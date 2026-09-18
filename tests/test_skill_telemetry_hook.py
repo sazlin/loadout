@@ -1139,10 +1139,22 @@ def test_plugin_scan_respects_budget(
     elapsed = time.monotonic() - started
     assert elapsed < hook.SCAN_BUDGET_S + 0.2
     assert any(path.name == "skills" for path in found)
+    orig_plugins = hook._plugin_skill_dirs
+
+    def consume_walk_budget(deadline: float) -> list[Path]:
+        found_dirs = orig_plugins(deadline)
+        while time.monotonic() < deadline:
+            time.sleep(0.01)
+        return found_dirs
+
+    monkeypatch.setattr(hook, "_plugin_skill_dirs", consume_walk_budget)
     t0 = time.monotonic()
     stdout = _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
     assert time.monotonic() - t0 < 5
     assert json.loads(stdout) == {}
+    state = _state(telemetry_env)
+    assert state["discovered_count"] >= 1
+    assert "foo" in state["providers"]
 
 
 def test_non_skill_read_skips_lock_and_write(hook: Any, telemetry_env: dict[str, Path]) -> None:
