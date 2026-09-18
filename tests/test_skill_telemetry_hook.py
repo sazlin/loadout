@@ -1069,3 +1069,94 @@ def test_state_dir_rejects_foreign_owned_tmp_and_uses_private_mode(
     assert not stale_json.exists()
     assert not stale_lock.exists()
     assert other.read_text() == "keep"
+
+
+def test_plugin_scan_respects_budget(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plugins = telemetry_env["home"] / ".cursor" / "plugins"
+    skill = plugins / "demo" / "skills" / "plug"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: plug\n---\n")
+    wide = plugins / "demo" / "node_modules"
+    for i in range(80):
+        nested = wide
+        for depth in range(8):
+            nested = nested / f"d{i}-{depth}"
+        nested.mkdir(parents=True)
+        (nested / "skills").mkdir()
+    orig_glob = Path.glob
+
+    def no_starstar(self: Path, pattern: str, *args: Any, **kwargs: Any) -> Any:
+        if "**" in pattern:
+            raise AssertionError("plugin scan must not use **/ glob")
+        return orig_glob(self, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "glob", no_starstar)
+    deadline = time.monotonic() + hook.SCAN_BUDGET_S
+    started = time.monotonic()
+    found = hook._plugin_skill_dirs(deadline)
+    elapsed = time.monotonic() - started
+    assert elapsed < hook.SCAN_BUDGET_S + 0.2
+    assert any(path.name == "skills" for path in found)
+    t0 = time.monotonic()
+    stdout = _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
+    assert time.monotonic() - t0 < 5
+    assert json.loads(stdout) == {}
+
+
+def test_non_skill_read_skips_lock_and_write(hook: Any, telemetry_env: dict[str, Path]) -> None:
+    workspace = telemetry_env["ws"]
+    stdout = _run(hook, telemetry_env, _payload("beforeReadFile", workspace, file_path="/tmp/x"))
+    assert json.loads(stdout) == {"permission": "allow"}
+    session = telemetry_env["state"] / "conv-1.json"
+    assert not session.exists()
+    _run(hook, telemetry_env, _payload("sessionStart", workspace))
+    before = session.read_text()
+    mtime = session.stat().st_mtime_ns
+    _run(
+        hook,
+        telemetry_env,
+        _payload("beforeReadFile", workspace, file_path=str(workspace / "README.md")),
+    )
+    assert session.read_text() == before
+    assert session.stat().st_mtime_ns == mtime
+
+
+def test_gc_does_not_block_session_lock(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = telemetry_env["ws"]
+    _run(hook, telemetry_env, _payload("sessionStart", workspace))
+    state_dir = telemetry_env["state"]
+    ancient = time.time() - hook.TTL_S - 10
+    for i in range(2000):
+        path = state_dir / f"old-{i}.json"
+        path.write_text("{}")
+        os.utime(path, (ancient, ancient))
+    started = threading.Event()
+    orig_unlink = Path.unlink
+
+    def slow_unlink(self: Path, *args: Any, **kwargs: Any) -> None:
+        if self.name.startswith("old-") and not started.is_set():
+            started.set()
+            time.sleep(hook.LOCK_WAIT_S + 0.6)
+        orig_unlink(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", slow_unlink)
+    gc_thread = threading.Thread(
+        target=hook._handle_event,
+        args=("cursor", _payload("sessionStart", workspace)),
+        daemon=True,
+    )
+    gc_thread.start()
+    assert started.wait(3)
+    t0 = time.monotonic()
+    hook._handle_event(
+        "cursor",
+        _payload("beforeReadFile", workspace, file_path=str(workspace / ".claude/skills/foo/SKILL.md")),
+    )
+    elapsed = time.monotonic() - t0
+    gc_thread.join(timeout=5)
+    assert elapsed < hook.LOCK_WAIT_S
+    assert _series_value(_state(telemetry_env), "skill.reads") == 1

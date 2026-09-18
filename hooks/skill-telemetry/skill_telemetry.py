@@ -55,8 +55,9 @@ STDIN_EVENT_PEEK = 8192
 HOOK_EVENT_RE = re.compile(rb'"(?:hook_event_name|hookEventName)"\s*:\s*"([^"\\]{1,80})"')
 STATE_DIR_MODE = 0o700
 STATE_FILE_MODE = 0o600
-GC_SKIP_NAMES = frozenset({"gc", "debug.log"})
+GC_SKIP_NAMES = frozenset({"gc", "gc.lock", "debug.log"})
 GC_UNLINK_SUFFIXES = frozenset({".json", ".lock", ".exporting"})
+GC_MAX_UNLINKS = 256
 EXPORT_CLAIM_GRACE_S = 1.0
 BOOL_ATTRS = frozenset({"agent.is_subagent"})
 
@@ -312,10 +313,16 @@ def _handle_event(mode: str, payload: dict[str, Any]) -> None:
     state_dir = _state_dir()
     if state_dir is None:
         return
+    event_name = _event_name(payload) or ""
+    if _is_non_skill_file_read(event_name, payload):
+        return
+    if event_name in {"sessionStart", "SessionStart"}:
+        _maybe_gc(state_dir, time.time(), force=True)
+    elif event_name not in {"beforeReadFile", "PreToolUse"}:
+        _maybe_gc(state_dir, time.time(), force=False)
     lock_path = _state_child(state_dir, session_id, ".lock")
     if lock_path is None:
         return
-    event_name = _event_name(payload) or ""
     result = _with_lock(lock_path, lambda: _apply_locked(mode, payload, session_id, state_dir))
     if result is None:
         return
@@ -327,12 +334,24 @@ def _handle_event(mode: str, payload: dict[str, Any]) -> None:
     _export_state(state, mode, state_dir)
 
 
+def _is_non_skill_file_read(event_name: str, payload: dict[str, Any]) -> bool:
+    if event_name == "beforeReadFile":
+        path = payload.get("file_path")
+    elif event_name == "PreToolUse":
+        tool = payload.get("tool_name") or payload.get("toolName") or ""
+        if tool != "Read":
+            return False
+        tool_input = payload.get("tool_input") or payload.get("toolInput") or {}
+        if not isinstance(tool_input, dict):
+            return True
+        path = tool_input.get("file_path") or tool_input.get("path")
+    else:
+        return False
+    return not isinstance(path, str) or Path(path).name != "SKILL.md"
+
+
 def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir: Path) -> tuple[State, bool]:
     event_name = _event_name(payload) or ""
-    if event_name in {"sessionStart", "SessionStart"}:
-        _maybe_gc(state_dir, time.time(), force=True)
-    else:
-        _maybe_gc(state_dir, time.time(), force=False)
     path = _state_child(state_dir, session_id, ".json")
     if path is None:
         return State(conversation_id=session_id, harness=mode), False
@@ -340,7 +359,8 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
         _record_subagent(state_dir, payload, session_id)
         existing = _load_state(path)
         return existing or State(conversation_id=session_id, harness=mode), False
-    roots = _ordered_roots(_workspace_roots(payload))
+    deadline = time.monotonic() + SCAN_BUDGET_S
+    roots = _ordered_roots(_workspace_roots(payload), deadline)
     if event_name in {"sessionStart", "SessionStart"}:
         state = _load_state(path)
         if state is None:
@@ -353,24 +373,29 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
     else:
         state = _load_state(path)
         if state is None:
-            state = _lazy_state(mode, payload, session_id, state_dir, roots)
+            state = _lazy_state(mode, payload, session_id, state_dir, roots, deadline)
         else:
             _refresh_model(state, payload)
     before = dict(state.series)
-    _dispatch(mode, state, payload, roots)
-    _atomic_write(path, json.dumps(_state_to_dict(state), separators=(",", ":")))
-    event_name = _event_name(payload) or ""
+    _dispatch(mode, state, payload, roots, deadline)
+    serialized = json.dumps(_state_to_dict(state), separators=(",", ":"))
+    try:
+        unchanged = path.is_file() and path.read_text() == serialized
+    except OSError:
+        unchanged = False
+    if not unchanged:
+        _atomic_write(path, serialized)
     changed = state.series != before or event_name in {"sessionEnd", "SessionEnd"}
     return state, changed
 
 
-def _dispatch(mode: str, state: State, payload: dict[str, Any], roots: list[tuple[Path, str]]) -> None:
+def _dispatch(mode: str, state: State, payload: dict[str, Any], roots: list[tuple[Path, str]], deadline: float) -> None:
     event_name = _event_name(payload) or ""
     attrs = _ctx_attrs(state)
     if mode == "cursor":
-        _dispatch_cursor(state, payload, event_name, roots, attrs)
+        _dispatch_cursor(state, payload, event_name, roots, attrs, deadline)
         return
-    _dispatch_claude(state, payload, event_name, roots, attrs)
+    _dispatch_claude(state, payload, event_name, roots, attrs, deadline)
 
 
 def _dispatch_cursor(
@@ -379,9 +404,10 @@ def _dispatch_cursor(
     event_name: str,
     roots: list[tuple[Path, str]],
     attrs: Attrs,
+    deadline: float,
 ) -> None:
     if event_name == "sessionStart":
-        _apply_session_start(state, payload, roots, attrs, emit=True)
+        _apply_session_start(state, payload, roots, attrs, deadline, emit=True)
         return
     if event_name == "beforeReadFile":
         _apply_model_read(state, payload.get("file_path"), roots, attrs)
@@ -407,11 +433,12 @@ def _dispatch_claude(
     event_name: str,
     roots: list[tuple[Path, str]],
     attrs: Attrs,
+    deadline: float,
 ) -> None:
     if event_name == "SessionStart":
         source = payload.get("source")
         emit = source == "startup" or source is None
-        _apply_session_start(state, payload, roots, attrs, emit=emit)
+        _apply_session_start(state, payload, roots, attrs, deadline, emit=emit)
         return
     if event_name == "UserPromptSubmit":
         _apply_prompt(state, payload, roots, attrs)
@@ -429,11 +456,12 @@ def _apply_session_start(
     payload: dict[str, Any],
     roots: list[tuple[Path, str]],
     attrs: Attrs,
+    deadline: float,
     *,
     emit: bool,
 ) -> None:
     del payload
-    providers, count, offered = _scan_skills(roots)
+    providers, count, offered = _scan_skills(roots, deadline)
     event = {
         "type": "session_start",
         "skillCount": count,
@@ -585,6 +613,7 @@ def _lazy_state(
     session_id: str,
     state_dir: Path,
     roots: list[tuple[Path, str]],
+    deadline: float,
 ) -> State:
     index = _load_subagents(state_dir)
     child = index.get(session_id)
@@ -609,13 +638,13 @@ def _lazy_state(
             state.providers = dict(parent.providers)
             state.discovered_count = parent.discovered_count
         else:
-            providers, count, offered = _scan_skills(roots)
+            providers, count, offered = _scan_skills(roots, deadline)
             state.providers = providers
             state.discovered_count = count
             state.offered = offered
         state.discovered_emitted = True
         return state
-    providers, count, offered = _scan_skills(roots)
+    providers, count, offered = _scan_skills(roots, deadline)
     state.providers = providers
     state.discovered_count = count
     state.offered = offered
@@ -760,8 +789,9 @@ def _last_segment(url: str) -> str:
     return slash.rsplit(":", 1)[-1] or "none"
 
 
-def _ordered_roots(workspaces: list[Path]) -> list[tuple[Path, str]]:
-    deadline = time.monotonic() + SCAN_BUDGET_S
+def _ordered_roots(workspaces: list[Path], deadline: float | None = None) -> list[tuple[Path, str]]:
+    if deadline is None:
+        deadline = time.monotonic() + SCAN_BUDGET_S
     ordered: list[tuple[Path, str]] = []
     seen: set[str] = set()
 
@@ -831,23 +861,47 @@ def _plugin_skill_dirs(deadline: float) -> list[Path]:
         search.append(Path(plugin_root))
     search.append(Path.home() / ".cursor" / "plugins")
     for base in search:
-        if time.monotonic() >= deadline or not base.exists():
+        if time.monotonic() >= deadline:
+            break
+        if not base.is_dir():
             continue
-        try:
-            for path in base.glob("**/skills"):
-                if time.monotonic() >= deadline:
-                    break
-                if path.is_dir():
-                    found.append(path)
-        except OSError:
-            continue
+        found.extend(_walk_plugin_skill_dirs(base, deadline))
     return found
 
 
-def _scan_skills(roots: list[tuple[Path, str]]) -> tuple[dict[str, str], int, bool]:
+def _walk_plugin_skill_dirs(base: Path, deadline: float) -> list[Path]:
+    found: list[Path] = []
+    stack = [(base, 0)]
+    while stack and time.monotonic() < deadline:
+        current, depth = stack.pop()
+        if depth > SCAN_MAX_DEPTH:
+            continue
+        try:
+            entries = list(current.iterdir())
+        except OSError:
+            continue
+        for entry in entries:
+            if time.monotonic() >= deadline:
+                break
+            if not entry.is_dir():
+                continue
+            name = entry.name
+            if name in SKIP_DIRS:
+                continue
+            if name.startswith(".") and name not in KEEP_DOT_DIRS:
+                continue
+            if name == "skills":
+                found.append(entry)
+            if depth < SCAN_MAX_DEPTH:
+                stack.append((entry, depth + 1))
+    return found
+
+
+def _scan_skills(roots: list[tuple[Path, str]], deadline: float | None = None) -> tuple[dict[str, str], int, bool]:
     providers: dict[str, str] = {}
     offered = False
-    deadline = time.monotonic() + SCAN_BUDGET_S
+    if deadline is None:
+        deadline = time.monotonic() + SCAN_BUDGET_S
     for root, provider in roots:
         if time.monotonic() >= deadline:
             break
@@ -1069,6 +1123,24 @@ def _atomic_write(path: Path, text: str) -> None:
 
 
 def _maybe_gc(state_dir: Path, now: float, *, force: bool) -> None:
+    lock_path = state_dir / "gc.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+") as handle:
+        try:
+            os.chmod(lock_path, STATE_FILE_MODE)
+        except OSError:
+            pass
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return
+        try:
+            _gc_pass(state_dir, now, force=force)
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _gc_pass(state_dir: Path, now: float, *, force: bool) -> None:
     marker = state_dir / "gc"
     if not force:
         try:
@@ -1081,14 +1153,23 @@ def _maybe_gc(state_dir: Path, now: float, *, force: bool) -> None:
         entries = list(state_dir.iterdir())
     except OSError:
         return
+    unlinked = 0
+    hit_cap = False
     for path in entries:
         if path.name in GC_SKIP_NAMES or path.suffix not in GC_UNLINK_SUFFIXES:
             continue
         try:
-            if path.stat().st_mtime < cutoff:
-                path.unlink()
+            if path.stat().st_mtime >= cutoff:
+                continue
+            if unlinked >= GC_MAX_UNLINKS:
+                hit_cap = True
+                break
+            path.unlink()
+            unlinked += 1
         except OSError:
             continue
+    if hit_cap:
+        return
     try:
         _atomic_write(marker, str(int(now)))
     except OSError:
