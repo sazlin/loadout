@@ -49,6 +49,10 @@ PROMPT_TOKEN = re.compile(r"(^|\s)/([A-Za-z0-9][\w-]*)(?=\s|$)")
 DISABLED_MODEL = re.compile(r"(?m)^disable-model-invocation:\s*true\s*$")
 SESSION_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 SESSION_ID_MAX_LEN = 128
+STDIN_MAX_BYTES = 1_048_576
+STDIN_CHUNK = 65_536
+STDIN_EVENT_PEEK = 8192
+HOOK_EVENT_RE = re.compile(rb'"(?:hook_event_name|hookEventName)"\s*:\s*"([^"\\]{1,80})"')
 STATE_DIR_MODE = 0o700
 STATE_FILE_MODE = 0o600
 GC_SKIP_NAMES = frozenset({"gc", "debug.log"})
@@ -195,7 +199,10 @@ def _run(args: list[str], stdin: bytes | None) -> int:
         _export_file(args[1] if len(args) > 1 else "")
         return 0
     mode = _mode_from_args(args)
-    raw = sys.stdin.buffer.read() if stdin is None else stdin
+    raw, over_cap = _capped_stdin(stdin)
+    if over_cap:
+        _emit_allow(mode, _event_name_from_prefix(raw))
+        return 0
     payload = _parse_payload(raw)
     event_name = _event_name(payload)
     if payload is None:
@@ -213,6 +220,27 @@ def _mode_from_args(args: list[str] | None) -> str:
     if args and args[0] and args[0] != "--export":
         return args[0]
     return "claude"
+
+
+def _capped_stdin(stdin: bytes | None) -> tuple[bytes, bool]:
+    """Read hook stdin, capped at STDIN_MAX_BYTES. over_cap skips parse."""
+    if stdin is not None:
+        if len(stdin) > STDIN_MAX_BYTES:
+            return stdin[:STDIN_EVENT_PEEK], True
+        return stdin, False
+    head = sys.stdin.buffer.read(STDIN_MAX_BYTES + 1)
+    if len(head) <= STDIN_MAX_BYTES:
+        return head, False
+    while sys.stdin.buffer.read(STDIN_CHUNK):
+        pass
+    return head[:STDIN_EVENT_PEEK], True
+
+
+def _event_name_from_prefix(raw: bytes) -> str | None:
+    match = HOOK_EVENT_RE.search(raw[:STDIN_EVENT_PEEK])
+    if match:
+        return match.group(1).decode("ascii")
+    return os.environ.get("HOOK_EVENT") or None
 
 
 def _parse_payload(raw: bytes) -> dict[str, Any] | None:

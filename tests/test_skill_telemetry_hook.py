@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import resource
 import shutil
 import subprocess
 import sys
@@ -768,6 +769,46 @@ def test_exporter_headers_and_path(hook: Any, telemetry_env: dict[str, Path], mo
     assert seen["ctype"] == "application/x-protobuf"
     assert seen["api"] == "secret"
     assert seen["body"]
+
+
+def test_before_read_file_huge_content_fail_open_under_timeout(telemetry_env: dict[str, Path]) -> None:
+    payload_bytes = 8 * 1024 * 1024
+    prefix = (
+        b'{"hook_event_name":"beforeReadFile","conversation_id":"conv-1",'
+        b'"file_path":"/tmp/x","workspace_roots":[],"content":"'
+    )
+    suffix = b'"}'
+    env = os.environ.copy()
+    env["HOOK_EVENT"] = "beforeReadFile"
+    before_children = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    proc = subprocess.Popen(
+        ["python3", str(HOOK_PY), "cursor"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    assert proc.stdin is not None and proc.stdout is not None
+    started = time.monotonic()
+    proc.stdin.write(prefix)
+    chunk = b"a" * 65_536
+    remaining = payload_bytes
+    while remaining:
+        n = min(len(chunk), remaining)
+        proc.stdin.write(chunk[:n])
+        remaining -= n
+    proc.stdin.write(suffix)
+    proc.stdin.close()
+    stdout = proc.stdout.read()
+    rc = proc.wait(timeout=5)
+    elapsed = time.monotonic() - started
+    assert rc == 0
+    assert json.loads(stdout) == {"permission": "allow"}
+    assert elapsed < 2.0
+    child_rss_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    delta_kb = max(0, child_rss_kb - before_children)
+    assert delta_kb * 1024 < payload_bytes
+    assert not (telemetry_env["state"] / "conv-1.json").exists()
 
 
 def test_unreachable_endpoint_returns_quickly(hook: Any, telemetry_env: dict[str, Path]) -> None:
