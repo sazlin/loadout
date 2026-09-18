@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from loadout.models import load_loadout
@@ -122,6 +123,90 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
         assert "not the whole wave" in skill
         assert "fourth identical parallel wave" in skill
         assert "integrate" not in skill
+
+
+def _numbered_skill_steps(text: str) -> dict[int, str]:
+    steps: dict[int, str] = {}
+    current: int | None = None
+    chunks: list[str] = []
+    for line in text.splitlines():
+        match = re.match(r"^(\d+)\.\s+(.*)", line)
+        if match:
+            if current is not None:
+                steps[current] = " ".join(chunks)
+            current = int(match.group(1))
+            chunks = [match.group(2)]
+            continue
+        if current is None:
+            continue
+        if line.startswith("## "):
+            steps[current] = " ".join(chunks)
+            break
+        chunks.append(line)
+    if current is not None and current not in steps:
+        steps[current] = " ".join(chunks)
+    return steps
+
+
+def test_dispatch_resolve_wave_copies_gitignored_tasks_file_into_each_worktree() -> None:
+    source = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    vendored = (REPO / ".claude" / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored):
+        skill = text.lower()
+        assert "copy" in skill
+        assert "tasks_path" in skill
+        assert "frozen" in skill
+        assert "gitignored" in skill
+        assert "absolute" in skill
+        assert "git cwd" in skill
+        worktree_step = next(
+            body for body in _numbered_skill_steps(text).values() if "git worktree add" in body.lower()
+        )
+        lowered = worktree_step.lower()
+        assert "/tmp" in lowered
+        assert "copy" in lowered
+        assert "tasks_path" in lowered
+
+
+def test_dispatch_resolve_wave_splits_setup_fallback_and_parallel_dispatch() -> None:
+    source = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    vendored = (REPO / ".claude" / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored):
+        steps = _numbered_skill_steps(text)
+        worktree_n, worktree = next((n, body) for n, body in steps.items() if "git worktree add" in body.lower())
+        parallel_n, parallel = next(
+            (n, body) for n, body in steps.items() if "all wave resolvers in one turn" in body.lower()
+        )
+        partial_n = next(n for n, body in steps.items() if "do not stop the whole wave" in body.lower())
+        assert worktree_n != parallel_n
+        assert partial_n != parallel_n
+        assert worktree_n != partial_n
+        assert "all wave resolvers in one turn" not in worktree.lower()
+        assert "cherry-pick" not in worktree.lower()
+        assert "isolated checkout" in parallel.lower() or "isolated dir" in parallel.lower()
+        assert "every wave task" in parallel.lower()
+
+
+def test_dispatch_resolve_wave_prunes_worktrees_after_conflict_and_abort() -> None:
+    source = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    vendored = (REPO / ".claude" / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored):
+        skill = text.lower()
+        assert "conflict abort" in skill or "cherry-pick --abort" in skill
+        assert "missing sha" in skill
+        assert "git worktree remove --force" in skill
+        assert "git worktree prune" in skill
+        assert "abort-if-merged" in skill
+        assert "resolve-loop exit" in skill
+        assert "reuse" in skill
+        assert "reset" in skill
+        assert "do not stop the whole wave" in skill
+        assert "/tmp/pr-resolve-" in skill
+        cleanup = next(
+            body.lower() for body in _numbered_skill_steps(text).values() if "git worktree prune" in body.lower()
+        )
+        assert "conflict" in cleanup
+        assert "missing sha" in cleanup
 
 
 def test_resolve_next_task_does_not_push_pr_head() -> None:
