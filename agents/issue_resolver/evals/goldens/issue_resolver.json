@@ -1,9 +1,9 @@
 {
   "status": "ok",
   "agent": "issue_resolver",
-  "charter": "Complete the first open task in TASKS_TO_RESOLVE-<short-sha>.md: implement, verify, commit, and push to the existing PR branch.",
+  "charter": "Complete one assigned task in the brief's worktree: implement, verify, and commit on the task branch.",
   "inputs": {
-    "summary": "Fix discounted_total so tax applies after discount. Push the PR branch. Do not merge.",
+    "summary": "Fix discounted_total so tax applies after discount. Push the task branch. Do not merge.",
     "paths": ["evals/files/pricing.py"],
     "task_id": "TASK-001"
   },
@@ -11,19 +11,19 @@
     {
       "path": "evals/files/pricing.py",
       "action": "modify",
-      "rationale": "Return (price - discount) * (1 + tax_rate) so tax_rate is a rate after discount."
+      "rationale": "Return (price - discount) * (1 + tax_rate) so tax_rate is a rate after discount. Commit abc1234 on the task branch."
     }
   ],
   "verification": [
     {
-      "command": "git push origin HEAD",
+      "command": "git push origin <task-branch>",
       "result": "pass",
-      "notes": "Pushed the existing PR branch. Did not merge."
+      "notes": "Pushed the task branch (commit abc1234). Did not push PR head. Did not merge."
     }
   ],
-  "assumptions": ["Eval fixture is not a live PR; push command is recorded as intent."],
+  "assumptions": ["Eval fixture is not a live PR; push of the task branch is recorded as intent."],
   "tried": [],
-  "rejected": ["Merging the pull request", "Deleting the unused helper"],
+  "rejected": ["Merging the pull request", "Pushing PR head", "Deleting the unused helper"],
   "attempts": 1,
   "blocked_reason": null
 }

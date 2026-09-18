@@ -361,6 +361,7 @@ def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
         "skills/dispatch-panel-review",
         "skills/dedupe-and-write-tasks",
         "skills/resolve-next-task",
+        "skills/dispatch-resolve-wave",
         "skills/log-progress",
         "skills/dispatch-verifiers",
     }
@@ -494,6 +495,65 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "gh pr merge" in lowered
     assert "do not merge" in lowered or "no `gh pr merge`" in lowered or "no gh pr merge" in lowered
     assert "deferred_minors" in text
+
+
+def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "dispatch-resolve-wave" in lowered
+        assert "partition_waves.py" in lowered or "next wave" in lowered
+        assert "worktree" in lowered
+        assert "cherry-pick" in lowered
+        assert "wave" in lowered
+        assert "4" in text or "four" in lowered
+        assert "issue_resolver" in lowered
+        assert "in-process" in lowered
+        assert "only" in lowered and "pr-head" in lowered and "push" in lowered
+        assert "integrate" not in lowered
+        working = text.split("## Working style", 1)[1].split("## Agent-specific guidance", 1)[0].lower()
+        assert "parallel" in working
+        assert "wave" in working
+        assert "cherry-pick" in working
+        assert "orchestrator" in working
+        assert "only for the four panel reviewers" not in working
+        table = text.split("### Skills (slash commands)", 1)[1].split("### Significant issues and caps", 1)[0].lower()
+        assert "cherry-pick" in table and "in-process" in table
+        assert "only `git push`" in table or "only git push" in table
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "post-wave cherry-pick cleanup" in anti
+        assert "pr-head push" in anti
+        assert "skip integrate" not in anti
+        shell = text.split("**Shell:**", 1)[1].split("\n-", 1)[0].lower()
+        assert "git fetch" in shell
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        resume = definition.split("**Resume run:**", 1)[1].split("4. Run **Verification**", 1)[0]
+        verify = definition.split("4. Run **Verification**", 1)[1].split("5. Dispatch", 1)[0]
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0]
+        for section in (resume, verify, invoked, definition):
+            section_lower = " ".join(section.split()).lower()
+            assert "after each successful wave" in section_lower
+            assert "[done]" in section
+            assert "log-progress" in section_lower
+            assert "prepare_wave_worktrees.py prune" in section_lower
+            assert "git push" in section_lower
+            assert "dispatch failure" in section_lower
+        compact = " ".join(text.split()).lower()
+        assert "gone → `log-progress`" not in compact
+        assert "gone → log" not in compact
+        owner = (
+            "worktree git (add, cherry-pick, prune) is owned by "
+            "`dispatch-resolve-wave` via `prepare_wave_worktrees.py`"
+        )
+        assert owner in lowered
+        assert "the orchestrator keeps mark-done" in lowered
+        shell = text.split("**Shell:**", 1)[1].split("\n-", 1)[0].lower()
+        assert "prepare_wave_worktrees.py" in shell
+        assert "do not hand-build" in shell
+        # Raw git is forbidden as the orchestrator's own job except via helper.
+        for forbidden in ("`git cherry-pick`;", "`git worktree remove`;"):
+            assert forbidden not in text.split("**Shell:**", 1)[1].split("\n-", 1)[0]
 
 
 def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:
@@ -773,6 +833,40 @@ def test_orchestrator_blocked_protocol_caps_started_comment_and_run_info_retries
         assert 'status: "blocked"' in blocked or "`blocked`" in blocked_lower
         assert "degraded" in blocked_lower or "without a dashboard link" in blocked_lower
         assert "never invent" in blocked_lower
+        assert "fourth identical parallel wave" in blocked_lower
+        assert "open_task_ids" in blocked
+        assert "resolve-wave" in blocked_lower
+
+
+def test_orchestrator_marks_done_only_after_clean_cherry_pick() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    skill = (REPO / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    vendored_skill = (REPO / ".claude" / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored, skill, vendored_skill):
+        lowered = text.lower()
+        assert "status=ok" in lowered or "status = ok" in lowered
+        assert "cherry-pick" in lowered
+        assert "missing sha" in lowered
+        assert "blocked" in lowered
+        assert "undispatched" in lowered
+        assert "cherry-pick --abort" in lowered
+        assert "not the whole wave" in lowered or "only ids" in lowered or "only the ids" in lowered
+        assert "at least one clean pick" in lowered
+        assert "cherry-pick or merge" in lowered
+
+
+def test_orchestrator_caps_resolve_wave_retries() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    skill = (REPO / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored, skill):
+        lowered = text.lower()
+        assert "3" in text
+        assert "failed attempt" in lowered or "retry cap" in lowered or "retries at **3**" in lowered
+        assert "fourth identical parallel wave" in lowered
+        assert "open_task_ids" in text
+        assert "not immediately eligible" in lowered or "instead of dispatching another identical wave" in lowered
 
 
 def test_orchestrator_aborts_when_the_pull_request_is_merged() -> None:
@@ -976,12 +1070,28 @@ def test_verifier_is_readonly_and_judges_claims() -> None:
 
 
 def test_issue_resolver_pushes_and_does_not_merge() -> None:
+    """Resolver still git-pushes (task branch is fine) and must not merge or delete the hashed tasks file."""
     text = _agent_file(ISSUE_RESOLVER).read_text().lower()
     assert "git push" in text
     assert "gh pr merge" in text
     assert "do not merge" in text
     assert "tasks_to_resolve-" in text
     assert "do not delete" in text or "never delete" in text
+
+
+def test_issue_resolver_does_not_push_pr_head() -> None:
+    source = _agent_file(ISSUE_RESOLVER).read_text()
+    vendored = (REPO / ".claude" / "agents" / "issue_resolver.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "task branch" in lowered
+        assert "do not push" in lowered or "never push" in lowered
+        assert "pr head" in lowered or "pr-head" in lowered
+        assert "do not edit" in lowered or "never edit" in lowered
+        assert "review_history.md" in lowered
+        assert "tasks_to_resolve-" in lowered
+        assert "do not mark" in lowered or "never mark" in lowered
+        assert "do not" in lowered and "log-progress" in lowered
 
 
 def test_issue_resolver_eval_uses_hashed_tasks_fixture() -> None:

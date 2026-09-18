@@ -3,12 +3,15 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Resolve the next open task on this PR branch. tasks_path: evals/files/TASKS_TO_RESOLVE-abc1234.md",
-      "expected_output": "One task implemented, committed, pushed, not merged",
+      "prompt": "Resolve the assigned task_id TASK-001. tasks_path: evals/files/TASKS_TO_RESOLVE-abc1234.md. Commit on the task branch. Do not push PR head. Do not mark the task done.",
+      "expected_output": "Assigned task implemented and committed on the task branch, not pushed to PR head, not marked done, not merged",
       "files": ["evals/files/TASKS_TO_RESOLVE-abc1234.md"],
       "expectations": [
-        "Only the first open task is taken",
-        "git push to the existing branch",
+        "Only the assigned task_id is taken",
+        "Commit on the task branch",
+        "Pushes the task branch only via prepare_wave_worktrees.py push",
+        "Does not push PR head",
+        "Does not mark the task done",
         "Does not gh pr merge",
         "Does not commit TASKS_TO_RESOLVE-<short-sha>.md"
       ]
