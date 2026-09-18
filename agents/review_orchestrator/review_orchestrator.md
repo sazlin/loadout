@@ -97,16 +97,23 @@ prose alone.
    or **3** panel loops are used:
    - **Fresh run:** `dispatch-panel-review` → `dedupe-and-write-tasks` →
      `dispatch-resolve-wave` until open tasks are gone (always pass
-     `tasks_path` in the brief) → `log-progress`. After each successful
-     wave, mark those wave ids `[done]`, follow `log-progress`,
-     `git worktree remove`, delete local task branches, and `git push` PR
-     head.
+     `tasks_path` in the brief). After each wave (success, conflict, or
+     dispatch failure), `git worktree remove` all wave worktrees and
+     delete local task branches. After each successful wave, mark those
+     wave ids `[done]`, follow `log-progress`, and `git push` PR head.
    - **Resume run:** skip panel; run `dispatch-resolve-wave` against frozen
-     `tasks_path` until open tasks are gone → `log-progress`. Do not run dedupe until the manifest is fully
+     `tasks_path` until open tasks are gone. After each wave (success,
+     conflict, or dispatch failure), `git worktree remove` all wave
+     worktrees and delete local task branches. After each successful
+     wave, mark those wave ids `[done]`, follow `log-progress`, and
+     `git push` PR head. Do not run dedupe until the manifest is fully
      resolved or the verify loop reports `false` claims.
 4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
    empty list (no-op). On `false` claims, dedupe/`dispatch-resolve-wave` and
-   repeat, max **3** verify loops.
+   repeat, max **3** verify loops. After each wave (success, conflict, or
+   dispatch failure), `git worktree remove` all wave worktrees and delete
+   local task branches. After each successful wave, mark those wave ids
+   `[done]`, follow `log-progress`, and `git push` PR head.
 5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
    merge yourself.
@@ -137,7 +144,7 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
   empty.
   Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
-  `git cherry-pick`; `git worktree remove`; `git push` of PR head after
+  `git fetch`; `git cherry-pick`; `git worktree remove`; `git push` of PR head after
   successful cherry-picks; `gh pr view` / `gh pr diff` / `gh pr comment`;
   `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
   No force-push, history rewrite, or `gh pr merge`. Never
@@ -650,13 +657,19 @@ Record the latest comment URL in `delivery.github_comment_url`.
    when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
 4. **Review** loop until no significant issues or cap: fresh runs use panel
-   (dispatch → dedupe → `dispatch-resolve-wave` until open tasks are gone →
-   log); resume runs skip panel and run waves against frozen `tasks_path` →
-   log. Loop 1 is the full PR. Loops 2 and 3 pass the
+   (dispatch → dedupe → `dispatch-resolve-wave` until open tasks are gone);
+   resume runs skip panel and run waves against frozen `tasks_path`. After
+   each wave (success, conflict, or dispatch failure), `git worktree remove`
+   all wave worktrees and delete local task branches. After each successful
+   wave, mark those wave ids `[done]`, follow `log-progress`, and `git push`
+   PR head. Loop 1 is the full PR. Loops 2 and 3 pass the
    resolver-commit range and keep all four reviewers. Before each loop or
    new `issue_resolver` task, abort if the PR is merged.
 5. Verify loop (`dispatch-verifiers` → maybe dedupe/`dispatch-resolve-wave`) until claims
-   are all `true` or cap or file missing. Abort if the PR is merged before
+   are all `true` or cap or file missing. After each wave (success, conflict, or
+   dispatch failure), `git worktree remove` all wave worktrees and delete
+   local task branches. After each successful wave, mark those wave ids
+   `[done]`, follow `log-progress`, and `git push` PR head. Abort if the PR is merged before
    a verify loop.
 6. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
 7. Delete the frozen `tasks_path` only when `open_task_ids` is empty;

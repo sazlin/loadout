@@ -98,17 +98,25 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
 
 
 def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
-    skill = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text().lower()
-    assert "partition_waves.py" in skill
-    assert "wave cap" in skill or "cap 4" in skill or "max 4" in skill
-    assert "worktree" in skill
-    assert "cherry-pick" in skill
-    assert "same turn" in skill or "single" in skill and "parallel" in skill
-    assert "origin/<pr-head>" in skill or "pr head" in skill
-    assert "do not implement" in skill or "do not become" in skill
-    assert "old path" not in skill
-    assert "git checkout" in skill
-    assert "pr worktree" in skill
+    source = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    vendored = (REPO / ".claude" / "skills" / "dispatch-resolve-wave" / "SKILL.md").read_text()
+    for text in (source, vendored):
+        skill = text.lower()
+        assert "partition_waves.py" in skill
+        assert "wave cap" in skill or "cap 4" in skill or "max 4" in skill
+        assert "worktree" in skill
+        assert "cherry-pick" in skill
+        assert "same turn" in skill or "single" in skill and "parallel" in skill
+        assert "origin/<pr-head>" in skill or "pr head" in skill
+        assert "do not implement" in skill or "do not become" in skill
+        assert "old path" not in skill
+        assert "git checkout" in skill
+        assert "pr worktree" in skill
+        assert "git fetch" in skill
+        assert "before" in skill
+        assert "every wave" in skill
+        assert "dispatch failure" in skill
+        assert "git worktree remove" in skill
 
 
 def test_resolve_next_task_does_not_push_pr_head() -> None:

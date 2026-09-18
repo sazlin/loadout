@@ -513,6 +513,23 @@ def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
         assert "parallel" in working
         assert "wave" in working
         assert "only for the four panel reviewers" not in working
+        shell = text.split("**Shell:**", 1)[1].split("\n-", 1)[0].lower()
+        assert "git fetch" in shell
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        resume = definition.split("**Resume run:**", 1)[1].split("4. Run **Verification**", 1)[0]
+        verify = definition.split("4. Run **Verification**", 1)[1].split("5. Dispatch", 1)[0]
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0]
+        for section in (resume, verify, invoked, definition):
+            section_lower = " ".join(section.split()).lower()
+            assert "after each successful wave" in section_lower
+            assert "[done]" in section
+            assert "log-progress" in section_lower
+            assert "git worktree remove" in section_lower
+            assert "git push" in section_lower
+            assert "dispatch failure" in section_lower
+        compact = " ".join(text.split()).lower()
+        assert "gone → `log-progress`" not in compact
+        assert "gone → log" not in compact
 
 
 def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:

@@ -39,12 +39,17 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
 4. Each brief: `issue_resolver`, `resolve-next-task`, `tasks_path`,
    `task_id`, worktree path, task branch, PR head branch name. "Do not
    push PR head. Do not edit the tasks file or REVIEW_HISTORY.md."
-5. After all return: in TASK id order, `git cherry-pick <resolver-commit-sha>`
-   onto PR head. On conflict: `git cherry-pick --abort`, leave that task
-   `[open]`, continue with the next wave task. Do not push a conflicted HEAD.
-6. After successful picks, stop. The orchestrator (not this skill) marks
-   those tasks `[done]`, follows `log-progress`, `git worktree remove`,
-   deletes the local task branch, and does one `git push` of
+5. After all return: in TASK id order, before each pick
+   `git fetch origin <pr-head>-<TASK-ID>` (or the reported SHA; a no-op
+   when the object is already local), then
+   `git cherry-pick <resolver-commit-sha>` onto PR head. On conflict:
+   `git cherry-pick --abort`, leave that task `[open]`, continue with the
+   next wave task. Do not push a conflicted HEAD.
+6. After every wave (success, conflict, or dispatch failure),
+   `git worktree remove` all wave worktrees and delete local task
+   branches. Recreate them on the next attempt.
+7. After successful picks, stop. The orchestrator (not this skill) marks
+   those tasks `[done]`, follows `log-progress`, and does one `git push` of
    `origin/<pr-head>`.
 
 ## Harness
