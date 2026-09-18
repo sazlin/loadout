@@ -9,6 +9,8 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+import pytest
+
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "skills" / "dispatch-resolve-wave" / "scripts" / "prepare_wave_worktrees.py"
 
@@ -101,3 +103,175 @@ def test_add_invokes_git_worktree_with_argv_list_no_shell(monkeypatch: Any) -> N
     assert ".worktrees/cursor-feature-TASK-001" in joined
     assert ".worktrees/cursor/feature" not in joined
     assert all(argv[0] == "git" for argv, _ in calls)
+
+
+def _git(cwd: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _git_sha(cwd: Path, ref: str = "HEAD") -> str:
+    return _git(cwd, "rev-parse", ref).stdout.strip()
+
+
+def _init_repo(path: Path) -> None:
+    path.mkdir(parents=True)
+    _git(path, "init", "-b", "main")
+    _git(path, "config", "user.email", "test@example.com")
+    _git(path, "config", "user.name", "test")
+    (path / "file.txt").write_text("base\n")
+    _git(path, "add", "file.txt")
+    _git(path, "commit", "-m", "init")
+
+
+def test_cherry_pick_accepts_sha_on_fetched_origin_branch_not_local_head(tmp_path: Path, monkeypatch: Any) -> None:
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    consumer = tmp_path / "consumer"
+    _init_repo(consumer)
+    _git(consumer, "checkout", "-b", "cursor/wave")
+    _git(consumer, "remote", "add", "origin", str(origin))
+    _git(consumer, "push", "-u", "origin", "cursor/wave")
+    task_branch = "cursor/wave-TASK-001"
+    _git(consumer, "branch", task_branch)
+    _git(consumer, "push", "origin", task_branch)
+    local_task_sha = _git_sha(consumer, task_branch)
+
+    resolver = tmp_path / "resolver"
+    _git(tmp_path, "clone", str(origin), str(resolver))
+    _git(resolver, "config", "user.email", "test@example.com")
+    _git(resolver, "config", "user.name", "test")
+    _git(resolver, "checkout", "-B", task_branch, f"origin/{task_branch}")
+    (resolver / "file.txt").write_text("resolver\n")
+    _git(resolver, "add", "file.txt")
+    _git(resolver, "commit", "-m", "resolver")
+    _git(resolver, "push", "origin", task_branch)
+    new_sha = _git_sha(resolver)
+    assert _git_sha(consumer, task_branch) == local_task_sha
+    assert new_sha != local_task_sha
+
+    monkeypatch.chdir(consumer)
+    module = _load_script()
+    rc = module.main(["cherry-pick", "--task-branch", task_branch, "--", new_sha])
+    assert rc == 0
+    assert (consumer / "file.txt").read_text() == "resolver\n"
+    assert _git(consumer, "log", "--format=%s", "-1", "HEAD").stdout.strip() == "resolver"
+
+
+def test_cherry_pick_rejects_sha_not_on_fetched_task_branch(tmp_path: Path, monkeypatch: Any) -> None:
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "--bare", "-b", "main", str(origin))
+    consumer = tmp_path / "consumer"
+    _init_repo(consumer)
+    _git(consumer, "checkout", "-b", "cursor/wave")
+    _git(consumer, "remote", "add", "origin", str(origin))
+    _git(consumer, "push", "-u", "origin", "cursor/wave")
+    task_branch = "cursor/wave-TASK-001"
+    _git(consumer, "branch", task_branch)
+    _git(consumer, "push", "origin", task_branch)
+    (consumer / "other.txt").write_text("local-only\n")
+    _git(consumer, "add", "other.txt")
+    _git(consumer, "commit", "-m", "not on origin task branch")
+    foreign_sha = _git_sha(consumer)
+    _git(consumer, "reset", "--hard", "HEAD~1")
+
+    monkeypatch.chdir(consumer)
+    module = _load_script()
+    rc = module.main(["cherry-pick", "--task-branch", task_branch, "--", foreign_sha])
+    assert rc == 2
+    assert (consumer / "file.txt").read_text() == "base\n"
+    assert not (consumer / "other.txt").exists()
+
+
+def test_add_reuses_leftover_worktree_by_hard_reset_to_pr_head(
+    tmp_path: Path, monkeypatch: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    old = _git_sha(repo)
+    worktree = repo / ".worktrees" / "cursor-wave-TASK-001"
+    _git(repo, "worktree", "add", "-b", "cursor/wave-TASK-001", str(worktree))
+    assert _git_sha(worktree) == old
+    (repo / "file.txt").write_text("pr-head\n")
+    _git(repo, "add", "file.txt")
+    _git(repo, "commit", "-m", "pr")
+    pr_head = _git_sha(repo)
+    assert _git_sha(worktree) == old
+
+    monkeypatch.chdir(repo)
+    module = _load_script()
+    rc = module.main(["add", "--pr-head", "cursor/wave", json.dumps({"wave": ["TASK-001"]})])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["tasks"][0]["isolated"] is True
+    assert _git_sha(worktree) == pr_head
+    reset = _git(worktree, "rev-parse", "--verify", "HEAD")
+    assert reset.stdout.strip() == pr_head
+
+
+def test_add_does_not_report_plain_leftover_dir_isolated_without_worktree(
+    tmp_path: Path, monkeypatch: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    leftover = repo / ".worktrees" / "cursor-wave-TASK-001"
+    leftover.mkdir(parents=True)
+    (leftover / "stale.txt").write_text("not a worktree\n")
+
+    monkeypatch.chdir(repo)
+    module = _load_script()
+    rc = module.main(["add", "--pr-head", "cursor/wave", json.dumps({"wave": ["TASK-001"]})])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    task = payload["tasks"][0]
+    git_dir = subprocess.run(
+        ["git", "-C", str(leftover), "rev-parse", "--is-inside-work-tree"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if git_dir.returncode != 0:
+        assert task["isolated"] is False
+    else:
+        assert task["isolated"] is True
+        assert not (leftover / "stale.txt").exists()
+        listed = _git(repo, "worktree", "list", "--porcelain").stdout
+        assert str(leftover.resolve()) in listed
+
+
+def test_run_git_timeout_is_nonzero_without_hanging(monkeypatch: Any) -> None:
+    monkeypatch.setenv("LOADOUT_GIT_TIMEOUT_SECONDS", "0.2")
+    module = _load_script()
+
+    def hang(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        timeout = kwargs.get("timeout")
+        assert timeout is not None
+        assert kwargs.get("shell") is False
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=timeout)
+
+    monkeypatch.setattr(subprocess, "run", hang)
+    proc = module._run_git(["fetch", "origin", "cursor/ok-TASK-001"])
+    assert proc.returncode != 0
+
+
+def test_cherry_pick_and_push_timeout_exit_nonzero(monkeypatch: Any) -> None:
+    module = _load_script()
+
+    def fake_run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        assert kwargs.get("shell") is False
+        if len(argv) >= 2 and argv[1] == "check-ref-format":
+            return subprocess.CompletedProcess(argv, 0, stdout=f"{argv[-1]}\n", stderr="")
+        if "fetch" in argv or "push" in argv:
+            raise subprocess.TimeoutExpired(cmd=argv, timeout=kwargs.get("timeout") or 120)
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    pick_rc = module.main(["cherry-pick", "--task-branch", "cursor/ok-TASK-001", "aaaaaaaaaaaaaaaa"])
+    push_rc = module.main(["push", "--task-branch", "cursor/ok-TASK-001"])
+    assert pick_rc == 1
+    assert push_rc == 1
