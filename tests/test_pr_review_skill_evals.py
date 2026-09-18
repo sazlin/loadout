@@ -13,6 +13,7 @@ PR_REVIEW_SKILLS = (
     "dispatch-panel-review",
     "dedupe-and-write-tasks",
     "resolve-next-task",
+    "dispatch-resolve-wave",
     "log-progress",
     "dispatch-verifiers",
 )
@@ -131,3 +132,4 @@ def test_gitignore_covers_ephemeral_tasks_files() -> None:
     text = (REPO / ".gitignore").read_text()
     assert "/TASKS_TO_RESOLVE.md" in text
     assert "/TASKS_TO_RESOLVE-*.md" in text
+    assert ".worktrees/" in text

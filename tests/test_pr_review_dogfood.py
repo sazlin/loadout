@@ -442,6 +442,8 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     assert f"PR head branch: {SAMPLE_PR_HEAD_REF}" in prompt
     assert f"gh pr checkout {SAMPLE_PR_NUMBER}" in prompt
     assert f"origin/{SAMPLE_PR_HEAD_REF}" in prompt
+    assert "must not push" in prompt.lower()
+    assert f"{SAMPLE_PR_HEAD_REF}-TASK-" in prompt
 
 
 def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path: Path) -> None:

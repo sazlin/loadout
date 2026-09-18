@@ -361,6 +361,7 @@ def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
         "skills/dispatch-panel-review",
         "skills/dedupe-and-write-tasks",
         "skills/resolve-next-task",
+        "skills/dispatch-resolve-wave",
         "skills/log-progress",
         "skills/dispatch-verifiers",
     }

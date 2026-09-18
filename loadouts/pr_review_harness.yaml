@@ -8,6 +8,7 @@ skills:
   - src: skills/dispatch-panel-review
   - src: skills/dedupe-and-write-tasks
   - src: skills/resolve-next-task
+  - src: skills/dispatch-resolve-wave
   - src: skills/log-progress
   - src: skills/dispatch-verifiers
 agents:
