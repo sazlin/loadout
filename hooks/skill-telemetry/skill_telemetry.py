@@ -56,7 +56,8 @@ HOOK_EVENT_RE = re.compile(rb'"(?:hook_event_name|hookEventName)"\s*:\s*"([^"\\]
 STATE_DIR_MODE = 0o700
 STATE_FILE_MODE = 0o600
 GC_SKIP_NAMES = frozenset({"gc", "debug.log"})
-GC_UNLINK_SUFFIXES = frozenset({".json", ".lock"})
+GC_UNLINK_SUFFIXES = frozenset({".json", ".lock", ".exporting"})
+EXPORT_CLAIM_GRACE_S = 1.0
 BOOL_ATTRS = frozenset({"agent.is_subagent"})
 
 AttrValue = str | bool
@@ -196,7 +197,9 @@ def main(argv: list[str] | None = None, stdin: bytes | None = None) -> int:
 
 def _run(args: list[str], stdin: bytes | None) -> int:
     if args and args[0] == "--export":
-        _export_file(args[1] if len(args) > 1 else "")
+        blob = args[1] if len(args) > 1 else ""
+        claim = args[2] if len(args) > 2 else ""
+        _export_file(blob, claim)
         return 0
     mode = _mode_from_args(args)
     raw, over_cap = _capped_stdin(stdin)
@@ -321,7 +324,7 @@ def _handle_event(mode: str, payload: dict[str, Any]) -> None:
         return
     if not state.series:
         return
-    _export_state(state, mode)
+    _export_state(state, mode, state_dir)
 
 
 def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir: Path) -> tuple[State, bool]:
@@ -1092,39 +1095,99 @@ def _maybe_gc(state_dir: Path, now: float, *, force: bool) -> None:
         return
 
 
-def _export_state(state: State, mode: str) -> None:
+def _export_state(state: State, mode: str, state_dir: Path) -> None:
     service = (os.environ.get("OTEL_SERVICE_NAME") or "").strip()
     blob = encode_snapshot(state, now_ns=_now_ns(), service_name=service, harness=mode)
     if os.environ.get("SKILL_TELEMETRY_SYNC_EXPORT") == "1":
         _post_otlp(blob)
         return
+    claim = _claim_export(state_dir, state.conversation_id)
+    if claim is None:
+        return
     fd, name = tempfile.mkstemp(prefix="skill-telemetry-", suffix=".pb")
     os.close(fd)
-    Path(name).write_bytes(blob)
-    subprocess.Popen(
-        [sys.executable, str(Path(__file__).resolve()), "--export", name],
-        start_new_session=True,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        close_fds=True,
-    )
+    try:
+        Path(name).write_bytes(blob)
+        subprocess.Popen(
+            [sys.executable, str(Path(__file__).resolve()), "--export", name, str(claim)],
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+    except OSError as exc:
+        _debug(f"export spawn: {exc}")
+        _unlink_quiet(Path(name))
+        _unlink_quiet(claim)
 
 
-def _export_file(path: str) -> None:
+def _claim_export(state_dir: Path, session_id: str) -> Path | None:
+    """Exclusive per-session export slot. None means skip; snapshots are cumulative."""
+    path = _state_child(state_dir, session_id, ".exporting")
+    if path is None:
+        return None
+    if _export_in_flight(path):
+        return None
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, STATE_FILE_MODE)
+    except FileExistsError:
+        return None
+    except OSError:
+        return None
+    try:
+        os.fchmod(fd, STATE_FILE_MODE)
+    finally:
+        os.close(fd)
+    return path
+
+
+def _export_in_flight(path: Path) -> bool:
+    try:
+        age = time.time() - path.stat().st_mtime
+    except OSError:
+        return False
+    return age < (_timeout_ms() / 1000.0) + EXPORT_CLAIM_GRACE_S
+
+
+def _export_file(path: str, claim: str = "") -> None:
     target = Path(path)
     try:
-        blob = target.read_bytes()
-    except OSError as exc:
-        _debug(f"export read: {exc}")
-        return
-    try:
+        try:
+            blob = target.read_bytes()
+        except OSError as exc:
+            _debug(f"export read: {exc}")
+            return
         _post_otlp(blob)
     finally:
-        try:
-            target.unlink()
-        except OSError:
-            return
+        _unlink_quiet(target)
+        _unlink_export_claim(claim)
+
+
+def _unlink_export_claim(raw: str) -> None:
+    if not raw:
+        return
+    candidate = Path(raw)
+    if candidate.suffix != ".exporting" or not _valid_id(candidate.stem):
+        return
+    state_dir = _state_dir()
+    if state_dir is None:
+        return
+    expected = _state_child(state_dir, candidate.stem, ".exporting")
+    if expected is None or _resolve(candidate) != expected:
+        return
+    _unlink_quiet(expected)
+
+
+def _unlink_quiet(path: Path) -> None:
+    try:
+        path.unlink()
+    except OSError:
+        return
 
 
 def _post_otlp(blob: bytes) -> None:

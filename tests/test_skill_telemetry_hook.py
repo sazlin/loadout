@@ -771,6 +771,112 @@ def test_exporter_headers_and_path(hook: Any, telemetry_env: dict[str, Path], mo
     assert seen["body"]
 
 
+def _count_export_procs() -> int:
+    n = 0
+    proc_root = Path("/proc")
+    if not proc_root.is_dir():
+        return 0
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            cmd = (entry / "cmdline").read_bytes().split(b"\0")
+        except OSError:
+            continue
+        if b"--export" in cmd and any(b"skill_telemetry.py" in part for part in cmd):
+            n += 1
+    return n
+
+
+def test_export_coalesces_under_burst(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inflight = {"n": 0, "max": 0}
+    lock = threading.Lock()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            with lock:
+                inflight["n"] += 1
+                inflight["max"] = max(inflight["max"], inflight["n"])
+            time.sleep(2)
+            self.send_response(200)
+            self.end_headers()
+            with lock:
+                inflight["n"] -= 1
+
+        def log_message(self, format: str, *args: Any) -> None:
+            del format, args
+
+    _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.delenv("SKILL_TELEMETRY_SYNC_EXPORT", raising=False)
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_TIMEOUT", "2500")
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", f"http://127.0.0.1:{server.server_address[1]}")
+    workspace = telemetry_env["ws"]
+    payload = json.dumps(
+        _payload("beforeReadFile", workspace, file_path=str(workspace / ".claude/skills/foo/SKILL.md"))
+    ).encode()
+    env = os.environ.copy()
+    burst = 8
+    procs = [
+        subprocess.Popen(
+            ["python3", str(HOOK_PY), "cursor"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        for _ in range(burst)
+    ]
+    for proc in procs:
+        stdout, _stderr = proc.communicate(payload, timeout=5)
+        assert proc.returncode == 0
+        assert json.loads(stdout) == {"permission": "allow"}
+    seen = 0
+    deadline = time.monotonic() + 2.5
+    while time.monotonic() < deadline:
+        seen = max(seen, _count_export_procs())
+        time.sleep(0.05)
+    server.shutdown()
+    assert inflight["max"] <= 1
+    assert seen <= 1
+    assert _series_value(_state(telemetry_env), "skill.reads") == burst
+
+
+def test_export_spawn_failure_unlinks_blob(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("SKILL_TELEMETRY_SYNC_EXPORT", raising=False)
+
+    def fake_mkstemp(*, prefix: str, suffix: str) -> tuple[int, str]:
+        dest = tmp_path / "export.pb"
+        fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        return fd, str(dest)
+
+    monkeypatch.setattr(hook.tempfile, "mkstemp", fake_mkstemp)
+
+    def boom(*_args: Any, **_kwargs: Any) -> None:
+        raise OSError("spawn")
+
+    monkeypatch.setattr(hook.subprocess, "Popen", boom)
+    _run(
+        hook,
+        telemetry_env,
+        _payload(
+            "beforeReadFile",
+            telemetry_env["ws"],
+            file_path=str(telemetry_env["ws"] / ".claude/skills/foo/SKILL.md"),
+        ),
+    )
+    assert not (tmp_path / "export.pb").exists()
+    assert not (telemetry_env["state"] / "conv-1.exporting").exists()
+
+
 def test_before_read_file_huge_content_fail_open_under_timeout(telemetry_env: dict[str, Path]) -> None:
     payload_bytes = 8 * 1024 * 1024
     prefix = (
