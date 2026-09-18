@@ -1,12 +1,9 @@
 ---
 name: dispatch-resolve-wave
-description: Dispatch file-disjoint issue_resolver worktrees for the next resolve
-  wave. Use when review_orchestrator is in the Review resolve loop, or when the user
-  says /dispatch_resolve_wave. Do not implement fixes.
-metadata:
-  loadout.managed: 'true'
-  loadout.source: skills/dispatch-resolve-wave/SKILL.md
-  loadout.sha: '5110187'
+description: >-
+  Dispatch file-disjoint issue_resolver worktrees for the next resolve
+  wave. Use when review_orchestrator is in the Review resolve loop, or
+  when the user says /dispatch_resolve_wave. Do not implement fixes.
 ---
 
 # Dispatch resolve wave
@@ -20,6 +17,12 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
 - The user asks for `/dispatch_resolve_wave`
 
 **Do not use** to implement fixes, mark tasks done, or merge.
+
+Worktree git has one owner: this skill, in-process, via
+`prepare_wave_worktrees.py` add / cherry-pick / prune. The orchestrator
+does not run raw `git cherry-pick` or `git worktree remove`; it marks
+`[done]`, follows `log-progress`, and is the only `git push` of
+`origin/<pr-head>`.
 
 ## Steps
 
@@ -42,14 +45,13 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    falls back to `/tmp/pr-resolve-<TASK-ID>`, and creates the task branch
    without moving PR HEAD when both add sites fail. Use the JSON
    `worktree` / `branch` fields; do not assemble those paths yourself.
-   After each successful `git worktree add` (including the `/tmp`
-   fallback) and after reuse/reset, copy the frozen gitignored
-   `tasks_path` from the PR worktree into that worktree (same filename)
-   so `test -f <worktree>/<tasks_path>` is true and the bytes match the
-   PR-worktree manifest. A resolver restricted to the worktree must read
-   the assigned task without consulting the PR worktree. If copy is
-   skipped, pass an absolute PR-worktree `tasks_path` and say so in the
-   brief.
+   Helper `add` JSON `isolated: true` means a checkout exists. It does not
+   copy `tasks_path`; copy the frozen gitignored manifest yourself after
+   add or reuse (same filename) so `test -f <worktree>/<tasks_path>` is
+   true and the bytes match the PR-worktree file. A resolver restricted
+   to the worktree must read the assigned task without consulting the PR
+   worktree. If copy is skipped, pass an absolute PR-worktree
+   `tasks_path` and say so in the brief.
 3. If any wave task still has no isolated dir after reuse/reset and both
    add sites, do not stop the whole wave. Dispatch `issue_resolver` with
    `resolve-next-task` for every task whose worktree succeeded. Leave ids

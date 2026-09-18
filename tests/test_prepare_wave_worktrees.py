@@ -101,3 +101,23 @@ def test_add_invokes_git_worktree_with_argv_list_no_shell(monkeypatch: Any) -> N
     assert ".worktrees/cursor-feature-TASK-001" in joined
     assert ".worktrees/cursor/feature" not in joined
     assert all(argv[0] == "git" for argv, _ in calls)
+
+
+def test_add_json_and_docstring_state_isolated_does_not_copy_tasks_path(monkeypatch: Any, capsys: Any) -> None:
+    module = _load_script()
+    _record_run(monkeypatch)
+    rc = module.main(
+        [
+            "add",
+            "--pr-head",
+            "cursor/feature",
+            json.dumps({"wave": ["TASK-001"]}),
+        ]
+    )
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["tasks_path_copied"] is False
+    doc = (module.__doc__ or "").lower()
+    assert "isolated" in doc
+    assert "tasks_path" in doc
+    assert "does not copy" in doc

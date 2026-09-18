@@ -520,13 +520,18 @@ def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
         assert "only for the four panel reviewers" not in working
         table = text.split("### Skills (slash commands)", 1)[1].split("### Significant issues and caps", 1)[0].lower()
         assert "cherry-pick" in table and "in-process" in table
+        assert "prepare_wave_worktrees.py" in table
         assert "only `git push`" in table or "only git push" in table
+        assert "git worktree remove" not in table
         anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
         assert "post-wave cherry-pick cleanup" in anti
         assert "pr-head push" in anti
+        assert "prepare_wave_worktrees.py prune" in anti
         assert "skip integrate" not in anti
         shell = text.split("**Shell:**", 1)[1].split("\n-", 1)[0].lower()
-        assert "git fetch" in shell
+        assert "prepare_wave_worktrees.py" in shell
+        assert "git cherry-pick" not in shell
+        assert "git worktree remove" not in shell
         definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
         resume = definition.split("**Resume run:**", 1)[1].split("4. Run **Verification**", 1)[0]
         verify = definition.split("4. Run **Verification**", 1)[1].split("5. Dispatch", 1)[0]
@@ -536,7 +541,9 @@ def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
             assert "after each successful wave" in section_lower
             assert "[done]" in section
             assert "log-progress" in section_lower
-            assert "git worktree remove" in section_lower
+            assert "dispatch-resolve-wave" in section_lower and "prune" in section_lower
+            assert "git worktree remove" not in section_lower
+            assert "git cherry-pick" not in section_lower
             assert "git push" in section_lower
             assert "dispatch failure" in section_lower
         compact = " ".join(text.split()).lower()

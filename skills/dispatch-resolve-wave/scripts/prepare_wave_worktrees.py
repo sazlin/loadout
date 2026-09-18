@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run resolve-wave git with list argv (no shell interpolation)."""
+"""Run resolve-wave git with list argv (no shell interpolation).
+
+`add` JSON `isolated` means a checkout exists. It does not copy
+tasks_path; the caller still copies the frozen manifest into each
+worktree.
+"""
 
 from __future__ import annotations
 
@@ -190,7 +195,7 @@ def _cmd_add(args: list[str]) -> int:
     if head is None:
         return 2
     tasks = [_ensure_task(pr_head, task_id, head) for task_id in ids]
-    print(json.dumps({"pr_head": pr_head, "tasks": tasks}))
+    print(json.dumps({"pr_head": pr_head, "tasks": tasks, "tasks_path_copied": False}))
     return 0
 
 

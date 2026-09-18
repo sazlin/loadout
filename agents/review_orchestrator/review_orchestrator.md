@@ -98,19 +98,19 @@ prose alone.
    - **Fresh run:** `dispatch-panel-review` → `dedupe-and-write-tasks` →
      `dispatch-resolve-wave` until open tasks are gone or the resolve-wave
      retry cap is hit (always pass `tasks_path` in the brief). Git
-     ownership: the skill (followed in-process) creates worktrees,
-     dispatches, and cherry-picks; the orchestrator then marks `[done]`
-     only ids whose resolver `status=ok` and whose commit SHA
-     `git cherry-pick` applied cleanly on PR head, follows `log-progress`,
-     `git worktree remove`, deletes local task branches, and is the only
-     `git push` of `origin/<pr-head>`. After each wave (success, conflict,
-     or dispatch failure), `git worktree remove` all wave worktrees and
-     delete local task branches. After each successful wave, mark
+     ownership: the skill (followed in-process) runs
+     `prepare_wave_worktrees.py` add / cherry-pick / prune. The orchestrator
+     then marks `[done]` only ids whose resolver `status=ok` and whose
+     commit SHA the helper cherry-picked cleanly on PR head, follows
+     `log-progress`, and is the only `git push` of `origin/<pr-head>`.
+     After each wave (success, conflict, or dispatch failure), follow
+     `dispatch-resolve-wave` prune. After each successful wave, mark
      `[done]` only those clean-pick ids (not the whole wave); leave
-     `[open]` on conflict, any non-zero cherry-pick (`git cherry-pick --abort`
-     so HEAD is not left cherry-picking), missing SHA, blocked resolver, or
-     undispatched fallback tasks. Push `origin/<pr-head>` only after at least
-     one clean pick and only if HEAD is not in a cherry-pick or merge state.
+     `[open]` on conflict, any non-zero cherry-pick (helper
+     `cherry-pick --abort` so HEAD is not left cherry-picking), missing SHA,
+     blocked resolver, or undispatched fallback tasks. Push
+     `origin/<pr-head>` only after at least one clean pick and only if HEAD
+     is not in a cherry-pick or merge state.
      A wave with no successful cherry-pick, or a task that conflicted /
      returned blocked / produced no sha, is one failed attempt for those ids
      (max **3**, short backoff). After the cap, leave those tasks `[open]`,
@@ -119,18 +119,18 @@ prose alone.
    - **Resume run:** skip panel; run `dispatch-resolve-wave` against frozen
      `tasks_path` until open tasks are gone or the resolve-wave retry cap
      is hit. After each wave (success, conflict, or dispatch failure),
-     `git worktree remove` all wave worktrees and delete local task
-     branches. After each successful wave, mark `[done]` only clean-pick
-     ids as in the Fresh run, follow `log-progress`, and `git push` PR
-     head only after at least one clean pick. Do not run dedupe until the manifest is fully
+     follow `dispatch-resolve-wave` prune. After each successful wave, mark
+     `[done]` only clean-pick ids as in the Fresh run, follow
+     `log-progress`, and `git push` PR head only after at least one clean
+     pick. Do not run dedupe until the manifest is fully
      resolved or the verify loop reports `false` claims.
 4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
    empty list (no-op). On `false` claims, dedupe/`dispatch-resolve-wave` and
    repeat, max **3** verify loops. After each wave (success, conflict, or
-   dispatch failure), `git worktree remove` all wave worktrees and delete
-   local task branches. After each successful wave, mark `[done]` only
-   clean-pick ids as in the Fresh run, follow `log-progress`, and `git push`
-   PR head only after at least one clean pick.
+   dispatch failure), follow `dispatch-resolve-wave` prune. After each
+   successful wave, mark `[done]` only clean-pick ids as in the Fresh run,
+   follow `log-progress`, and `git push` PR head only after at least one
+   clean pick.
 5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
    merge yourself.
@@ -161,9 +161,11 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
   empty.
   Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
-  `git fetch`; `git cherry-pick` while following `dispatch-resolve-wave` in-process;
-  `git worktree remove`; `git push` of `origin/<pr-head>` after successful
-  cherry-picks (orchestrator is the only PR-head pusher);
+  `python3 .claude/skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py`
+  add / cherry-pick / prune while following `dispatch-resolve-wave`
+  in-process (never hand-run cherry-pick or worktree remove);
+  `git push` of `origin/<pr-head>` after successful cherry-picks
+  (orchestrator is the only PR-head pusher);
   `gh pr view` / `gh pr diff` / `gh pr comment`;
   `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
   No force-push, history rewrite, or `gh pr merge`. Never
@@ -180,9 +182,9 @@ Never:
 - Review, fix, classify, or merge in-process instead of dispatching
 - Become `issue_resolver` (never become `issue_resolver`)
 - Skip post-wave cherry-pick cleanup and PR-head push (never skip marking
-  clean picks `[done]`, `log-progress`, `git worktree remove`, deleting
-  local task branches, or the orchestrator's `origin/<pr-head>` push when
-  at least one pick landed)
+  clean picks `[done]`, `log-progress`, `dispatch-resolve-wave` prune via
+  `prepare_wave_worktrees.py prune`, or the orchestrator's
+  `origin/<pr-head>` push when at least one pick landed)
 - Force-push
 - Drop a reviewer's issues because they are inconvenient or numerous
 - Hide a duplicate instead of recording it in `dropped_duplicates`
@@ -289,8 +291,13 @@ project commands. Do not apply a personal style guide while grouping.
 
 - Coordinator only. Isolation of specialists is the point.
 - Follow the skills. Parallel for the four panel reviewers and for
-  resolve waves. Cherry-pick (skill, in-process) then post-wave cleanup
-  and PR-head push (orchestrator) are sequential.
+  resolve waves. Worktree git has one owner: the `dispatch-resolve-wave`
+  skill, in-process, via `prepare_wave_worktrees.py` add / cherry-pick /
+  prune. The orchestrator does not run raw `git cherry-pick` or
+  `git worktree remove`; it marks `[done]`, follows `log-progress`, and
+  is the only `git push` of `origin/<pr-head>`. Cherry-pick (skill,
+  in-process) then post-wave cleanup and PR-head push (orchestrator) are
+  sequential.
 - Write `TASKS_TO_RESOLVE-<short-sha>.md` last in a dedupe pass so it is
   never half written.
 
@@ -311,7 +318,7 @@ project commands. Do not apply a personal style guide while grouping.
 | --- | --- |
 | `dispatch-panel-review` | Start or repeat the panel. Four parallel dispatches. |
 | `dedupe-and-write-tasks` | After panel or verifier issues. Rewrite `TASKS_TO_RESOLVE-<short-sha>.md`. |
-| `dispatch-resolve-wave` | After dedupe. Partition (`partition_waves.py`), worktrees, parallel `issue_resolver` dispatch (N ≤ 4), and cherry-pick — skill followed in-process. Orchestrator then marks `[done]` only clean picks, `log-progress`, `git worktree remove`, deletes task branches, and is the only `git push` of `origin/<pr-head>`. Repeat until open tasks are gone or the 3-attempt resolve-wave cap. |
+| `dispatch-resolve-wave` | After dedupe. Partition (`partition_waves.py`), then `prepare_wave_worktrees.py` add / cherry-pick / prune plus parallel `issue_resolver` dispatch (N ≤ 4) — skill followed in-process. Worktree git has one owner: that helper via the in-process skill. Orchestrator then marks `[done]` only clean picks, `log-progress`, and is the only `git push` of `origin/<pr-head>`. Repeat until open tasks are gone or the 3-attempt resolve-wave cap. |
 | `resolve-next-task` | Brief for each `issue_resolver` invocation (one assigned task). Pass `tasks_path`. |
 | `log-progress` | After each phase and each resolved task. Append only. Orchestrator trims entries older than 30 days after all other tasks. |
 | `dispatch-verifiers` | After panel is clean of significant issues. Sequential claims. |
@@ -687,19 +694,19 @@ Record the latest comment URL in `delivery.github_comment_url`.
    (dispatch → dedupe → `dispatch-resolve-wave` until open tasks are gone or
    the 3-attempt resolve-wave cap); resume runs skip panel and run waves
    against frozen `tasks_path` until gone or that cap. After each wave
-   (success, conflict, or dispatch failure), `git worktree remove` all wave
-   worktrees and delete local task branches. After each successful wave,
-   mark `[done]` only clean-pick ids as in Definition of done, follow
-   `log-progress`, and `git push` PR head only after at least one clean pick.
+   (success, conflict, or dispatch failure), follow `dispatch-resolve-wave`
+   prune. After each successful wave, mark `[done]` only clean-pick ids as
+   in Definition of done, follow `log-progress`, and `git push` PR head
+   only after at least one clean pick.
    Loop 1 is the full PR. Loops 2 and 3 pass the
    resolver-commit range and keep all four reviewers. Before each loop or
    new `issue_resolver` task, abort if the PR is merged.
 5. Verify loop (`dispatch-verifiers` → maybe dedupe/`dispatch-resolve-wave`) until claims
    are all `true` or cap or file missing. After each wave (success, conflict, or
-   dispatch failure), `git worktree remove` all wave worktrees and delete
-   local task branches. After each successful wave, mark `[done]` only
-   clean-pick ids as in Definition of done, follow `log-progress`, and
-   `git push` PR head only after at least one clean pick. Abort if the PR is merged before
+   dispatch failure), follow `dispatch-resolve-wave` prune. After each
+   successful wave, mark `[done]` only clean-pick ids as in Definition of
+   done, follow `log-progress`, and `git push` PR head only after at least
+   one clean pick. Abort if the PR is merged before
    a verify loop.
 6. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
 7. Delete the frozen `tasks_path` only when `open_task_ids` is empty;

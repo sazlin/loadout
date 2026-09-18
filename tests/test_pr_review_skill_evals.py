@@ -120,6 +120,8 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
         assert "every wave" in skill
         assert "dispatch failure" in skill
         assert "git worktree remove" in skill
+        assert "prepare_wave_worktrees.py" in skill
+        assert "one owner" in skill
         assert "never push" in skill and "origin/<pr-head>" in skill
         assert "orchestrator pushes after successful picks" in skill
         assert "not the whole wave" in skill
@@ -168,6 +170,8 @@ def test_dispatch_resolve_wave_copies_gitignored_tasks_file_into_each_worktree()
         assert "/tmp" in lowered
         assert "copy" in lowered
         assert "tasks_path" in lowered
+        assert "isolated" in lowered
+        assert "does not" in lowered and "copy" in lowered
 
 
 def test_dispatch_resolve_wave_splits_setup_fallback_and_parallel_dispatch() -> None:
