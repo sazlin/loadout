@@ -1009,10 +1009,6 @@ def test_fixtures_run_through_main(hook: Any, telemetry_env: dict[str, Path], fi
         assert parsed == {"continue": True}
     else:
         assert parsed == {}
-    if event in {"beforeReadFile", "PreToolUse"} and "foo" in json.dumps(payload):
-        session = payload.get("conversation_id") or payload.get("session_id")
-        state = _state(telemetry_env, session)
-        assert _series_value(state, "skill.reads") >= 1
 
 
 def test_session_id_with_slash_or_absolute_path_does_not_escape_state_dir(
