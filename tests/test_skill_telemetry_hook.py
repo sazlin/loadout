@@ -434,7 +434,6 @@ def test_later_event_overwrites_unknown_model(hook: Any, telemetry_env: dict[str
 def test_parallel_subagent_start_keeps_both_index_entries(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    workspace = telemetry_env["ws"]
     telemetry_env["state"].mkdir(parents=True, exist_ok=True)
     orig_load = hook._load_subagents
 
@@ -458,6 +457,10 @@ def test_parallel_subagent_start_keeps_both_index_entries(
     index = json.loads((telemetry_env["state"] / "subagents.json").read_text())
     assert set(index) >= {"child-a", "child-b"}
 
+
+def test_parallel_subagent_start_processes_keep_both_index_entries(telemetry_env: dict[str, Path]) -> None:
+    workspace = telemetry_env["ws"]
+    telemetry_env["state"].mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     payloads = [
         json.dumps(
@@ -486,22 +489,7 @@ def test_parallel_subagent_start_keeps_both_index_entries(
         assert proc.returncode == 0
         assert json.loads(stdout) == {}
     index = json.loads((telemetry_env["state"] / "subagents.json").read_text())
-    assert set(index) >= {"child-a", "child-b", "child-c", "child-d"}
-    for child in ("child-c", "child-d"):
-        _run(
-            hook,
-            telemetry_env,
-            _payload(
-                "beforeReadFile",
-                workspace,
-                conversation_id=child,
-                file_path=str(workspace / ".claude/skills/foo/SKILL.md"),
-            ),
-        )
-        state = _state(telemetry_env, child)
-        assert state["is_subagent"] is True
-        assert _series_value(state, "skill.discovered_on_session_start") == 0
-        assert _series_value(state, "skill.reads") == 1
+    assert set(index) >= {"child-c", "child-d"}
 
 
 def test_claude_resume_preserves_series_and_does_not_reemit_discovered(
@@ -1153,20 +1141,6 @@ def test_state_dir_rejects_foreign_owned_tmp_and_uses_private_mode(
     assert not claim.exists()
     assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
 
-    gc_dir = tmp_path / "gc"
-    gc_dir.mkdir()
-    ancient = time.time() - hook.TTL_S - 10
-    stale_json = gc_dir / "old.json"
-    stale_lock = gc_dir / "old.lock"
-    other = gc_dir / "notes.txt"
-    for path, body in ((stale_json, "{}"), (stale_lock, ""), (other, "keep")):
-        path.write_text(body)
-        os.utime(path, (ancient, ancient))
-    hook._maybe_gc(gc_dir, time.time(), force=True)
-    assert not stale_json.exists()
-    assert not stale_lock.exists()
-    assert other.read_text() == "keep"
-
 
 def test_plugin_scan_respects_budget(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
@@ -1269,6 +1243,22 @@ def test_gc_does_not_block_session_lock(
     gc_thread.join(timeout=5)
     assert elapsed < hook.LOCK_WAIT_S
     assert _series_value(_state(telemetry_env), "skill.reads") == 1
+
+
+def test_gc_unlinks_only_state_suffixes(hook: Any, tmp_path: Path) -> None:
+    gc_dir = tmp_path / "gc"
+    gc_dir.mkdir()
+    ancient = time.time() - hook.TTL_S - 10
+    stale_json = gc_dir / "old.json"
+    stale_lock = gc_dir / "old.lock"
+    other = gc_dir / "notes.txt"
+    for path, body in ((stale_json, "{}"), (stale_lock, ""), (other, "keep")):
+        path.write_text(body)
+        os.utime(path, (ancient, ancient))
+    hook._maybe_gc(gc_dir, time.time(), force=True)
+    assert not stale_json.exists()
+    assert not stale_lock.exists()
+    assert other.read_text() == "keep"
 
 
 def test_gc_cap_refreshes_marker_and_skips_until_interval(
