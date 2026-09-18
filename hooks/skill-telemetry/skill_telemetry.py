@@ -56,7 +56,7 @@ HOOK_EVENT_RE = re.compile(rb'"(?:hook_event_name|hookEventName)"\s*:\s*"([^"\\]
 STATE_DIR_MODE = 0o700
 STATE_FILE_MODE = 0o600
 GC_SKIP_NAMES = frozenset({"gc", "gc.lock", "debug.log"})
-GC_UNLINK_SUFFIXES = frozenset({".json", ".lock", ".exporting"})
+GC_UNLINK_SUFFIXES = frozenset({".json", ".lock", ".exporting", ".dirty"})
 GC_MAX_UNLINKS = 256
 EXPORT_CLAIM_GRACE_S = 1.0
 BOOL_ATTRS = frozenset({"agent.is_subagent"})
@@ -1200,6 +1200,7 @@ def _export_state(state: State, mode: str, state_dir: Path) -> None:
         return
     claim = _claim_export(state_dir, state.conversation_id)
     if claim is None:
+        _mark_export_dirty(state_dir, state.conversation_id)
         return
     fd, name = tempfile.mkstemp(prefix="skill-telemetry-", suffix=".pb")
     os.close(fd)
@@ -1220,7 +1221,7 @@ def _export_state(state: State, mode: str, state_dir: Path) -> None:
 
 
 def _claim_export(state_dir: Path, session_id: str) -> Path | None:
-    """Exclusive per-session export slot. None means skip; snapshots are cumulative."""
+    """Exclusive per-session export slot. None means skip and mark dirty."""
     path = _state_child(state_dir, session_id, ".exporting")
     if path is None:
         return None
@@ -1259,23 +1260,109 @@ def _export_file(path: str, claim: str = "") -> None:
         except OSError as exc:
             _debug(f"export read: {exc}")
             return
-        _post_otlp(blob)
+        _post_snapshot_until_clean(blob, claim)
     finally:
         _unlink_quiet(target)
         _unlink_export_claim(claim)
+        _export_if_dirty(claim)
+
+
+def _post_snapshot_until_clean(blob: bytes, claim: str) -> None:
+    while True:
+        _post_otlp(blob)
+        if not _consume_export_dirty(claim):
+            return
+        follow = _snapshot_for_claim(claim)
+        if follow is None:
+            return
+        blob = follow
+
+
+def _mark_export_dirty(state_dir: Path, session_id: str) -> None:
+    path = _state_child(state_dir, session_id, ".dirty")
+    if path is None:
+        return
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT, STATE_FILE_MODE)
+    except OSError:
+        return
+    try:
+        os.fchmod(fd, STATE_FILE_MODE)
+    finally:
+        os.close(fd)
+
+
+def _consume_export_dirty(raw: str) -> bool:
+    located = _export_session_dir(raw)
+    if located is None:
+        return False
+    state_dir, session_id = located
+    path = _state_child(state_dir, session_id, ".dirty")
+    if path is None:
+        return False
+    try:
+        path.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _snapshot_for_claim(raw: str) -> bytes | None:
+    located = _export_session_dir(raw)
+    if located is None:
+        return None
+    state_dir, session_id = located
+    path = _state_child(state_dir, session_id, ".json")
+    if path is None:
+        return None
+    state = _load_state(path)
+    if state is None or not state.series:
+        return None
+    service = (os.environ.get("OTEL_SERVICE_NAME") or "").strip()
+    return encode_snapshot(state, now_ns=_now_ns(), service_name=service, harness=state.harness)
+
+
+def _export_if_dirty(raw: str) -> None:
+    located = _export_session_dir(raw)
+    if located is None:
+        return
+    state_dir, session_id = located
+    dirty = _state_child(state_dir, session_id, ".dirty")
+    if dirty is None or not dirty.is_file():
+        return
+    held = _claim_export(state_dir, session_id)
+    if held is None:
+        return
+    try:
+        blob = _snapshot_for_claim(str(held))
+        if blob is None:
+            return
+        _post_snapshot_until_clean(blob, str(held))
+    finally:
+        _unlink_quiet(held)
+
+
+def _export_session_dir(raw: str) -> tuple[Path, str] | None:
+    if not raw:
+        return None
+    candidate = Path(raw)
+    if candidate.suffix != ".exporting" or not _valid_id(candidate.stem):
+        return None
+    state_dir = _state_dir()
+    if state_dir is None:
+        return None
+    expected = _state_child(state_dir, candidate.stem, ".exporting")
+    if expected is None or _resolve(candidate) != expected:
+        return None
+    return state_dir, candidate.stem
 
 
 def _unlink_export_claim(raw: str) -> None:
-    if not raw:
+    located = _export_session_dir(raw)
+    if located is None:
         return
-    candidate = Path(raw)
-    if candidate.suffix != ".exporting" or not _valid_id(candidate.stem):
-        return
-    state_dir = _state_dir()
-    if state_dir is None:
-        return
-    expected = _state_child(state_dir, candidate.stem, ".exporting")
-    if expected is None or _resolve(candidate) != expected:
+    expected = _state_child(located[0], located[1], ".exporting")
+    if expected is None:
         return
     _unlink_quiet(expected)
 

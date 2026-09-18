@@ -805,17 +805,35 @@ def _count_export_procs() -> int:
     return n
 
 
+def _max_otlp_skill_reads(blobs: list[bytes]) -> int:
+    from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import ExportMetricsServiceRequest
+
+    best = 0
+    for blob in blobs:
+        request = ExportMetricsServiceRequest()
+        request.ParseFromString(blob)
+        for scope in request.resource_metrics[0].scope_metrics:
+            for metric in scope.metrics:
+                if metric.name != "skill.reads":
+                    continue
+                for point in metric.sum.data_points:
+                    best = max(best, point.as_int)
+    return best
+
+
 def test_export_coalesces_under_burst(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     inflight = {"n": 0, "max": 0}
     lock = threading.Lock()
+    bodies: list[bytes] = []
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
             length = int(self.headers.get("Content-Length", "0"))
-            self.rfile.read(length)
+            body = self.rfile.read(length)
             with lock:
+                bodies.append(body)
                 inflight["n"] += 1
                 inflight["max"] = max(inflight["max"], inflight["n"])
             time.sleep(2)
@@ -855,14 +873,23 @@ def test_export_coalesces_under_burst(
         assert proc.returncode == 0
         assert json.loads(stdout) == {"permission": "allow"}
     seen = 0
-    deadline = time.monotonic() + 2.5
+    idle = 0
+    deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
-        seen = max(seen, _count_export_procs())
+        n = _count_export_procs()
+        seen = max(seen, n)
+        if n == 0 and bodies:
+            idle += 1
+            if idle >= 3:
+                break
+        else:
+            idle = 0
         time.sleep(0.05)
     server.shutdown()
     assert inflight["max"] <= 1
     assert seen <= 1
     assert _series_value(_state(telemetry_env), "skill.reads") == burst
+    assert _max_otlp_skill_reads(bodies) == burst
 
 
 def test_export_spawn_failure_unlinks_blob(
