@@ -549,6 +549,40 @@ def test_missing_endpoint_is_noop(
     assert opened["n"] == 0
 
 
+def test_metrics_endpoint_alone_enables_export(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: dict[str, Any] = {}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:
+            seen["path"] = self.path
+            seen["ctype"] = self.headers.get("Content-Type")
+            length = int(self.headers.get("Content-Length", "0"))
+            seen["body"] = self.rfile.read(length)
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, format: str, *args: Any) -> None:
+            del format, args
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.setenv(
+        "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+        f"http://127.0.0.1:{server.server_address[1]}/v1/metrics",
+    )
+    stdout = _run(hook, telemetry_env, _payload("sessionStart", telemetry_env["ws"]))
+    server.shutdown()
+    assert json.loads(stdout) == {}
+    assert seen["path"] == "/v1/metrics"
+    assert seen["ctype"] == "application/x-protobuf"
+    assert seen["body"]
+    assert _state(telemetry_env)["discovered_count"] == 1
+
+
 def test_missing_service_name_is_noop(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:

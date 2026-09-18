@@ -238,10 +238,9 @@ def _event_name(payload: dict[str, Any] | None) -> str | None:
 def _export_enabled() -> bool:
     if not _flag(os.environ.get("SKILL_TELEMETRY_ENABLED"), True):
         return False
-    endpoint = (os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or "").strip()
-    if not endpoint:
-        return False
     if not (os.environ.get("OTEL_SERVICE_NAME") or "").strip():
+        return False
+    if not _metrics_url():
         return False
     protocol = (os.environ.get("OTEL_EXPORTER_OTLP_PROTOCOL") or "http/protobuf").strip()
     if not protocol:
