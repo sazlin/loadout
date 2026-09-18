@@ -381,27 +381,26 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
     path = _state_child(state_dir, session_id, ".json")
     if path is None:
         return State(conversation_id=session_id, harness=mode), False
+    deadline = 0.0
+    workspaces: list[Path] = []
+    roots: list[tuple[Path, str]] = []
+    if event_name != "subagentStart":
+        deadline = time.monotonic() + SCAN_BUDGET_S
+        workspaces = _workspace_roots(payload)
+        roots = _ordered_roots(workspaces, deadline)
+    state = _load_or_create_state(
+        mode,
+        payload,
+        session_id,
+        state_dir,
+        path=path,
+        event_name=event_name,
+        roots=roots,
+        deadline=deadline,
+        workspaces=workspaces,
+    )
     if event_name == "subagentStart":
-        _record_subagent(state_dir, payload, session_id)
-        existing = _load_state(path)
-        return existing or State(conversation_id=session_id, harness=mode), False
-    deadline = time.monotonic() + SCAN_BUDGET_S
-    roots = _ordered_roots(_workspace_roots(payload), deadline)
-    if event_name in {"sessionStart", "SessionStart"}:
-        state = _load_state(path)
-        if state is None:
-            state = _new_root_state(mode, payload, session_id, state_dir)
-        else:
-            _refresh_model(state, payload)
-            workspaces = _workspace_roots(payload)
-            if workspaces:
-                state.repo = repo_name(workspaces[0])
-    else:
-        state = _load_state(path)
-        if state is None:
-            state = _lazy_state(mode, payload, session_id, state_dir, roots, deadline)
-        else:
-            _refresh_model(state, payload)
+        return state, False
     before = dict(state.series)
     _dispatch(mode, state, payload, roots, deadline)
     serialized = json.dumps(_state_to_dict(state), separators=(",", ":"))
@@ -413,6 +412,37 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
         _atomic_write(path, serialized)
     changed = state.series != before or event_name in {"sessionEnd", "SessionEnd"}
     return state, changed
+
+
+def _load_or_create_state(
+    mode: str,
+    payload: dict[str, Any],
+    session_id: str,
+    state_dir: Path,
+    *,
+    path: Path,
+    event_name: str,
+    roots: list[tuple[Path, str]],
+    deadline: float,
+    workspaces: list[Path],
+) -> State:
+    if event_name == "subagentStart":
+        _record_subagent(state_dir, payload, session_id)
+        existing = _load_state(path)
+        return existing or State(conversation_id=session_id, harness=mode)
+    if event_name in {"sessionStart", "SessionStart"}:
+        state = _load_state(path)
+        if state is None:
+            return _new_root_state(mode, payload, session_id, state_dir, workspaces=workspaces)
+        _refresh_model(state, payload)
+        if workspaces:
+            state.repo = repo_name(workspaces[0])
+        return state
+    state = _load_state(path)
+    if state is None:
+        return _lazy_state(mode, payload, session_id, state_dir, roots, deadline, workspaces=workspaces)
+    _refresh_model(state, payload)
+    return state
 
 
 def _dispatch(mode: str, state: State, payload: dict[str, Any], roots: list[tuple[Path, str]], deadline: float) -> None:
@@ -617,22 +647,37 @@ def _parse_series_key(key: str) -> tuple[str, Attrs]:
     return instrument, attrs
 
 
-def _blank_state(mode: str, payload: dict[str, Any], session_id: str) -> State:
+def _blank_state(
+    mode: str,
+    payload: dict[str, Any],
+    session_id: str,
+    *,
+    workspaces: list[Path] | None = None,
+) -> State:
+    if workspaces is None:
+        workspaces = _workspace_roots(payload)
     return State(
         harness=mode,
         conversation_id=session_id,
         started_at_unix_nano=_now_ns(),
         model=_model_from_payload(payload, "unknown"),
-        repo=repo_name(_workspace_roots(payload)[0]) if _workspace_roots(payload) else "none",
+        repo=repo_name(workspaces[0]) if workspaces else "none",
     )
 
 
-def _new_root_state(mode: str, payload: dict[str, Any], session_id: str, state_dir: Path) -> State:
+def _new_root_state(
+    mode: str,
+    payload: dict[str, Any],
+    session_id: str,
+    state_dir: Path,
+    *,
+    workspaces: list[Path] | None = None,
+) -> State:
     index = _load_subagents(state_dir)
     child = index.get(session_id)
     parent = child.get("parent") if isinstance(child, dict) else None
     parent_id = parent if isinstance(parent, str) and _valid_id(parent) else None
-    state = _blank_state(mode, payload, session_id)
+    state = _blank_state(mode, payload, session_id, workspaces=workspaces)
     state.is_subagent = bool(child)
     state.parent_conversation_id = parent_id
     return state
@@ -645,10 +690,12 @@ def _lazy_state(
     state_dir: Path,
     roots: list[tuple[Path, str]],
     deadline: float,
+    *,
+    workspaces: list[Path] | None = None,
 ) -> State:
     index = _load_subagents(state_dir)
     child = index.get(session_id)
-    state = _blank_state(mode, payload, session_id)
+    state = _blank_state(mode, payload, session_id, workspaces=workspaces)
     if child:
         return _state_for_known_subagent(state, child, state_dir, roots, deadline=deadline)
     return _state_for_unseen_root(state, roots, session_id, deadline=deadline)
