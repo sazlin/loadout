@@ -66,6 +66,7 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
 
     resolve = (SKILLS / "resolve-next-task" / "SKILL.md").read_text().lower()
     assert "git push" in resolve
+    assert "prepare_wave_worktrees.py" in resolve
     assert "merge" in resolve
     assert "tasks_to_resolve-" in resolve
     assert "do not delete" in resolve or "never delete" in resolve
@@ -104,6 +105,7 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
     for text in (source, vendored):
         skill = text.lower()
         assert "partition_waves.py" in skill
+        assert "prepare_wave_worktrees.py" in skill
         assert "wave cap" in skill or "cap 4" in skill or "max 4" in skill
         assert "worktree" in skill
         assert "cherry-pick" in skill

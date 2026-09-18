@@ -9,6 +9,7 @@
       "expectations": [
         "Only the assigned task_id is taken",
         "Commit on the task branch",
+        "Pushes the task branch only via prepare_wave_worktrees.py push",
         "Does not push PR head",
         "Does not mark the task done",
         "Does not gh pr merge",
