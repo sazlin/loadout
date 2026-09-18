@@ -536,12 +536,24 @@ def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
             assert "after each successful wave" in section_lower
             assert "[done]" in section
             assert "log-progress" in section_lower
-            assert "git worktree remove" in section_lower
+            assert "prepare_wave_worktrees.py prune" in section_lower
             assert "git push" in section_lower
             assert "dispatch failure" in section_lower
         compact = " ".join(text.split()).lower()
         assert "gone → `log-progress`" not in compact
         assert "gone → log" not in compact
+        owner = (
+            "worktree git (add, cherry-pick, prune) is owned by "
+            "`dispatch-resolve-wave` via `prepare_wave_worktrees.py`"
+        )
+        assert owner in lowered
+        assert "the orchestrator keeps mark-done" in lowered
+        shell = text.split("**Shell:**", 1)[1].split("\n-", 1)[0].lower()
+        assert "prepare_wave_worktrees.py" in shell
+        assert "do not hand-build" in shell
+        # Raw git is forbidden as the orchestrator's own job except via helper.
+        for forbidden in ("`git cherry-pick`;", "`git worktree remove`;"):
+            assert forbidden not in text.split("**Shell:**", 1)[1].split("\n-", 1)[0]
 
 
 def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:

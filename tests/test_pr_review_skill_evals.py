@@ -125,6 +125,11 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
         assert "not the whole wave" in skill
         assert "fourth identical parallel wave" in skill
         assert "integrate" not in skill
+        assert "worktree git (add, cherry-pick, prune) is owned by" in skill
+        assert "prepare_wave_worktrees.py" in skill
+        assert "the orchestrator keeps mark-done" in skill
+        assert "does not copy" in skill and "tasks_path" in skill
+        assert "isolated" in skill
 
 
 def _numbered_skill_steps(text: str) -> dict[int, str]:
@@ -168,6 +173,10 @@ def test_dispatch_resolve_wave_copies_gitignored_tasks_file_into_each_worktree()
         assert "/tmp" in lowered
         assert "copy" in lowered
         assert "tasks_path" in lowered
+        assert "does not copy" in lowered
+        assert "isolated" in lowered
+        assert "does not copy" in lowered
+        assert "isolated" in lowered
 
 
 def test_dispatch_resolve_wave_splits_setup_fallback_and_parallel_dispatch() -> None:

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Run resolve-wave git with list argv (no shell interpolation)."""
+"""Run resolve-wave git with list argv (no shell interpolation).
+
+`add` JSON `isolated` means the checkout exists; it does not copy tasks_path.
+"""
 
 from __future__ import annotations
 

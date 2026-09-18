@@ -9,7 +9,10 @@ description: >-
 # Dispatch resolve wave
 
 Launch one `issue_resolver` per file-disjoint open task in the next wave,
-**in one turn, in parallel**. Do not implement fixes.
+**in one turn, in parallel**. Do not implement fixes. Worktree git (add,
+cherry-pick, prune) is owned by `dispatch-resolve-wave` via
+`prepare_wave_worktrees.py`. The orchestrator keeps mark-done,
+log-progress, and is the only `git push` of `origin/<pr-head>`.
 
 ## When to use
 
@@ -39,8 +42,10 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    falls back to `/tmp/pr-resolve-<TASK-ID>`, and creates the task branch
    without moving PR HEAD when both add sites fail. Use the JSON
    `worktree` / `branch` fields; do not assemble those paths yourself.
-   After each successful `git worktree add` (including the `/tmp`
-   fallback) and after reuse/reset, copy the frozen gitignored
+   Helper `add` JSON `isolated: true` means the checkout exists; it does not copy
+   `tasks_path` — the caller must copy it. After each successful
+   `git worktree add` (including the `/tmp` fallback) and after
+   reuse/reset, copy the frozen gitignored
    `tasks_path` from the PR worktree into that worktree (same filename)
    so `test -f <worktree>/<tasks_path>` is true and the bytes match the
    PR-worktree manifest. A resolver restricted to the worktree must read
@@ -86,10 +91,13 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    (worktree/branch/tmp cleanup, not only child cancel/archive) before
    emitting JSON. Never hand-build those git lines from PR head strings.
 8. After cherry-picks, stop. Never push `origin/<pr-head>` in this skill.
-   The orchestrator (not this skill) marks `[done]` only the ids whose
-   cherry-pick landed cleanly (not the whole wave), follows `log-progress`,
-   and is the only `git push` of `origin/<pr-head>` — and only after at least one clean pick
-   and only if HEAD is not in a cherry-pick or merge state.
+   Worktree git (add, cherry-pick, prune) is owned by `dispatch-resolve-wave`
+   via `prepare_wave_worktrees.py`. The orchestrator keeps mark-done,
+   log-progress, and is the only `git push` of `origin/<pr-head>` — marks
+   `[done]` only the ids whose cherry-pick landed cleanly (not the whole wave),
+   follows `log-progress`, and is the only `git push` of `origin/<pr-head>` —
+   and only after at least one clean pick and only if HEAD is not in a
+   cherry-pick or merge state.
 
 ## Resolve-wave retry cap
 
