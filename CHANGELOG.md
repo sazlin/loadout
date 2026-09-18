@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.40.0
+
 - Add `rules/core/no-autonomous-external-comms.mdc` to `base`: agents must
   get an explicit GO/NO-GO from the User before posting on their behalf to
   any third-party or public medium. Does not apply to repos the User owns.
