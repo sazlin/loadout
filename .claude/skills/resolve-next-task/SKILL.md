@@ -1,7 +1,7 @@
 ---
 name: resolve-next-task
-description: Implement the first open hashed-tasks-file task, commit, and push to
-  the PR branch. Use when issue_resolver is dispatched, or when the user says /resolve_next_task.
+description: Implement one assigned hashed-tasks-file task and commit on the task
+  branch. Use when issue_resolver is dispatched, or when the user says /resolve_next_task.
   Do one task only. Do not merge.
 metadata:
   loadout.managed: 'true'
@@ -11,7 +11,8 @@ metadata:
 
 # Resolve next task
 
-Complete **one** open task from the hashed tasks file named in the brief.
+Complete **one** assigned `task_id` from the hashed tasks file named in
+the brief.
 
 ## When to use
 
@@ -30,14 +31,19 @@ Complete **one** open task from the hashed tasks file named in the brief.
    - **More than one** match: emit `blocked`; require an explicit
      `tasks_path` in the brief. Do not read or modify any tasks file.
    If there is no `open` task, stop and report done (nothing to resolve).
-2. Take the first `open` task (or the id in the brief). Do not start others.
-3. Implement the listed issues only. Run the task's verification commands.
-4. `git add` **source paths only**. Do not stage `TASKS_TO_RESOLVE-<short-sha>.md`,
+2. Complete the assigned `task_id` from the brief. If `task_id` is omitted
+   (manual `/resolve_next_task`), take the first `open` task. Do not start
+   others.
+3. Work in the brief's worktree path when present; otherwise the current
+   checkout.
+4. Implement the listed issues only. Run the task's verification commands.
+5. `git add` **source paths only**. Do not stage `TASKS_TO_RESOLVE-<short-sha>.md`,
    unhashed `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or `VERIFIERS.md`.
-5. Commit with a focused message. `git push` to the **existing PR branch**.
-   No force-push. No history rewrite. No `gh pr merge`.
-6. Change that task's heading from `[open]` to `[done]`.
-7. Follow `log-progress`. Return JSON from `issue_resolver`.
+   Do not edit the tasks file. Do not append `REVIEW_HISTORY.md`. Do not
+   mark the task done.
+6. Commit on the task branch. Optional `git push origin <task-branch>`
+   (never `origin/<pr-head>`). Do not push PR head.
+7. Return JSON from `issue_resolver`.
 
 Do not delete the tasks file. The orchestrator deletes it on exit.
 
@@ -50,3 +56,5 @@ Do not delete the tasks file. The orchestrator deletes it on exit.
 - Never delete `TASKS_TO_RESOLVE-<short-sha>.md`
 - Never glob when multiple `TASKS_TO_RESOLVE-*.md` files exist; emit
   `blocked` and require `tasks_path`
+- Never push PR head
+- Never mark the task done

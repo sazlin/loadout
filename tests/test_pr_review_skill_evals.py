@@ -67,6 +67,9 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "merge" in resolve
     assert "tasks_to_resolve-" in resolve
     assert "do not delete" in resolve or "never delete" in resolve
+    assert "do not edit" in resolve or "never edit" in resolve
+    assert "review_history.md" in resolve
+    assert "do not mark" in resolve or "never mark" in resolve
 
     history = (SKILLS / "log-progress" / "SKILL.md").read_text()
     assert "REVIEW_HISTORY.md" in history
@@ -91,6 +94,26 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "never create" in lowered or "never creates" in lowered
     assert "true" in lowered and "false" in lowered
     assert "composer-2.5" in lowered
+
+
+def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
+    skill = (SKILLS / "dispatch-resolve-wave" / "SKILL.md").read_text().lower()
+    assert "partition_waves.py" in skill
+    assert "wave cap" in skill or "cap 4" in skill or "max 4" in skill
+    assert "worktree" in skill
+    assert "cherry-pick" in skill
+    assert "same turn" in skill or "single" in skill and "parallel" in skill
+    assert "origin/<pr-head>" in skill or "pr head" in skill
+    assert "do not implement" in skill or "do not become" in skill
+
+
+def test_resolve_next_task_does_not_push_pr_head() -> None:
+    resolve = (SKILLS / "resolve-next-task" / "SKILL.md").read_text().lower()
+    assert "task branch" in resolve
+    assert "do not push" in resolve or "never push" in resolve
+    assert "pr head" in resolve or "pr-head" in resolve or "pr branch" in resolve
+    assert "tasks_to_resolve-" in resolve
+    assert "review_history.md" in resolve
 
 
 def test_pr_review_skills_are_not_orphans() -> None:
