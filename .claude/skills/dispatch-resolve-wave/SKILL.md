@@ -45,15 +45,33 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
 5. After all return: in TASK id order, before each pick
    `git fetch origin <pr-head>-<TASK-ID>` (or the reported SHA; a no-op
    when the object is already local), then
-   `git cherry-pick <resolver-commit-sha>` onto PR head. On conflict:
-   `git cherry-pick --abort`, leave that task `[open]`, continue with the
-   next wave task. Do not push a conflicted HEAD.
+   `git cherry-pick <resolver-commit-sha>` onto PR head. Success per task
+   id is resolver `status=ok` plus a commit SHA that applies cleanly.
+   Missing SHA, blocked resolver, or status other than `ok`: skip
+   cherry-pick (no placeholder SHA); leave that id `[open]`. On any
+   non-zero cherry-pick (conflict, bad or missing object):
+   `git cherry-pick --abort`, leave that id `[open]`, continue with the
+   next wave task. HEAD must not remain in a cherry-pick or merge state.
+   Do not push PR head. Undispatched fallback tasks stay `[open]`.
 6. After every wave (success, conflict, or dispatch failure),
    `git worktree remove` all wave worktrees and delete local task
    branches. Recreate them on the next attempt.
-7. After successful picks, stop. The orchestrator (not this skill) marks
-   those tasks `[done]`, follows `log-progress`, and does one `git push` of
-   `origin/<pr-head>`.
+7. After cherry-picks, stop. Never push `origin/<pr-head>` in this skill.
+   The orchestrator (not this skill) marks `[done]` only the ids whose
+   cherry-pick landed cleanly (not the whole wave), follows `log-progress`,
+   and is the only `git push` of `origin/<pr-head>` — and only after at least one clean pick
+   and only if HEAD is not in a cherry-pick or merge state.
+
+## Resolve-wave retry cap
+
+A wave with no successful cherry-pick, or a task that conflicted / returned
+`blocked` / produced no sha, is one failed attempt for those task ids.
+Cap retries at **3** (short backoff), same as other failure classes.
+Conflicted or blocked ids are not immediately eligible for another
+identical parallel wave in the same run beyond this cap. After the cap,
+leave those tasks `[open]` and stop this skill; the orchestrator exits the
+resolve loop with `open_task_ids` and continues panel/verify/risk. Do not
+dispatch a fourth identical parallel wave for the same ids in this run.
 
 ## Harness
 
@@ -62,7 +80,7 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
 
 ## Guardrails
 
-- Never push `origin/<pr-head>` before cherry-picks finish
+- Never push `origin/<pr-head>` (orchestrator pushes after successful picks)
 - Never rebase
 - Never force-push
 - Never open a second PR

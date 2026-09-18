@@ -117,6 +117,11 @@ def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
         assert "every wave" in skill
         assert "dispatch failure" in skill
         assert "git worktree remove" in skill
+        assert "never push" in skill and "origin/<pr-head>" in skill
+        assert "orchestrator pushes after successful picks" in skill
+        assert "not the whole wave" in skill
+        assert "fourth identical parallel wave" in skill
+        assert "integrate" not in skill
 
 
 def test_resolve_next_task_does_not_push_pr_head() -> None:
