@@ -1,0 +1,17 @@
+# Registration metadata for sync. Not vendored into projects.
+# Scripts live once under .cursor/hooks/<name>/ (Cursor-native path).
+# Native Cursor events so cloud agents pick this up without the
+# third-party hooks opt-in. Claude events cover Claude Code.
+name: skill-telemetry
+description: Emit skill-load OTEL metrics (skill.reads, skill.turns, skill.discovered_on_session_start)
+script: skill-telemetry
+cursor:
+  events: [sessionStart, sessionEnd, beforeReadFile, beforeSubmitPrompt, stop, subagentStart]
+  args: [cursor]
+  timeout: 5
+claude:
+  events:
+    - { event: SessionStart, matcher: "startup|resume" }
+    - { event: UserPromptSubmit, matcher: "*" }
+    - { event: PreToolUse, matcher: "Skill|Read" }
+    - { event: Stop, matcher: "*" }

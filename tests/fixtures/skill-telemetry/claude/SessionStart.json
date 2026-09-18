@@ -1,0 +1,7 @@
+{
+  "session_id": "claude-root-1",
+  "cwd": "__WS__",
+  "hook_event_name": "SessionStart",
+  "source": "startup",
+  "model": "claude-opus-4"
+}

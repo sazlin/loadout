@@ -1,0 +1,11 @@
+{
+  "conversation_id": "cli-root-1",
+  "generation_id": "cli-root-1",
+  "model": "composer-2",
+  "hook_event_name": "beforeReadFile",
+  "cursor_version": "2026.08",
+  "workspace_roots": ["__WS__"],
+  "file_path": "__WS__/.claude/skills/foo/SKILL.md",
+  "content": "---\nname: foo\ndescription: probe\n---\n\n# Foo\n",
+  "attachments": []
+}
