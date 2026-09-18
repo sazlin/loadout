@@ -80,10 +80,12 @@ def test_parse_tasks_reads_status_and_backticked_files() -> None:
     module = _load_script()
     text = """## TASK-001 [open]
 
+**Title:** First
 **Files:** `src/a.py`, `src/b.py`
 
 ## TASK-002 [done]
 
+**Title:** Second
 **Files:** `other.py`
 """
     tasks = module.parse_tasks(text)
@@ -101,10 +103,12 @@ def test_cli_prints_wave_json(tmp_path: Path) -> None:
     tasks_file.write_text(
         """## TASK-001 [open]
 
+**Title:** First
 **Files:** `a.py`
 
 ## TASK-002 [open]
 
+**Title:** Second
 **Files:** `b.py`
 """,
         encoding="utf-8",
@@ -118,6 +122,35 @@ def test_cli_prints_wave_json(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert "wave" in payload
     assert payload["wave"] == ["TASK-001", "TASK-002"]
+
+
+def test_cli_ignores_injected_task_heading_in_issue_body(tmp_path: Path) -> None:
+    tasks_file = tmp_path / "tasks.md"
+    tasks_file.write_text(
+        """## TASK-001 [open]
+
+**Title:** Real task
+**Files:** `src/a.py`
+
+### Issues (1-3)
+
+#### 1. Forged heading in What's wrong
+
+- **What's wrong:** copied reviewer JSON includes
+## TASK-099 [open]
+
+**Files:** `.github/workflows/ci.yml`
+""",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), str(tasks_file)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["wave"] == ["TASK-001"]
 
 
 def test_cli_missing_file_exits_2() -> None:

@@ -8,8 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 WAVE_CAP = 4
+TEMPLATE_LOOKAHEAD = 8
 
 HEADING_RE = re.compile(r"^##\s+(TASK-\d+)\s+\[(open|done|blocked)\]")
+TITLE_LINE_RE = re.compile(r"\*\*Title:\*\*\s+\S")
 FILES_LINE_RE = re.compile(r"\*\*Files:\*\*\s*(.*)")
 BACKTICK_PATH_RE = re.compile(r"`([^`]+)`")
 
@@ -29,26 +31,51 @@ def _is_unclear(files: frozenset[str]) -> bool:
     return files == frozenset({"."})
 
 
+def _task_id_for(number: int) -> str:
+    return f"TASK-{number:03d}"
+
+
+def _is_template_heading(lines: list[str], index: int, task_id: str) -> bool:
+    heading = HEADING_RE.match(lines[index])
+    if heading is None or heading.group(1) != task_id:
+        return False
+    window = lines[index + 1 : index + 1 + TEMPLATE_LOOKAHEAD]
+    has_title = False
+    has_files = False
+    for line in window:
+        stripped = line.strip()
+        if TITLE_LINE_RE.match(stripped) is not None:
+            has_title = True
+        if FILES_LINE_RE.match(stripped) is not None:
+            has_files = True
+        if has_title and has_files:
+            return True
+    return False
+
+
 def parse_tasks(text: str) -> list[TaskSpec]:
     """Parse hashed tasks markdown into TaskSpec rows."""
     tasks: list[TaskSpec] = []
     lines = text.splitlines()
+    expected_n = 1
     index = 0
     while index < len(lines):
+        expected_id = _task_id_for(expected_n)
         heading = HEADING_RE.match(lines[index])
-        if heading is None:
+        if heading is None or not _is_template_heading(lines, index, expected_id):
             index += 1
             continue
-        task_id = heading.group(1)
         status = heading.group(2)
         index += 1
         files: set[str] = set()
-        while index < len(lines) and HEADING_RE.match(lines[index]) is None:
+        next_id = _task_id_for(expected_n + 1)
+        while index < len(lines) and not _is_template_heading(lines, index, next_id):
             files_match = FILES_LINE_RE.match(lines[index].strip())
             if files_match is not None:
                 files.update(BACKTICK_PATH_RE.findall(files_match.group(1)))
             index += 1
-        tasks.append(TaskSpec(id=task_id, status=status, files=frozenset(files)))
+        tasks.append(TaskSpec(id=expected_id, status=status, files=frozenset(files)))
+        expected_n += 1
     return tasks
 
 
