@@ -1,0 +1,9 @@
+name: telemetry
+description: >-
+  Opt-in skill-load telemetry: a fail-open Cursor and Claude Code hook that
+  emits skill.reads, skill.turns, and skill.discovered_on_session_start over
+  OTLP/HTTP, matching the skill-telemetry omp plugin. Compose with language
+  loadouts; does not extend base. No-op unless OTEL_EXPORTER_OTLP_ENDPOINT
+  and OTEL_SERVICE_NAME are set.
+hooks:
+  - src: hooks/skill-telemetry

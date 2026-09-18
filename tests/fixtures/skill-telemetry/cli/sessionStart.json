@@ -1,0 +1,11 @@
+{
+  "conversation_id": "cli-root-1",
+  "generation_id": "cli-root-1",
+  "session_id": "cli-root-1",
+  "model": "composer-2",
+  "hook_event_name": "sessionStart",
+  "cursor_version": "2026.08",
+  "workspace_roots": ["__WS__"],
+  "is_background_agent": false,
+  "composer_mode": "agent"
+}
