@@ -110,6 +110,16 @@ def _state(telemetry_env: dict[str, Path], session: str = "conv-1") -> dict[str,
     return json.loads(path.read_text())
 
 
+def _isolate_tmp_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    tmp_root = tmp_path / "tmp"
+    tmp_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.delenv("SKILL_TELEMETRY_STATE_DIR", raising=False)
+    monkeypatch.delenv("HOME", raising=False)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setenv("TMPDIR", str(tmp_root))
+    return tmp_root
+
+
 def _series_value(state: dict[str, Any], instrument: str, **attrs: str) -> int:
     for key, value in state["series"].items():
         if not key.startswith(instrument + "|"):
@@ -1232,27 +1242,37 @@ def test_state_dir_rejects_foreign_owned_tmp_and_uses_private_mode(
     hook._atomic_write(session, "{}")
     assert (session.stat().st_mode & 0o777) == 0o600
 
-    hijack = tmp_path / "tmp" / "skill-telemetry"
+    tmp_root = _isolate_tmp_fallback(tmp_path, monkeypatch)
+    hijack = tmp_root / "skill-telemetry"
     hijack.mkdir(parents=True)
     (hijack / "stolen.json").write_text("secret")
-    monkeypatch.delenv("SKILL_TELEMETRY_STATE_DIR", raising=False)
-    monkeypatch.delenv("HOME", raising=False)
-    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
-    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    fallback = hook._state_dir()
+    assert fallback is not None
+    assert fallback.resolve() != hijack.resolve()
+    assert (hijack / "stolen.json").read_text() == "secret"
+    assert list(hijack.glob("*.lock")) == []
+    assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
+
+
+def test_tmp_fallback_state_dir_is_reused_for_uid(hook: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    tmp_root = _isolate_tmp_fallback(tmp_path, monkeypatch)
+    first = hook._state_dir()
+    second = hook._state_dir()
+    expected = tmp_root / f"skill-telemetry-{os.getuid()}"
+    assert first == expected
+    assert second == first
+
+
+def test_tmp_fallback_state_dir_keeps_series_across_session_and_export(
+    hook: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_root = _isolate_tmp_fallback(tmp_path, monkeypatch)
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://127.0.0.1:1")
     monkeypatch.setenv("OTEL_SERVICE_NAME", "loadout-tests")
     monkeypatch.setenv("SKILL_TELEMETRY_SYNC_EXPORT", "1")
     monkeypatch.setenv("SKILL_TELEMETRY_ENABLED", "true")
     fallback = hook._state_dir()
-    again = hook._state_dir()
     assert fallback is not None
-    assert again == fallback
-    assert fallback.resolve() != hijack.resolve()
-    assert (hijack / "stolen.json").read_text() == "secret"
-    assert list(hijack.glob("*.lock")) == []
-    tmp_root = tmp_path / "tmp"
-    assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
-
     workspace = tmp_path / "ws"
     _write_workspace(workspace)
     skill = workspace / ".claude" / "skills" / "foo" / "SKILL.md"
