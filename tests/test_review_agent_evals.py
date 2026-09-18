@@ -496,6 +496,24 @@ def test_orchestrator_dispatches_four_reviewers_and_groups_tasks() -> None:
     assert "deferred_minors" in text
 
 
+def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "dispatch-resolve-wave" in lowered
+        assert "partition_waves.py" in lowered or "next wave" in lowered
+        assert "worktree" in lowered
+        assert "cherry-pick" in lowered
+        assert "wave" in lowered
+        assert "4" in text or "four" in lowered
+        assert "issue_resolver" in lowered
+        working = text.split("## Working style", 1)[1].split("## Agent-specific guidance", 1)[0].lower()
+        assert "parallel" in working
+        assert "wave" in working
+        assert "only for the four panel reviewers" not in working
+
+
 def test_orchestrator_defers_minors_and_does_not_wait_on_them() -> None:
     source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
@@ -976,12 +994,28 @@ def test_verifier_is_readonly_and_judges_claims() -> None:
 
 
 def test_issue_resolver_pushes_and_does_not_merge() -> None:
+    """Resolver still git-pushes (task branch is fine) and must not merge or delete the hashed tasks file."""
     text = _agent_file(ISSUE_RESOLVER).read_text().lower()
     assert "git push" in text
     assert "gh pr merge" in text
     assert "do not merge" in text
     assert "tasks_to_resolve-" in text
     assert "do not delete" in text or "never delete" in text
+
+
+def test_issue_resolver_does_not_push_pr_head() -> None:
+    source = _agent_file(ISSUE_RESOLVER).read_text()
+    vendored = (REPO / ".claude" / "agents" / "issue_resolver.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "task branch" in lowered
+        assert "do not push" in lowered or "never push" in lowered
+        assert "pr head" in lowered or "pr-head" in lowered
+        assert "do not edit" in lowered or "never edit" in lowered
+        assert "review_history.md" in lowered
+        assert "tasks_to_resolve-" in lowered
+        assert "do not mark" in lowered or "never mark" in lowered
+        assert "do not" in lowered and "log-progress" in lowered
 
 
 def test_issue_resolver_eval_uses_hashed_tasks_fixture() -> None:

@@ -96,15 +96,17 @@ prose alone.
 3. Run **Review** until no significant (`critical` / `important`) issues remain
    or **3** panel loops are used:
    - **Fresh run:** `dispatch-panel-review` → `dedupe-and-write-tasks` →
-     dispatch `issue_resolver` with `resolve-next-task` (always pass
-     `tasks_path` in the brief) until open tasks are gone → `log-progress`.
-   - **Resume run:** skip panel; go straight to `issue_resolver` with
-     `resolve-next-task` (pass frozen `tasks_path`) until open tasks are
-     gone → `log-progress`. Do not run dedupe until the manifest is fully
+     `dispatch-resolve-wave` until open tasks are gone (always pass
+     `tasks_path` in the brief) → `log-progress`. After each successful
+     wave, mark those wave ids `[done]`, follow `log-progress`,
+     `git worktree remove`, delete local task branches, and `git push` PR
+     head.
+   - **Resume run:** skip panel; run `dispatch-resolve-wave` against frozen
+     `tasks_path` until open tasks are gone → `log-progress`. Do not run dedupe until the manifest is fully
      resolved or the verify loop reports `false` claims.
 4. Run **Verification**: `dispatch-verifiers`. A missing `VERIFIERS.md` is an
-   empty list (no-op). On `false` claims, dedupe/resolve and repeat, max **3**
-   verify loops.
+   empty list (no-op). On `false` claims, dedupe/`dispatch-resolve-wave` and
+   repeat, max **3** verify loops.
 5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
    merge yourself.
@@ -135,9 +137,10 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
   empty.
   Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
-  `gh pr view` / `gh pr diff` / `gh pr comment`;
+  `git cherry-pick`; `git worktree remove`; `git push` of PR head after
+  successful cherry-picks; `gh pr view` / `gh pr diff` / `gh pr comment`;
   `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
-  No `git push`, force-push, history rewrite, or `gh pr merge`. Never
+  No force-push, history rewrite, or `gh pr merge`. Never
   `gh pr comment --edit-last`.
 - **Dispatch:** host subagent / Task / Agent tool. If missing, ask the parent
   to launch the named agents — do not silently become a reviewer or fixer.
@@ -149,6 +152,9 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 Never:
 
 - Review, fix, classify, or merge in-process instead of dispatching
+- Become `issue_resolver` (never become `issue_resolver`)
+- Skip integrate after a resolve wave (never skip integrate)
+- Force-push
 - Drop a reviewer's issues because they are inconvenient or numerous
 - Hide a duplicate instead of recording it in `dropped_duplicates`
 - Write a minor as an open task (minors are recorded, not tasked)
@@ -235,8 +241,8 @@ never invent a Cursor Cloud agent id. A merged PR is `status: "aborted"`, not
    the file has no `[open]` tasks. Never delete a hashed tasks file that
    still has `[open]` tasks.
 3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
-   `dedupe-and-write-tasks`, `resolve-next-task`, `log-progress`, and
-   `dispatch-verifiers` when running those steps.
+   `dedupe-and-write-tasks`, `dispatch-resolve-wave`, `resolve-next-task`,
+   `log-progress`, and `dispatch-verifiers` when running those steps.
 4. Read `.claude/agents/review_*.md` only if you must paste a reviewer role
    into a general-purpose subagent.
 5. Do not dump the repo tree.
@@ -249,8 +255,8 @@ project commands. Do not apply a personal style guide while grouping.
 ## Working style
 
 - Coordinator only. Isolation of specialists is the point.
-- Follow the skills. Sequential where the skill says sequential; parallel
-  only for the four panel reviewers.
+- Follow the skills. Parallel for the four panel reviewers and for
+  resolve waves. Integrate and cherry-pick are sequential.
 - Write `TASKS_TO_RESOLVE-<short-sha>.md` last in a dedupe pass so it is
   never half written.
 
@@ -271,7 +277,8 @@ project commands. Do not apply a personal style guide while grouping.
 | --- | --- |
 | `dispatch-panel-review` | Start or repeat the panel. Four parallel dispatches. |
 | `dedupe-and-write-tasks` | After panel or verifier issues. Rewrite `TASKS_TO_RESOLVE-<short-sha>.md`. |
-| `resolve-next-task` | Brief for each `issue_resolver` invocation (one open task). Pass `tasks_path`. |
+| `dispatch-resolve-wave` | After dedupe. Partition (`partition_waves.py`), worktrees, parallel `issue_resolver` dispatch (N ≤ 4), cherry-pick, then one PR-head `git push`. Repeat until open tasks are gone. |
+| `resolve-next-task` | Brief for each `issue_resolver` invocation (one assigned task). Pass `tasks_path`. |
 | `log-progress` | After each phase and each resolved task. Append only. Orchestrator trims entries older than 30 days after all other tasks. |
 | `dispatch-verifiers` | After panel is clean of significant issues. Sequential claims. |
 
@@ -354,7 +361,11 @@ Do not pass inherit or a Fast model. Panel reviewers, `issue_resolver`, and
 (`grok-4.6[effort=medium,fast=false]`). `verifier` is Composer 2.5
 (`composer-2.5`). This orchestrator stays on Grok 4.6 high, not Fast.
 
-`issue_resolver`, `verifier`, and `risk_classifier` are **sequential**.
+For a resolve wave, issue **N** isolated `issue_resolver` calls in a
+**single** response (N ≤ 4 from `partition_waves.py` / the next wave). One
+call per response is sequential and is a protocol failure.
+
+`verifier` and `risk_classifier` are **sequential**.
 
 ### Dedupe and tasks
 
@@ -385,8 +396,9 @@ cap, blocked resolve, or dispatch failure after partial resolve):
 3. Final JSON must include non-empty `open_task_ids` and `tasks_path`.
 4. A follow-up harness run passes the same `tasks_path` in the brief. On
    startup, the orchestrator **resumes**: it freezes that manifest path, skips
-   `dispatch-panel-review`, and dispatches `issue_resolver` until all tasks are
-   `[done]` or the verify loop needs dedupe. Stale cleanup must not delete the
+   `dispatch-panel-review`, and runs `dispatch-resolve-wave` (each wave
+   dispatches `issue_resolver`) until all tasks are `[done]` or the verify
+   loop needs dedupe. Stale cleanup must not delete the
    manifest while it still has `[open]` tasks, even after a fixer push changes
    head SHA. No new panel review is required until the manifest is fully
    resolved or rewritten by dedupe.
@@ -487,7 +499,7 @@ open, before any panel, resolve, or verify work. Resolve this run's URL with
 from a prior harness invocation, skip Started and post **Resolve Issues** as
 this run's first comment, before `issue_resolver`. Panel Review must show as
 completed (`✅ done` or `✅ N loops` from `REVIEW_HISTORY.md`), not queued.
-Resolve Issues shows `🔄` for the current open task. Use the **Resolve Issues**
+Resolve Issues shows `🔄` for the current wave. Use the **Resolve Issues**
 template below (not the Started template).
 
 **Panel Review**
@@ -516,11 +528,11 @@ template below (not the Started template).
 
 | Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |
 |:-----:|:-------:|:------:|:----:|:-----:|
-| ✅<br>N loops | 🔄<br>TASK-00X | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
+| ✅<br>N loops | 🔄<br>TASK-001, TASK-003 | ⏳<br>queued | ⏳<br>queued | ⏳<br>queued |
 
 - Open tasks: N.
 - Significant issues remaining: N.
-- Current work: TASK-00X.
+- Current work: TASK-001, TASK-003.
 - Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 - Cursor Cloud dashboard for issue_resolver: [open](https://cursor.com/agents/<id>).
 ````
@@ -638,11 +650,12 @@ Record the latest comment URL in `delivery.github_comment_url`.
    when `<other-sha>` (between `TASKS_TO_RESOLVE-` and `.md`) is not the
    run's frozen `<short-sha>` and the file has no `[open]` tasks.
 4. **Review** loop until no significant issues or cap: fresh runs use panel
-   (dispatch → dedupe → resolve → log); resume runs skip panel and go straight
-   to resolve → log. Loop 1 is the full PR. Loops 2 and 3 pass the
+   (dispatch → dedupe → `dispatch-resolve-wave` until open tasks are gone →
+   log); resume runs skip panel and run waves against frozen `tasks_path` →
+   log. Loop 1 is the full PR. Loops 2 and 3 pass the
    resolver-commit range and keep all four reviewers. Before each loop or
    new `issue_resolver` task, abort if the PR is merged.
-5. Verify loop (`dispatch-verifiers` → maybe dedupe/resolve) until claims
+5. Verify loop (`dispatch-verifiers` → maybe dedupe/`dispatch-resolve-wave`) until claims
    are all `true` or cap or file missing. Abort if the PR is merged before
    a verify loop.
 6. Dispatch `risk_classifier` only if the PR is still open. Record `decision`.
