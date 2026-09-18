@@ -591,20 +591,25 @@ def _parse_series_key(key: str) -> tuple[str, Attrs]:
     return instrument, attrs
 
 
-def _new_root_state(mode: str, payload: dict[str, Any], session_id: str, state_dir: Path) -> State:
-    index = _load_subagents(state_dir)
-    child = index.get(session_id)
-    parent = child.get("parent") if isinstance(child, dict) else None
-    parent_id = parent if isinstance(parent, str) and _valid_id(parent) else None
+def _blank_state(mode: str, payload: dict[str, Any], session_id: str) -> State:
     return State(
         harness=mode,
         conversation_id=session_id,
         started_at_unix_nano=_now_ns(),
         model=_model_from_payload(payload, "unknown"),
         repo=repo_name(_workspace_roots(payload)[0]) if _workspace_roots(payload) else "none",
-        is_subagent=bool(child),
-        parent_conversation_id=parent_id,
     )
+
+
+def _new_root_state(mode: str, payload: dict[str, Any], session_id: str, state_dir: Path) -> State:
+    index = _load_subagents(state_dir)
+    child = index.get(session_id)
+    parent = child.get("parent") if isinstance(child, dict) else None
+    parent_id = parent if isinstance(parent, str) and _valid_id(parent) else None
+    state = _blank_state(mode, payload, session_id)
+    state.is_subagent = bool(child)
+    state.parent_conversation_id = parent_id
+    return state
 
 
 def _lazy_state(
@@ -617,43 +622,54 @@ def _lazy_state(
 ) -> State:
     index = _load_subagents(state_dir)
     child = index.get(session_id)
-    now = _now_ns()
-    state = State(
-        harness=mode,
-        conversation_id=session_id,
-        started_at_unix_nano=now,
-        model=_model_from_payload(payload, "unknown"),
-        repo=repo_name(_workspace_roots(payload)[0]) if _workspace_roots(payload) else "none",
-    )
+    state = _blank_state(mode, payload, session_id)
     if child:
-        state.is_subagent = True
-        parent_id = child.get("parent")
-        state.parent_conversation_id = parent_id if isinstance(parent_id, str) and _valid_id(parent_id) else None
-        parent_path = (
-            _state_child(state_dir, state.parent_conversation_id, ".json") if state.parent_conversation_id else None
-        )
-        parent = _load_state(parent_path) if parent_path else None
-        if parent is not None:
-            state.offered = parent.offered
-            state.providers = dict(parent.providers)
-            state.discovered_count = parent.discovered_count
-        else:
-            providers, count, offered = _scan_skills(roots, deadline)
-            state.providers = providers
-            state.discovered_count = count
-            state.offered = offered
-        state.discovered_emitted = True
-        return state
+        return _state_for_known_subagent(state, child, state_dir, roots, deadline=deadline)
+    return _state_for_unseen_root(state, roots, session_id, deadline=deadline)
+
+
+def _state_for_known_subagent(
+    state: State,
+    child: Any,
+    state_dir: Path,
+    roots: list[tuple[Path, str]],
+    *,
+    deadline: float,
+) -> State:
+    state.is_subagent = True
+    parent_id = child.get("parent") if isinstance(child, dict) else None
+    state.parent_conversation_id = parent_id if isinstance(parent_id, str) and _valid_id(parent_id) else None
+    parent_path = (
+        _state_child(state_dir, state.parent_conversation_id, ".json") if state.parent_conversation_id else None
+    )
+    parent = _load_state(parent_path) if parent_path else None
+    if parent is not None:
+        state.offered = parent.offered
+        state.providers = dict(parent.providers)
+        state.discovered_count = parent.discovered_count
+    else:
+        providers, count, offered = _scan_skills(roots, deadline)
+        state.providers = providers
+        state.discovered_count = count
+        state.offered = offered
+    state.discovered_emitted = True
+    return state
+
+
+def _state_for_unseen_root(
+    state: State,
+    roots: list[tuple[Path, str]],
+    session_id: str,
+    *,
+    deadline: float,
+) -> State:
     providers, count, offered = _scan_skills(roots, deadline)
     state.providers = providers
     state.discovered_count = count
     state.offered = offered
-    cloud = _is_cloud_session(session_id)
-    if cloud and count > 0:
+    if _is_cloud_session(session_id) and count > 0:
         _apply_emissions(state, [Emission(DISCOVERED, count, _ctx_attrs(state))])
-        state.discovered_emitted = True
-    else:
-        state.discovered_emitted = True
+    state.discovered_emitted = True
     return state
 
 
@@ -703,7 +719,7 @@ def _model_from_payload(payload: dict[str, Any], fallback: str) -> str:
 
 def _refresh_model(state: State, payload: dict[str, Any]) -> None:
     model = _model_from_payload(payload, "")
-    if model and (not state.model or state.model == "unknown") or model:
+    if model:
         state.model = model
 
 

@@ -415,6 +415,23 @@ def test_linked_child_is_subagent_and_skips_discovered(hook: Any, telemetry_env:
     assert _series_value(child, "skill.reads") == 1
 
 
+def test_later_event_overwrites_unknown_model(hook: Any, telemetry_env: dict[str, Path]) -> None:
+    workspace = telemetry_env["ws"]
+    _run(hook, telemetry_env, _payload("sessionStart", workspace, model="unknown"))
+    assert _state(telemetry_env)["model"] == "unknown"
+    _run(
+        hook,
+        telemetry_env,
+        _payload(
+            "beforeReadFile",
+            workspace,
+            model_id="gpt-x",
+            file_path=str(workspace / ".claude/skills/foo/SKILL.md"),
+        ),
+    )
+    assert _state(telemetry_env)["model"] == "gpt-x"
+
+
 def test_parallel_subagent_start_keeps_both_index_entries(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
