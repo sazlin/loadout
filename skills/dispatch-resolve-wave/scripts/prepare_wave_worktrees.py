@@ -209,8 +209,11 @@ def _reuse_or_add(path: Path, branch: str, head: str) -> bool:
     if _worktree_registered(path):
         if _reset_to_head(path, head):
             return True
-    elif path.exists():
+        # Keep the registered checkout; add may fail and _ensure_task falls back to /tmp.
+        return _worktree_add(path, branch)
+    if path.exists():
         _remove_path(path)
+        return _worktree_add(path, branch)
     return _worktree_add(path, branch)
 
 
@@ -253,6 +256,7 @@ def _validate_sha(sha: str) -> bool:
 
 
 def _sha_on_fetched_tip(sha: str) -> bool:
+    """True if sha is an ancestor of FETCH_HEAD from the immediately preceding fetch, not of local refs/heads/<branch>."""
     contained = _run_git(["merge-base", "--is-ancestor", sha, "FETCH_HEAD"])
     return contained.returncode == 0
 
@@ -274,7 +278,7 @@ def _cmd_cherry_pick(args: list[str]) -> int:
         print(err or "error: git fetch failed", file=sys.stderr)
         return 1
     if not _sha_on_fetched_tip(sha):
-        print("error: SHA is not on the task branch", file=sys.stderr)
+        print("error: SHA is not an ancestor of the fetched task-branch tip", file=sys.stderr)
         return 2
     picked = _run_git(["cherry-pick", "--", sha])
     if picked.returncode != 0:

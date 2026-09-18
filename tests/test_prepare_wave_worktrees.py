@@ -214,7 +214,7 @@ def test_add_reuses_leftover_worktree_by_hard_reset_to_pr_head(
     assert reset.stdout.strip() == pr_head
 
 
-def test_add_does_not_report_plain_leftover_dir_isolated_without_worktree(
+def test_add_removes_plain_leftover_dir_then_isolates_worktree(
     tmp_path: Path, monkeypatch: Any, capsys: pytest.CaptureFixture[str]
 ) -> None:
     repo = tmp_path / "repo"
@@ -229,19 +229,10 @@ def test_add_does_not_report_plain_leftover_dir_isolated_without_worktree(
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     task = payload["tasks"][0]
-    git_dir = subprocess.run(
-        ["git", "-C", str(leftover), "rev-parse", "--is-inside-work-tree"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if git_dir.returncode != 0:
-        assert task["isolated"] is False
-    else:
-        assert task["isolated"] is True
-        assert not (leftover / "stale.txt").exists()
-        listed = _git(repo, "worktree", "list", "--porcelain").stdout
-        assert str(leftover.resolve()) in listed
+    assert task["isolated"] is True
+    assert not (leftover / "stale.txt").exists()
+    listed = _git(repo, "worktree", "list", "--porcelain").stdout
+    assert str(leftover.resolve()) in listed
 
 
 def test_run_git_timeout_is_nonzero_without_hanging(monkeypatch: Any) -> None:
