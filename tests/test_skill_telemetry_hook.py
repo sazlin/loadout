@@ -414,6 +414,120 @@ def test_linked_child_is_subagent_and_skips_discovered(hook: Any, telemetry_env:
     assert _series_value(child, "skill.reads") == 1
 
 
+def test_parallel_subagent_start_keeps_both_index_entries(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace = telemetry_env["ws"]
+    telemetry_env["state"].mkdir(parents=True, exist_ok=True)
+    orig_load = hook._load_subagents
+
+    def slow_load(state_dir: Path) -> dict[str, Any]:
+        index = orig_load(state_dir)
+        time.sleep(0.05)
+        return index
+
+    monkeypatch.setattr(hook, "_load_subagents", slow_load)
+    threads = [
+        threading.Thread(
+            target=hook._record_subagent,
+            args=(telemetry_env["state"], {"subagent_id": child, "subagent_model": "child-model"}, "conv-1"),
+        )
+        for child in ("child-a", "child-b")
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    index = json.loads((telemetry_env["state"] / "subagents.json").read_text())
+    assert set(index) >= {"child-a", "child-b"}
+
+    env = os.environ.copy()
+    payloads = [
+        json.dumps(
+            _payload(
+                "subagentStart",
+                workspace,
+                conversation_id=f"parent-{i}",
+                subagent_id=child,
+                subagent_model="child-model",
+            )
+        ).encode()
+        for i, child in enumerate(("child-c", "child-d"))
+    ]
+    procs = [
+        subprocess.Popen(
+            ["python3", str(HOOK_PY), "cursor"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        for _ in payloads
+    ]
+    for proc, payload in zip(procs, payloads, strict=True):
+        stdout, _stderr = proc.communicate(payload, timeout=10)
+        assert proc.returncode == 0
+        assert json.loads(stdout) == {}
+    index = json.loads((telemetry_env["state"] / "subagents.json").read_text())
+    assert set(index) >= {"child-a", "child-b", "child-c", "child-d"}
+    for child in ("child-c", "child-d"):
+        _run(
+            hook,
+            telemetry_env,
+            _payload(
+                "beforeReadFile",
+                workspace,
+                conversation_id=child,
+                file_path=str(workspace / ".claude/skills/foo/SKILL.md"),
+            ),
+        )
+        state = _state(telemetry_env, child)
+        assert state["is_subagent"] is True
+        assert _series_value(state, "skill.discovered_on_session_start") == 0
+        assert _series_value(state, "skill.reads") == 1
+
+
+def test_claude_resume_preserves_series_and_does_not_reemit_discovered(
+    hook: Any, telemetry_env: dict[str, Path]
+) -> None:
+    workspace = telemetry_env["ws"]
+    session = "claude-root-1"
+    start = {
+        "session_id": session,
+        "cwd": str(workspace),
+        "hook_event_name": "SessionStart",
+        "source": "startup",
+        "model": "claude-opus-4",
+        "workspace_roots": [str(workspace)],
+    }
+    _run(hook, telemetry_env, start, mode="claude")
+    started = _state(telemetry_env, session)
+    started_at = started["started_at_unix_nano"]
+    discovered = _series_value(started, "skill.discovered_on_session_start")
+    assert discovered >= 1
+    _run(
+        hook,
+        telemetry_env,
+        {
+            "session_id": session,
+            "cwd": str(workspace),
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Read",
+            "tool_input": {"file_path": str(workspace / ".claude/skills/foo/SKILL.md")},
+            "workspace_roots": [str(workspace)],
+        },
+        mode="claude",
+    )
+    after_read = _state(telemetry_env, session)
+    reads = _series_value(after_read, "skill.reads")
+    assert reads == 1
+    _run(hook, telemetry_env, {**start, "source": "resume"}, mode="claude")
+    resumed = _state(telemetry_env, session)
+    assert _series_value(resumed, "skill.reads") == reads
+    assert _series_value(resumed, "skill.discovered_on_session_start") == discovered
+    assert resumed["started_at_unix_nano"] == started_at
+
+
 @pytest.mark.parametrize("flag", ["", "  ", None])
 def test_missing_endpoint_is_noop(
     hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch, flag: str | None

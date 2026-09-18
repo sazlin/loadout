@@ -312,7 +312,14 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
         return existing or State(conversation_id=session_id, harness=mode), False
     roots = _ordered_roots(_workspace_roots(payload))
     if event_name in {"sessionStart", "SessionStart"}:
-        state = _new_root_state(mode, payload, session_id, state_dir)
+        state = _load_state(path)
+        if state is None:
+            state = _new_root_state(mode, payload, session_id, state_dir)
+        else:
+            _refresh_model(state, payload)
+            workspaces = _workspace_roots(payload)
+            if workspaces:
+                state.repo = repo_name(workspaces[0])
     else:
         state = _load_state(path)
         if state is None:
@@ -868,16 +875,18 @@ def _record_subagent(state_dir: Path, payload: dict[str, Any], parent_id: str) -
     subagent_id = payload.get("subagent_id")
     if not isinstance(subagent_id, str) or not subagent_id:
         return
-    index = _load_subagents(state_dir)
-    index[subagent_id] = {
-        "parent": parent_id,
-        "model": payload.get("subagent_model") or "unknown",
-        "at": _now_ns(),
-    }
-    _with_lock(
-        state_dir / "subagents.lock",
-        lambda: _atomic_write(state_dir / "subagents.json", json.dumps(index, separators=(",", ":"))),
-    )
+    model = payload.get("subagent_model") or "unknown"
+
+    def _update() -> None:
+        index = _load_subagents(state_dir)
+        index[subagent_id] = {
+            "parent": parent_id,
+            "model": model,
+            "at": _now_ns(),
+        }
+        _atomic_write(state_dir / "subagents.json", json.dumps(index, separators=(",", ":")))
+
+    _with_lock(state_dir / "subagents.lock", _update)
 
 
 def _load_subagents(state_dir: Path) -> dict[str, Any]:
