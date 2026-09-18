@@ -444,6 +444,9 @@ def test_pr_review_harness_workflow_prompt_subprocess() -> None:
     assert f"origin/{SAMPLE_PR_HEAD_REF}" in prompt
     assert "must not push" in prompt.lower()
     assert f"{SAMPLE_PR_HEAD_REF}-TASK-" in prompt
+    assert "dispatch-resolve-wave in-process" in prompt
+    assert "only git push" in prompt.lower()
+    assert "commit-free cherry-pick and push" not in prompt
 
 
 def test_pr_review_harness_prompt_does_not_expand_branch_metacharacters(tmp_path: Path) -> None:

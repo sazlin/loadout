@@ -203,7 +203,7 @@ jobs:
             --arg constraints "$(cat <<'EOF'
           Cloud-run constraints:
           - Follow '.claude/agents/review_orchestrator.md' for the harness loop and role boundaries (panel, resolve, verify, decision).
-          - Orchestrator may commit-free cherry-pick and push origin/<pr-head> only. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
+          - Follow dispatch-resolve-wave in-process for worktrees, dispatch, and cherry-pick. Orchestrator is the only git push of origin/<pr-head> after successful picks. Do not open a second PR. Do not create a draft. Nested agent launches must keep autoCreatePR off.
           - Nested issue_resolver must not push origin/<pr-head>. Task-branch push origin/<pr-head>-TASK-00X is allowed.
           - Do not rewrite git history. No force-push, no rebase, no amend of foreign commits.
           EOF
@@ -219,7 +219,7 @@ jobs:
               "- Re-run git symbolic-ref --short HEAD and confirm it prints \u0027" + $pr_head_ref + "\u0027 before any git read, commit, or push.\n" +
               "- Nested issue_resolver briefs must name this branch; nested issue_resolver must not push origin/" + $pr_head_ref + ".\n" +
               "- Task-branch push origin/" + $pr_head_ref + "-TASK-00X is allowed.\n" +
-              "- Orchestrator may commit-free cherry-pick and push origin/" + $pr_head_ref + " only."' \
+              "- Follow dispatch-resolve-wave in-process for worktrees, dispatch, and cherry-pick. Orchestrator is the only git push of origin/" + $pr_head_ref + " after successful picks."' \
             > "${pr_review_prompt_file}"
           prompt="$(cat "${pr_review_prompt_file}")"
           # END PROMPT_BUILD
