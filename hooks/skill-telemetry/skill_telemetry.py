@@ -7,6 +7,7 @@ import fcntl
 import json
 import os
 import re
+import stat
 import struct
 import subprocess
 import sys
@@ -46,6 +47,12 @@ KEEP_DOT_DIRS = frozenset({".cursor", ".agents", ".claude", ".codex"})
 WORKSPACE_PARENTS = frozenset({".cursor", ".agents"})
 PROMPT_TOKEN = re.compile(r"(^|\s)/([A-Za-z0-9][\w-]*)(?=\s|$)")
 DISABLED_MODEL = re.compile(r"(?m)^disable-model-invocation:\s*true\s*$")
+SESSION_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+SESSION_ID_MAX_LEN = 128
+STATE_DIR_MODE = 0o700
+STATE_FILE_MODE = 0o600
+GC_SKIP_NAMES = frozenset({"gc", "debug.log"})
+GC_UNLINK_SUFFIXES = frozenset({".json", ".lock"})
 BOOL_ATTRS = frozenset({"agent.is_subagent"})
 
 AttrValue = str | bool
@@ -275,8 +282,11 @@ def _handle_event(mode: str, payload: dict[str, Any]) -> None:
     state_dir = _state_dir()
     if state_dir is None:
         return
+    lock_path = _state_child(state_dir, session_id, ".lock")
+    if lock_path is None:
+        return
     event_name = _event_name(payload) or ""
-    result = _with_lock(state_dir / f"{session_id}.lock", lambda: _apply_locked(mode, payload, session_id, state_dir))
+    result = _with_lock(lock_path, lambda: _apply_locked(mode, payload, session_id, state_dir))
     if result is None:
         return
     state, changed = result
@@ -293,22 +303,24 @@ def _apply_locked(mode: str, payload: dict[str, Any], session_id: str, state_dir
         _maybe_gc(state_dir, time.time(), force=True)
     else:
         _maybe_gc(state_dir, time.time(), force=False)
+    path = _state_child(state_dir, session_id, ".json")
+    if path is None:
+        return State(conversation_id=session_id, harness=mode), False
     if event_name == "subagentStart":
         _record_subagent(state_dir, payload, session_id)
-        existing = _load_state(state_dir / f"{session_id}.json")
+        existing = _load_state(path)
         return existing or State(conversation_id=session_id, harness=mode), False
     roots = _ordered_roots(_workspace_roots(payload))
     if event_name in {"sessionStart", "SessionStart"}:
         state = _new_root_state(mode, payload, session_id, state_dir)
     else:
-        state = _load_state(state_dir / f"{session_id}.json")
+        state = _load_state(path)
         if state is None:
             state = _lazy_state(mode, payload, session_id, state_dir, roots)
         else:
             _refresh_model(state, payload)
     before = dict(state.series)
     _dispatch(mode, state, payload, roots)
-    path = state_dir / f"{session_id}.json"
     _atomic_write(path, json.dumps(_state_to_dict(state), separators=(",", ":")))
     event_name = _event_name(payload) or ""
     changed = state.series != before or event_name in {"sessionEnd", "SessionEnd"}
@@ -518,6 +530,7 @@ def _new_root_state(mode: str, payload: dict[str, Any], session_id: str, state_d
     index = _load_subagents(state_dir)
     child = index.get(session_id)
     parent = child.get("parent") if isinstance(child, dict) else None
+    parent_id = parent if isinstance(parent, str) and _valid_id(parent) else None
     return State(
         harness=mode,
         conversation_id=session_id,
@@ -525,7 +538,7 @@ def _new_root_state(mode: str, payload: dict[str, Any], session_id: str, state_d
         model=_model_from_payload(payload, "unknown"),
         repo=repo_name(_workspace_roots(payload)[0]) if _workspace_roots(payload) else "none",
         is_subagent=bool(child),
-        parent_conversation_id=parent if isinstance(parent, str) else None,
+        parent_conversation_id=parent_id,
     )
 
 
@@ -548,10 +561,12 @@ def _lazy_state(
     )
     if child:
         state.is_subagent = True
-        state.parent_conversation_id = child.get("parent")
-        parent = (
-            _load_state(state_dir / f"{state.parent_conversation_id}.json") if state.parent_conversation_id else None
+        parent_id = child.get("parent")
+        state.parent_conversation_id = parent_id if isinstance(parent_id, str) and _valid_id(parent_id) else None
+        parent_path = (
+            _state_child(state_dir, state.parent_conversation_id, ".json") if state.parent_conversation_id else None
         )
+        parent = _load_state(parent_path) if parent_path else None
         if parent is not None:
             state.offered = parent.offered
             state.providers = dict(parent.providers)
@@ -587,7 +602,29 @@ def _session_id(mode: str, payload: dict[str, Any]) -> str:
         value = payload.get("conversation_id") or payload.get("session_id") or ""
     else:
         value = payload.get("session_id") or payload.get("conversation_id") or ""
-    return value.strip() if isinstance(value, str) else ""
+    if not isinstance(value, str):
+        return ""
+    value = value.strip()
+    return value if _valid_id(value) else ""
+
+
+def _valid_id(value: str) -> bool:
+    if not value or len(value) > SESSION_ID_MAX_LEN:
+        return False
+    if "\0" in value or ".." in value or "/" in value or "\\" in value:
+        return False
+    return SESSION_ID_RE.fullmatch(value) is not None
+
+
+def _state_child(state_dir: Path, stem: str, suffix: str) -> Path | None:
+    if not _valid_id(stem):
+        return None
+    root = _resolve(state_dir)
+    path = _resolve(state_dir / f"{stem}{suffix}")
+    rel = _relative_to(path, root)
+    if rel is None or len(rel.parts) != 1:
+        return None
+    return path
 
 
 def _model_from_payload(payload: dict[str, Any], fallback: str) -> str:
@@ -906,33 +943,65 @@ def _state_to_dict(state: State) -> dict[str, Any]:
 
 
 def _state_dir() -> Path | None:
-    candidates: list[Path] = []
-    override = os.environ.get("SKILL_TELEMETRY_STATE_DIR")
-    if override:
-        candidates.append(Path(override))
-    xdg = os.environ.get("XDG_CACHE_HOME")
-    if xdg:
-        candidates.append(Path(xdg) / "skill-telemetry")
-    home = os.environ.get("HOME")
-    if home:
-        candidates.append(Path(home) / ".cache" / "skill-telemetry")
-    tmp = os.environ.get("TMPDIR") or tempfile.gettempdir()
-    candidates.append(Path(tmp) / "skill-telemetry")
-    for path in candidates:
-        try:
-            path.mkdir(parents=True, exist_ok=True)
-            probe = path / ".writable"
-            probe.write_text("")
-            probe.unlink()
+    for path in _state_dir_candidates():
+        if _ensure_state_dir(path):
             return path
-        except OSError:
-            continue
-    return None
+    try:
+        created = Path(tempfile.mkdtemp(prefix="skill-telemetry-"))
+    except OSError:
+        return None
+    return created if _ensure_state_dir(created) else None
+
+
+def _state_dir_candidates() -> list[Path]:
+    found: list[Path] = []
+    override = (os.environ.get("SKILL_TELEMETRY_STATE_DIR") or "").strip()
+    if override:
+        found.append(Path(override))
+    xdg = (os.environ.get("XDG_CACHE_HOME") or "").strip()
+    if xdg:
+        found.append(Path(xdg) / "skill-telemetry")
+    home = (os.environ.get("HOME") or "").strip()
+    if home:
+        found.append(Path(home) / ".cache" / "skill-telemetry")
+    return found
+
+
+def _ensure_state_dir(path: Path) -> bool:
+    try:
+        if path.exists() or path.is_symlink():
+            if not _owned_dir(path):
+                return False
+        else:
+            path.mkdir(parents=True, exist_ok=True, mode=STATE_DIR_MODE)
+        if not _owned_dir(path):
+            return False
+        os.chmod(path, STATE_DIR_MODE)
+        probe = path / ".writable"
+        probe.write_text("")
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _owned_dir(path: Path) -> bool:
+    try:
+        st = path.lstat()
+    except OSError:
+        return False
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode):
+        return False
+    return st.st_uid == os.getuid()
 
 
 def _with_lock(lock_path: Path, fn: Any) -> Any:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+") as handle:
+        try:
+            os.chmod(lock_path, STATE_FILE_MODE)
+        except OSError:
+            pass
         deadline = time.time() + LOCK_WAIT_S
         while True:
             try:
@@ -951,7 +1020,12 @@ def _with_lock(lock_path: Path, fn: Any) -> Any:
 
 def _atomic_write(path: Path, text: str) -> None:
     tmp = Path(str(path) + ".tmp")
-    tmp.write_text(text, encoding="utf-8")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, STATE_FILE_MODE)
+    try:
+        os.write(fd, text.encode("utf-8"))
+        os.fchmod(fd, STATE_FILE_MODE)
+    finally:
+        os.close(fd)
     os.replace(tmp, path)
 
 
@@ -969,7 +1043,7 @@ def _maybe_gc(state_dir: Path, now: float, *, force: bool) -> None:
     except OSError:
         return
     for path in entries:
-        if path.name in {"gc", "debug.log"}:
+        if path.name in GC_SKIP_NAMES or path.suffix not in GC_UNLINK_SUFFIXES:
             continue
         try:
             if path.stat().st_mtime < cutoff:

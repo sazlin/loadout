@@ -515,7 +515,6 @@ def test_cumulative_across_processes(telemetry_env: dict[str, Path], monkeypatch
 
         def log_message(self, format: str, *args: Any) -> None:
             del format, args
-            return
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -609,7 +608,6 @@ def test_exporter_headers_and_path(hook: Any, telemetry_env: dict[str, Path], mo
 
         def log_message(self, format: str, *args: Any) -> None:
             del format, args
-            return
 
     server = HTTPServer(("127.0.0.1", 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -703,3 +701,76 @@ def test_fixtures_run_through_main(hook: Any, telemetry_env: dict[str, Path], fi
         session = payload.get("conversation_id") or payload.get("session_id")
         state = _state(telemetry_env, session)
         assert _series_value(state, "skill.reads") >= 1
+
+
+def test_session_id_with_slash_or_absolute_path_does_not_escape_state_dir(
+    hook: Any, telemetry_env: dict[str, Path]
+) -> None:
+    root = telemetry_env["state"].parent
+    victim = root / "escaped.json"
+    victim.write_text("untouched")
+    workspace = telemetry_env["ws"]
+    bad_ids = (
+        str(victim),
+        "../escaped",
+        "..",
+        "foo/../bar",
+        "foo/bar",
+        "x" * (hook.SESSION_ID_MAX_LEN + 1),
+    )
+    for conversation_id in bad_ids:
+        stdout = _run(hook, telemetry_env, _payload("sessionStart", workspace, conversation_id=conversation_id))
+        assert json.loads(stdout) == {}
+        assert victim.read_text() == "untouched"
+        assert not (root / "escaped.lock").exists()
+        assert not (root / "escaped.json.tmp").exists()
+    state_dir = telemetry_env["state"]
+    if state_dir.exists():
+        names = {path.name for path in state_dir.iterdir() if path.suffix in {".json", ".lock"}}
+        assert names == set()
+    good = "bc-abc123"
+    stdout = _run(hook, telemetry_env, _payload("sessionStart", workspace, conversation_id=good))
+    assert json.loads(stdout) == {}
+    written = state_dir / f"{good}.json"
+    assert written.is_file()
+    assert json.loads(written.read_text())["conversation_id"] == good
+
+
+def test_state_dir_rejects_foreign_owned_tmp_and_uses_private_mode(
+    hook: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    private = tmp_path / "private-state"
+    monkeypatch.setenv("SKILL_TELEMETRY_STATE_DIR", str(private))
+    chosen = hook._state_dir()
+    assert chosen == private
+    assert (private.stat().st_mode & 0o777) == 0o700
+    session = private / "conv-1.json"
+    hook._atomic_write(session, "{}")
+    assert (session.stat().st_mode & 0o777) == 0o600
+
+    hijack = tmp_path / "tmp" / "skill-telemetry"
+    hijack.mkdir(parents=True)
+    (hijack / "stolen.json").write_text("secret")
+    monkeypatch.delenv("SKILL_TELEMETRY_STATE_DIR", raising=False)
+    monkeypatch.delenv("HOME", raising=False)
+    monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    fallback = hook._state_dir()
+    assert fallback is not None
+    assert fallback.resolve() != hijack.resolve()
+    assert (hijack / "stolen.json").read_text() == "secret"
+    assert list(hijack.glob("*.lock")) == []
+
+    gc_dir = tmp_path / "gc"
+    gc_dir.mkdir()
+    ancient = time.time() - hook.TTL_S - 10
+    stale_json = gc_dir / "old.json"
+    stale_lock = gc_dir / "old.lock"
+    other = gc_dir / "notes.txt"
+    for path, body in ((stale_json, "{}"), (stale_lock, ""), (other, "keep")):
+        path.write_text(body)
+        os.utime(path, (ancient, ancient))
+    hook._maybe_gc(gc_dir, time.time(), force=True)
+    assert not stale_json.exists()
+    assert not stale_lock.exists()
+    assert other.read_text() == "keep"
