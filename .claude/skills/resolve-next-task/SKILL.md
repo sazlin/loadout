@@ -43,8 +43,12 @@ the brief.
    unhashed `TASKS_TO_RESOLVE.md`, `REVIEW_HISTORY.md`, or `VERIFIERS.md`.
    Do not edit the tasks file. Do not append `REVIEW_HISTORY.md`. Do not
    mark the task done.
-6. Commit on the task branch. Optional `git push origin <task-branch>`
-   (never `origin/<pr-head>`). Do not push PR head.
+6. Commit on the task branch. Optional task-branch `git push` only via
+   `python3 .claude/skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py push --task-branch <branch>`
+   (or `skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py` if
+   `.claude/` is missing). Never hand-build `git push origin <task-branch>`
+   from PR head or SHA strings. Never `origin/<pr-head>`. Do not push PR
+   head. Cap the same failure class at 3 attempts, then emit `blocked`.
 7. Return JSON from `issue_resolver`.
 
 Do not delete the tasks file. The orchestrator deletes it on exit.
@@ -61,3 +65,5 @@ Do not delete the tasks file. The orchestrator deletes it on exit.
 - Never push PR head
 - Never `git checkout` the task branch in the PR worktree
 - Never mark the task done
+- Never interpolate PR head refs or commit SHAs into a shell git command;
+  run `prepare_wave_worktrees.py` instead

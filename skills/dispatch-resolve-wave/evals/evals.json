@@ -8,6 +8,7 @@
       "files": ["evals/files/brief.md"],
       "expectations": [
         "Runs partition_waves.py and dispatches the returned wave",
+        "Creates worktrees via prepare_wave_worktrees.py, not interpolated shell git",
         "All wave resolvers in one turn",
         "Creates a worktree per wave task",
         "Cherry-picks resolver commits onto PR head",

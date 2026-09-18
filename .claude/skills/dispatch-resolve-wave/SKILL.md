@@ -30,27 +30,26 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    exceed the script's wave.
 2. Create one worktree and task branch per wave task from current PR HEAD.
    Do not `git checkout` the task branch in the PR worktree.
-   For each wave task:
-   - Target `.worktrees/<pr-head>-<TASK-ID>` on branch `<pr-head>-<TASK-ID>`.
-     Fallback `/tmp/pr-resolve-<TASK-ID>`.
-   - If that worktree or leftover dir already exists, reuse it: reset the
-     checkout and branch to current PR HEAD (`git reset --hard` to PR HEAD
-     in that worktree). Do not treat leftovers as add failure or sequential
-     one-task mode.
-   - Else `git worktree add` at the target path. If that fails, add at the
-     `/tmp` fallback.
-   - If both add sites fail, still create the task branch without moving PR
-     HEAD (`git branch <pr-head>-<TASK-ID>` plus a leftover `/tmp` dir or
-     other throwaway checkout). That id has no isolated dir until reuse
-     succeeds later.
-   - After each successful `git worktree add` (including the `/tmp`
-     fallback) and after reuse/reset, copy the frozen gitignored
-     `tasks_path` from the PR worktree into that worktree (same filename)
-     so `test -f <worktree>/<tasks_path>` is true and the bytes match the
-     PR-worktree manifest. A resolver restricted to the worktree must read
-     the assigned task without consulting the PR worktree. If copy is
-     skipped, pass an absolute PR-worktree `tasks_path` and say so in the
-     brief.
+   Run `python3 .claude/skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py add --pr-head <ref> <wave-json>`
+   (or `skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py` if
+   `.claude/` is missing). Pass the PR head and wave JSON as argv to that
+   helper only — never interpolate PR head, task ids, or SHAs into a shell
+   git command. The helper validates the ref with `git check-ref-format
+   --normalize`, validates each id with `^TASK-[0-9]+$`, maps `/` in the
+   branch name to a single `.worktrees/` path segment, and calls
+   `git worktree add` / `git branch` via `subprocess.run` list argv (no
+   `shell=True`). It reuses leftover dirs (`git reset --hard` to PR HEAD),
+   falls back to `/tmp/pr-resolve-<TASK-ID>`, and creates the task branch
+   without moving PR HEAD when both add sites fail. Use the JSON
+   `worktree` / `branch` fields; do not assemble those paths yourself.
+   After each successful `git worktree add` (including the `/tmp`
+   fallback) and after reuse/reset, copy the frozen gitignored
+   `tasks_path` from the PR worktree into that worktree (same filename)
+   so `test -f <worktree>/<tasks_path>` is true and the bytes match the
+   PR-worktree manifest. A resolver restricted to the worktree must read
+   the assigned task without consulting the PR worktree. If copy is
+   skipped, pass an absolute PR-worktree `tasks_path` and say so in the
+   brief.
 3. If any wave task still has no isolated dir after reuse/reset and both
    add sites, do not stop the whole wave. Dispatch `issue_resolver` with
    `resolve-next-task` for every task whose worktree succeeded. Leave ids
@@ -65,26 +64,30 @@ Launch one `issue_resolver` per file-disjoint open task in the next wave,
    the worktree; `tasks_path` is the copied file in that worktree or the
    absolute PR-worktree manifest path named in this brief. "Do not push PR
    head. Do not edit the tasks file or REVIEW_HISTORY.md."
-6. After all return: in TASK id order, before each pick
-   `git fetch origin <pr-head>-<TASK-ID>` (or the reported SHA; a no-op
-   when the object is already local), then
-   `git cherry-pick <resolver-commit-sha>` onto PR head. Success per task
-   id is resolver `status=ok` plus a commit SHA that applies cleanly.
+6. After all return: in TASK id order, run
+   `python3 .../prepare_wave_worktrees.py cherry-pick --task-branch <branch> [--] <sha>`
+   for each resolver (the helper `git fetch`es the task branch, then
+   `git cherry-pick` with the SHA after `--`). Success per task id is
+   resolver `status=ok` plus a commit SHA that applies cleanly.
    Missing SHA, blocked resolver, or status other than `ok`: skip
    cherry-pick (no placeholder SHA); leave that id `[open]`. On any
-   non-zero cherry-pick (conflict, bad or missing object):
-   `git cherry-pick --abort`, leave that id `[open]`, continue with the
+   non-zero cherry-pick (conflict, bad or missing object) the helper runs
+   `git cherry-pick --abort`; leave that id `[open]`, continue with the
    next wave task. HEAD must not remain in a cherry-pick or merge state.
-   Do not push PR head. Undispatched fallback tasks stay `[open]`.
+   Do not push PR head. Undispatched fallback tasks stay `[open]`. Never
+   hand-build `git cherry-pick` / `git fetch` lines from PR head or SHA
+   strings.
 7. After cherry-picks (success, conflict abort, or missing sha) and after
-   every wave (success, conflict, or dispatch failure), always
-   `git worktree remove --force` the wave paths, `git worktree prune`,
-   delete local `<pr-head>-<TASK-ID>` branches, and `rm` leftover
-   `/tmp/pr-resolve-<TASK-ID>` dirs that are not registered worktrees.
-   Recreate them on the next attempt. On abort-if-merged and on
-   resolve-loop exit, prune any remaining `.worktrees/<pr-head>-*` paths
-   and matching `/tmp` fallbacks (worktree/branch/tmp cleanup, not only
-   child cancel/archive) before emitting JSON.
+   every wave (success, conflict, or dispatch failure), always run
+   `python3 .../prepare_wave_worktrees.py prune --pr-head <ref> <wave-json>`.
+   The helper runs `git worktree remove --force` on the wave paths,
+   `git worktree prune`, deletes local `<pr-head>-<TASK-ID>` branches, and
+   removes leftover `/tmp/pr-resolve-<TASK-ID>` dirs that are not
+   registered worktrees. Recreate them on the next attempt. On
+   abort-if-merged and on resolve-loop exit, prune any remaining
+   `.worktrees/<pr-head>-*` paths and matching `/tmp` fallbacks
+   (worktree/branch/tmp cleanup, not only child cancel/archive) before
+   emitting JSON. Never hand-build those git lines from PR head strings.
 8. After cherry-picks, stop. Never push `origin/<pr-head>` in this skill.
    The orchestrator (not this skill) marks `[done]` only the ids whose
    cherry-pick landed cleanly (not the whole wave), follows `log-progress`,
@@ -115,3 +118,5 @@ dispatch a fourth identical parallel wave for the same ids in this run.
 - Never open a second PR
 - Never exceed the script's wave
 - Never implement fixes
+- Never interpolate PR head refs or commit SHAs into a shell git command;
+  run `prepare_wave_worktrees.py` instead
