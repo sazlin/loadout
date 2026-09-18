@@ -7,6 +7,7 @@ import fcntl
 import json
 import os
 import re
+import select
 import stat
 import struct
 import subprocess
@@ -52,6 +53,8 @@ SESSION_ID_MAX_LEN = 128
 STDIN_MAX_BYTES = 1_048_576
 STDIN_CHUNK = 65_536
 STDIN_EVENT_PEEK = 8192
+STDIN_DRAIN_MAX_BYTES = STDIN_MAX_BYTES
+STDIN_DRAIN_BUDGET_S = 0.2
 HOOK_EVENT_RE = re.compile(rb'"(?:hook_event_name|hookEventName)"\s*:\s*"([^"\\]{1,80})"')
 STATE_DIR_MODE = 0o700
 STATE_FILE_MODE = 0o600
@@ -235,9 +238,32 @@ def _capped_stdin(stdin: bytes | None) -> tuple[bytes, bool]:
     head = sys.stdin.buffer.read(STDIN_MAX_BYTES + 1)
     if len(head) <= STDIN_MAX_BYTES:
         return head, False
-    while sys.stdin.buffer.read(STDIN_CHUNK):
-        pass
+    _drain_over_cap_stdin()
     return head[:STDIN_EVENT_PEEK], True
+
+
+def _drain_over_cap_stdin() -> None:
+    """Read a bounded leftover so a short over-cap writer can finish.
+
+    Do not wait for EOF: stop after STDIN_DRAIN_MAX_BYTES or STDIN_DRAIN_BUDGET_S.
+    """
+    try:
+        fd = sys.stdin.buffer.fileno()
+    except (AttributeError, OSError, ValueError):
+        return
+    deadline = time.monotonic() + STDIN_DRAIN_BUDGET_S
+    drained = 0
+    while drained < STDIN_DRAIN_MAX_BYTES:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return
+        ready, _, _ = select.select([fd], [], [], remaining)
+        if not ready:
+            return
+        chunk = os.read(fd, STDIN_CHUNK)
+        if not chunk:
+            return
+        drained += len(chunk)
 
 
 def _event_name_from_prefix(raw: bytes) -> str | None:

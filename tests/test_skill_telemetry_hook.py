@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
-import resource
 import shutil
 import subprocess
 import sys
@@ -922,15 +921,12 @@ def test_export_spawn_failure_unlinks_blob(
 
 
 def test_before_read_file_huge_content_fail_open_under_timeout(telemetry_env: dict[str, Path]) -> None:
-    payload_bytes = 8 * 1024 * 1024
     prefix = (
         b'{"hook_event_name":"beforeReadFile","conversation_id":"conv-1",'
         b'"file_path":"/tmp/x","workspace_roots":[],"content":"'
     )
-    suffix = b'"}'
     env = os.environ.copy()
     env["HOOK_EVENT"] = "beforeReadFile"
-    before_children = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
     proc = subprocess.Popen(
         ["python3", str(HOOK_PY), "cursor"],
         stdin=subprocess.PIPE,
@@ -939,25 +935,46 @@ def test_before_read_file_huge_content_fail_open_under_timeout(telemetry_env: di
         env=env,
     )
     assert proc.stdin is not None and proc.stdout is not None
+    stop = threading.Event()
+    written = {"n": 0}
+
+    def keep_stdin_open() -> None:
+        assert proc.stdin is not None
+        chunk = b"a" * 65_536
+        try:
+            proc.stdin.write(prefix)
+            written["n"] += len(prefix)
+            while written["n"] <= 1_048_576:
+                proc.stdin.write(chunk)
+                proc.stdin.flush()
+                written["n"] += len(chunk)
+            while not stop.is_set():
+                proc.stdin.write(chunk)
+                proc.stdin.flush()
+                written["n"] += len(chunk)
+                time.sleep(0.05)
+        except (BrokenPipeError, OSError):
+            pass
+
+    writer = threading.Thread(target=keep_stdin_open, daemon=True)
     started = time.monotonic()
-    proc.stdin.write(prefix)
-    chunk = b"a" * 65_536
-    remaining = payload_bytes
-    while remaining:
-        n = min(len(chunk), remaining)
-        proc.stdin.write(chunk[:n])
-        remaining -= n
-    proc.stdin.write(suffix)
-    proc.stdin.close()
+    writer.start()
     stdout = proc.stdout.read()
-    rc = proc.wait(timeout=5)
     elapsed = time.monotonic() - started
+    stop.set()
+    try:
+        proc.stdin.close()
+    except OSError:
+        pass
+    _pid, status, usage = os.wait4(proc.pid, 0)
+    rc = os.waitstatus_to_exitcode(status)
+    writer.join(timeout=1)
     assert rc == 0
     assert json.loads(stdout) == {"permission": "allow"}
     assert elapsed < 2.0
-    child_rss_kb = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
-    delta_kb = max(0, child_rss_kb - before_children)
-    assert delta_kb * 1024 < payload_bytes
+    # Interpreter RSS is tens of MiB; an 8MiB leftover stream would push well past that.
+    assert usage.ru_maxrss * 1024 < 64 * 1024 * 1024
+    assert written["n"] > 1_048_576
     assert not (telemetry_env["state"] / "conv-1.json").exists()
 
 
