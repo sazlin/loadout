@@ -1269,3 +1269,42 @@ def test_gc_does_not_block_session_lock(
     gc_thread.join(timeout=5)
     assert elapsed < hook.LOCK_WAIT_S
     assert _series_value(_state(telemetry_env), "skill.reads") == 1
+
+
+def test_gc_cap_refreshes_marker_and_skips_until_interval(
+    hook: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    gc_dir = tmp_path / "gc"
+    gc_dir.mkdir()
+    ancient = time.time() - hook.TTL_S - 10
+    extra = 40
+    total = hook.GC_MAX_UNLINKS + extra
+    for i in range(total):
+        path = gc_dir / f"old-{i}.json"
+        path.write_text("{}")
+        os.utime(path, (ancient, ancient))
+    listed = {"n": 0}
+    orig_iterdir = Path.iterdir
+
+    def counting_iterdir(self: Path) -> Any:
+        iterator = orig_iterdir(self)
+        if self != gc_dir:
+            return iterator
+
+        def gen() -> Any:
+            for path in iterator:
+                listed["n"] += 1
+                yield path
+
+        return gen()
+
+    monkeypatch.setattr(Path, "iterdir", counting_iterdir)
+    now = time.time()
+    hook._maybe_gc(gc_dir, now, force=True)
+    remaining = {path.name for path in gc_dir.glob("old-*.json")}
+    assert len(remaining) == extra
+    assert listed["n"] <= hook.GC_MAX_UNLINKS + 8
+    listed["n"] = 0
+    hook._maybe_gc(gc_dir, now + 1, force=False)
+    assert listed["n"] == 0
+    assert {path.name for path in gc_dir.glob("old-*.json")} == remaining

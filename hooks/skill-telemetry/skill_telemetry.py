@@ -1191,26 +1191,21 @@ def _gc_pass(state_dir: Path, now: float, *, force: bool) -> None:
         except OSError:
             pass
     cutoff = now - TTL_S
-    try:
-        entries = list(state_dir.iterdir())
-    except OSError:
-        return
     unlinked = 0
-    hit_cap = False
-    for path in entries:
-        if path.name in GC_SKIP_NAMES or path.suffix not in GC_UNLINK_SUFFIXES:
-            continue
-        try:
-            if path.stat().st_mtime >= cutoff:
+    try:
+        for path in state_dir.iterdir():
+            if path.name in GC_SKIP_NAMES or path.suffix not in GC_UNLINK_SUFFIXES:
+                continue
+            try:
+                if path.stat().st_mtime >= cutoff:
+                    continue
+                path.unlink()
+                unlinked += 1
+            except OSError:
                 continue
             if unlinked >= GC_MAX_UNLINKS:
-                hit_cap = True
                 break
-            path.unlink()
-            unlinked += 1
-        except OSError:
-            continue
-    if hit_cap:
+    except OSError:
         return
     try:
         _atomic_write(marker, str(int(now)))
