@@ -1090,11 +1090,51 @@ def test_state_dir_rejects_foreign_owned_tmp_and_uses_private_mode(
     monkeypatch.delenv("HOME", raising=False)
     monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
     monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://127.0.0.1:1")
+    monkeypatch.setenv("OTEL_SERVICE_NAME", "loadout-tests")
+    monkeypatch.setenv("SKILL_TELEMETRY_SYNC_EXPORT", "1")
+    monkeypatch.setenv("SKILL_TELEMETRY_ENABLED", "true")
     fallback = hook._state_dir()
+    again = hook._state_dir()
     assert fallback is not None
+    assert again == fallback
     assert fallback.resolve() != hijack.resolve()
     assert (hijack / "stolen.json").read_text() == "secret"
     assert list(hijack.glob("*.lock")) == []
+    tmp_root = tmp_path / "tmp"
+    assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
+
+    workspace = tmp_path / "ws"
+    _write_workspace(workspace)
+    skill = workspace / ".claude" / "skills" / "foo" / "SKILL.md"
+    _run(hook, {}, _payload("sessionStart", workspace))
+    _run(hook, {}, _payload("beforeReadFile", workspace, file_path=str(skill)))
+    session = fallback / "conv-1.json"
+    first = json.loads(session.read_text())
+    reads = _series_value(first, "skill.reads")
+    assert reads >= 1
+    _run(hook, {}, _payload("sessionStart", workspace))
+    second = json.loads(session.read_text())
+    assert _series_value(second, "skill.reads") == reads
+    assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
+
+    claim = fallback / "conv-1.exporting"
+    claim.write_text("")
+    blob = tmp_path / "snap.pb"
+    blob.write_bytes(b"")
+    env = os.environ.copy()
+    env.pop("HOME", None)
+    env.pop("XDG_CACHE_HOME", None)
+    env.pop("SKILL_TELEMETRY_STATE_DIR", None)
+    completed = subprocess.run(
+        [sys.executable, str(HOOK_PY), "--export", str(blob), str(claim)],
+        env=env,
+        timeout=5,
+        check=False,
+    )
+    assert completed.returncode == 0
+    assert not claim.exists()
+    assert list(tmp_root.glob("skill-telemetry-*")) == [fallback]
 
     gc_dir = tmp_path / "gc"
     gc_dir.mkdir()

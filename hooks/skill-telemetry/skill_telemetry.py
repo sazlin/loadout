@@ -1056,11 +1056,10 @@ def _state_dir() -> Path | None:
     for path in _state_dir_candidates():
         if _ensure_state_dir(path):
             return path
-    try:
-        created = Path(tempfile.mkdtemp(prefix="skill-telemetry-"))
-    except OSError:
-        return None
-    return created if _ensure_state_dir(created) else None
+    raw = (os.environ.get("TMPDIR") or os.environ.get("TEMP") or os.environ.get("TMP") or "").strip()
+    tmp = Path(raw) if raw else Path(tempfile.gettempdir())
+    fallback = tmp / f"skill-telemetry-{os.getuid()}"
+    return fallback if _ensure_state_dir(fallback) else None
 
 
 def _state_dir_candidates() -> list[Path]:
@@ -1349,11 +1348,12 @@ def _export_session_dir(raw: str) -> tuple[Path, str] | None:
     candidate = Path(raw)
     if candidate.suffix != ".exporting" or not _valid_id(candidate.stem):
         return None
-    state_dir = _state_dir()
-    if state_dir is None:
+    resolved = _resolve(candidate)
+    state_dir = resolved.parent
+    if not _owned_dir(state_dir):
         return None
     expected = _state_child(state_dir, candidate.stem, ".exporting")
-    if expected is None or _resolve(candidate) != expected:
+    if expected is None or resolved != expected:
         return None
     return state_dir, candidate.stem
 
