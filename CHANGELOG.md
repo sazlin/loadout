@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.43.0
+
 - Add opt-in `telemetry` loadout: a fail-open Cursor and Claude Code hook that
   emits `skill.reads`, `skill.turns`, and `skill.discovered_on_session_start`
   over OTLP/HTTP, matching the skill-telemetry omp plugin. Compose with
