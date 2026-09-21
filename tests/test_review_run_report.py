@@ -466,3 +466,36 @@ def test_concurrent_begin_and_change_leave_valid_json(tmp_path: Path) -> None:
     assert torn.returncode == 0, torn.stderr
     assert "Traceback" not in torn.stderr
     assert "### PR review harness" in torn.stdout
+
+
+def test_set_dashboard_rejects_non_cursor_agent_urls(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    module.reset_run(path)
+    phishing = "http://example.invalid/phish"
+    rejected = subprocess.run(
+        [sys.executable, str(SCRIPT), "dashboard", "--file", str(path), phishing],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert rejected.returncode != 0
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["dashboard_url"] is None
+
+    planted = {**SAMPLE_RUN, "dashboard_url": "https://evil.example/phish"}
+    markdown = module.render_markdown(planted)
+    assert "[open](https://evil.example/phish)" not in markdown
+    assert "https://evil.example/phish" not in markdown
+
+    good = "https://cursor.com/agents/bc-abc123"
+    accepted = subprocess.run(
+        [sys.executable, str(SCRIPT), "dashboard", "--file", str(path), good],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert accepted.returncode == 0, accepted.stderr
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["dashboard_url"] == good
+    assert f"[open]({good})" in module.render_markdown(stored)

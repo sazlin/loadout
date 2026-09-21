@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 BAR_WIDTH = 16
 STAGE_KEYS = ("panel", "resolve", "verifiers", "risk", "merge")
@@ -38,6 +39,9 @@ MAX_RUN_FILE_BYTES = 1_048_576
 RENDER_MAX_BYTES = 60_000
 MAX_RENDER_PATHS = 12
 GANTT_OMITTED = "_Gantt omitted to stay under GitHub's comment size limit._"
+DASHBOARD_HOST = "cursor.com"
+DASHBOARD_PATH_PREFIX = "/agents/"
+DASHBOARD_UNSAFE = frozenset(" \t\r\n()'\"")
 
 USAGE = "usage: review_run_report.py {reset,begin,end,change,stage,dashboard,render} ..."
 
@@ -286,14 +290,33 @@ def set_stage(path: Path, cells: Mapping[str, str]) -> None:
     _update_run(path, mutate)
 
 
+def allowlisted_dashboard_url(url: object) -> str | None:
+    """Return a Cursor Cloud agent URL, or None if it is not allowlisted."""
+    if not isinstance(url, str):
+        return None
+    text = url.strip()
+    if not text or any(ch in text for ch in DASHBOARD_UNSAFE):
+        return None
+    parsed = urlparse(text)
+    host = (parsed.hostname or "").lower()
+    path = parsed.path or ""
+    if parsed.scheme != "https" or host != DASHBOARD_HOST:
+        return None
+    if parsed.username is not None or parsed.password is not None:
+        return None
+    if not path.startswith(DASHBOARD_PATH_PREFIX) or path == DASHBOARD_PATH_PREFIX:
+        return None
+    return text
+
+
 def set_dashboard(path: Path, url: str) -> None:
     """Record the Cursor Cloud dashboard URL for this harness run."""
-    text = url.strip()
-    if not text:
-        raise ValueError("dashboard url must be non-empty")
+    allowed = allowlisted_dashboard_url(url)
+    if allowed is None:
+        raise ValueError("dashboard url must be an https://cursor.com/agents/… URL")
 
     def mutate(payload: dict[str, Any]) -> None:
-        payload["dashboard_url"] = _clip(text, MAX_FIELD_CHARS * 2)
+        payload["dashboard_url"] = _clip(allowed, MAX_FIELD_CHARS * 2)
 
     _update_run(path, mutate)
 
@@ -443,7 +466,7 @@ def _changes_section(changes: Sequence[Mapping[str, Any]], omitted: int = 0) -> 
 
 def _bullets(payload: Mapping[str, Any], total: int) -> str:
     lines = [f"- Run finished in {format_duration(total)}."]
-    url = payload.get("dashboard_url")
+    url = allowlisted_dashboard_url(payload.get("dashboard_url"))
     if url:
         lines.append(f"- Cursor Cloud dashboard for this harness: [open]({url}).")
     return "\n".join(lines)
