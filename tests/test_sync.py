@@ -824,6 +824,10 @@ def test_real_pr_review_harness_loadout_vendors_harness(tmp_path: Path, monkeypa
     assert (project / ".claude/skills/log-progress/SKILL.md").is_file()
     assert (project / ".claude/skills/log-progress/scripts/trim_review_history.py").is_file()
     assert (project / ".claude/skills/dispatch-verifiers/SKILL.md").is_file()
+    assert (project / ".claude/skills/report-review-run/SKILL.md").is_file()
+    assert (
+        project / ".claude/skills/report-review-run/scripts/review_run_report.py"
+    ).is_file()
     assert (project / ".cursor/rules/colocated-evals.mdc").is_file()
     assert (project / ".cursor/rules/no-cursor-coauthor.mdc").is_file()
     assert (project / ".cursor/rules/honor-check-intent.mdc").is_file()

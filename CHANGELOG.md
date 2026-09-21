@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- End each `pr_review_harness` run with a GitHub comment from
+  `report-review-run`: mermaid gantt plus duration table for every phase
+  and loop, and an itemized list of source commits the harness pushed.
 - Resolve `pr_review_harness` tasks in file-disjoint parallel waves
   (`dispatch-resolve-wave`). Nested `issue_resolver` pushes task branches
   only. Cherry-pick while following the skill in-process; the orchestrator

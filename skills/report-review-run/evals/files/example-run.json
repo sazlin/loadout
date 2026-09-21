@@ -1,0 +1,80 @@
+{
+  "dashboard_url": "https://cursor.com/agents/bc-abc123",
+  "stage": {
+    "panel": "✅|2 loops",
+    "resolve": "✅|3 tasks",
+    "verifiers": "✅|4/4",
+    "risk": "🟢|`low`",
+    "merge": "✅|done"
+  },
+  "steps": [
+    {
+      "section": "Panel Review",
+      "label": "loop 1",
+      "started_at": "2026-09-21T14:02:00Z",
+      "ended_at": "2026-09-21T14:10:12Z"
+    },
+    {
+      "section": "Resolve Issues",
+      "label": "TASK-001 Parameterize user lookup SQL",
+      "started_at": "2026-09-21T14:10:12Z",
+      "ended_at": "2026-09-21T14:17:22Z"
+    },
+    {
+      "section": "Resolve Issues",
+      "label": "TASK-002 Stop leaking PII in logs",
+      "started_at": "2026-09-21T14:17:22Z",
+      "ended_at": "2026-09-21T14:24:02Z"
+    },
+    {
+      "section": "Panel Review",
+      "label": "loop 2",
+      "started_at": "2026-09-21T14:24:02Z",
+      "ended_at": "2026-09-21T14:28:30Z"
+    },
+    {
+      "section": "Resolve Issues",
+      "label": "TASK-003 Record zero-qty lines",
+      "started_at": "2026-09-21T14:28:30Z",
+      "ended_at": "2026-09-21T14:32:42Z"
+    },
+    {
+      "section": "Verifiers",
+      "label": "loop 1",
+      "started_at": "2026-09-21T14:32:42Z",
+      "ended_at": "2026-09-21T14:37:00Z"
+    },
+    {
+      "section": "Risk Classification",
+      "label": "risk_classifier",
+      "started_at": "2026-09-21T14:37:00Z",
+      "ended_at": "2026-09-21T14:39:41Z"
+    },
+    {
+      "section": "Merge",
+      "label": "squash-merge",
+      "started_at": "2026-09-21T14:39:41Z",
+      "ended_at": "2026-09-21T14:40:12Z"
+    }
+  ],
+  "changes": [
+    {
+      "sha": "a1b2c3d",
+      "task": "TASK-001",
+      "summary": "bind user-id in the lookup query instead of string concat",
+      "paths": ["src/user_api.py"]
+    },
+    {
+      "sha": "d4e5f6a",
+      "task": "TASK-002",
+      "summary": "drop email and phone from log lines and JSON errors",
+      "paths": ["src/logs.py", "src/user_api.py"]
+    },
+    {
+      "sha": "b7c8d9e",
+      "task": "TASK-003",
+      "summary": "keep zero-qty lines in the invoice instead of dropping them",
+      "paths": ["src/orders.py"]
+    }
+  ]
+}

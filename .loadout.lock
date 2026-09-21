@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-21T01:42:18Z",
+  "synced_at": "2026-09-21T03:13:36Z",
   "tool_version": "0.42.0",
   "files": [
     {
@@ -49,7 +49,7 @@
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "e9045013123b3bd334086edff01d8848bc0624ab1b21ab5c8fb93eed7b9b238e"
+      "sha256": "d0faf875b0e9395898c3d02990905d5756259364308f48c19247a62577ebd602"
     },
     {
       "dest": ".claude/agents/review_scale.md",
@@ -319,6 +319,17 @@
       "dest": ".claude/skills/release-checklist/SKILL.md",
       "src": "skills/release-checklist/SKILL.md",
       "sha256": "00ce684e1588c58e5c6499505f386da4deee98babfe4c7233ff2e379cf0b2d07"
+    },
+    {
+      "dest": ".claude/skills/report-review-run/SKILL.md",
+      "src": "skills/report-review-run/SKILL.md",
+      "sha256": "7f94815328937d636bb5e59a365f14f93e93deea58d1ab3d70237d513fd45699"
+    },
+    {
+      "dest": ".claude/skills/report-review-run/scripts/review_run_report.py",
+      "src": "skills/report-review-run/scripts/review_run_report.py",
+      "sha256": "bcfbdca5f88858cfd95dc6cc73a85a9258b1d0c94916a88ec0a7669974b9bd95",
+      "mode": "755"
     },
     {
       "dest": ".claude/skills/requesting-code-review/SKILL.md",
