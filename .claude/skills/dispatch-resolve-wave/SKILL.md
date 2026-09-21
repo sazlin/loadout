@@ -6,7 +6,7 @@ description: Dispatch file-disjoint issue_resolver worktrees for the next resolv
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/dispatch-resolve-wave/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # Dispatch resolve wave

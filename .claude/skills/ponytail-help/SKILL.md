@@ -8,7 +8,7 @@ description: 'Quick-reference card for all ponytail modes, skills, and commands.
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/ponytail-help/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # Ponytail Help
