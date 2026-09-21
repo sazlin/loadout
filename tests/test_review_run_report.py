@@ -662,7 +662,7 @@ def test_concurrent_default_path_harnesses_do_not_share_json(tmp_path: Path) -> 
     assert path_a.read_text(encoding="utf-8") != path_b.read_text(encoding="utf-8")
 
 
-def test_concurrent_begin_end_does_not_write_ended_at_before_started_at(tmp_path: Path) -> None:
+def test_concurrent_begin_end_does_not_write_ended_at_before_started_at(tmp_path: Path, monkeypatch) -> None:
     module = _load_script()
     path = tmp_path / "run.json"
     early = datetime(2026, 9, 21, 14, 2, tzinfo=UTC)
@@ -677,7 +677,7 @@ def test_concurrent_begin_end_does_not_write_ended_at_before_started_at(tmp_path
         with real_lock(lock_path):
             yield
 
-    module._exclusive_run_lock = gated
+    monkeypatch.setattr(module, "_exclusive_run_lock", gated)
 
     def do_end() -> None:
         try:
@@ -778,7 +778,7 @@ def test_load_run_caps_on_disk_steps_and_changes(tmp_path: Path) -> None:
     assert len(markdown.encode("utf-8")) <= module.RENDER_MAX_BYTES
 
 
-def test_cmd_render_releases_lock_before_markdown(tmp_path: Path) -> None:
+def test_cmd_render_releases_lock_before_markdown(tmp_path: Path, monkeypatch) -> None:
     module = _load_script()
     path = tmp_path / "run.json"
     module.reset_run(path)
@@ -790,7 +790,7 @@ def test_cmd_render_releases_lock_before_markdown(tmp_path: Path) -> None:
         time.sleep(0.4)
         return real_render(payload)
 
-    module.render_markdown = slow_render
+    monkeypatch.setattr(module, "render_markdown", slow_render)
     thread = threading.Thread(
         target=lambda: module.main(["render", "--file", str(path)]),
         daemon=True,
