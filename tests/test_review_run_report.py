@@ -299,7 +299,7 @@ def test_render_ignores_worktree_preseeded_review_run_json(tmp_path: Path, capsy
     assert on_disk["changes"][0]["summary"] == "PLANTED_CHANGE_XYZ"
 
 
-def test_render_truncates_under_github_comment_limit_and_ignores_stale_run_file(tmp_path: Path) -> None:
+def test_reset_run_clears_leftover_steps_and_changes(tmp_path: Path) -> None:
     module = _load_script()
     stale = tmp_path / "REVIEW_RUN.json"
     leftover = {
@@ -324,6 +324,9 @@ def test_render_truncates_under_github_comment_limit_and_ignores_stale_run_file(
     assert "TASK-000" not in fresh
     assert "loop 1" in fresh
 
+
+def test_render_markdown_stays_under_github_comment_limit() -> None:
+    module = _load_script()
     huge_steps = []
     for index in range(500):
         huge_steps.append(
@@ -380,13 +383,10 @@ def test_concurrent_begin_and_change_leave_valid_json(tmp_path: Path) -> None:
         if not ended:
             continue
         assert module.parse_iso(ended) >= module.parse_iso(step["started_at"])
-    result = subprocess.run(
-        [sys.executable, str(SCRIPT), "render", "--file", str(path)],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    assert result.returncode == 0, result.stderr
+
+
+def test_render_cli_returns_blank_harness_for_unreadable_run_file(tmp_path: Path) -> None:
+    path = tmp_path / "run.json"
     path.write_text("{", encoding="utf-8")
     torn = subprocess.run(
         [sys.executable, str(SCRIPT), "render", "--file", str(path)],
@@ -414,11 +414,19 @@ def test_set_dashboard_rejects_non_cursor_agent_urls(tmp_path: Path) -> None:
     stored = json.loads(path.read_text(encoding="utf-8"))
     assert stored["dashboard_url"] is None
 
+
+def test_render_omits_planted_non_allowlisted_dashboard_url() -> None:
+    module = _load_script()
     planted = {**EXAMPLE_RUN, "dashboard_url": "https://evil.example/phish"}
     markdown = module.render_markdown(planted)
     assert "[open](https://evil.example/phish)" not in markdown
     assert "https://evil.example/phish" not in markdown
 
+
+def test_set_dashboard_accepts_cursor_agents_url(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    module.reset_run(path)
     good = "https://cursor.com/agents/bc-abc123"
     accepted = subprocess.run(
         [sys.executable, str(SCRIPT), "dashboard", "--file", str(path), good],
