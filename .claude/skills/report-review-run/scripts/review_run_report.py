@@ -139,15 +139,21 @@ def empty_run() -> RunLog:
     }
 
 
+def _clip(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit]
+
+
 def _coerce_step(raw: object) -> Step | None:
     if not isinstance(raw, dict):
         return None
     ended = raw.get("ended_at")
     return {
-        "section": str(raw.get("section") or "Other"),
-        "label": str(raw.get("label") or "step"),
-        "started_at": str(raw.get("started_at") or ""),
-        "ended_at": None if ended is None else str(ended),
+        "section": _clip(str(raw.get("section") or "Other"), MAX_FIELD_CHARS),
+        "label": _clip(str(raw.get("label") or "step"), MAX_FIELD_CHARS),
+        "started_at": _clip(str(raw.get("started_at") or ""), MAX_FIELD_CHARS),
+        "ended_at": None if ended is None else _clip(str(ended), MAX_FIELD_CHARS),
     }
 
 
@@ -155,11 +161,19 @@ def _coerce_change(raw: object) -> Change | None:
     if not isinstance(raw, dict):
         return None
     paths_raw = raw.get("paths")
-    paths = [str(item) for item in paths_raw] if isinstance(paths_raw, list) else []
+    paths: list[str] = []
+    if isinstance(paths_raw, list):
+        for item in paths_raw[:MAX_PATHS_PER_CHANGE]:
+            text = str(item).strip()
+            if not text:
+                continue
+            paths.append(_clip(text, MAX_FIELD_CHARS))
+            if len(paths) >= MAX_PATHS_PER_CHANGE:
+                break
     return {
-        "sha": str(raw.get("sha") or ""),
-        "task": str(raw.get("task") or ""),
-        "summary": str(raw.get("summary") or ""),
+        "sha": _clip(str(raw.get("sha") or ""), MAX_FIELD_CHARS),
+        "task": _clip(str(raw.get("task") or ""), MAX_FIELD_CHARS),
+        "summary": _clip(str(raw.get("summary") or ""), MAX_SUMMARY_CHARS),
         "paths": paths,
     }
 
@@ -171,33 +185,29 @@ def _coerce_run(payload: object) -> RunLog:
     stage_raw = payload.get("stage")
     stage: dict[str, str] = {}
     if isinstance(stage_raw, dict):
-        stage = {str(key): str(value) for key, value in stage_raw.items()}
+        stage = {
+            _clip(str(key), MAX_FIELD_CHARS): _clip(str(value), MAX_FIELD_CHARS) for key, value in stage_raw.items()
+        }
     steps_raw = payload.get("steps")
     steps: list[Step] = []
     if isinstance(steps_raw, list):
-        for item in steps_raw:
+        for item in steps_raw[-MAX_STEPS:]:
             step = _coerce_step(item)
             if step is not None:
                 steps.append(step)
     changes_raw = payload.get("changes")
     changes: list[Change] = []
     if isinstance(changes_raw, list):
-        for item in changes_raw:
+        for item in changes_raw[-MAX_CHANGES:]:
             change = _coerce_change(item)
             if change is not None:
                 changes.append(change)
     return {
-        "dashboard_url": url if isinstance(url, str) else None,
+        "dashboard_url": _clip(url, MAX_FIELD_CHARS * 2) if isinstance(url, str) else None,
         "stage": stage,
         "steps": steps,
         "changes": changes,
     }
-
-
-def _clip(text: str, limit: int) -> str:
-    if len(text) <= limit:
-        return text
-    return text[:limit]
 
 
 def _lock_path(path: Path) -> Path:
@@ -221,7 +231,14 @@ def load_run(path: Path) -> RunLog:
     if not path.is_file():
         return empty_run()
     try:
-        raw = path.read_bytes()
+        with path.open("rb") as handle:
+            try:
+                size = os.fstat(handle.fileno()).st_size
+            except OSError:
+                size = 0
+            if size > MAX_RUN_FILE_BYTES:
+                return empty_run()
+            raw = handle.read(MAX_RUN_FILE_BYTES + 1)
     except OSError:
         return empty_run()
     if len(raw) > MAX_RUN_FILE_BYTES:
@@ -600,8 +617,9 @@ def render_markdown(payload: RunLog) -> str:
             include_gantt = False
             continue
         if shown:
-            omitted += 1
-            shown = shown[:-1]
+            drop = max(1, len(shown) // 2)
+            omitted += drop
+            shown = shown[:-drop]
             continue
         encoded = body.encode("utf-8")[: RENDER_MAX_BYTES - 24]
         trimmed = encoded.decode("utf-8", errors="ignore").rstrip()
@@ -683,7 +701,8 @@ def _cmd_render(args: argparse.Namespace) -> int:
     path = _run_file(args)
     try:
         with _exclusive_run_lock(path):
-            markdown = render_markdown(load_run(path))
+            payload = load_run(path)
+        markdown = render_markdown(payload)
     except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
         return _print_error(str(error))
     if args.out is not None:

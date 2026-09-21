@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import re
 import subprocess
 import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -539,3 +541,104 @@ def test_concurrent_begin_end_does_not_write_ended_at_before_started_at(tmp_path
     loop2 = next(step for step in payload["steps"] if step["label"] == "loop 2")
     if loop2["ended_at"] is not None:
         assert module.parse_iso(loop2["ended_at"]) >= late
+
+
+def test_load_run_returns_empty_run_for_oversize_file(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    path.write_bytes(b"x" * (module.MAX_RUN_FILE_BYTES + 1))
+    payload = module.load_run(path)
+    assert payload == module.empty_run()
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "render", "--file", str(path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "### PR review harness" in result.stdout
+    assert "did not push source commits" in result.stdout
+
+
+def test_load_run_does_not_read_past_byte_cap(tmp_path: Path, monkeypatch) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    with path.open("wb") as handle:
+        handle.write(b"{")
+        handle.seek(module.MAX_RUN_FILE_BYTES + 4096)
+        handle.write(b"}")
+    orig_open = io.open
+    max_request = module.MAX_RUN_FILE_BYTES + 1
+
+    def tracking_open(file, mode="r", *args, **kwargs):
+        handle = orig_open(file, mode, *args, **kwargs)
+        if os.path.realpath(str(file)) != os.path.realpath(path) or "b" not in str(mode):
+            return handle
+        inner = handle.read
+
+        def read(size=-1):
+            n = -1 if size is None else size
+            if n is None or n < 0:
+                raise AssertionError("unbounded read of run log")
+            assert n <= max_request, n
+            return inner(n)
+
+        handle.read = read  # type: ignore[method-assign]
+        return handle
+
+    monkeypatch.setattr(io, "open", tracking_open)
+    payload = module.load_run(path)
+    assert payload == module.empty_run()
+
+
+def test_load_run_caps_on_disk_steps_and_changes(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    changes = [{"sha": f"{index:07d}", "task": "T", "summary": "s", "paths": []} for index in range(5000)]
+    steps = [
+        {
+            "section": "Panel Review",
+            "label": f"loop {index}",
+            "started_at": "2026-09-21T14:00:00Z",
+            "ended_at": "2026-09-21T14:00:01Z",
+        }
+        for index in range(5000)
+    ]
+    raw = json.dumps({"dashboard_url": None, "stage": {}, "steps": steps, "changes": changes})
+    assert len(raw.encode("utf-8")) < module.MAX_RUN_FILE_BYTES
+    path.write_text(raw, encoding="utf-8")
+    payload = module.load_run(path)
+    assert len(payload["steps"]) == module.MAX_STEPS
+    assert len(payload["changes"]) == module.MAX_CHANGES
+    assert payload["steps"][0]["label"] == f"loop {5000 - module.MAX_STEPS}"
+    assert payload["changes"][-1]["sha"] == f"{4999:07d}"
+    markdown = module.render_markdown(payload)
+    assert len(markdown.encode("utf-8")) <= module.RENDER_MAX_BYTES
+
+
+def test_cmd_render_releases_lock_before_markdown(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    module.reset_run(path)
+    started = threading.Event()
+    real_render = module.render_markdown
+
+    def slow_render(payload: object) -> str:
+        started.set()
+        time.sleep(0.4)
+        return real_render(payload)
+
+    module.render_markdown = slow_render
+    thread = threading.Thread(
+        target=lambda: module.main(["render", "--file", str(path)]),
+        daemon=True,
+    )
+    thread.start()
+    assert started.wait(2)
+    t0 = time.monotonic()
+    module.begin_step(path, section="Panel Review", label="loop 1")
+    elapsed = time.monotonic() - t0
+    thread.join(timeout=2)
+    assert elapsed < 0.2
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["steps"][0]["label"] == "loop 1"
