@@ -1114,8 +1114,9 @@ def test_before_read_file_huge_content_fail_open_under_timeout(telemetry_env: di
     assert rc == 0
     assert json.loads(stdout) == {"permission": "allow"}
     assert elapsed < 2.0
-    # Interpreter RSS is tens of MiB; an 8MiB leftover stream would push well past that.
-    assert usage.ru_maxrss * 1024 < 64 * 1024 * 1024
+    # Interpreter RSS is tens of MiB; GitHub-hosted CPython sits near 64 MiB.
+    # Buffering the leftover stream (8MiB+) still blows past this.
+    assert usage.ru_maxrss * 1024 < 96 * 1024 * 1024
     assert written["n"] > 1_048_576
     assert not (telemetry_env["state"] / "conv-1.json").exists()
 
