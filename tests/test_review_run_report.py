@@ -15,88 +15,8 @@ from types import ModuleType
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "skills" / "report-review-run" / "scripts" / "review_run_report.py"
 EXAMPLE = REPO / "skills" / "report-review-run" / "evals" / "files" / "example-run.json"
+EXAMPLE_RUN = json.loads(EXAMPLE.read_text(encoding="utf-8"))
 GANTT_TASK_LINE_RE = re.compile(r"^\s+(?P<label>[^:\n]+) :s\d+, \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}, \d+s$")
-
-SAMPLE_RUN = {
-    "dashboard_url": "https://cursor.com/agents/bc-abc123",
-    "stage": {
-        "panel": "✅|2 loops",
-        "resolve": "✅|3 tasks",
-        "verifiers": "✅|4/4",
-        "risk": "🟢|`low`",
-        "merge": "✅|done",
-    },
-    "steps": [
-        {
-            "section": "Panel Review",
-            "label": "loop 1",
-            "started_at": "2026-09-21T14:02:00Z",
-            "ended_at": "2026-09-21T14:10:12Z",
-        },
-        {
-            "section": "Resolve Issues",
-            "label": "TASK-001 Parameterize user lookup SQL",
-            "started_at": "2026-09-21T14:10:12Z",
-            "ended_at": "2026-09-21T14:17:22Z",
-        },
-        {
-            "section": "Resolve Issues",
-            "label": "TASK-002 Stop leaking PII in logs",
-            "started_at": "2026-09-21T14:17:22Z",
-            "ended_at": "2026-09-21T14:24:02Z",
-        },
-        {
-            "section": "Panel Review",
-            "label": "loop 2",
-            "started_at": "2026-09-21T14:24:02Z",
-            "ended_at": "2026-09-21T14:28:30Z",
-        },
-        {
-            "section": "Resolve Issues",
-            "label": "TASK-003 Record zero-qty lines",
-            "started_at": "2026-09-21T14:28:30Z",
-            "ended_at": "2026-09-21T14:32:42Z",
-        },
-        {
-            "section": "Verifiers",
-            "label": "loop 1",
-            "started_at": "2026-09-21T14:32:42Z",
-            "ended_at": "2026-09-21T14:37:00Z",
-        },
-        {
-            "section": "Risk Classification",
-            "label": "risk_classifier",
-            "started_at": "2026-09-21T14:37:00Z",
-            "ended_at": "2026-09-21T14:39:41Z",
-        },
-        {
-            "section": "Merge",
-            "label": "squash-merge",
-            "started_at": "2026-09-21T14:39:41Z",
-            "ended_at": "2026-09-21T14:40:12Z",
-        },
-    ],
-    "changes": [
-        {
-            "sha": "a1b2c3d",
-            "task": "TASK-001",
-            "summary": "bind user-id in the lookup query instead of string concat",
-            "paths": ["src/user_api.py"],
-        },
-        {
-            "sha": "d4e5f6a",
-            "task": "TASK-002",
-            "summary": "drop email and phone from log lines and JSON errors",
-            "paths": ["src/logs.py", "src/user_api.py"],
-        },
-        {
-            "sha": "b7c8d9e",
-            "task": "TASK-003",
-            "summary": "keep zero-qty lines in the invoice instead of dropping them",
-            "paths": ["src/orders.py"],
-        },
-    ],
-}
 
 
 def _load_script() -> ModuleType:
@@ -121,7 +41,7 @@ def _mermaid_block(markdown: str) -> str:
 
 def test_render_closes_mermaid_fence_and_draws_gantt() -> None:
     module = _load_script()
-    markdown = module.render_markdown(SAMPLE_RUN)
+    markdown = module.render_markdown(EXAMPLE_RUN)
     body = _mermaid_block(markdown)
     assert body.lstrip().startswith("gantt")
     assert "todayMarker off" in body
@@ -139,7 +59,7 @@ def test_render_closes_mermaid_fence_and_draws_gantt() -> None:
 
 def test_render_includes_stage_table_duration_loops_and_changes() -> None:
     module = _load_script()
-    markdown = module.render_markdown(SAMPLE_RUN)
+    markdown = module.render_markdown(EXAMPLE_RUN)
     assert "### PR review harness" in markdown
     assert "| Panel Review | Resolve Issues | Verifiers | Risk Classification | Merge |" in markdown
     assert "#### Duration" in markdown
@@ -249,7 +169,7 @@ def test_begin_end_records_elapsed_seconds(tmp_path: Path) -> None:
 
 def test_cli_render_writes_closed_mermaid(tmp_path: Path) -> None:
     run_file = tmp_path / "run.json"
-    run_file.write_text(json.dumps(SAMPLE_RUN), encoding="utf-8")
+    run_file.write_text(json.dumps(EXAMPLE_RUN), encoding="utf-8")
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "render", "--file", str(run_file)],
         check=False,
@@ -483,7 +403,7 @@ def test_set_dashboard_rejects_non_cursor_agent_urls(tmp_path: Path) -> None:
     stored = json.loads(path.read_text(encoding="utf-8"))
     assert stored["dashboard_url"] is None
 
-    planted = {**SAMPLE_RUN, "dashboard_url": "https://evil.example/phish"}
+    planted = {**EXAMPLE_RUN, "dashboard_url": "https://evil.example/phish"}
     markdown = module.render_markdown(planted)
     assert "[open](https://evil.example/phish)" not in markdown
     assert "https://evil.example/phish" not in markdown
