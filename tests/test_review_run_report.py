@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
@@ -251,12 +254,13 @@ def test_example_fixture_is_script_stdout() -> None:
     assert rest.count("```") == 1
 
 
-def test_default_run_file_is_outside_the_worktree() -> None:
+def test_default_run_file_is_outside_the_worktree(monkeypatch) -> None:
     module = _load_script()
+    monkeypatch.delenv("LOADOUT_REVIEW_RUN_ID", raising=False)
     path = module.default_run_file()
     assert path.is_absolute()
-    assert path.name == "loadout-review-run.json"
     assert path.parent == Path(module.tempfile.gettempdir())
+    assert path.name == f"loadout-review-run-{os.getpid()}.json"
 
 
 def test_render_ignores_worktree_preseeded_review_run_json(tmp_path: Path, capsys, monkeypatch) -> None:
@@ -369,6 +373,11 @@ def test_concurrent_begin_and_change_leave_valid_json(tmp_path: Path) -> None:
     labels = {step["label"] for step in payload["steps"]}
     assert labels == {"loop 1", "loop 2"}
     assert payload["changes"][0]["sha"] == "abc1234"
+    for step in payload["steps"]:
+        ended = step["ended_at"]
+        if not ended:
+            continue
+        assert module.parse_iso(ended) >= module.parse_iso(step["started_at"])
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "render", "--file", str(path)],
         check=False,
@@ -419,3 +428,114 @@ def test_set_dashboard_rejects_non_cursor_agent_urls(tmp_path: Path) -> None:
     stored = json.loads(path.read_text(encoding="utf-8"))
     assert stored["dashboard_url"] == good
     assert f"[open]({good})" in module.render_markdown(stored)
+
+
+def _cli_with_run_id(tmp_path: Path, run_id: str, args: list[str]) -> subprocess.CompletedProcess[str]:
+    env = {**os.environ, "TMPDIR": str(tmp_path), "LOADOUT_REVIEW_RUN_ID": run_id}
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+
+def test_default_path_second_harness_does_not_merge_leftover_tmp_log(tmp_path: Path) -> None:
+    first_cmds = [
+        ["begin", "--section", "Panel Review", "--label", "LEFTOVER_LOOP_AAA"],
+        ["change", "--sha", "deadbeef", "--task", "TASK-111", "--summary", "FIRST_RUN_CHANGE"],
+        ["end"],
+    ]
+    for args in first_cmds:
+        result = _cli_with_run_id(tmp_path, "harness-one", args)
+        assert result.returncode == 0, result.stderr
+    leftover = tmp_path / "loadout-review-run-harness-one.json"
+    assert leftover.is_file()
+    assert "deadbeef" in leftover.read_text(encoding="utf-8")
+
+    assert (
+        _cli_with_run_id(
+            tmp_path, "harness-two", ["begin", "--section", "Panel Review", "--label", "loop 1"]
+        ).returncode
+        == 0
+    )
+    assert _cli_with_run_id(tmp_path, "harness-two", ["end"]).returncode == 0
+    rendered = _cli_with_run_id(tmp_path, "harness-two", ["render"])
+    assert rendered.returncode == 0, rendered.stderr
+    assert "LEFTOVER_LOOP_AAA" not in rendered.stdout
+    assert "deadbeef" not in rendered.stdout
+    assert "FIRST_RUN_CHANGE" not in rendered.stdout
+    assert "TASK-111" not in rendered.stdout
+    assert "loop 1" in rendered.stdout
+
+
+def test_concurrent_default_path_harnesses_do_not_share_json(tmp_path: Path) -> None:
+    def worker(run_id: str, label: str) -> None:
+        for args in (
+            ["begin", "--section", "Panel Review", "--label", label],
+            ["change", "--sha", f"{run_id[:7]}", "--task", "TASK-001", "--summary", f"change {label}"],
+            ["end"],
+        ):
+            result = _cli_with_run_id(tmp_path, run_id, args)
+            assert result.returncode == 0, result.stderr
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [
+            pool.submit(worker, "run-a", "loop A"),
+            pool.submit(worker, "run-b", "loop B"),
+        ]
+        for future in futures:
+            future.result()
+    path_a = tmp_path / "loadout-review-run-run-a.json"
+    path_b = tmp_path / "loadout-review-run-run-b.json"
+    payload_a = json.loads(path_a.read_text(encoding="utf-8"))
+    payload_b = json.loads(path_b.read_text(encoding="utf-8"))
+    assert {step["label"] for step in payload_a["steps"]} == {"loop A"}
+    assert {step["label"] for step in payload_b["steps"]} == {"loop B"}
+    assert payload_a["changes"][0]["sha"] == "run-a"[:7]
+    assert payload_b["changes"][0]["sha"] == "run-b"[:7]
+    assert path_a.read_text(encoding="utf-8") != path_b.read_text(encoding="utf-8")
+
+
+def test_concurrent_begin_end_does_not_write_ended_at_before_started_at(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    early = datetime(2026, 9, 21, 14, 2, tzinfo=UTC)
+    late = datetime(2026, 9, 21, 14, 5, tzinfo=UTC)
+    module.begin_step(path, section="Panel Review", label="loop 1", at=early)
+    barrier = threading.Barrier(2, timeout=5)
+    real_lock = module._exclusive_run_lock
+
+    @contextmanager
+    def gated(lock_path: Path):
+        barrier.wait()
+        with real_lock(lock_path):
+            yield
+
+    module._exclusive_run_lock = gated
+
+    def do_end() -> None:
+        try:
+            module.end_step(path, at=early)
+        except ValueError:
+            return
+
+    def do_begin() -> None:
+        module.begin_step(path, section="Panel Review", label="loop 2", at=late)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(do_end), pool.submit(do_begin)]
+        for future in futures:
+            future.result()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    labels = {step["label"] for step in payload["steps"]}
+    assert "loop 2" in labels
+    for step in payload["steps"]:
+        ended = step["ended_at"]
+        if not ended:
+            continue
+        assert module.parse_iso(ended) >= module.parse_iso(step["started_at"])
+    loop2 = next(step for step in payload["steps"] if step["label"] == "loop 2")
+    if loop2["ended_at"] is not None:
+        assert module.parse_iso(loop2["ended_at"]) >= late
