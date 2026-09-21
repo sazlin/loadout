@@ -17,6 +17,7 @@ PR_REVIEW_SKILLS = (
     "dispatch-resolve-wave",
     "log-progress",
     "dispatch-verifiers",
+    "report-review-run",
 )
 
 
@@ -97,6 +98,18 @@ def test_pr_review_skill_bodies_encode_harness_contracts() -> None:
     assert "never create" in lowered or "never creates" in lowered
     assert "true" in lowered and "false" in lowered
     assert "composer-2.5" in lowered
+
+    report = (SKILLS / "report-review-run" / "SKILL.md").read_text()
+    report_lower = report.lower()
+    assert "review_run_report.py" in report
+    assert "REVIEW_RUN.json" in report
+    assert "begin" in report_lower and "end" in report_lower
+    assert "mermaid" in report_lower
+    assert "changes this run pushed" in report_lower or "change --sha" in report_lower
+    assert "do not invent" in report_lower or "never invent" in report_lower
+    assert "hand-write" in report_lower
+    assert (SKILLS / "report-review-run" / "scripts" / "review_run_report.py").is_file()
+    assert (SKILLS / "report-review-run" / "evals" / "files" / "example-run.json").is_file()
 
 
 def test_dispatch_resolve_wave_skill_encodes_parallel_wave_contract() -> None:
@@ -241,4 +254,5 @@ def test_gitignore_covers_ephemeral_tasks_files() -> None:
     text = (REPO / ".gitignore").read_text()
     assert "/TASKS_TO_RESOLVE.md" in text
     assert "/TASKS_TO_RESOLVE-*.md" in text
+    assert "/REVIEW_RUN.json" in text
     assert ".worktrees/" in text

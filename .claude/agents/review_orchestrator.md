@@ -43,6 +43,8 @@ an existing manifest with open tasks.
    On a **fresh** run, the first comment is **Started** (all stages queued).
    On a **resume** run, skip Started (prior invocation posted it) and post
    **Resolve Issues** as this run's first comment (Panel Review completed).
+   After Decision or Abort, post one **Run report** comment whose body is
+   the stdout of `report-review-run` `render` (never hand-written).
 4. A final fenced `json` report matching **Output schema**
 
 Before exit, delete the frozen `tasks_path` manifest only when `open_task_ids`
@@ -59,7 +61,8 @@ prose alone.
    `mergedAt` is set, abort instead of posting Started.
 
    As soon as the PR is confirmed open, resolve this run's Cursor Cloud
-   dashboard URL with `run-info`. Never invent an id.
+   dashboard URL with `run-info`. Never invent an id. Record it with
+   `python3 .claude/skills/report-review-run/scripts/review_run_report.py dashboard <url>`.
 
    **Resume detection (before the first comment).** If the brief or prior JSON
    supplies `tasks_path` and that file exists with at least one `[open]` task,
@@ -120,6 +123,12 @@ prose alone.
      (max **3**, short backoff). After the cap, leave those tasks `[open]`,
      exit the resolve loop with `open_task_ids`, and continue panel/verify/risk
      instead of dispatching another identical wave.
+   Before each panel loop run `review_run_report.py begin --section "Panel Review" --label "loop N"`
+   and `end` when that panel returns. Before each resolve wave
+   `begin --section "Resolve Issues" --label "wave N"` and `end` when the
+   wave returns, then `change --sha --task --summary --path file:+N,-M`
+   for each source commit pushed (never tasks or history files). Take
+   N/M from `git show --numstat --format= <sha>`; skip binary `-` rows.
    - **Resume run:** skip panel; run `dispatch-resolve-wave` against frozen
      `tasks_path` until open tasks are gone or the resolve-wave retry cap
      is hit. After each wave (success, conflict, or dispatch failure),
@@ -135,9 +144,14 @@ prose alone.
    (`prepare_wave_worktrees.py prune`). After each successful wave, mark
    `[done]` only clean-pick ids as in the Fresh run, follow `log-progress`,
    and `git push` PR head only after at least one clean pick.
+   `begin --section "Verifiers" --label "loop N"` / `end` around each
+   verify loop.
 5. Dispatch `risk_classifier` with the current diff, remaining issues,
    verifier outcomes, and `REVIEW_HISTORY.md`. Record its decision. Do not
-   merge yourself.
+   merge yourself. `begin --section "Risk Classification"
+   --label "risk_classifier"` / `end` around the classifier, then
+   `begin --section "Merge" --label "<outcome>"` / `end` after the
+   Decision comment.
 6. If `open_task_ids` is empty, delete the frozen `tasks_path` manifest if it
    exists (on resume this may be `TASKS_TO_RESOLVE-<old-sha>.md` while the
    current PR head is a different SHA; do not delete from PR-head SHA alone).
@@ -153,16 +167,23 @@ prose alone.
    whose heading timestamp is older than 30 days. From the project root run
    `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
    Missing `REVIEW_HISTORY.md` is a no-op. Do not trim during panel, resolve,
-   or verify. Then emit the JSON report.
+   or verify.
+8. Post the **Run report**. Follow `report-review-run`: set `stage` cells,
+   `render --out /tmp/review-run-report.md`, then
+   `gh pr comment <n> --body-file /tmp/review-run-report.md`. Never
+   `--edit-last`. Never hand-write the body. Never invent durations. Delete
+   `REVIEW_RUN.json` after the comment attempt. Then emit the JSON report.
 
 ## Tools / privileges
 
 Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
 
-- **Write scope:** only the frozen `tasks_path` manifest and
-  `REVIEW_HISTORY.md`. No source, test, config, or `VERIFIERS.md` edits.
+- **Write scope:** only the frozen `tasks_path` manifest,
+  `REVIEW_HISTORY.md`, and `REVIEW_RUN.json` (via `review_run_report.py`).
+  No source, test, config, or `VERIFIERS.md` edits.
   Delete the frozen `tasks_path` before exit only when `open_task_ids` is
-  empty.
+  empty. Delete `REVIEW_RUN.json` after the Run report comment (or after
+  max comment retries). Never commit `REVIEW_RUN.json`.
   Never write unhashed `TASKS_TO_RESOLVE.md`.
 - **Shell:** `git rev-parse --short`; `git diff` / `git show` / `git log`;
   `git fetch`; `python3 .claude/skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py`
@@ -171,7 +192,9 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash`.
   / `git worktree remove`); `git push` of `origin/<pr-head>` after successful
   cherry-picks (orchestrator is the only PR-head pusher);
   `gh pr view` / `gh pr diff` / `gh pr comment`;
-  `python3 .claude/skills/log-progress/scripts/trim_review_history.py`.
+  `python3 .claude/skills/log-progress/scripts/trim_review_history.py`;
+  `python3 .claude/skills/report-review-run/scripts/review_run_report.py`
+  begin / end / change / stage / dashboard / render.
   No force-push, history rewrite, or `gh pr merge`. Never
   `gh pr comment --edit-last`.
 - **Dispatch:** host subagent / Task / Agent tool. If missing, ask the parent
@@ -232,6 +255,10 @@ Never:
 - Post the **Started** comment more than once per harness PR (exactly once at
   fresh startup only)
 - Invent a Cursor Cloud dashboard id for the start comment
+- Invent durations or timestamps instead of `review_run_report.py begin` / `end`
+- Hand-write the Run report instead of `review_run_report.py render`
+- Skip the Run report on ok, blocked, or aborted exit
+- Commit `REVIEW_RUN.json`
 
 If the only path to done is one of the above: emit `blocked`.
 
@@ -281,7 +308,8 @@ never invent a Cursor Cloud agent id. A merged PR is `status: "aborted"`, not
    still has `[open]` tasks.
 3. Read `.claude/skills/dispatch-panel-review/SKILL.md`,
    `dedupe-and-write-tasks`, `dispatch-resolve-wave`, `resolve-next-task`,
-   `log-progress`, and `dispatch-verifiers` when running those steps.
+   `log-progress`, `dispatch-verifiers`, and `report-review-run` when
+   running those steps.
 4. Read `.claude/agents/review_*.md` only if you must paste a reviewer role
    into a general-purpose subagent.
 5. Do not dump the repo tree.
@@ -321,6 +349,7 @@ project commands. Do not apply a personal style guide while grouping.
 | `resolve-next-task` | Brief for each `issue_resolver` invocation (one assigned task). Pass `tasks_path`. |
 | `log-progress` | After each phase and each resolved task. Append only. Orchestrator trims entries older than 30 days after all other tasks. |
 | `dispatch-verifiers` | After panel is clean of significant issues. Sequential claims. |
+| `report-review-run` | `begin`/`end` around each phase and loop; `change` after pushed fixes; `render` the Run report comment at exit. |
 
 ### Significant issues and caps
 
@@ -481,7 +510,9 @@ must abort:
    must say that the PR Review Harness has aborted.
 5. `log-progress` with phase `abort` and outcome `aborted`.
 6. Keep or delete `tasks_path` with the usual `open_task_ids` rule.
-   Trim `REVIEW_HISTORY.md` as on any other exit. Emit JSON with
+   Trim `REVIEW_HISTORY.md` as on any other exit. `end` any open timing
+   step, `stage` abort cells, `render` the Run report, post it, and
+   delete `REVIEW_RUN.json`. Emit JSON with
    `status: "aborted"`, `phase: "abort"`, and
    `blocked_reason: "pull request merged"`.
 
@@ -497,7 +528,8 @@ After the startup comment, post **one new** comment per notable phase with
 Resolve this run's dashboard URL with `run-info` before the first comment.
 Never invent an id.
 
-Follow this visual style on every orchestrator comment:
+Follow this visual style on every orchestrator **phase** comment
+(Started, Panel Review, Resolve Issues, Verifiers, Decision, Aborted):
 
 - Heading is `### PR review harness` (never `##`).
 - First block is a five-column stage table. Do not use a bold-label list.
@@ -512,6 +544,11 @@ Follow this visual style on every orchestrator comment:
   `risk_classifier` comments when a human must act.
 - At **decision**, do not repeat the classifier rationale. Table plus short
   bullets only.
+
+The **Run report** is not a phase template. Its body is exactly
+`review_run_report.py render` stdout (stage table, bullets, closed mermaid
+gantt, Duration table, Changes this run pushed). Do not hand-write it.
+Do not wrap that stdout in another mermaid fence.
 
 Icons: ✅ done, 🔄 in progress, ⏳ queued, 🟢 low risk, 🔴 not low risk,
 ⛔ merge blocked or aborted, ⏸️ merge skipped.
@@ -669,6 +706,20 @@ completed stage cells. Set remaining queued or in-progress cells to
 - Cursor Cloud dashboard for this harness: [open](https://cursor.com/agents/<id>).
 ````
 
+**Run report** (after Decision or Abort, every exit including blocked).
+Do not hand-write this comment. Set `stage` to match the latest Decision
+or Aborted table, then:
+
+```bash
+python3 .claude/skills/report-review-run/scripts/review_run_report.py \
+  render --out /tmp/review-run-report.md
+gh pr comment <n> --body-file /tmp/review-run-report.md
+```
+
+The file contains a closed mermaid gantt, a Duration table for each phase
+and loop, and **Changes this run pushed**. Do not wrap it in another
+mermaid fence. Delete `REVIEW_RUN.json` after posting.
+
 Record the latest comment URL in `delivery.github_comment_url`.
 
 ### When invoked
@@ -676,7 +727,8 @@ Record the latest comment URL in `delivery.github_comment_url`.
 1. Confirm the PR and change set with a lightweight `gh pr view <n> --json
    state,mergedAt`. If it is already merged, abort.
 2. As soon as the PR is open, resolve this run's Cursor Cloud dashboard URL
-   with `run-info`. Never invent an id. Detect resume from `tasks_path` with
+   with `run-info`. Never invent an id. Record it with
+   `review_run_report.py dashboard <url>`. Detect resume from `tasks_path` with
    `[open]` tasks before the first comment. **Fresh run:** post **Started**
    before SHA setup, `gh pr diff`, panel, resolve, or verify (once per harness
    PR). **Resume run:** skip Started; post **Resolve Issues** (Panel Review
@@ -698,7 +750,9 @@ Record the latest comment URL in `delivery.github_comment_url`.
    mark `[done]` only clean-pick ids as in Definition of done, follow
    `log-progress`, and `git push` PR head only after at least one clean pick.
    Loop 1 is the full PR. Loops 2 and 3 pass the
-   resolver-commit range and keep all four reviewers. Before each loop or
+   resolver-commit range and keep all four reviewers. `begin`/`end` around
+   each panel loop and resolve wave; `change` for each pushed source
+   commit. Before each loop or
    new `issue_resolver` task, abort if the PR is merged.
 5. Verify loop (`dispatch-verifiers` → maybe dedupe/`dispatch-resolve-wave`) until claims
    are all `true` or cap or file missing. After each wave (success, conflict, or
@@ -711,7 +765,9 @@ Record the latest comment URL in `delivery.github_comment_url`.
 7. Delete the frozen `tasks_path` only when `open_task_ids` is empty;
    otherwise log remaining open tasks and keep `tasks_path` in the JSON.
 8. After all other tasks, trim `REVIEW_HISTORY.md` (entries older than
-   30 days). Then emit the JSON report.
+   30 days).
+9. Post the **Run report** from `review_run_report.py render`. Delete
+   `REVIEW_RUN.json`. Then emit the JSON report.
 
 ## Output schema
 

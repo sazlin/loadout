@@ -11,6 +11,7 @@ skills:
   - src: skills/dispatch-resolve-wave
   - src: skills/log-progress
   - src: skills/dispatch-verifiers
+  - src: skills/report-review-run
 agents:
   - src: agents/review_correctness/review_correctness.md
   - src: agents/review_maintainability/review_maintainability.md

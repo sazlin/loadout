@@ -364,6 +364,7 @@ def test_pr_review_harness_loadout_includes_harness_agents_and_skills() -> None:
         "skills/dispatch-resolve-wave",
         "skills/log-progress",
         "skills/dispatch-verifiers",
+        "skills/report-review-run",
     }
     assert {entry["src"] for entry in loadout.rules} == {
         "rules/core/honor-check-intent.mdc",
@@ -729,6 +730,38 @@ def test_orchestrator_exit_delete_uses_frozen_tasks_path_on_resume() -> None:
 
 def test_orchestrator_github_comments_use_stage_table_and_bullets() -> None:
     _assert_orchestrator_github_comment_spec(_agent_file(REVIEW_ORCHESTRATOR).read_text())
+
+
+def test_orchestrator_posts_run_report_from_script() -> None:
+    source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
+    vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
+    for text in (source, vendored):
+        lowered = text.lower()
+        assert "report-review-run" in text
+        assert "review_run_report.py" in text
+        assert "REVIEW_RUN.json" in text
+        assert "begin" in lowered and "`end`" in text
+        comments = text.split("### GitHub PR comments", 1)[1].split("### When invoked", 1)[0]
+        comments_lower = comments.lower()
+        assert "run report" in comments_lower
+        assert "render" in comments_lower
+        assert "--body-file" in comments
+        assert "do not hand-write" in comments_lower or "never hand-write" in comments_lower
+        assert "changes this run pushed" in comments_lower
+        anti = text.split("## Anti-reward-hacking", 1)[1].split("## Blocked protocol", 1)[0].lower()
+        assert "invent" in anti and "duration" in anti
+        assert "review_run_report.py" in anti or "run report" in anti
+        tools = text.split("## Tools / privileges", 1)[1].split("## Anti-reward-hacking", 1)[0]
+        assert "review_run_report.py" in tools
+        assert "REVIEW_RUN.json" in tools
+        definition = text.split("## Definition of done", 1)[1].split("## Tools / privileges", 1)[0]
+        assert "review_run_report.py" in definition
+        abort = text.split("### Abort if the PR is merged", 1)[1].split("### GitHub PR comments", 1)[0]
+        assert "review_run_report.py" in abort or "run report" in abort.lower()
+        invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
+        assert invoked.find("run report") > invoked.find("trim") or invoked.find(
+            "review_run_report.py"
+        ) > invoked.find("trim")
 
 
 def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
