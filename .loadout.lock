@@ -2,74 +2,74 @@
   "lockfile_version": 1,
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
-  "resolved_sha": "5110187f9ea980ad3c71626091062defddc4882e",
-  "synced_at": "2026-09-10T00:40:12Z",
-  "tool_version": "0.31.0",
+  "resolved_sha": "local",
+  "synced_at": "2026-09-21T01:42:18Z",
+  "tool_version": "0.42.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
       "src": "agents/davinci/davinci.md",
-      "sha256": "4a9ede0bd25d09817b6ed1a304126ef457d5fa1dd46c3953e2209d642d49d6e5"
+      "sha256": "a2a6c6b0a20241797716a67c0d1fd83a872dab29e8110770ba9cbaf11b1c11f9"
     },
     {
       "dest": ".claude/agents/issue_resolver.md",
       "src": "agents/issue_resolver/issue_resolver.md",
-      "sha256": "aaefeae498ea6e0f2cd6449bee23fabc1f4c9a68dfd758ba71099ff421b859e7"
+      "sha256": "4ff45199ad6085272be582b124f14cbf4383ec0d7c33d3ba738e2535ca0a842a"
     },
     {
       "dest": ".claude/agents/playwright_generator.md",
       "src": "agents/playwright_generator/playwright_generator.md",
-      "sha256": "332a189bed92bc1e8fd2085c93e8cd460b13b2fef313daea32ee69fc681d13fb"
+      "sha256": "8f5e2be75308f271963880e779e086c050741d0365426b54c9d5f66e380530fe"
     },
     {
       "dest": ".claude/agents/playwright_healer.md",
       "src": "agents/playwright_healer/playwright_healer.md",
-      "sha256": "2ded75514df463fdd7c3cd2f289563b1b43a3a6995bfbfbaf8092d6434774b6c"
+      "sha256": "60fb503a92bc0a2bdc6e28620a183795e208398205088a2dfca20c375e395247"
     },
     {
       "dest": ".claude/agents/playwright_planner.md",
       "src": "agents/playwright_planner/playwright_planner.md",
-      "sha256": "fe004929487f934d482fbffca58c0be48f893863e648f4ad7a708a6bc2c5d6ba"
+      "sha256": "a5a231274fd15a6cb1e60cb442780795096834c4361fc7b64c8fc901c4e1c60e"
     },
     {
       "dest": ".claude/agents/python_coder.md",
       "src": "agents/python_coder/python_coder.md",
-      "sha256": "67ede201792eaf94ceeb5b6d270479a50463e09436323a29b51e10cfc352a418"
+      "sha256": "6b7d4eecebfc41243c24f9f5d815b1956678262c1e6c2546ae4392a2f280c72e"
     },
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "62c176a532ac076d02311164425c0a659108c4b540edcf4024c9713dade72d83"
+      "sha256": "837450482060f2a7e2c7f7ff21d74acd00e07ab65fc3dea8193e502d51e22dbc"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
       "src": "agents/review_maintainability/review_maintainability.md",
-      "sha256": "b237ac8eb7077e2f2ba88e58c3c06a7072970c2061843fa24930fe13fe78016b"
+      "sha256": "be32d2e1c41f77113e2c14d554408557b5f755632db8167ded80a398d8679848"
     },
     {
       "dest": ".claude/agents/review_orchestrator.md",
       "src": "agents/review_orchestrator/review_orchestrator.md",
-      "sha256": "e128a54ad8f148a3f4fb2fe5439adc7e028daa1460614435ad559a5bd2d60618"
+      "sha256": "e9045013123b3bd334086edff01d8848bc0624ab1b21ab5c8fb93eed7b9b238e"
     },
     {
       "dest": ".claude/agents/review_scale.md",
       "src": "agents/review_scale/review_scale.md",
-      "sha256": "40348a44e7d5bc5d2ed0117eda61a6619579c7fb6677910b082ec38039029410"
+      "sha256": "da880aa4f5c48d8939a7a2b02a3e17c106129475deeeb1f967ecaeba5d48613a"
     },
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "d581abe259ddd57e9ddd578c016c00e7d281e53cd30d35deb5ee5bd27d47da01"
+      "sha256": "a9e726b1410b4660e90b906367da3f1de3545e7cbb42c32dbbc8e339cf225b1e"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",
       "src": "agents/risk_classifier/risk_classifier.md",
-      "sha256": "dbb9c1a96713a28e2591ea098f483b602ae80c01970767ab78079b07fe21c03b"
+      "sha256": "e4eebf045530a49103aa954db217ffaa796b4a32fdb3ff314e7ba2336b9864fc"
     },
     {
       "dest": ".claude/agents/verifier.md",
       "src": "agents/verifier/verifier.md",
-      "sha256": "c151d469a031c19771ce749cd4a4fcf685ac75646acd9619139a3b1d4b5b53bf"
+      "sha256": "6f3cdbcb52e733a37ade915bccc808d007ac44943d636a9a77951263dce0fc6c"
     },
     {
       "dest": ".claude/settings.json",
@@ -79,7 +79,7 @@
     {
       "dest": ".claude/skills/anti-sleep/SKILL.md",
       "src": "skills/anti-sleep/SKILL.md",
-      "sha256": "c6dfc6f0819c4967f04ce31927654bdeee2f64894fecbd020f2b697629b1116b"
+      "sha256": "2cff892568dbeea047499f3a5b06155de185b69602c97cc6b3a3540bfa1d7e23"
     },
     {
       "dest": ".claude/skills/anti-sleep/scripts/keep-awake",
@@ -90,7 +90,7 @@
     {
       "dest": ".claude/skills/brainstorming/SKILL.md",
       "src": "skills/brainstorming/SKILL.md",
-      "sha256": "1eebfcf8a94e264cb682eaa702a6bd50e780b4dc5529f52270e3788b594aa997"
+      "sha256": "ee844ccca86388b2c44b608d42fcd58cab6a1eece73052338c4666b67a00d8e2"
     },
     {
       "dest": ".claude/skills/brainstorming/SOURCE.md",
@@ -140,12 +140,12 @@
     {
       "dest": ".claude/skills/decisions/SKILL.md",
       "src": "skills/decisions/SKILL.md",
-      "sha256": "be0a96fe76c4f6270e09ee7f73b9ddbae6426f2b90dae59fde73ad76df5b5eaa"
+      "sha256": "a9d27427e81f60cefa527ce54df979eeca67f65a6bdbc0719d343cbce4b114fb"
     },
     {
       "dest": ".claude/skills/dedupe-and-write-tasks/SKILL.md",
       "src": "skills/dedupe-and-write-tasks/SKILL.md",
-      "sha256": "4d61328c3513a2cbb32c7ef8b369a4b2342f37c841ca5cd9835c7b5afe3d4ef0"
+      "sha256": "979a35eff957d3bf61a1a0b821f292c3a2f90220ce0e424fde1400bb93b74e4d"
     },
     {
       "dest": ".claude/skills/dedupe-and-write-tasks/references/tasks-to-resolve-template.md",
@@ -155,42 +155,59 @@
     {
       "dest": ".claude/skills/dispatch-panel-review/SKILL.md",
       "src": "skills/dispatch-panel-review/SKILL.md",
-      "sha256": "110f732cb96c023e65f3aa89a9137bd9cd9c5cd484f5889cc398b2d0a85f5c60"
+      "sha256": "2d09da3473d850f2728ff4524a6f6c591cfe63907921f34cac02b738497bafef"
+    },
+    {
+      "dest": ".claude/skills/dispatch-resolve-wave/SKILL.md",
+      "src": "skills/dispatch-resolve-wave/SKILL.md",
+      "sha256": "c0e9396e57fbd0acf657e4a874cb9c4615b535c773e0cce1f434e2cac3fcb2e9"
+    },
+    {
+      "dest": ".claude/skills/dispatch-resolve-wave/scripts/partition_waves.py",
+      "src": "skills/dispatch-resolve-wave/scripts/partition_waves.py",
+      "sha256": "26e9f0240c2f99cc1e2eed9d453f83a6b43770def7f1befcc457850f5cf66904",
+      "mode": "755"
+    },
+    {
+      "dest": ".claude/skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py",
+      "src": "skills/dispatch-resolve-wave/scripts/prepare_wave_worktrees.py",
+      "sha256": "30b334922f1a2ccf1430aa6a847bd890e95047ae84e2b0a1235ea36ae22ad771",
+      "mode": "755"
     },
     {
       "dest": ".claude/skills/dispatch-verifiers/SKILL.md",
       "src": "skills/dispatch-verifiers/SKILL.md",
-      "sha256": "9621a80f3410b7c024a0a12d9e365a2a0f1bf9435108d89f9b40a8eeba224d29"
+      "sha256": "a8858ebc6802e95742fd94f5cd23f30325e878c61050c5ce621acd030cf2b2a0"
     },
     {
       "dest": ".claude/skills/dispatching-parallel-agents/SKILL.md",
       "src": "skills/dispatching-parallel-agents/SKILL.md",
-      "sha256": "0f810c0972243005a122066df935379521aec45988ac1a7584c175b5958251da"
+      "sha256": "59f9d475ed505af03e7200a03d76be4c5ecfe930583013fdd34ab43ceee9ebe4"
     },
     {
       "dest": ".claude/skills/executing-plans/SKILL.md",
       "src": "skills/executing-plans/SKILL.md",
-      "sha256": "d724c5bbe3b68f88ac770f8569a74d5f183e5ed3d5c58541a65d77e0822d8c6d"
+      "sha256": "2458b1343a68e36376ed4d9b0608523126243838eb1e468f0958f1dd50eb887b"
     },
     {
       "dest": ".claude/skills/finishing-a-development-branch/SKILL.md",
       "src": "skills/finishing-a-development-branch/SKILL.md",
-      "sha256": "915cde4f7a485d9b55f1f0c57d9effb4fb04df13bb4f6c88f2f6a149205c4613"
+      "sha256": "80ca766bef15a0affca47c36020ba647e2a4bdf517bdd14a8979d89e4cbd9b68"
     },
     {
       "dest": ".claude/skills/learn/SKILL.md",
       "src": "skills/learn/SKILL.md",
-      "sha256": "f32e601fde0ae83f7422bb59d9d26a9dc01d6a14f4fb610f6a7ad42c5f4581b3"
+      "sha256": "d656842d6ace3a5ea07d76b481f054610fb903dfb801475f37cbc0279632d6d8"
     },
     {
       "dest": ".claude/skills/log-progress/SKILL.md",
       "src": "skills/log-progress/SKILL.md",
-      "sha256": "be58444791e3416a0ecf7eb877b3c86f60a2e825694d595b7a9b2a29e6803414"
+      "sha256": "eff703d04fc1de50f7fe5f77616e782a7c9135051d3f1ae0f049f0cac4c28e7d"
     },
     {
       "dest": ".claude/skills/log-progress/references/review-history-template.md",
       "src": "skills/log-progress/references/review-history-template.md",
-      "sha256": "193bf50d026838a007f4bb11e54e34539bbcad8c805bc639a5d5c93cba8ff63d"
+      "sha256": "2bc2156fafd40309c6c90142a19c554f9c36a9945ca88003d9f3017c0ef00535"
     },
     {
       "dest": ".claude/skills/log-progress/scripts/trim_review_history.py",
@@ -201,12 +218,12 @@
     {
       "dest": ".claude/skills/next-decision/SKILL.md",
       "src": "skills/next-decision/SKILL.md",
-      "sha256": "f1f4fa9b8a7f4a2065b54742ee1f99664d3321105325e613b63c227d958f18e3"
+      "sha256": "c3e26eca14d8675652abae5716ba892bc60e1398427502ce3e5e1264a6353fcd"
     },
     {
       "dest": ".claude/skills/playwright-agents/SKILL.md",
       "src": "skills/playwright-agents/SKILL.md",
-      "sha256": "52f825076188de617196818c2eaf2318e4998729cc034462b3880e3a91717256"
+      "sha256": "4e238bbd694e66a2982e88f934b0a156aa8049638e02f694170a8107f7952a10"
     },
     {
       "dest": ".claude/skills/playwright-agents/references/ci.md",
@@ -236,7 +253,7 @@
     {
       "dest": ".claude/skills/ponytail-audit/SKILL.md",
       "src": "skills/ponytail-audit/SKILL.md",
-      "sha256": "5c688b9f92fbe82a70fe5fa6604ff328da472f9eae0f96a69ccf141863e6c7d0"
+      "sha256": "21977dc1d26865b74503fd2f7eb864a968c57b633009798df071f7482b2d0fae"
     },
     {
       "dest": ".claude/skills/ponytail-audit/SOURCE.md",
@@ -246,7 +263,7 @@
     {
       "dest": ".claude/skills/ponytail-debt/SKILL.md",
       "src": "skills/ponytail-debt/SKILL.md",
-      "sha256": "94e6ad539459aef86397b2e17b836324d2b38305c898e02f26c99e97baacc8f3"
+      "sha256": "38646134c6405b2c3a5dd58e78c03b820f9ff9eba4bb3c1214ae31bec1b355f1"
     },
     {
       "dest": ".claude/skills/ponytail-debt/SOURCE.md",
@@ -256,7 +273,7 @@
     {
       "dest": ".claude/skills/ponytail-gain/SKILL.md",
       "src": "skills/ponytail-gain/SKILL.md",
-      "sha256": "95ecca32dae628035abfaf20eef20fd09a9877c7818adae8f39aca452d1a3a65"
+      "sha256": "2ab7ed02b34e941f578898503a561f5145fd2e5bcacdcefae2972a60068f800c"
     },
     {
       "dest": ".claude/skills/ponytail-gain/SOURCE.md",
@@ -266,7 +283,7 @@
     {
       "dest": ".claude/skills/ponytail-help/SKILL.md",
       "src": "skills/ponytail-help/SKILL.md",
-      "sha256": "d71dd15fda5b360bbb483553fb8f40c19e0ea857e6a8b8ef45501482a6d23d18"
+      "sha256": "a91348008ef680591c547d0b8e51bd9b594979f710011137c7d01c83c23dee58"
     },
     {
       "dest": ".claude/skills/ponytail-help/SOURCE.md",
@@ -276,7 +293,7 @@
     {
       "dest": ".claude/skills/ponytail-review/SKILL.md",
       "src": "skills/ponytail-review/SKILL.md",
-      "sha256": "cc7d1d0456899d73b7052afc4c5bbf570df648e3eeddecab5e4675ef773ea14c"
+      "sha256": "2d1c01775a8f800249aa16a2d0926582481662cf45af06581100f620ef662b06"
     },
     {
       "dest": ".claude/skills/ponytail-review/SOURCE.md",
@@ -286,7 +303,7 @@
     {
       "dest": ".claude/skills/ponytail/SKILL.md",
       "src": "skills/ponytail/SKILL.md",
-      "sha256": "baa670ad9efd7745c5265b2385e88cb691e56c54c38a7f1bc7005497bc955908"
+      "sha256": "aa906318f0b59d081fb5fa8e850b031ca2b5447d9fb3606b4df9a684a6d12077"
     },
     {
       "dest": ".claude/skills/ponytail/SOURCE.md",
@@ -296,17 +313,17 @@
     {
       "dest": ".claude/skills/receiving-code-review/SKILL.md",
       "src": "skills/receiving-code-review/SKILL.md",
-      "sha256": "76ff35faa085d9496018f62a64cd6fded6b6b6f12eeeaae5519a471a906e6f82"
+      "sha256": "2d2948136e7877ac61d73b3e832cd5fb29f49f527cf779918e528268e7db2ab8"
     },
     {
       "dest": ".claude/skills/release-checklist/SKILL.md",
       "src": "skills/release-checklist/SKILL.md",
-      "sha256": "890b25e1f8d7baacc9035abb5dd96221591002aa8eecd33ef629f2144e798138"
+      "sha256": "00ce684e1588c58e5c6499505f386da4deee98babfe4c7233ff2e379cf0b2d07"
     },
     {
       "dest": ".claude/skills/requesting-code-review/SKILL.md",
       "src": "skills/requesting-code-review/SKILL.md",
-      "sha256": "da1ac1d18b7d1ded4ba2ff244f97eedd2599bdd2447f90f8159385241c435967"
+      "sha256": "d9ab3f244d80899a483bb307256ed6152a7f6936ee4f9a125996a6dd03f58c7f"
     },
     {
       "dest": ".claude/skills/requesting-code-review/code-reviewer.md",
@@ -316,12 +333,12 @@
     {
       "dest": ".claude/skills/resolve-next-task/SKILL.md",
       "src": "skills/resolve-next-task/SKILL.md",
-      "sha256": "72b14f7f2b4dcfc09558d23a0768f4e20e2a5411de8adc963d5aac70451e54cb"
+      "sha256": "771afbb3d8ac53de8b403f0dcb6bf4ac98a5fbe91debc9d3841b2e69e5869f93"
     },
     {
       "dest": ".claude/skills/rtk/SKILL.md",
       "src": "skills/rtk/SKILL.md",
-      "sha256": "0cf96d333ff7b16d804e725c6051f825523b4ad36b17a542b2a4ebc719b3cb42"
+      "sha256": "42f5fca8bab5acbf90f50d1b1652e422871558ec0f3a86a73fcfbce15a4603f6"
     },
     {
       "dest": ".claude/skills/rtk/SOURCE.md",
@@ -331,7 +348,7 @@
     {
       "dest": ".claude/skills/subagent-driven-development/SKILL.md",
       "src": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "da6aaf4a94c49634cefc585a14c29eb37b06f37f24ef8f6e260db3d088c45e0a"
+      "sha256": "e5ef72f29b5708d92e6700fbb471c289941a685db09662293062e378da6a3f0b"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/implementer-prompt.md",
@@ -374,7 +391,7 @@
     {
       "dest": ".claude/skills/systematic-debugging/SKILL.md",
       "src": "skills/systematic-debugging/SKILL.md",
-      "sha256": "cad11325af93ca927916347b4bb8dca64cec9d2d455713c7427ae1a1c9fe70c8"
+      "sha256": "55af14a04e672bbf169a032ca38d91f0597ad962b0d58085fe54e1bf0f884291"
     },
     {
       "dest": ".claude/skills/systematic-debugging/condition-based-waiting-example.ts",
@@ -425,7 +442,7 @@
     {
       "dest": ".claude/skills/test-driven-development/SKILL.md",
       "src": "skills/test-driven-development/SKILL.md",
-      "sha256": "36e0c1ff2f9df1773df8c2d8c82eeab314eaf53c477838caf319e256de10b2e0"
+      "sha256": "5304c35308978d46881dff2d4b436aeb68318ac6065e62e4521dd0c0952b301a"
     },
     {
       "dest": ".claude/skills/test-driven-development/writing-good-tests.md",
@@ -435,7 +452,7 @@
     {
       "dest": ".claude/skills/unslop/SKILL.md",
       "src": "skills/unslop/SKILL.md",
-      "sha256": "521222ca45d5ea72e494cf8ed0626020b77f379f749e6470fc1c7bba6e6925ff"
+      "sha256": "a8c9a7605a3629db7538a4993e426a6b2f3fce0a699a8eb94f5a8703f2089e05"
     },
     {
       "dest": ".claude/skills/unslop/SOURCE.md",
@@ -445,12 +462,12 @@
     {
       "dest": ".claude/skills/using-git-worktrees/SKILL.md",
       "src": "skills/using-git-worktrees/SKILL.md",
-      "sha256": "2d0b32f4630218a741ae7ad7a149f0f8bc992f6c241bb6b6c8804639f58ea4b9"
+      "sha256": "487998f948b16dfdbc3edc285c3365e9c5cc4245a4231254cb0afc0afc235f61"
     },
     {
       "dest": ".claude/skills/using-superpowers/SKILL.md",
       "src": "skills/using-superpowers/SKILL.md",
-      "sha256": "11c299c4a4354b68dc608057b386065fe587653fe8a57f47fa5d46908e650e8c"
+      "sha256": "509b94852f283e348c23e1a3f2fd5e9c4c1b6e2b094b61a259c1038207170f24"
     },
     {
       "dest": ".claude/skills/using-superpowers/references/antigravity-tools.md",
@@ -475,12 +492,12 @@
     {
       "dest": ".claude/skills/verification-before-completion/SKILL.md",
       "src": "skills/verification-before-completion/SKILL.md",
-      "sha256": "90c664edfba222033c0d591cff5938729727bb70df70aa9a8cfbd922c6a08851"
+      "sha256": "7805587386e46575e49770dadc3596b82f12db6d839a4d4aea7dd26d38cf8eb0"
     },
     {
       "dest": ".claude/skills/writing-plans/SKILL.md",
       "src": "skills/writing-plans/SKILL.md",
-      "sha256": "a753c5cbfe2b3ce3bde7639c528b8b43819064b729d31b13048938b0ffa9866a"
+      "sha256": "6c44e799a7321baeb1bd990cb0c0936e1085e3ae0a0ebc8ddc057e7e5c3b204b"
     },
     {
       "dest": ".claude/skills/writing-plans/plan-document-reviewer-prompt.md",
@@ -490,7 +507,7 @@
     {
       "dest": ".claude/skills/writing-skills/SKILL.md",
       "src": "skills/writing-skills/SKILL.md",
-      "sha256": "4db6a346ec852edb093c8fc9ba2d4be0e72fe224ccc696fc5d962c42f9524043"
+      "sha256": "fb309f1c65d19a74ebb86e0decf8fa24461d40aafed8363348028136dc93f2f0"
     },
     {
       "dest": ".claude/skills/writing-skills/anthropic-best-practices.md",
@@ -548,12 +565,12 @@
     {
       "dest": ".cursor/hooks/ponytail-activate/SOURCE.md",
       "src": "hooks/ponytail-activate/SOURCE.md",
-      "sha256": "47759b5cc965c5c4baa6d7f30b452254ecc462d50650b77246397a9037ff6d00"
+      "sha256": "6743eb0730b645a1911951c473cfa77c91cb3c016c5fda026a4904f0fdcfd208"
     },
     {
       "dest": ".cursor/hooks/ponytail-activate/ponytail-activate",
       "src": "hooks/ponytail-activate/ponytail-activate",
-      "sha256": "18f5b8bbcb957fd980f252705809535eea63b3c63055684dc36c293fa580c3bc",
+      "sha256": "a9d6edc5e0f8525b8eedd48dbe577bc89738bfe6ab3dc648474d2840d49d5d35",
       "mode": "755"
     },
     {
@@ -586,57 +603,62 @@
     {
       "dest": ".cursor/rules/agent-authoring.mdc",
       "src": "rules/agents/agent-authoring.mdc",
-      "sha256": "b62d66ab99443a65b3ebc8e973b7681b2985947ddd91db83fbe97e1b10a6760a"
+      "sha256": "057ce2cd1e12a1b877d934c8b7df894fd92fea8118716a1c1da80e64fd6b9214"
     },
     {
       "dest": ".cursor/rules/colocated-evals.mdc",
       "src": "rules/core/colocated-evals.mdc",
-      "sha256": "0d57edc5bc969d324060e66b6baa9dba3376f62dc8b4fcb620cb4ffe72b91bc9"
+      "sha256": "1f5ceb31e5c74b51d25c4a4acdd13397ee3c5144785e1cdf9564d51fb778d961"
     },
     {
       "dest": ".cursor/rules/commit-style.mdc",
       "src": "rules/core/commit-style.mdc",
-      "sha256": "318db667ad68ec9ec87b4254e87d252127b218a80441d4684e3df5b6e95c30a7"
+      "sha256": "1d2ed2dc2698b2ce56049e56e3be2a66869c7ffa06d1f7631daa283342383f56"
     },
     {
       "dest": ".cursor/rules/honor-check-intent.mdc",
       "src": "rules/core/honor-check-intent.mdc",
-      "sha256": "9d1731677827540cc18e8bada3e1706466f53deb0ed5fe5ea56af2a95c917efd"
+      "sha256": "4ffed0dad6413baa9dd5db16d1a01d392cdb280120d913aa0694a2da23198384"
+    },
+    {
+      "dest": ".cursor/rules/no-autonomous-external-comms.mdc",
+      "src": "rules/core/no-autonomous-external-comms.mdc",
+      "sha256": "2aedef73061f1df7c32edcdc25f2e9189edfddeaaa0bf4f50de71eed43a779d0"
     },
     {
       "dest": ".cursor/rules/no-cursor-coauthor.mdc",
       "src": "rules/core/no-cursor-coauthor.mdc",
-      "sha256": "bd7ec3099b2073a4fa2e90a48ab11e4022263ecb7d1212625092e9053a27956e"
+      "sha256": "a99c120af657866c420f4f7309909771bb68f05d1941e610d92c5a74fe106652"
     },
     {
       "dest": ".cursor/rules/ponytail.mdc",
       "src": "rules/coding/ponytail.mdc",
-      "sha256": "39f0117bd5d67f86a8dfed3abab8c6f7628a1d81f85c4c2a6494012979f39f0b"
+      "sha256": "e68d854fee6b56330bd022b8381679084b2e52703f888cd97c7f0c1247856f84"
     },
     {
       "dest": ".cursor/rules/pr-ready-for-review.mdc",
       "src": "rules/core/pr-ready-for-review.mdc",
-      "sha256": "e1fad8e8e41d9dd39fae3995d9ced594744343f166eebcfb963f604d2d919bd6"
+      "sha256": "fbc885c882065ee39045894a60914c596a9ec6e8a1a18951909c5839aca5e2e2"
     },
     {
       "dest": ".cursor/rules/pytest.mdc",
       "src": "rules/python/pytest.mdc",
-      "sha256": "c3b58fb0e54838e9cbf16a5d336358db70c27a01cb80a30c1bff941054453493"
+      "sha256": "8eff4f47882226993ae593a44147d7709e03fa1e61adff93f0188e3a11e92e7e"
     },
     {
       "dest": ".cursor/rules/python-code-style.mdc",
       "src": "rules/python/python-code-style.mdc",
-      "sha256": "ace5296b0b5e8ee028ca261b04ed61ac047b56a809e9eaea512c8e6409261b9b"
+      "sha256": "006044b980df7b73b8f177e5ac6c39833a9f1979d995f364fafe91a244eea6f7"
     },
     {
       "dest": ".cursor/rules/repo-conventions.mdc",
       "src": "rules/core/repo-conventions.mdc",
-      "sha256": "7c2ff543951a7148cf2e9742d5560d8562cc72525a52321becbb2508ee9f39cf"
+      "sha256": "5fb5ca1def5eb9ae39ac64e5aa06e653c24820fffff542d4692c775a282470d7"
     },
     {
       "dest": ".cursor/rules/test-agents.mdc",
       "src": "rules/playwright/test-agents.mdc",
-      "sha256": "c2cc4101c70f97b2c9051f189eac9939bf148789b78de716eabae41b8d6e6ec2"
+      "sha256": "9c588397f40cf125fde18bacfa49d7475838c47b7366631df99b67152632b31d"
     },
     {
       "dest": ".mcp.json",
@@ -646,14 +668,14 @@
     {
       "dest": "e2e/.cursor/rules/e2e-conventions.mdc",
       "src": "rules/playwright/e2e-conventions.mdc",
-      "sha256": "1d7afff195d93080901f6975bb71d16dd8b8c098f0697b9197c46ae552d46f87"
+      "sha256": "ab9b05b9fdacf60364ef0f2019de4221ad9245575873dfa39577f349d4b6a59d"
     }
   ],
   "managed_blocks": [
     {
       "file": "AGENTS.md",
       "block": "agent-rules",
-      "sha256": "55d58d751e02db25df910964f08468f4dbe4389c2dec3bce237ccf9829221dc4"
+      "sha256": "e35167118d20f0f589fbb5c22abd1be73583bd799005378a7996b5b85eaee5e6"
     },
     {
       "file": "CLAUDE.md",

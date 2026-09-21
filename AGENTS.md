@@ -73,6 +73,7 @@ repo, so read them at the start of a session.
 | `.cursor/rules/colocated-evals.mdc` | Always | Keep agent and skill eval fixtures next to the artifact they test. Applies when adding or moving evals. |
 | `.cursor/rules/commit-style.mdc` | Always | Write focused, reviewable commits with clear intent. |
 | `.cursor/rules/honor-check-intent.mdc` | Always | Do not rename, change a file extension, or move files to bypass a failing check. Honor the intent of the rule, verifier, test, or CI check. Applies to all work. |
+| `.cursor/rules/no-autonomous-external-comms.mdc` | Always | Get an explicit GO/NO-GO from the User before posting on their behalf to any third-party or public medium. Does not apply to repos the User owns. When unsure, assume permission is required. |
 | `.cursor/rules/no-cursor-coauthor.mdc` | Always | Never include Cursor as a git commit co-author. |
 | `.cursor/rules/pr-ready-for-review.mdc` | Always | Open GitHub PRs ready for review, never as drafts. If the change is not ready, do not open a PR; ask the user what is blocking. |
 | `.cursor/rules/repo-conventions.mdc` | Always | Preserve repository conventions and verify scoped changes. |

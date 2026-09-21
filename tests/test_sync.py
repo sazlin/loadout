@@ -817,6 +817,10 @@ def test_real_pr_review_harness_loadout_vendors_harness(tmp_path: Path, monkeypa
     assert (project / ".claude/skills/dispatch-panel-review/SKILL.md").is_file()
     assert (project / ".claude/skills/dedupe-and-write-tasks/SKILL.md").is_file()
     assert (project / ".claude/skills/resolve-next-task/SKILL.md").is_file()
+    assert (project / ".claude/skills/dispatch-resolve-wave/SKILL.md").is_file()
+    assert (
+        project / ".claude/skills/dispatch-resolve-wave/scripts/partition_waves.py"
+    ).is_file()
     assert (project / ".claude/skills/log-progress/SKILL.md").is_file()
     assert (project / ".claude/skills/log-progress/scripts/trim_review_history.py").is_file()
     assert (project / ".claude/skills/dispatch-verifiers/SKILL.md").is_file()

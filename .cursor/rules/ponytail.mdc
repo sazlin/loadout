@@ -26,7 +26,7 @@ globs:
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/coding/ponytail.mdc
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 <!-- Sync contract: rule excerpts mirror skills/ponytail/SKILL.md (ladder, fail-open

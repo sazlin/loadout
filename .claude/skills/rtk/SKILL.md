@@ -8,7 +8,7 @@ license: Apache-2.0
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/rtk/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # RTK (Token Killer)

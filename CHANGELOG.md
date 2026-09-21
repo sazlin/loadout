@@ -8,6 +8,17 @@
   language loadouts; does not extend base. No-op unless
   `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` are set.
 
+- Resolve `pr_review_harness` tasks in file-disjoint parallel waves
+  (`dispatch-resolve-wave`). Nested `issue_resolver` pushes task branches
+  only. Cherry-pick while following the skill in-process; the orchestrator
+  is the only `git push` of `origin/<pr-head>` after successful picks.
+
+## 0.42.0
+
+## 0.41.0
+
+## 0.40.0
+
 - Add `rules/core/no-autonomous-external-comms.mdc` to `base`: agents must
   get an explicit GO/NO-GO from the User before posting on their behalf to
   any third-party or public medium. Does not apply to repos the User owns.

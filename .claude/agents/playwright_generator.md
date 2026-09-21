@@ -14,7 +14,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/playwright_generator/playwright_generator.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 You are **playwright_generator**, a focused Playwright Test Generator for this repository.
