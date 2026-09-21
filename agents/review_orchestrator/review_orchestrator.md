@@ -124,8 +124,9 @@ prose alone.
    Before each panel loop run `review_run_report.py begin --section "Panel Review" --label "loop N"`
    and `end` when that panel returns. Before each resolve wave
    `begin --section "Resolve Issues" --label "wave N"` and `end` when the
-   wave returns, then `change --sha --task --summary --path` for each
-   source commit pushed (never tasks or history files).
+   wave returns, then `change --sha --task --summary --path file:+N,-M`
+   for each source commit pushed (never tasks or history files). Take
+   N/M from `git show --numstat --format= <sha>`; skip binary `-` rows.
    - **Resume run:** skip panel; run `dispatch-resolve-wave` against frozen
      `tasks_path` until open tasks are gone or the resolve-wave retry cap
      is hit. After each wave (success, conflict, or dispatch failure),

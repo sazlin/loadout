@@ -30,6 +30,7 @@ STAGE_KEYS = tuple(key for key, _ in STAGES)
 QUEUED_CELL = "⏳|queued"
 GANTT_UNSAFE_RE = re.compile(r"[`#:;,{}|\\%]")
 ISO_Z_RE = re.compile(r"Z$")
+PATH_STAT_RE = re.compile(r"^(.*):\+(\d+),-(\d+)$")
 MAX_STEPS = 64
 MAX_CHANGES = 32
 MAX_PATHS_PER_CHANGE = 24
@@ -53,11 +54,17 @@ class Step(TypedDict):
     ended_at: str | None
 
 
+class FileChange(TypedDict):
+    path: str
+    added: int
+    deleted: int
+
+
 class Change(TypedDict):
     sha: str
     task: str
     summary: str
-    paths: list[str]
+    paths: list[FileChange]
 
 
 class RunLog(TypedDict):
@@ -167,17 +174,57 @@ def _coerce_step(raw: object) -> Step | None:
     }
 
 
+def _as_diffstat(raw: object) -> int:
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, value)
+
+
+def _file_change(path: str, added: object, deleted: object) -> FileChange | None:
+    text = path.strip()
+    if not text:
+        return None
+    return {
+        "path": _clip(text, MAX_FIELD_CHARS),
+        "added": _as_diffstat(added),
+        "deleted": _as_diffstat(deleted),
+    }
+
+
+def _parse_path_stat(raw: str) -> FileChange | None:
+    text = raw.strip()
+    if not text:
+        return None
+    match = PATH_STAT_RE.fullmatch(text)
+    if match:
+        return _file_change(match.group(1), match.group(2), match.group(3))
+    return _file_change(text, 0, 0)
+
+
+def _coerce_file_change(raw: object) -> FileChange | None:
+    if isinstance(raw, str):
+        return _parse_path_stat(raw)
+    if isinstance(raw, dict):
+        path = raw.get("path")
+        if not isinstance(path, str):
+            return None
+        return _file_change(path, raw.get("added", 0), raw.get("deleted", 0))
+    return None
+
+
 def _coerce_change(raw: object) -> Change | None:
     if not isinstance(raw, dict):
         return None
     paths_raw = raw.get("paths")
-    paths: list[str] = []
+    paths: list[FileChange] = []
     if isinstance(paths_raw, list):
         for item in paths_raw[:MAX_PATHS_PER_CHANGE]:
-            text = str(item).strip()
-            if not text:
+            file_change = _coerce_file_change(item)
+            if file_change is None:
                 continue
-            paths.append(_clip(text, MAX_FIELD_CHARS))
+            paths.append(file_change)
             if len(paths) >= MAX_PATHS_PER_CHANGE:
                 break
     return {
@@ -368,7 +415,14 @@ def add_change(
     summary_text = _clip(summary.strip(), MAX_SUMMARY_CHARS)
     if not sha_text or not task_text or not summary_text:
         raise ValueError("sha, task, and summary must be non-empty")
-    kept_paths = [item.strip() for item in paths or [] if item.strip()][:MAX_PATHS_PER_CHANGE]
+    kept_paths: list[FileChange] = []
+    for item in paths or []:
+        parsed = _parse_path_stat(item)
+        if parsed is None:
+            continue
+        kept_paths.append(parsed)
+        if len(kept_paths) >= MAX_PATHS_PER_CHANGE:
+            break
 
     def mutate(payload: RunLog) -> None:
         payload["changes"].append(
@@ -547,18 +601,28 @@ def _gantt_block(steps: Sequence[Step]) -> str:
     return "\n".join(lines)
 
 
+def _safe_html_text(text: str) -> str:
+    return sanitize_markdown_text(text).replace("<", "").replace(">", "")
+
+
+def _file_stat_line(file_change: FileChange) -> str:
+    path = _safe_html_text(file_change["path"])
+    return f"`{path}`: +{file_change['added']}, -{file_change['deleted']}"
+
+
 def _change_line(index: int, change: Change) -> str:
+    task = _safe_html_text(change["task"])
+    summary = _safe_html_text(change["summary"]).rstrip(".")
+    head = f"{index}. {task}: {summary}."
     raw_paths = list(change["paths"])
     extra_paths = max(0, len(raw_paths) - MAX_RENDER_PATHS)
     shown_paths = raw_paths[:MAX_RENDER_PATHS]
-    paths = ", ".join(f"`{sanitize_markdown_text(path)}`" for path in shown_paths)
+    if not shown_paths and extra_paths == 0:
+        return head
+    rows = [_file_stat_line(item) for item in shown_paths]
     if extra_paths:
-        paths = f"{paths}, {extra_paths} more paths omitted" if paths else f"{extra_paths} more paths omitted"
-    files = f" {paths}: " if paths else " "
-    sha = sanitize_markdown_text(change["sha"])
-    task = sanitize_markdown_text(change["task"])
-    summary = sanitize_markdown_text(change["summary"])
-    return f"{index}. `{sha}` {task}.{files}{summary}"
+        rows.append(f"{extra_paths} more files omitted")
+    return f"{head}<br><details>{' <br> '.join(rows)}</details>"
 
 
 def _changes_section(changes: Sequence[Change], omitted: int = 0) -> str:

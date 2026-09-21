@@ -74,7 +74,8 @@ def test_render_includes_stage_table_duration_loops_and_changes() -> None:
     assert "12m 40s" in markdown
     assert "38m 12s" in markdown
     assert "#### Changes this run pushed" in markdown
-    assert "`a1b2c3d` TASK-001" in markdown
+    assert "1. TASK-001: bind user-id in the lookup query instead of string concat." in markdown
+    assert "<details>" in markdown
     assert "`src/user_api.py`" in markdown
     assert "https://cursor.com/agents/bc-abc123" in markdown
 
@@ -130,7 +131,7 @@ def test_render_escapes_markdown_and_mermaid_metacharacters_in_labels_and_change
                 "sha": "abc`def",
                 "task": "TASK-001|x",
                 "summary": "hello | world ``` md",
-                "paths": ["src/a|b.py", "foo```bar"],
+                "paths": ["src/a|b.py", "foo```bar", "x</details><img>"],
             }
         ],
     }
@@ -153,7 +154,8 @@ def test_render_escapes_markdown_and_mermaid_metacharacters_in_labels_and_change
     assert "`src/a/b.py`" in changes
     assert "`foobar`" in changes
     assert "TASK-001/x" in changes
-    assert "`abcdef`" in changes
+    assert "</details><img>" not in changes
+    assert "`x/detailsimg`" in changes
     assert "oops/extra" in markdown or "oops extra" in markdown
 
 
@@ -229,6 +231,115 @@ def test_empty_changes_says_none_pushed() -> None:
     markdown = module.render_markdown(run)
     assert "#### Changes this run pushed" in markdown
     assert "did not push source commits" in markdown
+
+
+def test_change_item_puts_files_in_details_with_diffstat() -> None:
+    module = _load_script()
+    markdown = module.render_markdown(
+        {
+            "dashboard_url": None,
+            "stage": {},
+            "steps": [],
+            "changes": [
+                {
+                    "sha": "a1b2c3d",
+                    "task": "TASK-001",
+                    "summary": "bind user-id in the lookup query instead of string concat",
+                    "paths": [
+                        {"path": "src/user_api.py", "added": 12, "deleted": 4},
+                        {"path": "tests/test_user_api.py", "added": 8, "deleted": 1},
+                    ],
+                }
+            ],
+        }
+    )
+    section = markdown.split("#### Changes this run pushed", 1)[1]
+    line = next(item for item in section.splitlines() if "TASK-001" in item)
+    prefix, rest = line.split("<details>", 1)
+    assert prefix == "1. TASK-001: bind user-id in the lookup query instead of string concat.<br>"
+    assert "src/user_api.py" not in prefix
+    assert rest == "`src/user_api.py`: +12, -4 <br> `tests/test_user_api.py`: +8, -1</details>"
+
+
+def test_legacy_string_paths_render_zero_diffstat() -> None:
+    module = _load_script()
+    markdown = module.render_markdown(
+        {
+            "dashboard_url": None,
+            "stage": {},
+            "steps": [],
+            "changes": [
+                {
+                    "sha": "d4e5f6a",
+                    "task": "TASK-002",
+                    "summary": "drop email and phone from log lines",
+                    "paths": ["src/logs.py"],
+                }
+            ],
+        }
+    )
+    section = markdown.split("#### Changes this run pushed", 1)[1]
+    line = next(item for item in section.splitlines() if "TASK-002" in item)
+    prefix, rest = line.split("<details>", 1)
+    assert prefix == "1. TASK-002: drop email and phone from log lines.<br>"
+    assert rest == "`src/logs.py`: +0, -0</details>"
+
+
+def test_change_cli_records_numstat_on_paths(tmp_path: Path) -> None:
+    path = tmp_path / "run.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "change",
+            "--file",
+            str(path),
+            "--sha",
+            "abc1234",
+            "--task",
+            "TASK-001",
+            "--summary",
+            "bind ids",
+            "--path",
+            "src/user_api.py:+12,-4",
+            "--path",
+            "tests/test_user_api.py:+8,-1",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    assert stored["changes"][0]["paths"] == [
+        {"path": "src/user_api.py", "added": 12, "deleted": 4},
+        {"path": "tests/test_user_api.py", "added": 8, "deleted": 1},
+    ]
+
+
+def test_change_summary_cannot_break_out_of_details() -> None:
+    module = _load_script()
+    markdown = module.render_markdown(
+        {
+            "dashboard_url": None,
+            "stage": {},
+            "steps": [],
+            "changes": [
+                {
+                    "sha": "abc1234",
+                    "task": "TASK-001",
+                    "summary": "fix </details><b>bold",
+                    "paths": [{"path": "src/a.py", "added": 1, "deleted": 0}],
+                }
+            ],
+        }
+    )
+    section = markdown.split("#### Changes this run pushed", 1)[1]
+    line = next(item for item in section.splitlines() if "TASK-001" in item)
+    prefix, rest = line.split("<details>", 1)
+    assert "</details>" not in prefix
+    assert rest.count("</details>") == 1
+    assert rest.endswith("</details>")
 
 
 def test_example_fixture_gantt_lines_use_single_colon_delimiter() -> None:

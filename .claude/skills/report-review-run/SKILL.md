@@ -38,9 +38,10 @@ report body.
    `TASK-00N` id. `begin` closes any still-open step.
 3. **End a step** when that work returns: `end`.
 4. **Record a pushed fix** after a clean cherry-pick/push:
-   `change --sha <short> --task TASK-00N --summary "..." --path <file>`
-   (repeat `--path`). Source files only. Never log
-   `TASKS_TO_RESOLVE-*.md` or `REVIEW_HISTORY.md`.
+   `change --sha <short> --task TASK-00N --summary "..." --path <file>:+N,-M`
+   (repeat `--path`). Take N/M from `git show --numstat --format= <sha>`.
+   Source files only. Never log `TASKS_TO_RESOLVE-*.md` or
+   `REVIEW_HISTORY.md`.
 5. **Stage cells** before render, matching the Decision/Aborted table:
    `stage --panel "✅|2 loops" --resolve "✅|3 tasks" --verifiers "✅|4/4"
    --risk "🟢|\`low\`" --merge "✅|done"`.

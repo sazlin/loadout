@@ -62,19 +62,22 @@
       "sha": "a1b2c3d",
       "task": "TASK-001",
       "summary": "bind user-id in the lookup query instead of string concat",
-      "paths": ["src/user_api.py"]
+      "paths": [{"path": "src/user_api.py", "added": 18, "deleted": 7}]
     },
     {
       "sha": "d4e5f6a",
       "task": "TASK-002",
       "summary": "drop email and phone from log lines and JSON errors",
-      "paths": ["src/logs.py", "src/user_api.py"]
+      "paths": [
+        {"path": "src/logs.py", "added": 22, "deleted": 9},
+        {"path": "src/user_api.py", "added": 4, "deleted": 11}
+      ]
     },
     {
       "sha": "b7c8d9e",
       "task": "TASK-003",
       "summary": "keep zero-qty lines in the invoice instead of dropping them",
-      "paths": ["src/orders.py"]
+      "paths": [{"path": "src/orders.py", "added": 15, "deleted": 3}]
     }
   ]
 }
