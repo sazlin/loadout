@@ -4,15 +4,19 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
+import hashlib
 import json
+import os
 import re
 import sys
-from collections.abc import Mapping, Sequence
+import tempfile
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-DEFAULT_RUN_FILE = Path("REVIEW_RUN.json")
 BAR_WIDTH = 16
 STAGE_KEYS = ("panel", "resolve", "verifiers", "risk", "merge")
 STAGE_HEADERS = (
@@ -25,8 +29,22 @@ STAGE_HEADERS = (
 QUEUED_CELL = "⏳|queued"
 GANTT_UNSAFE_RE = re.compile(r"[`#:;,{}|\\%]")
 ISO_Z_RE = re.compile(r"Z$")
+MAX_STEPS = 64
+MAX_CHANGES = 32
+MAX_PATHS_PER_CHANGE = 24
+MAX_SUMMARY_CHARS = 200
+MAX_FIELD_CHARS = 160
+MAX_RUN_FILE_BYTES = 1_048_576
+RENDER_MAX_BYTES = 60_000
+MAX_RENDER_PATHS = 12
+GANTT_OMITTED = "_Gantt omitted to stay under GitHub's comment size limit._"
 
-USAGE = "usage: review_run_report.py {begin,end,change,stage,dashboard,render} ..."
+USAGE = "usage: review_run_report.py {reset,begin,end,change,stage,dashboard,render} ..."
+
+
+def default_run_file() -> Path:
+    """Return the run log path outside the review worktree."""
+    return Path(tempfile.gettempdir()) / "loadout-review-run.json"
 
 
 def _now() -> datetime:
@@ -92,51 +110,124 @@ def empty_run() -> dict[str, Any]:
     }
 
 
+def _clip(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit]
+
+
+def _lock_path(path: Path) -> Path:
+    digest = hashlib.sha256(str(path.resolve()).encode("utf-8")).hexdigest()[:24]
+    return Path(tempfile.gettempdir()) / f"loadout-review-run-{digest}.lock"
+
+
+@contextmanager
+def _exclusive_run_lock(path: Path) -> Iterator[None]:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(_lock_path(path), "a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def load_run(path: Path) -> dict[str, Any]:
-    """Load a run log, or a blank one when the file is missing."""
+    """Load a run log, or a blank one when the file is missing or unreadable."""
     if not path.is_file():
         return empty_run()
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return empty_run()
+    if len(raw) > MAX_RUN_FILE_BYTES:
+        return empty_run()
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, TypeError):
+        return empty_run()
     if not isinstance(payload, dict):
-        raise TypeError(f"run file is not an object: {path}")
+        return empty_run()
     payload.setdefault("dashboard_url", None)
     payload.setdefault("stage", {})
     payload.setdefault("steps", [])
     payload.setdefault("changes", [])
+    if not isinstance(payload["steps"], list):
+        payload["steps"] = []
+    if not isinstance(payload["changes"], list):
+        payload["changes"] = []
+    if not isinstance(payload["stage"], dict):
+        payload["stage"] = {}
     return payload
 
 
 def save_run(path: Path, payload: Mapping[str, Any]) -> None:
-    """Write a run log as pretty JSON."""
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    """Write a run log as pretty JSON via a same-directory replace."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = (json.dumps(payload, indent=2) + "\n").encode("utf-8")
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, path)
+    except BaseException:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
+        raise
+
+
+def _update_run(path: Path, mutate: Callable[[dict[str, Any]], None]) -> None:
+    with _exclusive_run_lock(path):
+        payload = load_run(path)
+        mutate(payload)
+        save_run(path, payload)
+
+
+def reset_run(path: Path) -> None:
+    """Replace any on-disk log with a blank run."""
+    with _exclusive_run_lock(path):
+        save_run(path, empty_run())
+
+
+def _cap_tail(items: list[Any], limit: int) -> None:
+    if len(items) > limit:
+        del items[:-limit]
 
 
 def begin_step(path: Path, *, section: str, label: str, at: datetime | None = None) -> None:
     """Start a timed step, closing any still-open step first."""
-    section_text = section.strip()
-    label_text = label.strip()
+    section_text = _clip(section.strip(), MAX_FIELD_CHARS)
+    label_text = _clip(label.strip(), MAX_FIELD_CHARS)
     if not section_text or not label_text:
         raise ValueError("section and label must be non-empty")
     when = _as_utc(at or _now())
-    payload = load_run(path)
-    _close_open_step(payload, when)
-    payload["steps"].append(
-        {
-            "section": section_text,
-            "label": label_text,
-            "started_at": format_iso(when),
-            "ended_at": None,
-        }
-    )
-    save_run(path, payload)
+
+    def mutate(payload: dict[str, Any]) -> None:
+        _close_open_step(payload, when)
+        payload["steps"].append(
+            {
+                "section": section_text,
+                "label": label_text,
+                "started_at": format_iso(when),
+                "ended_at": None,
+            }
+        )
+        _cap_tail(payload["steps"], MAX_STEPS)
+
+    _update_run(path, mutate)
 
 
 def end_step(path: Path, *, at: datetime | None = None) -> None:
     """Close the current open step."""
-    payload = load_run(path)
-    if not _close_open_step(payload, _as_utc(at or _now())):
-        raise ValueError("no open step to end")
-    save_run(path, payload)
+    when = _as_utc(at or _now())
+
+    def mutate(payload: dict[str, Any]) -> None:
+        if not _close_open_step(payload, when):
+            raise ValueError("no open step to end")
+
+    _update_run(path, mutate)
 
 
 def _close_open_step(payload: dict[str, Any], when: datetime) -> bool:
@@ -159,34 +250,40 @@ def add_change(
     paths: Sequence[str] | None = None,
 ) -> None:
     """Append one pushed source change."""
-    sha_text = sha.strip()
-    task_text = task.strip()
-    summary_text = summary.strip()
+    sha_text = _clip(sha.strip(), MAX_FIELD_CHARS)
+    task_text = _clip(task.strip(), MAX_FIELD_CHARS)
+    summary_text = _clip(summary.strip(), MAX_SUMMARY_CHARS)
     if not sha_text or not task_text or not summary_text:
         raise ValueError("sha, task, and summary must be non-empty")
-    payload = load_run(path)
-    payload["changes"].append(
-        {
-            "sha": sha_text,
-            "task": task_text,
-            "summary": summary_text,
-            "paths": [item.strip() for item in paths or [] if item.strip()],
-        }
-    )
-    save_run(path, payload)
+    kept_paths = [item.strip() for item in paths or [] if item.strip()][:MAX_PATHS_PER_CHANGE]
+
+    def mutate(payload: dict[str, Any]) -> None:
+        payload["changes"].append(
+            {
+                "sha": sha_text,
+                "task": task_text,
+                "summary": summary_text,
+                "paths": kept_paths,
+            }
+        )
+        _cap_tail(payload["changes"], MAX_CHANGES)
+
+    _update_run(path, mutate)
 
 
 def set_stage(path: Path, cells: Mapping[str, str]) -> None:
     """Set stage-table cells as `icon|status` strings."""
-    payload = load_run(path)
-    stage = dict(payload.get("stage") or {})
-    for key, value in cells.items():
-        text = value.strip()
-        if key not in STAGE_KEYS or not text:
-            continue
-        stage[key] = text
-    payload["stage"] = stage
-    save_run(path, payload)
+
+    def mutate(payload: dict[str, Any]) -> None:
+        stage = dict(payload.get("stage") or {})
+        for key, value in cells.items():
+            text = value.strip()
+            if key not in STAGE_KEYS or not text:
+                continue
+            stage[key] = _clip(text, MAX_FIELD_CHARS)
+        payload["stage"] = stage
+
+    _update_run(path, mutate)
 
 
 def set_dashboard(path: Path, url: str) -> None:
@@ -194,9 +291,11 @@ def set_dashboard(path: Path, url: str) -> None:
     text = url.strip()
     if not text:
         raise ValueError("dashboard url must be non-empty")
-    payload = load_run(path)
-    payload["dashboard_url"] = text
-    save_run(path, payload)
+
+    def mutate(payload: dict[str, Any]) -> None:
+        payload["dashboard_url"] = _clip(text, MAX_FIELD_CHARS * 2)
+
+    _update_run(path, mutate)
 
 
 def _parse_optional_iso(raw: str | None) -> datetime | None:
@@ -317,7 +416,12 @@ def _gantt_block(steps: Sequence[Mapping[str, Any]]) -> str:
 
 
 def _change_line(index: int, change: Mapping[str, Any]) -> str:
-    paths = ", ".join(f"`{sanitize_markdown_text(path)}`" for path in change.get("paths") or [])
+    raw_paths = [str(path) for path in change.get("paths") or []]
+    extra_paths = max(0, len(raw_paths) - MAX_RENDER_PATHS)
+    shown_paths = raw_paths[:MAX_RENDER_PATHS]
+    paths = ", ".join(f"`{sanitize_markdown_text(path)}`" for path in shown_paths)
+    if extra_paths:
+        paths = f"{paths}, {extra_paths} more paths omitted" if paths else f"{extra_paths} more paths omitted"
     files = f" {paths}: " if paths else " "
     sha = sanitize_markdown_text(str(change.get("sha") or ""))
     task = sanitize_markdown_text(str(change.get("task") or ""))
@@ -325,13 +429,15 @@ def _change_line(index: int, change: Mapping[str, Any]) -> str:
     return f"{index}. `{sha}` {task}.{files}{summary}"
 
 
-def _changes_section(changes: Sequence[Mapping[str, Any]]) -> str:
+def _changes_section(changes: Sequence[Mapping[str, Any]], omitted: int = 0) -> str:
     lines = ["#### Changes this run pushed", ""]
-    if not changes:
+    if not changes and omitted == 0:
         lines.append("None. This run did not push source commits.")
         return "\n".join(lines)
     for index, change in enumerate(changes, start=1):
         lines.append(_change_line(index, change))
+    if omitted:
+        lines.append(f"_… {omitted} more changes omitted._")
     return "\n".join(lines)
 
 
@@ -343,12 +449,17 @@ def _bullets(payload: Mapping[str, Any], total: int) -> str:
     return "\n".join(lines)
 
 
-def render_markdown(payload: Mapping[str, Any]) -> str:
-    """Return the GitHub PR comment body for a completed (or aborted) run."""
+def _compose_markdown(
+    payload: Mapping[str, Any],
+    *,
+    include_gantt: bool,
+    changes: Sequence[Mapping[str, Any]],
+    omitted_changes: int,
+) -> str:
     steps = list(payload.get("steps") or [])
     stage = payload.get("stage") or {}
-    changes = list(payload.get("changes") or [])
     total = _wall_seconds(steps)
+    gantt = _gantt_block(steps) if include_gantt else GANTT_OMITTED
     parts = [
         "### PR review harness",
         "",
@@ -356,14 +467,41 @@ def render_markdown(payload: Mapping[str, Any]) -> str:
         "",
         _bullets(payload, total),
         "",
-        _gantt_block(steps),
+        gantt,
         "",
         _duration_table(steps),
         "",
-        _changes_section(changes),
+        _changes_section(changes, omitted_changes),
         "",
     ]
     return "\n".join(parts)
+
+
+def render_markdown(payload: Mapping[str, Any]) -> str:
+    """Return the GitHub PR comment body for a completed (or aborted) run."""
+    changes = list(payload.get("changes") or [])
+    include_gantt = True
+    shown = changes
+    omitted = 0
+    while True:
+        body = _compose_markdown(
+            payload,
+            include_gantt=include_gantt,
+            changes=shown,
+            omitted_changes=omitted,
+        )
+        if len(body.encode("utf-8")) <= RENDER_MAX_BYTES:
+            return body
+        if include_gantt:
+            include_gantt = False
+            continue
+        if shown:
+            omitted += 1
+            shown = shown[:-1]
+            continue
+        encoded = body.encode("utf-8")[: RENDER_MAX_BYTES - 24]
+        trimmed = encoded.decode("utf-8", errors="ignore").rstrip()
+        return f"{trimmed}\n\n_… truncated._\n"
 
 
 def _print_error(message: str) -> int:
@@ -371,23 +509,37 @@ def _print_error(message: str) -> int:
     return 2
 
 
+def _run_file(args: argparse.Namespace) -> Path:
+    if args.file is not None:
+        return args.file
+    return default_run_file()
+
+
+def _cmd_reset(args: argparse.Namespace) -> int:
+    try:
+        reset_run(_run_file(args))
+    except (ValueError, OSError) as error:
+        return _print_error(str(error))
+    return 0
+
+
 def _cmd_begin(args: argparse.Namespace) -> int:
     try:
         begin_step(
-            args.file,
+            _run_file(args),
             section=args.section,
             label=args.label,
             at=_parse_optional_iso(args.at),
         )
-    except ValueError as error:
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
         return _print_error(str(error))
     return 0
 
 
 def _cmd_end(args: argparse.Namespace) -> int:
     try:
-        end_step(args.file, at=_parse_optional_iso(args.at))
-    except ValueError as error:
+        end_step(_run_file(args), at=_parse_optional_iso(args.at))
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
         return _print_error(str(error))
     return 0
 
@@ -395,13 +547,13 @@ def _cmd_end(args: argparse.Namespace) -> int:
 def _cmd_change(args: argparse.Namespace) -> int:
     try:
         add_change(
-            args.file,
+            _run_file(args),
             sha=args.sha,
             task=args.task,
             summary=args.summary,
             paths=args.path or [],
         )
-    except ValueError as error:
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
         return _print_error(str(error))
     return 0
 
@@ -414,20 +566,28 @@ def _cmd_stage(args: argparse.Namespace) -> int:
         "risk": args.risk,
         "merge": args.merge,
     }
-    set_stage(args.file, {key: value for key, value in cells.items() if value})
+    try:
+        set_stage(_run_file(args), {key: value for key, value in cells.items() if value})
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
+        return _print_error(str(error))
     return 0
 
 
 def _cmd_dashboard(args: argparse.Namespace) -> int:
     try:
-        set_dashboard(args.file, args.url)
-    except ValueError as error:
+        set_dashboard(_run_file(args), args.url)
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
         return _print_error(str(error))
     return 0
 
 
 def _cmd_render(args: argparse.Namespace) -> int:
-    markdown = render_markdown(load_run(args.file))
+    path = _run_file(args)
+    try:
+        with _exclusive_run_lock(path):
+            markdown = render_markdown(load_run(path))
+    except (ValueError, json.JSONDecodeError, TypeError, OSError) as error:
+        return _print_error(str(error))
     if args.out is not None:
         args.out.write_text(markdown, encoding="utf-8")
         return 0
@@ -439,14 +599,17 @@ def _add_file_option(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--file",
         type=Path,
-        default=DEFAULT_RUN_FILE,
-        help="run log JSON (default: REVIEW_RUN.json)",
+        default=None,
+        help="run log JSON (default: $TMPDIR/loadout-review-run.json, not the worktree)",
     )
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="review_run_report.py")
     sub = parser.add_subparsers(dest="cmd")
+    reset = sub.add_parser("reset")
+    _add_file_option(reset)
+    reset.set_defaults(func=_cmd_reset)
     begin = sub.add_parser("begin")
     _add_file_option(begin)
     begin.add_argument("--section", required=True)
