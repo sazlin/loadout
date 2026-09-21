@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Resolve `pr_review_harness` tasks in file-disjoint parallel waves
+  (`dispatch-resolve-wave`). Nested `issue_resolver` pushes task branches
+  only. Cherry-pick while following the skill in-process; the orchestrator
+  is the only `git push` of `origin/<pr-head>` after successful picks.
+
 ## 0.42.0
 
 ## 0.41.0

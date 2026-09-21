@@ -1,0 +1,19 @@
+{
+  "skill_name": "dispatch-resolve-wave",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Start the resolve wave for the current GitHub PR using dispatch-resolve-wave.",
+      "expected_output": "Parallel worktree resolvers, cherry-pick onto PR head, no in-process fix",
+      "files": ["evals/files/brief.md"],
+      "expectations": [
+        "Runs partition_waves.py and dispatches the returned wave",
+        "Creates worktrees via prepare_wave_worktrees.py, not interpolated shell git",
+        "All wave resolvers in one turn",
+        "Creates a worktree per wave task",
+        "Cherry-picks resolver commits onto PR head",
+        "Does not implement the fix in-process"
+      ]
+    }
+  ]
+}
