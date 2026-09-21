@@ -262,7 +262,50 @@ def test_default_run_file_is_outside_the_worktree(monkeypatch) -> None:
     path = module.default_run_file()
     assert path.is_absolute()
     assert path.parent == Path(module.tempfile.gettempdir())
-    assert path.name == f"loadout-review-run-{os.getpid()}.json"
+    assert path.name == "loadout-review-run.json"
+
+
+def test_default_path_begin_end_render_share_one_log_across_processes(tmp_path: Path) -> None:
+    env = {**os.environ, "TMPDIR": str(tmp_path)}
+    env.pop("LOADOUT_REVIEW_RUN_ID", None)
+    start = "2026-09-21T14:02:00+00:00"
+    end = "2026-09-21T14:03:00+00:00"
+    begun = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "begin",
+            "--section",
+            "Panel Review",
+            "--label",
+            "SHARED_LOOP_LABEL",
+            "--at",
+            start,
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert begun.returncode == 0, begun.stderr
+    ended = subprocess.run(
+        [sys.executable, str(SCRIPT), "end", "--at", end],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert ended.returncode == 0, ended.stderr
+    rendered = subprocess.run(
+        [sys.executable, str(SCRIPT), "render"],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert rendered.returncode == 0, rendered.stderr
+    assert "SHARED_LOOP_LABEL" in rendered.stdout
+    assert (tmp_path / "loadout-review-run.json").is_file()
 
 
 def test_render_ignores_worktree_preseeded_review_run_json(tmp_path: Path, capsys, monkeypatch) -> None:

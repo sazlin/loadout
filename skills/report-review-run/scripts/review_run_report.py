@@ -68,12 +68,20 @@ class RunLog(TypedDict):
 
 
 def default_run_file() -> Path:
-    """Return a per-harness run log path outside the review worktree."""
-    raw = os.environ.get("LOADOUT_REVIEW_RUN_ID", "").strip() or str(os.getpid())
+    """Return the tmp run log shared by successive CLI processes.
+
+    Set LOADOUT_REVIEW_RUN_ID (or pass --file) to isolate concurrent harnesses.
+    The CLI pid is not part of the default path: each begin/end/render is a
+    new process and must read the same file.
+    """
+    tmp = Path(tempfile.gettempdir())
+    raw = os.environ.get("LOADOUT_REVIEW_RUN_ID", "").strip()
+    if not raw:
+        return tmp / "loadout-review-run.json"
     run_id = Path(raw).name
     if not run_id or run_id in {".", ".."}:
-        run_id = str(os.getpid())
-    return Path(tempfile.gettempdir()) / f"loadout-review-run-{run_id}.json"
+        return tmp / "loadout-review-run.json"
+    return tmp / f"loadout-review-run-{run_id}.json"
 
 
 def _now() -> datetime:
@@ -717,7 +725,8 @@ def _add_file_option(parser: argparse.ArgumentParser) -> None:
         "--file",
         type=Path,
         default=None,
-        help="run log JSON (default: $TMPDIR/loadout-review-run-<id>.json, not the worktree)",
+        help="run log JSON (default: $TMPDIR/loadout-review-run.json, or "
+        "$TMPDIR/loadout-review-run-<LOADOUT_REVIEW_RUN_ID>.json)",
     )
 
 
