@@ -1,0 +1,16 @@
+{
+  "skill_name": "report-review-run",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The PR review harness just finished. Post the end-of-run report comment from the recorded run log.",
+      "expected_output": "Script-rendered GitHub comment with a closed mermaid gantt, duration table, and Changes this run pushed",
+      "files": ["evals/files/example-run.json"],
+      "expectations": [
+        "Runs review_run_report.py render; does not hand-write the comment",
+        "Mermaid gantt fence is closed",
+        "Includes Duration rows for each loop and Changes this run pushed"
+      ]
+    }
+  ]
+}
