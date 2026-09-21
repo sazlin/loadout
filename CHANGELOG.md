@@ -2,10 +2,17 @@
 
 ## Unreleased
 
+- Add opt-in `telemetry` loadout: a fail-open Cursor and Claude Code hook that
+  emits `skill.reads`, `skill.turns`, and `skill.discovered_on_session_start`
+  over OTLP/HTTP, matching the skill-telemetry omp plugin. Compose with
+  language loadouts; does not extend base. No-op unless
+  `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` are set.
+
 - End each `pr_review_harness` run with a GitHub comment from
   `report-review-run`: mermaid gantt plus duration table for every phase
   and loop, and a Changes list (one task line plus expandable file +/-
   stats).
+
 - Resolve `pr_review_harness` tasks in file-disjoint parallel waves
   (`dispatch-resolve-wave`). Nested `issue_resolver` pushes task branches
   only. Cherry-pick while following the skill in-process; the orchestrator

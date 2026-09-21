@@ -1,0 +1,14 @@
+{
+  "conversation_id": "bc-redacted-cloud-session",
+  "generation_id": "gen-cloud-1",
+  "model": "composer-2",
+  "model_id": "composer-2",
+  "hook_event_name": "beforeReadFile",
+  "cursor_version": "cloud",
+  "workspace_roots": ["__WS__"],
+  "user_email": null,
+  "transcript_path": null,
+  "file_path": "__WS__/.claude/skills/foo/SKILL.md",
+  "content": "---\nname: foo\ndescription: probe\n---\n\n# Foo\n",
+  "attachments": []
+}

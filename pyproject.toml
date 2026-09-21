@@ -16,6 +16,7 @@ dev = [
   "pre-commit>=4.0",
   "pyrefly>=1.2.0",
   "types-pyyaml>=6.0.12.20260724",
+  "opentelemetry-proto>=1.26.0",
 ]
 
 [project.scripts]

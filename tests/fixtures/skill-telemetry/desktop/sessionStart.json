@@ -1,0 +1,14 @@
+{
+  "conversation_id": "desktop-root-1",
+  "generation_id": "gen-desktop-1",
+  "session_id": "desktop-root-1",
+  "model": "composer-2",
+  "model_id": "composer-2",
+  "hook_event_name": "sessionStart",
+  "cursor_version": "1.7.2",
+  "workspace_roots": ["__WS__"],
+  "user_email": null,
+  "transcript_path": null,
+  "is_background_agent": false,
+  "composer_mode": "agent"
+}
