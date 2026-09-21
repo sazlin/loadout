@@ -5,7 +5,7 @@ description: Use when you have a written implementation plan to execute in a sep
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/executing-plans/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # Executing Plans

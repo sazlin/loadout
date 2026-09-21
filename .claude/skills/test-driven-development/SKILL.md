@@ -5,7 +5,7 @@ description: Use when implementing any feature or bugfix, before writing impleme
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/test-driven-development/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # Test-Driven Development (TDD)

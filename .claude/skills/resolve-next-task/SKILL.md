@@ -6,7 +6,7 @@ description: Implement one assigned hashed-tasks-file task and commit on the tas
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/resolve-next-task/SKILL.md
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # Resolve next task

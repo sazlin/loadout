@@ -4,7 +4,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/no-cursor-coauthor.mdc
-  loadout.sha: '5110187'
+  loadout.sha: local
 ---
 
 # No Cursor co-author
