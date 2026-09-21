@@ -68,8 +68,12 @@ class RunLog(TypedDict):
 
 
 def default_run_file() -> Path:
-    """Return the run log path outside the review worktree."""
-    return Path(tempfile.gettempdir()) / "loadout-review-run.json"
+    """Return a per-harness run log path outside the review worktree."""
+    raw = os.environ.get("LOADOUT_REVIEW_RUN_ID", "").strip() or str(os.getpid())
+    run_id = Path(raw).name
+    if not run_id or run_id in {".", ".."}:
+        run_id = str(os.getpid())
+    return Path(tempfile.gettempdir()) / f"loadout-review-run-{run_id}.json"
 
 
 def _now() -> datetime:
@@ -270,9 +274,9 @@ def begin_step(path: Path, *, section: str, label: str, at: datetime | None = No
     label_text = _clip(label.strip(), MAX_FIELD_CHARS)
     if not section_text or not label_text:
         raise ValueError("section and label must be non-empty")
-    when = _as_utc(at or _now())
 
     def mutate(payload: RunLog) -> None:
+        when = _as_utc(at or _now())
         _close_open_step(payload, when)
         payload["steps"].append(
             {
@@ -288,14 +292,26 @@ def begin_step(path: Path, *, section: str, label: str, at: datetime | None = No
 
 
 def end_step(path: Path, *, at: datetime | None = None) -> None:
-    """Close the current open step."""
-    when = _as_utc(at or _now())
+    """Close the open step that was current when this call started."""
+    expected = _open_step_identity(load_run(path))
 
     def mutate(payload: RunLog) -> None:
-        if not _close_open_step(payload, when):
+        when = _as_utc(at or _now())
+        if expected is None or _open_step_identity(payload) != expected:
             raise ValueError("no open step to end")
+        _close_open_step(payload, when)
 
     _update_run(path, mutate)
+
+
+def _open_step_identity(payload: RunLog) -> tuple[str, str, str] | None:
+    steps = payload["steps"]
+    if not steps:
+        return None
+    last = steps[-1]
+    if last["ended_at"]:
+        return None
+    return (last["section"], last["label"], last["started_at"])
 
 
 def _close_open_step(payload: RunLog, when: datetime) -> bool:
@@ -682,7 +698,7 @@ def _add_file_option(parser: argparse.ArgumentParser) -> None:
         "--file",
         type=Path,
         default=None,
-        help="run log JSON (default: $TMPDIR/loadout-review-run.json, not the worktree)",
+        help="run log JSON (default: $TMPDIR/loadout-review-run-<id>.json, not the worktree)",
     )
 
 
