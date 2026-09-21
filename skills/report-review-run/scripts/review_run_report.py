@@ -23,7 +23,7 @@ STAGE_HEADERS = (
     "Merge",
 )
 QUEUED_CELL = "⏳|queued"
-GANTT_UNSAFE_RE = re.compile(r"[#:;,{}|\\]")
+GANTT_UNSAFE_RE = re.compile(r"[`#:;,{}|\\%]")
 ISO_Z_RE = re.compile(r"Z$")
 
 USAGE = "usage: review_run_report.py {begin,end,change,stage,dashboard,render} ..."
@@ -74,6 +74,12 @@ def sanitize_gantt_label(text: str) -> str:
     cleaned = GANTT_UNSAFE_RE.sub(" ", text)
     cleaned = " ".join(cleaned.split())
     return cleaned or "step"
+
+
+def sanitize_markdown_text(text: str) -> str:
+    """Collapse whitespace and drop characters that break GitHub markdown tables or fences."""
+    cleaned = " ".join(str(text).split())
+    return cleaned.replace("|", "/").replace("`", "")
 
 
 def empty_run() -> dict[str, Any]:
@@ -232,9 +238,9 @@ def _grouped_sections(steps: Sequence[Mapping[str, Any]]) -> list[tuple[str, lis
 def _stage_cell(stage: Mapping[str, Any], key: str) -> str:
     raw = str(stage.get(key) or QUEUED_CELL)
     if "|" not in raw:
-        return raw
+        return sanitize_markdown_text(raw)
     icon, status = raw.split("|", 1)
-    return f"{icon.strip()}<br>{status.strip()}"
+    return f"{sanitize_markdown_text(icon)}<br>{sanitize_markdown_text(status)}"
 
 
 def _stage_table(stage: Mapping[str, Any]) -> str:
@@ -254,7 +260,8 @@ def _share_bar(seconds: int, total: int) -> str:
 
 def _duration_row(label: str, seconds: int, total: int, *, bold: bool) -> str:
     shown = format_duration(seconds)
-    name = f"**{label}**" if bold else label
+    safe = sanitize_markdown_text(label)
+    name = f"**{safe}**" if bold else safe
     time_cell = f"**{shown}**" if bold else shown
     percent = 0 if total <= 0 else round(seconds / total * 100)
     bar = _share_bar(seconds, total)
@@ -276,7 +283,8 @@ def _duration_table(steps: Sequence[Mapping[str, Any]]) -> str:
         for step in section_steps:
             seconds = _step_seconds(step)
             if seconds is None:
-                lines.append(f"| {step.get('label', 'step')} | in progress | |")
+                label = sanitize_markdown_text(str(step.get("label") or "step"))
+                lines.append(f"| {label} | in progress | |")
                 continue
             lines.append(_duration_row(str(step.get("label") or "step"), seconds, total, bold=False))
     lines.append(_duration_row("Total", total, total, bold=True))
@@ -309,9 +317,12 @@ def _gantt_block(steps: Sequence[Mapping[str, Any]]) -> str:
 
 
 def _change_line(index: int, change: Mapping[str, Any]) -> str:
-    paths = ", ".join(f"`{path}`" for path in change.get("paths") or [])
+    paths = ", ".join(f"`{sanitize_markdown_text(path)}`" for path in change.get("paths") or [])
     files = f" {paths}: " if paths else " "
-    return f"{index}. `{change.get('sha')}` {change.get('task')}.{files}{change.get('summary')}"
+    sha = sanitize_markdown_text(str(change.get("sha") or ""))
+    task = sanitize_markdown_text(str(change.get("task") or ""))
+    summary = sanitize_markdown_text(str(change.get("summary") or ""))
+    return f"{index}. `{sha}` {task}.{files}{summary}"
 
 
 def _changes_section(changes: Sequence[Mapping[str, Any]]) -> str:

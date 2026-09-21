@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -13,6 +14,7 @@ from types import ModuleType
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "skills" / "report-review-run" / "scripts" / "review_run_report.py"
 EXAMPLE = REPO / "skills" / "report-review-run" / "evals" / "files" / "example-run.json"
+GANTT_TASK_LINE_RE = re.compile(r"^\s+(?P<label>[^:\n]+) :s\d+, \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}, \d+s$")
 
 SAMPLE_RUN = {
     "dashboard_url": "https://cursor.com/agents/bc-abc123",
@@ -126,6 +128,12 @@ def test_render_closes_mermaid_fence_and_draws_gantt() -> None:
     assert markdown.count("```mermaid") == 1
     after = markdown.split("```mermaid", 1)[1]
     assert after.count("```") == 1
+    task_lines = [line for line in body.splitlines() if " :s" in line]
+    assert task_lines
+    for line in task_lines:
+        match = GANTT_TASK_LINE_RE.match(line)
+        assert match, line
+        assert ":" not in match.group("label")
 
 
 def test_render_includes_stage_table_duration_loops_and_changes() -> None:
@@ -160,12 +168,67 @@ def test_render_strips_gantt_breaking_characters_from_labels() -> None:
         ],
         "changes": [],
     }
-    body = _mermaid_block(module.render_markdown(run))
+    markdown = module.render_markdown(run)
+    assert markdown.count("```mermaid") == 1
+    after = markdown.split("```mermaid", 1)[1]
+    assert after.count("```") == 1
+    body = _mermaid_block(markdown)
+    task_lines = [line for line in body.splitlines() if "loop 1" in line]
+    assert len(task_lines) == 1
+    match = GANTT_TASK_LINE_RE.match(task_lines[0])
+    assert match, task_lines[0]
+    title = match.group("label")
+    assert ":" not in title
+    assert "#" not in title
+    assert "," not in title
+    assert title.count(" :") == 0
+    assert " :s" in task_lines[0]
+    assert task_lines[0].count(" :") == 1
+
+
+def test_render_escapes_markdown_and_mermaid_metacharacters_in_labels_and_changes() -> None:
+    module = _load_script()
+    run = {
+        "dashboard_url": None,
+        "stage": {"panel": "✅|```oops|extra"},
+        "steps": [
+            {
+                "section": "Panel Review",
+                "label": "loop 1 ``` fence\n| extra",
+                "started_at": "2026-09-21T14:02:00Z",
+                "ended_at": "2026-09-21T14:03:00Z",
+            }
+        ],
+        "changes": [
+            {
+                "sha": "abc`def",
+                "task": "TASK-001|x",
+                "summary": "hello | world ``` md",
+                "paths": ["src/a|b.py", "foo```bar"],
+            }
+        ],
+    }
+    markdown = module.render_markdown(run)
+    assert markdown.count("```mermaid") == 1
+    after = markdown.split("```mermaid", 1)[1]
+    assert after.count("```") == 1
+    body = _mermaid_block(markdown)
     task_lines = [line for line in body.splitlines() if "loop 1" in line]
     assert task_lines
-    label_part = task_lines[0].split(":", 1)[0]
-    assert "#" not in label_part
-    assert "," not in label_part
+    assert "`" not in task_lines[0]
+    duration_rows = [line for line in markdown.splitlines() if line.startswith("|") and "loop 1" in line]
+    assert duration_rows
+    assert duration_rows[0].count("|") == 4
+    assert "```" not in duration_rows[0]
+    changes = markdown.split("#### Changes this run pushed", 1)[1]
+    assert "```" not in changes
+    assert "| extra" not in markdown
+    assert "hello / world  md" in changes
+    assert "`src/a/b.py`" in changes
+    assert "`foobar`" in changes
+    assert "TASK-001/x" in changes
+    assert "`abcdef`" in changes
+    assert "oops/extra" in markdown or "oops extra" in markdown
 
 
 def test_begin_end_records_elapsed_seconds(tmp_path: Path) -> None:
@@ -240,6 +303,16 @@ def test_empty_changes_says_none_pushed() -> None:
     markdown = module.render_markdown(run)
     assert "#### Changes this run pushed" in markdown
     assert "did not push source commits" in markdown
+
+
+def test_example_fixture_gantt_lines_use_single_colon_delimiter() -> None:
+    module = _load_script()
+    payload = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+    body = _mermaid_block(module.render_markdown(payload))
+    task_lines = [line for line in body.splitlines() if " :s" in line]
+    assert task_lines
+    for line in task_lines:
+        assert GANTT_TASK_LINE_RE.match(line), line
 
 
 def test_example_fixture_is_script_stdout() -> None:
