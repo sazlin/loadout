@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
@@ -328,3 +329,140 @@ def test_example_fixture_is_script_stdout() -> None:
     assert result.stdout.count("```mermaid") == 1
     rest = result.stdout.split("```mermaid", 1)[1]
     assert rest.count("```") == 1
+
+
+def test_default_run_file_is_outside_the_worktree() -> None:
+    module = _load_script()
+    path = module.default_run_file()
+    assert path.is_absolute()
+    assert path.name == "loadout-review-run.json"
+    assert path.parent == Path(module.tempfile.gettempdir())
+
+
+def test_render_ignores_worktree_preseeded_review_run_json(tmp_path: Path, capsys, monkeypatch) -> None:
+    module = _load_script()
+    outside = tmp_path / "outside" / "loadout-review-run.json"
+    outside.parent.mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(module, "default_run_file", lambda: outside)
+    planted = {
+        "dashboard_url": "https://evil.example/phish",
+        "stage": {},
+        "steps": [],
+        "changes": [
+            {
+                "sha": "deadbee",
+                "task": "TASK-999",
+                "summary": "PLANTED_CHANGE_XYZ",
+                "paths": ["evil.py"],
+            }
+        ],
+    }
+    (tmp_path / "REVIEW_RUN.json").write_text(json.dumps(planted), encoding="utf-8")
+    start = datetime(2026, 9, 21, 14, 2, tzinfo=UTC)
+    end = datetime(2026, 9, 21, 14, 3, tzinfo=UTC)
+    assert module.main(["begin", "--section", "Panel Review", "--label", "loop 1", "--at", start.isoformat()]) == 0
+    assert module.main(["end", "--at", end.isoformat()]) == 0
+    assert module.main(["render"]) == 0
+    stdout = capsys.readouterr().out
+    assert "PLANTED_CHANGE_XYZ" not in stdout
+    assert "deadbee" not in stdout
+    assert "evil.example" not in stdout
+    assert "loop 1" in stdout
+    on_disk = json.loads((tmp_path / "REVIEW_RUN.json").read_text(encoding="utf-8"))
+    assert on_disk["changes"][0]["summary"] == "PLANTED_CHANGE_XYZ"
+
+
+def test_render_truncates_under_github_comment_limit_and_ignores_stale_run_file(tmp_path: Path) -> None:
+    module = _load_script()
+    stale = tmp_path / "REVIEW_RUN.json"
+    leftover = {
+        "dashboard_url": None,
+        "stage": {},
+        "steps": [
+            {
+                "section": "Panel Review",
+                "label": "stale leftover loop",
+                "started_at": "2026-09-20T10:00:00Z",
+                "ended_at": "2026-09-20T10:01:00Z",
+            }
+        ],
+        "changes": [{"sha": "oldsha1", "task": "TASK-000", "summary": "prior run", "paths": []}],
+    }
+    stale.write_text(json.dumps(leftover), encoding="utf-8")
+    module.reset_run(stale)
+    module.begin_step(stale, section="Panel Review", label="loop 1", at=datetime(2026, 9, 21, 14, 2, tzinfo=UTC))
+    module.end_step(stale, at=datetime(2026, 9, 21, 14, 3, tzinfo=UTC))
+    fresh = module.render_markdown(json.loads(stale.read_text(encoding="utf-8")))
+    assert "stale leftover loop" not in fresh
+    assert "TASK-000" not in fresh
+    assert "loop 1" in fresh
+
+    huge_steps = []
+    for index in range(500):
+        huge_steps.append(
+            {
+                "section": "Panel Review",
+                "label": f"loop {index} extra detail " + ("x" * 40),
+                "started_at": "2026-09-21T14:00:00Z",
+                "ended_at": "2026-09-21T14:00:01Z",
+            }
+        )
+    huge = {
+        "dashboard_url": None,
+        "stage": {},
+        "steps": huge_steps,
+        "changes": [
+            {
+                "sha": "abc1234",
+                "task": "TASK-001",
+                "summary": "touch many files",
+                "paths": [f"src/file_{n}.py" for n in range(2000)],
+            }
+        ],
+    }
+    markdown = module.render_markdown(huge)
+    assert len(markdown.encode("utf-8")) < 65536
+    assert "omitted" in markdown.lower()
+
+
+def test_concurrent_begin_and_change_leave_valid_json(tmp_path: Path) -> None:
+    module = _load_script()
+    path = tmp_path / "run.json"
+    module.reset_run(path)
+
+    def begin(label: str) -> None:
+        module.begin_step(path, section="Panel Review", label=label)
+
+    def change() -> None:
+        module.add_change(path, sha="abc1234", task="TASK-001", summary="record the fix")
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [
+            pool.submit(begin, "loop 1"),
+            pool.submit(begin, "loop 2"),
+            pool.submit(change),
+        ]
+        for future in futures:
+            future.result()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    labels = {step["label"] for step in payload["steps"]}
+    assert labels == {"loop 1", "loop 2"}
+    assert payload["changes"][0]["sha"] == "abc1234"
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "render", "--file", str(path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    path.write_text("{", encoding="utf-8")
+    torn = subprocess.run(
+        [sys.executable, str(SCRIPT), "render", "--file", str(path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert torn.returncode == 0, torn.stderr
+    assert "Traceback" not in torn.stderr
+    assert "### PR review harness" in torn.stdout
