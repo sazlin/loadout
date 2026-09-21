@@ -78,7 +78,9 @@ def default_run_file() -> Path:
     raw = os.environ.get("LOADOUT_REVIEW_RUN_ID", "").strip()
     if not raw:
         return tmp / "loadout-review-run.json"
-    run_id = Path(raw).name
+    # Env value is an opaque id token, not a path: strip separators so it
+    # cannot choose a directory under TMPDIR. "." / ".." use the stable default.
+    run_id = os.path.basename(raw)
     if not run_id or run_id in {".", ".."}:
         return tmp / "loadout-review-run.json"
     return tmp / f"loadout-review-run-{run_id}.json"
@@ -316,8 +318,20 @@ def begin_step(path: Path, *, section: str, label: str, at: datetime | None = No
     _update_run(path, mutate)
 
 
+def _open_step_identity(payload: RunLog) -> tuple[str, str, str] | None:
+    steps = payload["steps"]
+    if not steps:
+        return None
+    last = steps[-1]
+    if last["ended_at"]:
+        return None
+    return (last["section"], last["label"], last["started_at"])
+
+
 def end_step(path: Path, *, at: datetime | None = None) -> None:
     """Close the open step that was current when this call started."""
+    # Sample identity before waiting on the flock so end cannot close a step
+    # begin opened while this call was blocked. Do not fold this into _update_run.
     expected = _open_step_identity(load_run(path))
 
     def mutate(payload: RunLog) -> None:
@@ -327,16 +341,6 @@ def end_step(path: Path, *, at: datetime | None = None) -> None:
         _close_open_step(payload, when)
 
     _update_run(path, mutate)
-
-
-def _open_step_identity(payload: RunLog) -> tuple[str, str, str] | None:
-    steps = payload["steps"]
-    if not steps:
-        return None
-    last = steps[-1]
-    if last["ended_at"]:
-        return None
-    return (last["section"], last["label"], last["started_at"])
 
 
 def _close_open_step(payload: RunLog, when: datetime) -> bool:
