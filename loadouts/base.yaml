@@ -1,5 +1,5 @@
 name: base
-description: Repository-wide engineering conventions and release discipline.
+description: Repository-wide engineering conventions.
 rules:
   - src: rules/core/commit-style.mdc
   - src: rules/core/repo-conventions.mdc
@@ -13,7 +13,6 @@ skills:
   - src: skills/decisions
   - src: skills/next-decision
   - src: skills/learn
-  - src: skills/release-checklist
   - src: skills/unslop
 hooks:
   - src: hooks/deny-dangerous

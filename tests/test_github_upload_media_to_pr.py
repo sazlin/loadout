@@ -71,6 +71,7 @@ def test_github_loadout_ships_upload_media_skill() -> None:
     assert {entry["src"] for entry in loadout.skills} == {
         f"skills/{SKILL_NAME}",
         "skills/make-readme",
+        "skills/release-checklist",
     }
     assert loadout.rules == []
     assert loadout.agents == []
