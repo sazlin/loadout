@@ -15,6 +15,40 @@
       },
       {
         "command": ".cursor/hooks/session-start/session-start cursor"
+      },
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": ".cursor/hooks/skill-telemetry/skill-telemetry cursor",
+        "timeout": 5
       }
     ]
   }

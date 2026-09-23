@@ -6,3 +6,4 @@ loadouts:
 - python
 - pr_review_harness
 - playwright
+- telemetry
