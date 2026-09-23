@@ -49,12 +49,11 @@ def _policy_forbids_auto_merge(text: str) -> bool:
 
 
 def _policy_forbids_skipping_failed_or_pending(text: str) -> bool:
+    """True when the cannot-be-skipped ban and skipped/neutral appear, not a high-confidence token."""
     lowered = text.lower()
     if "failed" not in lowered or "pending" not in lowered:
         return False
     if not _SKIP_FAILED_BAN.search(text):
-        return False
-    if "high-confidence" in lowered and "cannot" not in lowered:
         return False
     return bool(_PLATFORM_SKIP.search(text))
 
@@ -93,7 +92,7 @@ def test_no_auto_merge_rule_forbids_skipping_failed_or_pending_checks() -> None:
     assert "cancelled" in lowered or "canceled" in lowered
     assert "timed-out" in lowered or "timed out" in lowered
     if "high-confidence" in lowered:
-        assert "cannot" in lowered or "not skippable" in lowered
+        assert "is not enough" in lowered or "guess that a job" in lowered
 
 
 def test_no_auto_merge_contract_rejects_enable_auto_wording() -> None:
