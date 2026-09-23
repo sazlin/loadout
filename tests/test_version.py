@@ -4,7 +4,7 @@ from pathlib import Path
 from loadout import __version__
 
 REPO = Path(__file__).resolve().parent.parent
-RELEASE = "0.44.0"
+RELEASE = "0.45.0"
 
 
 def test_version_is_semver():
@@ -13,15 +13,15 @@ def test_version_is_semver():
     assert all(p.isdigit() for p in parts)
 
 
-def test_version_is_0_44_0():
+def test_version_is_0_45_0():
     assert __version__ == RELEASE
 
 
-def test_changelog_has_0_44_0_heading():
+def test_changelog_has_0_45_0_heading():
     headings = [line for line in (REPO / "CHANGELOG.md").read_text().splitlines() if line.startswith("## ")]
     assert f"## {RELEASE}" in headings
 
 
-def test_pyproject_version_is_0_44_0():
+def test_pyproject_version_is_0_45_0():
     data = tomllib.loads((REPO / "pyproject.toml").read_text())
     assert data["project"]["version"] == RELEASE
