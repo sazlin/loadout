@@ -1,0 +1,19 @@
+---
+description: >-
+  Never enable pull-request auto-merge. When told to watch a PR or merge when
+  green, wait until every attached check has finished successfully.
+alwaysApply: true
+---
+
+# No auto-merge; watch every check
+
+Never enable auto-merge. Do not pass `--auto`, call the auto-merge API, or
+turn auto-merge on in the UI.
+
+"Autopilot", "babysit", "watch until green", and "merge when green" mean you
+watch the pull request yourself. Wait until every attached check has finished
+and succeeded. Required-check lists and branch protection do not define that
+set. A repository may allow a merge while important checks are still running.
+
+Skip a check only with a high-confidence reason it does not apply, and say
+why. Merge only after that wait, and only when the user asked you to merge.

@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-23T05:45:17Z",
+  "synced_at": "2026-09-23T06:02:05Z",
   "tool_version": "0.44.0",
   "files": [
     {
@@ -627,6 +627,11 @@
       "sha256": "4ffed0dad6413baa9dd5db16d1a01d392cdb280120d913aa0694a2da23198384"
     },
     {
+      "dest": ".cursor/rules/no-auto-merge.mdc",
+      "src": "rules/core/no-auto-merge.mdc",
+      "sha256": "a7d8c32de8cae250051a52e90c3ca45e2d475b847ce2c1a352f1efb912c170a8"
+    },
+    {
       "dest": ".cursor/rules/no-autonomous-external-comms.mdc",
       "src": "rules/core/no-autonomous-external-comms.mdc",
       "sha256": "2aedef73061f1df7c32edcdc25f2e9189edfddeaaa0bf4f50de71eed43a779d0"
@@ -681,7 +686,7 @@
     {
       "file": "AGENTS.md",
       "block": "agent-rules",
-      "sha256": "e35167118d20f0f589fbb5c22abd1be73583bd799005378a7996b5b85eaee5e6"
+      "sha256": "1b5c072eae7de12d1902e6b459242d4f032a1e3f33303352b704b34a67430a27"
     },
     {
       "file": "CLAUDE.md",
