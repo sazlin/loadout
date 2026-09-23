@@ -74,7 +74,7 @@
     {
       "dest": ".claude/settings.json",
       "src": "__generated__/claude/settings.json",
-      "sha256": "379c539387d907fe91147b71c7ad7cbcd6babea45e7eee5544efff236ee788ad"
+      "sha256": "35aa32887041cc503476f0e21f03fbd5706e2abbb7f97a197a0765ccbac88086"
     },
     {
       "dest": ".claude/skills/anti-sleep/SKILL.md",
@@ -549,7 +549,7 @@
     {
       "dest": ".cursor/hooks.json",
       "src": "__generated__/cursor/hooks.json",
-      "sha256": "e1f256548b991e54605735507304a0106645b10b29bce3bf96e6c7052211dcfb"
+      "sha256": "0b02345c55319f16b258b07306d616968c3ff54a08099f078c5fe61c9fadb238"
     },
     {
       "dest": ".cursor/hooks/deny-dangerous/dangerous-patterns.txt",
@@ -599,6 +599,23 @@
       "dest": ".cursor/hooks/session-start/session-start",
       "src": "hooks/session-start/session-start",
       "sha256": "ab8d53121b4d97346c6e6dc2c8f359d7666e23ba14c1488f96e5fa2aa6699933",
+      "mode": "755"
+    },
+    {
+      "dest": ".cursor/hooks/skill-telemetry/SOURCE.md",
+      "src": "hooks/skill-telemetry/SOURCE.md",
+      "sha256": "917b66cfcdf7ce36e1ce7e0843dbd2c522c58fe412998584c156979dc85f4c71"
+    },
+    {
+      "dest": ".cursor/hooks/skill-telemetry/skill-telemetry",
+      "src": "hooks/skill-telemetry/skill-telemetry",
+      "sha256": "fdff1d636352380ba4a7cc0ef39b667eab929c90c47b3ebf22bb9e1034aa0cb1",
+      "mode": "755"
+    },
+    {
+      "dest": ".cursor/hooks/skill-telemetry/skill_telemetry.py",
+      "src": "hooks/skill-telemetry/skill_telemetry.py",
+      "sha256": "13e2bf2be10a20fab680cd7be78e6339ec93c2889e83638699e5907a806a9b2a",
       "mode": "755"
     },
     {
