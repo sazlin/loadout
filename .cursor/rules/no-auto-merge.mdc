@@ -1,0 +1,38 @@
+---
+description: Never enable pull-request auto-merge. When told to watch a PR or merge
+  when green, wait until every attached check has finished successfully, within a
+  finite deadline.
+alwaysApply: true
+metadata:
+  loadout.managed: 'true'
+  loadout.source: rules/core/no-auto-merge.mdc
+  loadout.sha: local
+---
+
+# No auto-merge; watch every check
+
+Never enable auto-merge. Do not pass `--auto`, call the auto-merge API
+(`enablePullRequestAutoMerge`), or turn auto-merge on in the UI.
+
+"Autopilot", "babysit", "watch until green", and "merge when green" mean you
+watch the pull request yourself. Wait until every currently attached check has
+finished and succeeded, or until a named deadline, whichever comes first.
+Required-check lists and branch protection do not define that set. A repository
+may allow a merge while important checks are still running.
+
+Bound the wait by the anti-sleep 8h session bound or the CI subscription
+`expiresAt`, whichever is shorter. Then stop, report remaining pending or
+failed checks, fail closed, and do not merge. Do not wait forever for a
+replacement run that may never start.
+
+Subscribe with `cursor-subscriptions-subscribe_github_ci` (or Origin
+equivalent) instead of busy-waiting. If you must poll, use a bounded interval
+with backoff and a per-call timeout on `gh` / `gh pr checks`. Do not run an
+unbounded tight loop.
+
+Failed, pending, cancelled, and timed-out checks cannot be skipped. Ignore a
+check only when the platform already reported skipped/neutral (the workflow
+did not apply). Name that check and the platform conclusion. A high-confidence
+guess that a job "does not apply" is not enough.
+
+Merge only after that wait, and only when the user asked you to merge.
