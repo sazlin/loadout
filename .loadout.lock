@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-23T05:48:35Z",
+  "synced_at": "2026-09-23T06:00:55Z",
   "tool_version": "0.44.0",
   "files": [
     {
@@ -604,18 +604,18 @@
     {
       "dest": ".cursor/hooks/skill-telemetry/SOURCE.md",
       "src": "hooks/skill-telemetry/SOURCE.md",
-      "sha256": "cbd551a444e34f7f19a97f9e24c3ba2c6f710fbe5758a6ad364fce9a55f7a6aa"
+      "sha256": "917b66cfcdf7ce36e1ce7e0843dbd2c522c58fe412998584c156979dc85f4c71"
     },
     {
       "dest": ".cursor/hooks/skill-telemetry/skill-telemetry",
       "src": "hooks/skill-telemetry/skill-telemetry",
-      "sha256": "d63c3f95bb0d4b748740c76641fd701375f89bb346cacb952593e3b17fc40b88",
+      "sha256": "fdff1d636352380ba4a7cc0ef39b667eab929c90c47b3ebf22bb9e1034aa0cb1",
       "mode": "755"
     },
     {
       "dest": ".cursor/hooks/skill-telemetry/skill_telemetry.py",
       "src": "hooks/skill-telemetry/skill_telemetry.py",
-      "sha256": "e14b60c4c2103d5e72c6effbe57837c423de4483fa6b3eba60dc704f544506d1",
+      "sha256": "13e2bf2be10a20fab680cd7be78e6339ec93c2889e83638699e5907a806a9b2a",
       "mode": "755"
     },
     {

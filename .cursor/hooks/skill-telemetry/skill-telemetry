@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Fail-open shim. Everything lives in skill_telemetry.py.
 MODE="${1:-claude}"
+# Keep this JSON aligned with _allow_payload in skill_telemetry.py.
 allow() {
   if [ "$MODE" = "cursor" ]; then
     case "${HOOK_EVENT:-}" in
