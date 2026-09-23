@@ -96,7 +96,12 @@ class State:
 
 
 def decide(state: State, event: dict[str, Any], attrs: Attrs) -> list[Emission]:
-    """Pure plugin-equivalent counter logic. Mutates ``state``."""
+    """Apply one plugin-equivalent event.
+
+    Mutates ``state`` in place (``offered``, ``providers``,
+    ``discovered_count``, ``discovered_emitted``, ``user_this_turn``) and
+    returns the new ``Emission`` rows for that event.
+    """
     kind = event.get("type")
     if kind == "session_start":
         return _decide_session_start(state, event, attrs)

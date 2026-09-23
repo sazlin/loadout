@@ -141,9 +141,10 @@ Also verified this run:
 5. Cloud `conversation_id` uses a `bc-` prefix (`CURSOR_CONVERSATION_ID=bc-…`
    on the 2026-09-18 cloud image). `stop` is documented as supported; this run
    did not capture a live `stop` payload.
-6. Cursor docs list `permission` on `beforeReadFile` output. The Python path
-   prints `{"permission":"allow"}`. The bash shim, when python3 is missing,
-   prints `{}` and relies on fail-open (missing permission is allow).
+6. Cursor docs list `permission` on `beforeReadFile` output. The bash
+   `allow()` helper and Python `_allow_payload` must stay aligned: Cursor
+   `beforeReadFile` → `{"permission":"allow"}`, `beforeSubmitPrompt` →
+   `{"continue":true}`, other events → `{}`.
 7. Plugin skill roots on the cloud image are
    `~/.cursor/plugins/cache/cursor-public/<id>/<sha>/skills/<name>/SKILL.md`.
 8. `python3` is present on the default cloud image (3.12).
