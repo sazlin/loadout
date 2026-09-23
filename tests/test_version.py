@@ -25,3 +25,9 @@ def test_changelog_has_0_45_0_heading():
 def test_pyproject_version_is_0_45_0():
     data = tomllib.loads((REPO / "pyproject.toml").read_text())
     assert data["project"]["version"] == RELEASE
+
+
+def test_uv_lock_loadout_version_is_0_45_0():
+    packages = tomllib.loads((REPO / "uv.lock").read_text())["package"]
+    loadout = next(pkg for pkg in packages if pkg["name"] == "loadout")
+    assert loadout["version"] == RELEASE
