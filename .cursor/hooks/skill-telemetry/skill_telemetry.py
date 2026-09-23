@@ -213,15 +213,15 @@ def _run(args: list[str], stdin: bytes | None) -> int:
         return 0
     mode = _mode_from_args(args)
     raw, over_cap = _capped_stdin(stdin)
+    if not _export_enabled():
+        _emit_allow(mode, os.environ.get("HOOK_EVENT") or _event_name_from_prefix(raw))
+        return 0
     if over_cap:
         _emit_allow(mode, _event_name_from_prefix(raw))
         return 0
     payload = _parse_payload(raw)
     event_name = _event_name(payload)
     if payload is None:
-        _emit_allow(mode, event_name)
-        return 0
-    if not _export_enabled():
         _emit_allow(mode, event_name)
         return 0
     _handle_event(mode, payload)

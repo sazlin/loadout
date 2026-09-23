@@ -3,7 +3,7 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-23T06:00:55Z",
+  "synced_at": "2026-09-23T06:05:15Z",
   "tool_version": "0.44.0",
   "files": [
     {
@@ -609,13 +609,13 @@
     {
       "dest": ".cursor/hooks/skill-telemetry/skill-telemetry",
       "src": "hooks/skill-telemetry/skill-telemetry",
-      "sha256": "fdff1d636352380ba4a7cc0ef39b667eab929c90c47b3ebf22bb9e1034aa0cb1",
+      "sha256": "bdbcc74d07756737157934b293f9b1c6614f507c466c9e6cb31d797bf656b2fd",
       "mode": "755"
     },
     {
       "dest": ".cursor/hooks/skill-telemetry/skill_telemetry.py",
       "src": "hooks/skill-telemetry/skill_telemetry.py",
-      "sha256": "13e2bf2be10a20fab680cd7be78e6339ec93c2889e83638699e5907a806a9b2a",
+      "sha256": "28b6aeaa43c6a468330c4385b4949067a43fff3b7bc794b602d08c5821484445",
       "mode": "755"
     },
     {

@@ -14,6 +14,26 @@ allow() {
   fi
   exit 0
 }
+# Match _export_enabled in skill_telemetry.py: no Python when OTEL is a no-op.
+export_enabled() {
+  case "$(printf '%s' "${SKILL_TELEMETRY_ENABLED:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')" in
+    0|false|no|off) return 1 ;;
+  esac
+  [ -n "$(printf '%s' "${OTEL_SERVICE_NAME:-}" | tr -d '[:space:]')" ] || return 1
+  [ -n "$(printf '%s' "${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:-}" | tr -d '[:space:]')" ] \
+    || [ -n "$(printf '%s' "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" | tr -d '[:space:]')" ] || return 1
+  proto="$(printf '%s' "${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}" | tr -d '[:space:]')"
+  [ -z "$proto" ] && proto="http/protobuf"
+  [ "$proto" = "http/protobuf" ]
+}
+# Drain at most 1MiB so the parent pipe does not stall.
+discard_stdin() {
+  head -c 1048576 >/dev/null 2>&1 || dd bs=65536 count=16 of=/dev/null 2>/dev/null || true
+}
+if ! export_enabled; then
+  discard_stdin
+  allow
+fi
 command -v python3 >/dev/null 2>&1 || allow
 DIR="$(cd "$(dirname "$0")" && pwd)"
 exec python3 "$DIR/skill_telemetry.py" "$MODE"

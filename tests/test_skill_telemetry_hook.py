@@ -1159,6 +1159,74 @@ def test_concurrency_loses_no_increments(telemetry_env: dict[str, Path]) -> None
     assert _series_value(state, "skill.reads") == 20
 
 
+def test_disabled_export_skips_json_parse(
+    hook: Any, telemetry_env: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", raising=False)
+    monkeypatch.delenv("OTEL_SERVICE_NAME", raising=False)
+    monkeypatch.setenv("HOOK_EVENT", "beforeReadFile")
+
+    def boom(*_args: Any, **_kwargs: Any) -> None:
+        raise AssertionError("json parse")
+
+    monkeypatch.setattr(hook, "_parse_payload", boom)
+    raw = (
+        b'{"hook_event_name":"beforeReadFile","conversation_id":"conv-1",'
+        b'"file_path":"/tmp/README.md","content":"' + b"a" * 10_000 + b'"}'
+    )
+    from io import StringIO
+
+    captured = StringIO()
+    old = sys.stdout
+    sys.stdout = captured
+    try:
+        assert hook.main(["cursor"], stdin=raw) == 0
+    finally:
+        sys.stdout = old
+    assert json.loads(captured.getvalue()) == {"permission": "allow"}
+    assert not telemetry_env["state"].exists()
+
+
+def test_shim_skips_python_when_otel_unset(tmp_path: Path, telemetry_env: dict[str, Path]) -> None:
+    tools = tmp_path / "bin"
+    tools.mkdir()
+    for name in ("bash", "sh", "head", "dd", "tr", "printf"):
+        resolved = shutil.which(name)
+        if resolved:
+            dest = tools / name
+            if not dest.exists():
+                dest.symlink_to(resolved)
+    marker = tmp_path / "python-ran"
+    python = tools / "python3"
+    python.write_text(f"#!/bin/sh\necho ran >{marker}\nexit 99\n")
+    python.chmod(0o755)
+    env = {
+        **os.environ,
+        "PATH": str(tools),
+        "HOOK_EVENT": "beforeReadFile",
+        "SKILL_TELEMETRY_STATE_DIR": str(telemetry_env["state"]),
+    }
+    env.pop("OTEL_EXPORTER_OTLP_ENDPOINT", None)
+    env.pop("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", None)
+    env.pop("OTEL_SERVICE_NAME", None)
+    payload = b'{"hook_event_name":"beforeReadFile","file_path":"/tmp/x","content":"' + (b"a" * 1_048_576)
+    started = time.monotonic()
+    result = subprocess.run(
+        ["bash", str(HOOK_SH), "cursor"],
+        input=payload,
+        capture_output=True,
+        check=False,
+        env=env,
+    )
+    elapsed = time.monotonic() - started
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == {"permission": "allow"}
+    assert not marker.exists()
+    assert not (telemetry_env["state"] / "conv-1.json").exists()
+    assert elapsed < 2.0
+
+
 def test_shim_missing_python_exits_zero(tmp_path: Path) -> None:
     tools = tmp_path / "bin"
     tools.mkdir()
