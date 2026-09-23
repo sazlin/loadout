@@ -3,8 +3,8 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-21T05:19:35Z",
-  "tool_version": "0.42.0",
+  "synced_at": "2026-09-23T05:45:17Z",
+  "tool_version": "0.44.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
@@ -314,11 +314,6 @@
       "dest": ".claude/skills/receiving-code-review/SKILL.md",
       "src": "skills/receiving-code-review/SKILL.md",
       "sha256": "2d2948136e7877ac61d73b3e832cd5fb29f49f527cf779918e528268e7db2ab8"
-    },
-    {
-      "dest": ".claude/skills/release-checklist/SKILL.md",
-      "src": "skills/release-checklist/SKILL.md",
-      "sha256": "00ce684e1588c58e5c6499505f386da4deee98babfe4c7233ff2e379cf0b2d07"
     },
     {
       "dest": ".claude/skills/report-review-run/SKILL.md",
