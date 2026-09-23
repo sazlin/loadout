@@ -49,7 +49,7 @@ def _policy_forbids_auto_merge(text: str) -> bool:
 
 
 def _policy_forbids_skipping_failed_or_pending(text: str) -> bool:
-    """True when the cannot-be-skipped ban and skipped/neutral appear, not a high-confidence token."""
+    """True when the cannot-be-skipped ban, skipped/neutral, and failed/pending gates all match."""
     lowered = text.lower()
     if "failed" not in lowered or "pending" not in lowered:
         return False
