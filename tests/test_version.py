@@ -22,6 +22,14 @@ def test_changelog_has_0_46_0_heading():
     assert f"## {RELEASE}" in headings
 
 
+def test_0_46_0_changelog_section_is_empty():
+    changelog = (REPO / "CHANGELOG.md").read_text().splitlines()
+    start = changelog.index(f"## {RELEASE}")
+    end = next(i for i, line in enumerate(changelog[start + 1 :], start + 1) if line.startswith("## "))
+    section = [line for line in changelog[start + 1 : end] if line.strip()]
+    assert section == []
+
+
 def test_pyproject_version_is_0_46_0():
     data = tomllib.loads((REPO / "pyproject.toml").read_text())
     assert data["project"]["version"] == RELEASE
