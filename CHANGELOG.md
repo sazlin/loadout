@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.47.0
+
 - Panel reviewers (`review_correctness`, `review_maintainability`,
   `review_scale`, `review_security`) skip loadout-managed files and
   generated `<!-- BEGIN LOADOUT:` sections in `AGENTS.md` and `CLAUDE.md`.
