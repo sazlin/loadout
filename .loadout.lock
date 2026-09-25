@@ -3,8 +3,8 @@
   "source": "https://github.com/sazlin/loadout",
   "ref": "main",
   "resolved_sha": "local",
-  "synced_at": "2026-09-23T06:16:58Z",
-  "tool_version": "0.44.0",
+  "synced_at": "2026-09-25T01:21:02Z",
+  "tool_version": "0.46.0",
   "files": [
     {
       "dest": ".claude/agents/davinci.md",
@@ -39,12 +39,12 @@
     {
       "dest": ".claude/agents/review_correctness.md",
       "src": "agents/review_correctness/review_correctness.md",
-      "sha256": "837450482060f2a7e2c7f7ff21d74acd00e07ab65fc3dea8193e502d51e22dbc"
+      "sha256": "7daa6fadd99245c337df30f26baa5bd091443326025deb9191d2442ecf36aa8c"
     },
     {
       "dest": ".claude/agents/review_maintainability.md",
       "src": "agents/review_maintainability/review_maintainability.md",
-      "sha256": "be32d2e1c41f77113e2c14d554408557b5f755632db8167ded80a398d8679848"
+      "sha256": "7c1fe3d24021eb5892ea0c9fe4e7bec7975d4937674397c48b973d0836a16729"
     },
     {
       "dest": ".claude/agents/review_orchestrator.md",
@@ -54,12 +54,12 @@
     {
       "dest": ".claude/agents/review_scale.md",
       "src": "agents/review_scale/review_scale.md",
-      "sha256": "da880aa4f5c48d8939a7a2b02a3e17c106129475deeeb1f967ecaeba5d48613a"
+      "sha256": "00d013e65716048a7978e755b88228de801bb5957b270cb887df76eeda75ebaa"
     },
     {
       "dest": ".claude/agents/review_security.md",
       "src": "agents/review_security/review_security.md",
-      "sha256": "a9e726b1410b4660e90b906367da3f1de3545e7cbb42c32dbbc8e339cf225b1e"
+      "sha256": "5a252ed66f02555e327f2a692d2e4f9ab8e3cbbe7884b71033697ab5e3339391"
     },
     {
       "dest": ".claude/agents/risk_classifier.md",

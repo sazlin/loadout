@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Panel reviewers (`review_correctness`, `review_maintainability`,
+  `review_scale`, `review_security`) skip loadout-managed files and
+  generated `<!-- BEGIN LOADOUT:` sections in `AGENTS.md` and `CLAUDE.md`.
+  A local fix there is overwritten by the next `loadout sync`.
+
 - Add `uidesign` loadout with a first-party SkillUI consumer skill and a
   pinned `skillui@1.3.4` `cli_tools` install
   ([amaancoderx/npxskillui](https://github.com/amaancoderx/npxskillui)).
