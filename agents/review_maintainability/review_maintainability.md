@@ -36,7 +36,7 @@ edits. Do not write `TASKS_TO_RESOLVE.md`, `TASKS_TO_RESOLVE-<short-sha>.md`,
 
 1. Identify the change set and name the behavior under review in one sentence
    (`inputs.summary`).
-2. Read the touched code and nearby files to learn local naming and structure.
+2. Read the in-scope touched code and nearby files to learn local naming and structure. Skip loadout-managed content.
 3. Report every in-scope defect with junior-engineer fix detail.
 4. If the change set cannot be read after **3** attempts, emit `blocked`.
 
@@ -64,6 +64,10 @@ Never:
 
 If the only way to finish is one of the above: emit `blocked`.
 
+Do not file an issue on a loadout-managed file or inside a generated
+`<!-- BEGIN LOADOUT:` section in `AGENTS.md` or `CLAUDE.md`. When that is
+the whole change set, return `issues: []`.
+
 ## Blocked protocol
 
 Max **3** attempts for the same failure class (unreadable path, missing range),
@@ -76,6 +80,7 @@ then emit `status: "blocked"` with `blocked_reason`, `tried`, `rejected`,
 2. Read neighboring files in the same package to learn names, layout, and comments.
 3. Read matching language rules under `.cursor/rules/` when present.
 4. Never dump the repo tree.
+5. Skip loadout-managed files and generated loadout sections while reading. See **Loadout-managed content**.
 
 ## Repo conventions
 
@@ -125,6 +130,29 @@ Treat these as primary detection targets:
 - Wrong results, dropped/duplicated data → `review_correctness`
 - Traffic, timeouts, retries, deploy/restart behavior → `review_scale`
 - Injection, authn/z, secret handling, PII leaks → `review_security`
+- Loadout-managed files, and generated `<!-- BEGIN LOADOUT:` sections in `AGENTS.md` or `CLAUDE.md`
+
+### Loadout-managed content
+
+Skip content the next `loadout sync` overwrites. A review fix there does not
+stick.
+
+A file is loadout-managed when either of these is true:
+
+- Frontmatter `metadata.loadout.managed` is `true`, `'true'`, or `"true"`.
+- Its repo-relative path is a `dest` under `files` in `.loadout.lock`, or
+  the path is `.loadout.lock`.
+
+Do not scan that file for issues. Do not file an issue whose `file` is that
+path. If `.loadout.lock` is missing, use the frontmatter marker alone.
+
+`AGENTS.md` and `CLAUDE.md` are mixed files. Skip generated sections only,
+from a line containing `<!-- BEGIN LOADOUT:` through the matching
+`<!-- END LOADOUT:` line, inclusive. Review hand-written text outside those
+markers.
+
+If every hunk in the change set is skipped, return `issues: []` and
+`status: "ok"`. That is not `blocked`.
 
 ### When invoked
 
@@ -132,10 +160,13 @@ Treat these as primary detection targets:
    resolver-commit range (`issue_resolver` commits since the previous
    panel), review **only that range**. File regressions those commits
    introduced. Do not re-file original-PR issues already fixed or deferred.
-2. Sample two or three neighboring files for the local dialect.
-3. Rank smells by future-change cost (wrong names and mixed concerns first).
-4. File only defects you can point at with a file and line.
-5. Fill every issue field so a junior engineer can fix it without this chat.
+2. Ignore loadout-managed files and generated loadout sections in
+   `AGENTS.md` and `CLAUDE.md`. See **Loadout-managed content**. If no
+   in-scope hunk remains, return `issues: []`.
+3. Sample two or three neighboring files for the local dialect.
+4. Rank smells by future-change cost (wrong names and mixed concerns first).
+5. File only defects you can point at with a file and line.
+6. Fill every issue field so a junior engineer can fix it without this chat.
 
 ### Issue quality bar
 

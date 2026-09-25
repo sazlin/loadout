@@ -957,6 +957,35 @@ def test_dimension_reviewers_honor_resolver_commit_range() -> None:
         assert "only that range" in text or "only this range" in text or "review only that range" in text
 
 
+def test_dimension_reviewers_skip_loadout_managed_content() -> None:
+    """Panel reviewers must not file issues that the next loadout sync overwrites."""
+    for filename in sorted(REVIEW_DIMENSION_AGENTS):
+        source = _agent_file(filename).read_text()
+        vendored = (REPO / ".claude" / "agents" / filename).read_text()
+        for text in (source, vendored):
+            _assert_skips_loadout_managed_content(filename, text)
+
+
+def _assert_skips_loadout_managed_content(filename: str, text: str) -> None:
+    parts = text.split("### Loadout-managed content", 1)
+    assert len(parts) == 2, filename
+    body = parts[1].split("\n### ", 1)[0].split("\n## ", 1)[0]
+    assert "loadout.managed" in body, filename
+    assert ".loadout.lock" in body, filename
+    assert "<!-- BEGIN LOADOUT:" in body, filename
+    assert "<!-- END LOADOUT:" in body, filename
+    assert "AGENTS.md" in body, filename
+    assert "CLAUDE.md" in body, filename
+    assert "issues: []" in body, filename
+    assert "sync" in body.lower(), filename
+    out_of_scope = text.split("### Out of scope", 1)[1].split("\n### ", 1)[0].lower()
+    assert "loadout-managed" in out_of_scope, filename
+    invoked = text.split("### When invoked", 1)[1].split("\n### ", 1)[0].lower()
+    assert "loadout-managed" in invoked, filename
+    anti = text.split("## Anti-reward-hacking", 1)[1].split("\n## ", 1)[0].lower()
+    assert "loadout-managed" in anti, filename
+
+
 def test_evals_json_files_exist_and_cover_each_review_agent() -> None:
     suite = load_evals()
     agents = {entry["agent"] for entry in suite["evals"]}
