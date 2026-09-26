@@ -207,6 +207,7 @@ confidence = answer.get("confidence") if isinstance(answer, dict) else None
 if not isinstance(answer, dict) or answer.get("type") != "choice" or choice not in ("low", "not_low"):
     print("unusable")
     raise SystemExit(1)
+# bool is a subclass of int; True would otherwise count as 1.0
 if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or confidence < 0.8:
     print("low_confidence")
     raise SystemExit(3)
