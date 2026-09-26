@@ -1324,19 +1324,23 @@ def test_embedded_jev_script_rejects_confidence_below_0_8(
     assert secret not in output
 
 
-def test_embedded_jev_script_accepts_confidence_of_0_8(
+def test_embedded_jev_script_rejects_missing_confidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     script = _jev_script_ready(tmp_path, monkeypatch)
+    secret = "ts_live_test_key"
 
     def _urlopen(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
         del req, timeout
-        return _JevResponse(_jev_body("low", 0.8))
+        return _JevResponse(_jev_body("low", None))
 
-    monkeypatch.setenv("TYPESAFE_API_KEY", "ts_live_test_key")
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
     monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
-    assert _exec_jev(script) is None
-    assert '"choice": "low"' in capsys.readouterr().out
+    rejected = _exec_jev(script)
+    assert rejected is not None and rejected.code == 3
+    output = capsys.readouterr().out
+    assert "low_confidence" in output
+    assert secret not in output
 
 
 def test_embedded_jev_script_exits_when_the_call_fails(
