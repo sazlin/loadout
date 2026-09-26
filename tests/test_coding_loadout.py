@@ -1,4 +1,4 @@
-"""Contracts for the coding loadout and vendored ponytail / RTK artifacts."""
+"""Contracts for the coding loadout and vendored ponytail / RTK / herdr artifacts."""
 
 from __future__ import annotations
 
@@ -29,6 +29,9 @@ SKILL_NAMES = (
     "rtk",
 )
 SKILL_SRCS = tuple(f"skills/{name}" for name in SKILL_NAMES)
+# herdr is extra on coding; keep it out of SKILL_NAMES (ponytail pin loops).
+CODING_SKILL_NAMES = (*SKILL_NAMES, "herdr")
+CODING_SKILL_SRCS = tuple(f"skills/{name}" for name in CODING_SKILL_NAMES)
 PONYTAIL_SKILL_NAMES = SKILL_NAMES[:-1]
 PONYTAIL_SKILL_SRCS = SKILL_SRCS[:-1]
 RULE_SRC = "rules/coding/ponytail.mdc"
@@ -56,11 +59,11 @@ def _silence_cli_tools(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("loadout.sync.run_cli_tools", lambda tools, project_root: None)
 
 
-def test_coding_loadout_ships_ponytail_and_rtk_artifacts() -> None:
+def test_coding_loadout_ships_ponytail_rtk_and_herdr_artifacts() -> None:
     loadout = load_loadout(REPO / "loadouts" / "coding.yaml")
     assert loadout.name == "coding"
     assert loadout.extends == []
-    assert {entry["src"] for entry in loadout.skills} == {*SKILL_SRCS, "skills/herdr"}
+    assert {entry["src"] for entry in loadout.skills} == set(CODING_SKILL_SRCS)
     assert {entry["src"] for entry in loadout.rules} == {RULE_SRC}
     assert {entry["src"] for entry in loadout.hooks} == set(HOOK_SRCS)
     assert loadout.agents == []
@@ -223,7 +226,7 @@ loadouts: [coding]
     )
     sync(project)
 
-    for name in (*SKILL_NAMES, "herdr"):
+    for name in CODING_SKILL_NAMES:
         dest = project / ".claude/skills" / name / "SKILL.md"
         assert dest.is_file()
         assert not (project / ".claude/skills" / name / "evals").exists()
