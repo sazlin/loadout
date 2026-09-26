@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Vendor `herdr` from [herdrdev/herdr](https://github.com/herdrdev/herdr)
+  tag `v0.9.1` (`skills/herdr`) onto the `base` and `coding` loadouts.
+  The skill controls Herdr panes only when the user asks and `HERDR_ENV=1`.
+
 ## 0.47.0
 
 - Panel reviewers (`review_correctness`, `review_maintainability`,

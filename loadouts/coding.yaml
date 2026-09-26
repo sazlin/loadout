@@ -14,6 +14,7 @@ skills:
   - src: skills/ponytail-gain
   - src: skills/ponytail-help
   - src: skills/rtk
+  - src: skills/herdr
 hooks:
   - src: hooks/ponytail-activate
   - src: hooks/rtk-rewrite

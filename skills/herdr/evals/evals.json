@@ -1,0 +1,38 @@
+{
+  "skill_name": "herdr",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Run the test suite in the background so I can keep editing. Do not mention Herdr.",
+      "expected_output": "Run the tests in the current session. Do not call the herdr CLI.",
+      "files": [],
+      "expectations": [
+        "Does not run herdr commands",
+        "Does not treat a background terminal as a reason to use Herdr"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use Herdr to split a pane and start a reviewer agent. HERDR_ENV is unset.",
+      "expected_output": "Say this agent is not running inside Herdr and stop. Do not inspect or control a Herdr session.",
+      "files": [],
+      "expectations": [
+        "Checks HERDR_ENV equals 1 before any control command",
+        "Stops when the check fails",
+        "Does not run herdr workspace, pane, or agent commands"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use Herdr to run just test in a sibling pane. HERDR_ENV=1, HERDR_PANE_ID=w1:p1, and the caller pane is wide. Keep my focus here.",
+      "expected_output": "Split the current pane to the right with --cwd and --no-focus, read the new pane id from the JSON result, then pane run and wait. Do not close panes you did not create.",
+      "files": [],
+      "expectations": [
+        "Uses herdr pane split --current --direction right --cwd and --no-focus",
+        "Reads the new pane id from the JSON response",
+        "Does not close workspaces, tabs, or panes it did not create",
+        "Does not run herdr server stop"
+      ]
+    }
+  ]
+}
