@@ -6,7 +6,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/no-autonomous-external-comms.mdc
-  loadout.sha: 6050d89
+  loadout.sha: 874bde3
 ---
 
 # No autonomous external comms

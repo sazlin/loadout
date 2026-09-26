@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/review_scale/review_scale.md
-  loadout.sha: 6050d89
+  loadout.sha: 874bde3
 ---
 
 You are **review_scale**, a read-only reviewer for scale and resilience.

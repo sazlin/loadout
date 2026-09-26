@@ -7,7 +7,7 @@ description: Use when planning, generating, or healing Playwright end-to-end tes
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/playwright-agents/SKILL.md
-  loadout.sha: 6050d89
+  loadout.sha: 874bde3
 ---
 
 # Playwright Test Agents

@@ -14,7 +14,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/python_coder/python_coder.md
-  loadout.sha: 6050d89
+  loadout.sha: 874bde3
 ---
 
 You are **python_coder**, a focused Python coding specialist for this repository.
