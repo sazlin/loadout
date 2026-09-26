@@ -3,8 +3,14 @@
 from __future__ import annotations
 
 import json
+import runpy
 import sys
+import tempfile
+import urllib.error
+import urllib.request
+from email.message import Message
 from pathlib import Path
+from typing import Self
 
 import pytest
 
@@ -61,9 +67,7 @@ PR_REVIEW_HARNESS_AGENT_FILES = frozenset(REVIEW_DIMENSION_AGENTS | HARNESS_AGEN
 PR_REVIEW_HARNESS_ORCHESTRATOR_MODEL = "grok-4.6[effort=high,fast=false]"
 PR_REVIEW_HARNESS_GROK_MODEL = "grok-4.6[effort=medium,fast=false]"
 PR_REVIEW_HARNESS_VERIFIER_MODEL = "composer-2.5"
-PR_REVIEW_HARNESS_GROK_AGENT_FILES = frozenset(
-    REVIEW_DIMENSION_AGENTS | {ISSUE_RESOLVER, RISK_CLASSIFIER}
-)
+PR_REVIEW_HARNESS_GROK_AGENT_FILES = frozenset(REVIEW_DIMENSION_AGENTS | {ISSUE_RESOLVER, RISK_CLASSIFIER})
 IMPLEMENTATION_HARNESS_AGENTS = frozenset(
     {
         "implementation_orchestrator.md",
@@ -326,6 +330,11 @@ def _assert_risk_classifier_github_comment_spec(text: str) -> None:
     assert "post a short sanitized summary" in lowered
     assert "never paste verbatim" in lowered
     assert "post raw tokens, pats, or credentials from `gh` stderr" in lowered
+    assert "classification approach:" in lowered
+    assert "jev-latest" in text
+    assert "local rubric" in lowered
+    assert "typesafe_api_key unset" in lowered
+    assert "jev call failed" in lowered
 
 
 def test_every_agent_file_is_classified() -> None:
@@ -544,8 +553,7 @@ def test_orchestrator_resolves_file_disjoint_waves_in_parallel() -> None:
         assert "gone → `log-progress`" not in compact
         assert "gone → log" not in compact
         owner = (
-            "worktree git (add, cherry-pick, prune) is owned by "
-            "`dispatch-resolve-wave` via `prepare_wave_worktrees.py`"
+            "worktree git (add, cherry-pick, prune) is owned by `dispatch-resolve-wave` via `prepare_wave_worktrees.py`"
         )
         assert owner in lowered
         assert "the orchestrator keeps mark-done" in lowered
@@ -638,8 +646,7 @@ def test_orchestrator_later_panel_loops_review_resolver_commits() -> None:
         hashed_suffix, dispatch_head = "aaa1111", "bbb2222"
         left_sha = (
             dispatch_head
-            if "hashed-tasks must not override" in later_lower
-            and "recorded dispatch head" in obtain_lower
+            if "hashed-tasks must not override" in later_lower and "recorded dispatch head" in obtain_lower
             else hashed_suffix
         )
         assert left_sha == dispatch_head
@@ -759,9 +766,9 @@ def test_orchestrator_posts_run_report_from_script() -> None:
         abort = text.split("### Abort if the PR is merged", 1)[1].split("### GitHub PR comments", 1)[0]
         assert "review_run_report.py" in abort or "run report" in abort.lower()
         invoked = text.split("### When invoked", 1)[1].split("## Output schema", 1)[0].lower()
-        assert invoked.find("run report") > invoked.find("trim") or invoked.find(
-            "review_run_report.py"
-        ) > invoked.find("trim")
+        assert invoked.find("run report") > invoked.find("trim") or invoked.find("review_run_report.py") > invoked.find(
+            "trim"
+        )
 
 
 def test_orchestrator_posts_start_comment_as_soon_as_it_begins() -> None:
@@ -810,7 +817,6 @@ def test_orchestrator_started_comment_reflects_resume_state() -> None:
     source = _agent_file(REVIEW_ORCHESTRATOR).read_text()
     vendored = (REPO / ".claude" / "agents" / "review_orchestrator.md").read_text()
     for text in (source, vendored):
-        lowered = text.lower()
         started_fresh = _fenced_markdown_after(text, STARTED_COMMENT_HEADING)
         assert started_fresh.count(QUEUED_STAGE_CELL) == 5
         assert "all stages queued" in started_fresh.lower()
@@ -1174,3 +1180,128 @@ def test_risk_classifier_squash_merges_without_admin() -> None:
     assert "never" in text
     assert "required checks" in text
     assert "low risk" in text or "low-risk" in text
+
+
+def test_risk_classifier_uses_jev_when_typesafe_api_key_is_set() -> None:
+    """Jev classifies when TYPESAFE_API_KEY is set; any failure uses the rubric."""
+    source = _agent_file(RISK_CLASSIFIER).read_text()
+    vendored = (REPO / ".claude" / "agents" / RISK_CLASSIFIER).read_text()
+    for text in (source, vendored):
+        _assert_risk_classifier_jev_contract(text)
+
+
+def _assert_risk_classifier_jev_contract(text: str) -> None:
+    lowered = text.lower()
+    assert "TYPESAFE_API_KEY" in text
+    assert "https://api.typesafe.ai/v1/systemone" in text
+    assert "jev-latest" in text
+    assert "for any reason" in lowered
+    assert "local rubric" in lowered
+    assert '"classification_approach": "jev | rubric"' in text
+    assert "do not echo" in lowered
+    assert "do not retry" in lowered
+    assert "authorization" in lowered and "bearer" in lowered
+
+
+def _jev_python_script(text: str) -> str:
+    marker = "```python\n"
+    start = text.find(marker)
+    assert start != -1
+    body = text[start + len(marker) :]
+    end = body.find("\n```")
+    assert end != -1
+    return body[:end]
+
+
+class _JevResponse:
+    def read(self, _limit: int) -> bytes:
+        return b'{"model":"jev-1.13.0","answers":{"risk":{"type":"choice","choice":"not_low"}}}'
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_args: object) -> bool:
+        return False
+
+
+def _exec_jev(script: str) -> SystemExit | None:
+    with tempfile.NamedTemporaryFile(suffix=".py") as handle:
+        handle.write(script.encode())
+        handle.flush()
+        try:
+            runpy.run_path(handle.name, run_name="__main__")
+        except SystemExit as exc:
+            return exc
+    return None
+
+
+def _jev_script_ready(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    source = _agent_file(RISK_CLASSIFIER).read_text()
+    vendored = (REPO / ".claude" / "agents" / RISK_CLASSIFIER).read_text()
+    script = _jev_python_script(source)
+    assert _jev_python_script(vendored) == script
+    (tmp_path / "diff.txt").write_text("--- a/note\n+typo\n")
+    (tmp_path / "context.txt").write_text("no critical issues")
+    monkeypatch.setattr(sys, "argv", ["jev", str(tmp_path)])
+    return script
+
+
+def test_embedded_jev_script_skips_a_blank_api_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+    monkeypatch.setenv("TYPESAFE_API_KEY", "   ")
+    unset = _exec_jev(script)
+    assert unset is not None and unset.code == 2
+    assert "ts_live_test_key" not in capsys.readouterr().out
+
+
+def test_embedded_jev_script_posts_a_choice_and_hides_the_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+    secret = "ts_live_test_key"
+    seen: dict[str, object] = {}
+
+    def _urlopen(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
+        seen["url"] = req.full_url
+        seen["timeout"] = timeout
+        seen["auth"] = req.get_header("Authorization")
+        payload = req.data
+        assert isinstance(payload, bytes)
+        seen["body"] = json.loads(payload.decode())
+        return _JevResponse()
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
+    monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
+    assert _exec_jev(script) is None
+    assert "not_low" in capsys.readouterr().out
+    assert seen["url"] == "https://api.typesafe.ai/v1/systemone"
+    assert seen["timeout"] == 30
+    assert seen["auth"] == f"Bearer {secret}"
+    body = seen["body"]
+    assert isinstance(body, dict)
+    assert secret not in json.dumps(body)
+    assert body["model"] == "jev-latest"
+    assert body["state"]["diff"] == "--- a/note\n+typo\n"
+    assert body["questions"]["risk"]["type"] == "choice"
+    assert set(body["questions"]["risk"]["criteria"]) == {"low", "not_low"}
+
+
+def test_embedded_jev_script_exits_when_the_call_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+    secret = "ts_live_test_key"
+
+    def _fail(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
+        del timeout
+        raise urllib.error.HTTPError(req.full_url, 503, "overloaded", hdrs=Message(), fp=None)
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
+    monkeypatch.setattr(urllib.request, "urlopen", _fail)
+    failed = _exec_jev(script)
+    assert failed is not None and failed.code == 1
+    failure_out = capsys.readouterr().out
+    assert "failed HTTPError 503" in failure_out
+    assert secret not in failure_out
