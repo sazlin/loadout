@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.48.0
+
 - `risk_classifier` asks TypeSafe Jev (`jev-latest`) to classify the diff
   when `TYPESAFE_API_KEY` is set, and uses the local rubric if that call
   fails. PR comments name which approach was used.
