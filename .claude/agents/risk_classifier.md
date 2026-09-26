@@ -43,10 +43,11 @@ Do not edit source. Do not write `TASKS_TO_RESOLVE.md`,
 1. Read the PR diff (`gh pr diff` / `gh pr view`). Classify the **diff**,
    not the conversation vibe.
 2. Classify the diff. If `TYPESAFE_API_KEY` is set and not whitespace, ask
-   Jev and use its choice. If the key is unset or the Jev call fails for
-   any reason, apply the low-risk rubric. Remaining `minor` issues do not
-   by themselves block low risk. Remaining `critical` or `important`
-   issues do.
+   Jev and use its choice. If that choice is `low` but a hard gate still
+   forbids it, set `risk` to `not_low` and keep `classification_approach` as `jev`.
+   If the key is unset or the Jev call fails for any reason, apply the
+   low-risk rubric. Remaining `minor` issues do not by themselves block
+   low risk. Remaining `critical` or `important` issues do.
 3. If **low risk**: wait until required checks are green, then
    `gh pr merge <n> --squash`. Never `--admin`. If protection, required
    reviews, or checks block it, post a new comment (see **GitHub PR
@@ -122,6 +123,19 @@ inside that process. Do not echo the key, pass it as an argument, put it
 in the URL, the JSON body, or a file. Run the program with a quoted heredoc
 (`<<'PY'`) so the shell does not expand the key. Delete the temp directory
 after the call returns.
+
+```bash
+tmp=$(mktemp -d)
+chmod 700 "$tmp"
+gh pr diff >"$tmp/diff.txt"
+cat >"$tmp/context.txt" <<'CTX'
+remaining issues plus verifier results
+CTX
+python3 - "$tmp" <<'PY'
+# paste the Python fence below
+PY
+rm -rf "$tmp"
+```
 
 ```python
 import json
@@ -333,8 +347,9 @@ template above (table only, no alert). Never instruct squash-merge in a
 ### When invoked
 
 1. Read the diff and remaining findings.
-2. If `TYPESAFE_API_KEY` is set, classify with Jev. If that call fails for
-   any reason, classify with the local rubric.
+2. If `TYPESAFE_API_KEY` is set, classify with Jev. If that choice is `low`
+   but a hard gate still forbids it, set `risk` to `not_low` and keep `classification_approach` as `jev`.
+   If that call fails for any reason, classify with the local rubric.
 3. Squash-merge or comment. Name the classification approach in the comment.
 4. Emit JSON including `classification_approach`.
 
@@ -363,6 +378,10 @@ End every run with a fenced `json` block:
   "blocked_reason": null
 }
 ```
+
+`jev` means Jev returned a usable choice (including hard-gate override) and
+`rubric` means the key was unset or the Jev call failed; the four comment
+sentences are display text, not extra JSON values.
 
 On success, `blocked_reason` is `null`. Always populate `assumptions`,
 `tried`, and `rejected`. Include `changes` as `[]` when you only used `gh`.
