@@ -6,7 +6,7 @@ description: You MUST use this before any creative work - creating features, bui
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/brainstorming/SKILL.md
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 # Brainstorming Ideas Into Designs

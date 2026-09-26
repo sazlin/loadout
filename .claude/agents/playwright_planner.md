@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/playwright_planner/playwright_planner.md
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 You are **playwright_planner**, a focused Playwright Test Planner for this repository.

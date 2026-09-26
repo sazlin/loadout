@@ -9,7 +9,7 @@ globs:
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/playwright/test-agents.mdc
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 # Playwright Test Agent conventions

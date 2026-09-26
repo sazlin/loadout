@@ -17,7 +17,7 @@ license: MIT
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/ponytail/SKILL.md
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 # Ponytail

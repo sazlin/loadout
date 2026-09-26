@@ -6,7 +6,7 @@ description: Use when the PR review harness starts or ends a phase or loop, reco
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/report-review-run/SKILL.md
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 # Report review run

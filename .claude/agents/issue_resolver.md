@@ -13,7 +13,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/issue_resolver/issue_resolver.md
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 You are **issue_resolver**, a focused fixer for one assigned PR-review task.

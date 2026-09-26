@@ -6,7 +6,7 @@ alwaysApply: true
 metadata:
   loadout.managed: 'true'
   loadout.source: rules/core/no-auto-merge.mdc
-  loadout.sha: local
+  loadout.sha: 6050d89
 ---
 
 # No auto-merge; watch every check
