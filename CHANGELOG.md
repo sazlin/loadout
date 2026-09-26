@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `risk_classifier` asks TypeSafe Jev (`jev-latest`) to classify the diff
+  when `TYPESAFE_API_KEY` is set, and uses the local rubric if that call
+  fails. PR comments name which approach was used.
+
 - Vendor `herdr` from [herdrdev/herdr](https://github.com/herdrdev/herdr)
   tag `v0.9.1` (`skills/herdr`) onto the `base` and `coding` loadouts.
   The skill controls Herdr panes only when the user asks and `HERDR_ENV=1`.

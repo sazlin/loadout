@@ -8,6 +8,7 @@
     "github_pr": "example/repo#1"
   },
   "risk": "low",
+  "classification_approach": "rubric",
   "merge": "performed",
   "rationale": "Small docs typo, no remaining critical or important issues, missing VERIFIERS.md is an empty list, required checks green, squash merge.",
   "changes": [],

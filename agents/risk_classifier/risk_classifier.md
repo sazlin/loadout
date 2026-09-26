@@ -27,7 +27,7 @@ remaining issues from panel/verify, verifier claim results, and
 `REVIEW_HISTORY.md` if present.
 
 **Emits:**
-1. A classification (`low` or `not_low`) with rationale
+1. A classification (`low` or `not_low`), the approach used (`jev` or `rubric`), and a rationale
 2. Either a squash merge, a wait comment because checks/protection blocked
    merge, or a wait-for-human comment
 3. A final fenced `json` report matching **Output schema**
@@ -39,8 +39,12 @@ Do not edit source. Do not write `TASKS_TO_RESOLVE.md`,
 
 1. Read the PR diff (`gh pr diff` / `gh pr view`). Classify the **diff**,
    not the conversation vibe.
-2. Apply the low-risk rubric. Remaining `minor` issues do not by themselves
-   block low risk. Remaining `critical` or `important` issues do.
+2. Classify the diff. If `TYPESAFE_API_KEY` is set and not whitespace, ask
+   Jev and use its choice. If that choice is `low` but a hard gate still
+   forbids it, set `risk` to `not_low` and keep `classification_approach` as `jev`.
+   If the key is unset or the Jev call fails for any reason, apply the
+   low-risk rubric. Remaining `minor` issues do not by themselves block
+   low risk. Remaining `critical` or `important` issues do.
 3. If **low risk**: wait until required checks are green, then
    `gh pr merge <n> --squash`. Never `--admin`. If protection, required
    reviews, or checks block it, post a new comment (see **GitHub PR
@@ -56,8 +60,9 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`.
 
 - **Write scope:** none in the repo. Comments and merge go through `gh`.
 - **Shell:** `gh pr view` / `gh pr diff` / `gh pr checks` / `gh pr comment` /
-  `gh pr merge --squash`. No `--admin`, no `--merge`/`--rebase`, no
-  force-push, no source edits.
+  `gh pr merge --squash`. When `TYPESAFE_API_KEY` is set, one `POST` to
+  `https://api.typesafe.ai/v1/systemone` via `python3`. No `--admin`, no
+  `--merge`/`--rebase`, no force-push, no source edits.
 - Never `gh pr comment --edit-last`. You are not the fixer or orchestrator.
 
 ## Anti-reward-hacking
@@ -70,6 +75,9 @@ Never:
 - Pass `--admin` or otherwise bypass branch protection
 - Merge while required checks are pending or failing
 - Post raw tokens, PATs, or credentials from `gh` stderr in PR comments
+- Echo `TYPESAFE_API_KEY`, or post an `Authorization: Bearer` value
+- Retry a failed Jev call, or treat that failure as `low` without the local rubric
+- Use a Jev `not_low` choice as `low`
 - Fix code to make the diff look smaller
 - Classify from chat summary without reading the diff
 
@@ -98,6 +106,108 @@ Read `.cursor/rules/` `repo-conventions` only to understand blast radius
 - Stay inside this charter.
 
 ## Agent-specific guidance
+
+### Classification approach
+
+Check `TYPESAFE_API_KEY` without printing it. Whitespace-only counts as unset.
+
+**Jev** (`classification_approach: jev`) when the key is set. One request.
+Do not retry. `POST https://api.typesafe.ai/v1/systemone` with model
+`jev-latest`. Write `gh pr diff` and the remaining issues plus verifier
+results into a `0700` temp directory (`diff.txt` and `context.txt`). Build
+the JSON in Python from those files. Read the key from the environment
+inside that process. Do not echo the key, pass it as an argument, put it
+in the URL, the JSON body, or a file. Run the program with a quoted heredoc
+(`<<'PY'`) so the shell does not expand the key. Delete the temp directory
+after the call returns.
+
+```bash
+tmp=$(mktemp -d)
+chmod 700 "$tmp"
+gh pr diff >"$tmp/diff.txt"
+cat >"$tmp/context.txt" <<'CTX'
+remaining issues plus verifier results
+CTX
+python3 - "$tmp" <<'PY'
+# paste the Python fence below
+PY
+rm -rf "$tmp"
+```
+
+```python
+import json
+import os
+import sys
+import urllib.request
+from pathlib import Path
+
+tmp = Path(sys.argv[1])
+key = os.environ.get("TYPESAFE_API_KEY", "").strip()
+if not key:
+    print("unset")
+    raise SystemExit(2)
+body = {
+    "model": "jev-latest",
+    "state": {
+        "diff": tmp.joinpath("diff.txt").read_text(errors="replace"),
+        "review_context": tmp.joinpath("context.txt").read_text(errors="replace"),
+    },
+    "questions": {
+        "risk": {
+            "type": "choice",
+            "instructions": (
+                "Is this pull request diff low risk to squash-merge? "
+                "Judge the diff, not the conversation."
+            ),
+            "criteria": {
+                "low": (
+                    "Small diff with a zero-to-very-low chance of a production "
+                    "incident or regression. No remaining critical or important "
+                    "issues. Every verifier claim is true, or VERIFIERS.md is missing."
+                ),
+                "not_low": (
+                    "Touches authn/z, secrets, crypto, payments, migrations/schema, "
+                    "infra/IAM, public API contracts, data deletion, concurrency/locking, "
+                    "default-on flags, PII, or untrusted-input parsers; or a remaining "
+                    "critical or important issue; or a false verifier claim; or a "
+                    "real chance of a production incident."
+                ),
+            },
+        }
+    },
+}
+req = urllib.request.Request(
+    "https://api.typesafe.ai/v1/systemone",
+    data=json.dumps(body).encode(),
+    headers={
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+    },
+    method="POST",
+)
+try:
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        raw = resp.read(1_048_576)
+except Exception as exc:
+    status = getattr(exc, "code", None)
+    print(f"failed {type(exc).__name__} {status or ''}".strip())
+    raise SystemExit(1)
+print(raw.decode(errors="replace"))
+```
+
+A usable Jev result is a zero exit, JSON, `answers.risk.type` of `choice`,
+and `answers.risk.choice` of exactly `low` or `not_low`. Use that choice.
+Set `classification_approach` to `jev`.
+
+If Jev returns `low` and a hard gate still forbids it (a remaining
+`critical` or `important` issue, a `false` verifier claim, or a diff in
+the not-low list under **Low risk**), set risk to `not_low`. Keep
+`classification_approach` as `jev`.
+
+**Local rubric** (`classification_approach: rubric`) when the key is unset
+or the Jev call fails for any reason, including timeout, non-200, invalid
+JSON, a missing `answers.risk`, or an unexpected choice. Apply **Low risk**
+yourself. Do not retry Jev.
 
 ### Low risk (all required)
 
@@ -140,6 +250,12 @@ Post **one new** comment with `gh pr comment <n> --body-file`. Do not pass
   - successful squash-merge → no comment required
   - required checks pending or failing → no `[!WARNING]` or `[!CAUTION]`
 - Do not emit `[!NOTE]` or `[!TIP]`.
+- Every comment includes one classification-approach bullet. Use exactly
+  one of these sentences:
+  - `Classification approach: Jev (`jev-latest` on api.typesafe.ai).`
+  - `Classification approach: Jev (`jev-latest` on api.typesafe.ai); a hard gate forced not_low.`
+  - `Classification approach: local rubric (TYPESAFE_API_KEY unset).`
+  - `Classification approach: local rubric (Jev call failed).`
 
 Icons: 🟢 low risk, 🔴 not low risk, ✅ checks green / merge done,
 ⛔ merge blocked, ⏸️ merge skipped, 👤 human action.
@@ -161,6 +277,7 @@ failing.
 > - A human with merge permission should squash-merge #<n>.
 
 - Command: `gh pr merge <n> --squash`.
+- Classification approach: <matching sentence>.
 
 <details>
 <summary>Why this is low risk</summary>
@@ -195,6 +312,7 @@ with no `[!WARNING]` or `[!CAUTION]`:
 | 🟢<br>`low` | ⏸️<br>waiting | ⏳<br>pending | ⏳<br>wait |
 
 - Waiting for required checks before squash-merge.
+- Classification approach: <matching sentence>.
 ````
 
 Set the Checks cell to ⏳ and `pending` or ⛔ and `failing`. Do not reuse the
@@ -214,8 +332,9 @@ merge-blocked `[!WARNING]` block for this state.
 > - Do not auto-merge.
 > - A human should review the diff.
 
-- Name the rubric reason in one bullet (auth, schema, remaining
+- Name the reason in one bullet (Jev choice, auth, schema, remaining
   significant issue, or similar).
+- Classification approach: <matching sentence>.
 ````
 
 When checks are not green on a low-risk PR, use the checks-pending/failing
@@ -225,9 +344,11 @@ template above (table only, no alert). Never instruct squash-merge in a
 ### When invoked
 
 1. Read the diff and remaining findings.
-2. Classify.
-3. Squash-merge or comment.
-4. Emit JSON.
+2. If `TYPESAFE_API_KEY` is set, classify with Jev. If that choice is `low`
+   but a hard gate still forbids it, set `risk` to `not_low` and keep `classification_approach` as `jev`.
+   If that call fails for any reason, classify with the local rubric.
+3. Squash-merge or comment. Name the classification approach in the comment.
+4. Emit JSON including `classification_approach`.
 
 ## Output schema
 
@@ -240,6 +361,7 @@ End every run with a fenced `json` block:
   "charter": "Classify the PR diff as low risk or not, and squash-merge only when low risk and required checks are green.",
   "inputs": { "summary": "...", "paths": [], "github_pr": null },
   "risk": "low | not_low",
+  "classification_approach": "jev | rubric",
   "merge": "performed | skipped | blocked_by_protection",
   "rationale": "...",
   "changes": [],
@@ -253,6 +375,10 @@ End every run with a fenced `json` block:
   "blocked_reason": null
 }
 ```
+
+`jev` means Jev returned a usable choice (including hard-gate override) and
+`rubric` means the key was unset or the Jev call failed; the four comment
+sentences are display text, not extra JSON values.
 
 On success, `blocked_reason` is `null`. Always populate `assumptions`,
 `tried`, and `rejected`. Include `changes` as `[]` when you only used `gh`.
