@@ -335,6 +335,7 @@ def _assert_risk_classifier_github_comment_spec(text: str) -> None:
     assert "local rubric" in lowered
     assert "typesafe_api_key unset" in lowered
     assert "jev call failed" in lowered
+    assert "jev confidence below 0.8" in lowered
 
 
 def test_every_agent_file_is_classified() -> None:
@@ -1203,6 +1204,8 @@ def _assert_risk_classifier_jev_contract(text: str) -> None:
     assert "do not echo" in lowered
     assert "do not retry" in lowered
     assert "authorization" in lowered and "bearer" in lowered
+    assert ">= 0.8" in text
+    assert "jev confidence below 0.8" in lowered
 
 
 def _jev_python_script(text: str) -> str:
@@ -1216,8 +1219,13 @@ def _jev_python_script(text: str) -> str:
 
 
 class _JevResponse:
+    def __init__(self, body: bytes | None = None) -> None:
+        self._body = (
+            body or b'{"model":"jev-1.13.0","answers":{"risk":{"type":"choice","choice":"not_low","confidence":0.91}}}'
+        )
+
     def read(self, _limit: int) -> bytes:
-        return b'{"model":"jev-1.13.0","answers":{"risk":{"type":"choice","choice":"not_low"}}}'
+        return self._body
 
     def __enter__(self) -> Self:
         return self
@@ -1288,6 +1296,47 @@ def test_embedded_jev_script_posts_a_choice_and_hides_the_key(
     assert body["state"]["diff"] == "--- a/note\n+typo\n"
     assert body["questions"]["risk"]["type"] == "choice"
     assert set(body["questions"]["risk"]["criteria"]) == {"low", "not_low"}
+
+
+def _jev_body(choice: str, confidence: float | None) -> bytes:
+    answer: dict[str, object] = {"type": "choice", "choice": choice}
+    if confidence is not None:
+        answer["confidence"] = confidence
+    return json.dumps({"model": "jev-1.13.0", "answers": {"risk": answer}}).encode()
+
+
+def test_embedded_jev_script_rejects_confidence_below_0_8(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+    secret = "ts_live_test_key"
+
+    def _urlopen(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
+        del req, timeout
+        return _JevResponse(_jev_body("low", 0.79))
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", secret)
+    monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
+    rejected = _exec_jev(script)
+    assert rejected is not None and rejected.code == 3
+    output = capsys.readouterr().out
+    assert "low_confidence" in output
+    assert secret not in output
+
+
+def test_embedded_jev_script_accepts_confidence_of_0_8(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+
+    def _urlopen(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
+        del req, timeout
+        return _JevResponse(_jev_body("low", 0.8))
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", "ts_live_test_key")
+    monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
+    assert _exec_jev(script) is None
+    assert '"choice": "low"' in capsys.readouterr().out
 
 
 def test_embedded_jev_script_exits_when_the_call_fails(

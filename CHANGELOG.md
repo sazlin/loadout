@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `risk_classifier` keeps a Jev `low` or `not_low` choice only when
+  `confidence` is >= 0.8. A lower or missing confidence uses the local
+  rubric, and the PR comment says so.
+
 ## 0.48.0
 
 - `risk_classifier` asks TypeSafe Jev (`jev-latest`) to classify the diff
