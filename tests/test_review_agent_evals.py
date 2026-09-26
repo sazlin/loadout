@@ -1198,6 +1198,8 @@ def _assert_risk_classifier_jev_contract(text: str) -> None:
     assert "for any reason" in lowered
     assert "local rubric" in lowered
     assert '"classification_approach": "jev | rubric"' in text
+    assert "hard gate" in lowered or "hard-gate" in lowered
+    assert "keep `classification_approach` as `jev`" in lowered
     assert "do not echo" in lowered
     assert "do not retry" in lowered
     assert "authorization" in lowered and "bearer" in lowered
