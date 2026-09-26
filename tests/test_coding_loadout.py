@@ -60,7 +60,7 @@ def test_coding_loadout_ships_ponytail_and_rtk_artifacts() -> None:
     loadout = load_loadout(REPO / "loadouts" / "coding.yaml")
     assert loadout.name == "coding"
     assert loadout.extends == []
-    assert {entry["src"] for entry in loadout.skills} == set(SKILL_SRCS)
+    assert {entry["src"] for entry in loadout.skills} == {*SKILL_SRCS, "skills/herdr"}
     assert {entry["src"] for entry in loadout.rules} == {RULE_SRC}
     assert {entry["src"] for entry in loadout.hooks} == set(HOOK_SRCS)
     assert loadout.agents == []
@@ -223,7 +223,7 @@ loadouts: [coding]
     )
     sync(project)
 
-    for name in SKILL_NAMES:
+    for name in (*SKILL_NAMES, "herdr"):
         dest = project / ".claude/skills" / name / "SKILL.md"
         assert dest.is_file()
         assert not (project / ".claude/skills" / name / "evals").exists()
