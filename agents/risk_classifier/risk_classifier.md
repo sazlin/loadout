@@ -419,7 +419,7 @@ End every run with a fenced `json` block:
 
 `jev` means Jev returned a usable choice (including hard-gate override) and
 `rubric` means the key was unset, the JSON body was 148_000 characters or
-more, confidence was missing or below 0.8, or the Jev call failed; the five
+more, confidence was missing or below 0.8, or the Jev call failed; the six
 comment sentences are display text, not extra JSON values.
 
 On success, `blocked_reason` is `null`. Always populate `assumptions`,
