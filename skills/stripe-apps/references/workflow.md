@@ -167,7 +167,7 @@ To submit your app for marketplace review:
 
 ### Final step — Draft feedback (after a build session)
 
-If you ran toolchain commands this session, draft one `stripe feedback` `--message` and `--context` summarizing what worked and what got in the way. Show them to the user and wait for explicit user approval. Do not run `stripe feedback` without explicit user approval. If they approve, run the command and print the returned id. If they refuse or the CLI is older than 1.50.1, skip — a missing report is not a skill failure. See `references/feedback.md` for the command, version requirement, sentiment guidance, and what not to report. Never put secrets, env values, or customer data in `--message` or `--context`.
+If you ran toolchain commands this session, draft one `stripe feedback` `--message` and `--context` summarizing what worked and what got in the way. Show them to the user and wait for explicit user approval. Do not run `stripe feedback` without explicit user approval. If they approve, run the command and print the returned id. If they refuse or the CLI is older than 1.50.1, skip — a skipped or refused report is not a skill failure. See `references/feedback.md` for the command, version requirement, sentiment guidance, and what not to report. Never put secrets, env values, or customer data in `--message` or `--context`.
 
 **Plain-language:** “Ask before sending Stripe a note about how the build went. It’s not support, and it never blocks your work.”
 

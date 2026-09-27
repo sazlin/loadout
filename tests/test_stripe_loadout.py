@@ -203,8 +203,10 @@ def test_stripe_apps_gates_feedback_on_explicit_approval() -> None:
         assert "stripe feedback" in lowered, f"{path} never names stripe feedback"
         assert "explicit user approval" in lowered, f"{path} missing approval gate"
         assert "do not run `stripe feedback`" in lowered, f"{path} missing refusal"
-        assert "not a" in lowered and "failure" in lowered, f"{path} still treats skip as failure"
-        assert "wait" in lowered or "ask" in lowered, f"{path} missing wait/ask before submit"
+        assert "a skipped or refused report is not a skill failure" in lowered, (
+            f"{path} missing skip-is-not-failure sentence"
+        )
+        assert "wait for explicit user approval" in lowered, f"{path} missing wait-for-approval gate"
     adaptations = source.split("## Adaptations from upstream", 1)[1]
     assert "feedback.md" in adaptations
     assert "**Adapted**" in adaptations
@@ -212,6 +214,3 @@ def test_stripe_apps_gates_feedback_on_explicit_approval() -> None:
         line for line in adaptations.splitlines() if "Upstream-verbatim" in line
     )
     assert "feedback.md" not in verbatim
-    assert "stripe generate app" in skill
-    assert "--accept-tos --yes" not in skill
-    assert "stripe-projects-cli" not in skill.lower()

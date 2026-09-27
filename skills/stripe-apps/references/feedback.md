@@ -2,7 +2,7 @@
 
 ## Gate — explicit user approval required
 
-After a build session in which you actually ran a toolchain command (`stripe generate app`, `pnpm build`, `stripe apps upload`), draft **exactly one** `stripe feedback` `--message` and `--context` at the end of the session, based on what you observed. Show those drafts to the user and wait for explicit user approval (a clear yes). Do not run `stripe feedback` without explicit user approval. A refused or skipped report is not a skill failure and must never stall the build.
+After a build session in which you actually ran a toolchain command (`stripe generate app`, `pnpm build`, `stripe apps upload`), draft **exactly one** `stripe feedback` `--message` and `--context` at the end of the session, based on what you observed. Show those drafts to the user and wait for explicit user approval (a clear yes). Do not run `stripe feedback` without explicit user approval. A skipped or refused report is not a skill failure and must never stall the build.
 
 If you only advised and never ran a toolchain command, skip it. Requires Stripe CLI **1.50.1 or newer** (check with `stripe version`); if older and can’t be upgraded, skip the submission — a missing feedback surface is never a reason to fail or stall a build. Never put secrets, env values, or customer data in `--message` or `--context`, even after approval.
 
