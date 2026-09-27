@@ -42,6 +42,11 @@ HOOK_SCRIPT = REPO / "hooks" / "ponytail-activate" / "ponytail-activate"
 RTK_HOOK_SCRIPT = REPO / "hooks" / "rtk-rewrite" / "rtk-rewrite.sh"
 UPSTREAM = "https://github.com/DietrichGebert/ponytail"
 PONYTAIL_COMMIT = "1d95ff7d39de12d87014ea40d4e22201bddc501b"
+PONYTAIL_HOOK_COMMIT = "974d940a1c5344210874150b98ff0d2c861fab6a"
+PONYTAIL_HOOK_SPLIT_PIN = (
+    "hook pin stays on 974d940 because the upstream Cursor alwaysApply/"
+    "short-circuit was not ported"
+)
 RTK_UPSTREAM = "https://github.com/rtk-ai/rtk"
 RTK_VERSION = "0.50.0"
 RTK_COMMIT = "1d87b8e719ce0a50c223cd93ca64dd16921f9aec"
@@ -114,6 +119,18 @@ def test_ponytail_skill_source_pins_exist() -> None:
         assert "evals/" in text
         digest = hashlib.sha256((REPO / src / "SKILL.md").read_bytes()).hexdigest()
         assert digest in text
+
+
+def test_ponytail_hook_source_pin_contract() -> None:
+    text = (REPO / PONYTAIL_HOOK_SRC / "SOURCE.md").read_text()
+    assert UPSTREAM in text
+    match = re.search(r"\| Commit \| `([0-9a-f]{40})` \|", text)
+    assert match is not None
+    pinned = match.group(1)
+    assert pinned in {PONYTAIL_COMMIT, PONYTAIL_HOOK_COMMIT}
+    if pinned != PONYTAIL_COMMIT:
+        assert PONYTAIL_HOOK_SPLIT_PIN in text
+    assert "globbed" in text
 
 
 def test_ponytail_help_does_not_send_agents_to_plugin_marketplace() -> None:

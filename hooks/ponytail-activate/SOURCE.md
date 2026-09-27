@@ -10,6 +10,8 @@
 See also [`skills/ponytail/SOURCE.md`](../../skills/ponytail/SOURCE.md) for the
 vendored skill pin and rule-sync contract.
 
+This hook pin stays on 974d940 because the upstream Cursor alwaysApply/short-circuit was not ported (loadout rule is globbed).
+
 ## Adaptations from upstream
 
 Vendored for loadout sync (skills + hooks land under the project tree; no plugin
@@ -48,6 +50,8 @@ install). Compared to the upstream Node SessionStart hook:
    one-line notice and skips the skill body when `.cursor/rules/ponytail.mdc`
    exists, because that plugin's rule is always-on. Loadout's rule is globbed
    to source files, so this hook still injects the filtered skill on Cursor.
+   The hook pin stays on 974d940 because that alwaysApply/short-circuit was
+   not ported.
 8. **Out of scope** — no statusline nudge, no `~/.claude/.ponytail-active`
    flag file, no UserPromptSubmit mode tracker, no SubagentStart injector.
    Those stay plugin-only. The globbed rule plus this SessionStart hook cover
