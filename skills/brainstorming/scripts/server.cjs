@@ -103,8 +103,8 @@ const SESSION_DIR = process.env.BRAINSTORM_DIR || '/tmp/brainstorm';
 const CONTENT_DIR = path.join(SESSION_DIR, 'content');
 const STATE_DIR = path.join(SESSION_DIR, 'state');
 const SUPERPOWERS_VERSION = readSuperpowersVersion();
-// Loadout vendoring: never load the remote brand image (upstream uses it for
-// optional usage telemetry via primeradiant.com). Text-only branding only.
+// Loadout vendoring: never load the remote brand image (upstream uses it as
+// an optional usage beacon). Text-only branding only.
 let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_OWNER_PID) : null;
 
 // Per-session secret key. The companion is reachable by any local browser tab

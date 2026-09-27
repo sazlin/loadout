@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Upstream | [obra/superpowers](https://github.com/obra/superpowers) |
-| Tag | `v6.2.0` |
-| Commit | `3dcbd5c4b48e02263fbf4a3c01e3fe4f81d584d9` |
+| Tag | `v6.4.2` |
+| Commit | `8ca22dba9a94f28898bbce59f2537ff4d87c747d` |
 | Imported | 2026-08-08 |
 
 ## Adaptations from upstream

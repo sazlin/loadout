@@ -1,10 +1,11 @@
 name: superpowers
 description: >-
   Opt-in Superpowers workflow skills and SessionStart bootstrap
-  (vendored from obra/superpowers@v6.2.0). Do not combine with the
+  (vendored from obra/superpowers@v6.4.2). Do not combine with the
   Superpowers plugin for the same harness.
 skills:
   - src: skills/brainstorming
+  - src: skills/diagnosing-superpowers
   - src: skills/dispatching-parallel-agents
   - src: skills/executing-plans
   - src: skills/finishing-a-development-branch

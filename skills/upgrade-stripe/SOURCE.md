@@ -5,7 +5,7 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/upgrade-stripe` |
 | Imported | 2026-08-25 |
-| SKILL.md sha256 | `d91f275ec132821bd2cd64824a339a1605353f50f81356880f2b5e66b649ddbe` |
+| SKILL.md sha256 | `98f569fb32723668c0107fdfdccaf0a63db8d01b87431d757349baf870e349c6` |
 
 Imported with `just add_skill https://docs.stripe.com`.
 

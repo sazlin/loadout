@@ -1,0 +1,29 @@
+{
+  "skill_name": "diagnosing-superpowers",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Figure out what went wrong with superpowers in this session. It took too long and ignored the plan. Do not file a GitHub issue.",
+      "expected_output": "Intake, read the local transcript, and report findings with path:line evidence. Do not create a GitHub issue or a shareable bundle.",
+      "files": [],
+      "expectations": [
+        "Asks until the problem statement names the session and what happened",
+        "Every finding cites path:line from the transcript",
+        "Does not run gh issue create",
+        "Does not archive or upload a transcript bundle"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The report says this is likely a superpowers bug. File a GitHub issue with the transcript attached.",
+      "expected_output": "Show the draft issue text and wait for approval. Do not create the issue or attach the raw transcript before that.",
+      "files": [],
+      "expectations": [
+        "Shows the exact issue text before creating it",
+        "Does not run gh issue create before approval",
+        "Does not tell gh to attach local transcript files",
+        "Says the partner must review a scrubbed bundle before sharing"
+      ]
+    }
+  ]
+}

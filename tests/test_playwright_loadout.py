@@ -17,8 +17,8 @@ PLAYWRIGHT_AGENTS = (
     "playwright_generator",
     "playwright_healer",
 )
-PLAYWRIGHT_CLI_PACKAGE = "@playwright/cli@0.1.18"
-UNPINNED_NPX_PLAYWRIGHT_CLI = re.compile(r"npx(?:\s+--yes)?\s+@playwright/cli(?!@0\.1\.18)")
+PLAYWRIGHT_CLI_PACKAGE = "@playwright/cli@0.1.21"
+UNPINNED_NPX_PLAYWRIGHT_CLI = re.compile(r"npx(?:\s+--yes)?\s+@playwright/cli(?!@0\.1\.21)")
 
 
 def write_manifest(project: Path, body: str) -> None:
@@ -49,10 +49,10 @@ def test_playwright_loadout_ships_agents_skill_cli_and_e2e_conventions() -> None
     assert PLAYWRIGHT_CLI_PACKAGE in tool.command
     assert "npm install -D" in tool.command
     assert "npm install -g" not in tool.command
-    # Skip only when an already-installed CLI reports 0.1.18, not when a
+    # Skip only when an already-installed CLI reports 0.1.21, not when a
     # binary is merely named playwright-cli on PATH or under node_modules.
     assert "--version" in tool.command
-    assert "grep -q 0.1.18" in tool.command
+    assert "grep -q 0.1.21" in tool.command
     assert "command -v playwright-cli" not in tool.command
     assert "test -x node_modules/.bin/playwright-cli" not in tool.command
 
@@ -103,8 +103,8 @@ def test_playwright_artifacts_prefer_cli_and_drop_test_mcp() -> None:
         assert "npx playwright-cli" in text, label
     assert "playwright-cli --version" in scripts
     assert "npx --no-install playwright-cli --version" in scripts
-    assert "0.1.18" in scripts
-    assert "npm install -D --no-fund --no-audit @playwright/cli@0.1.18" in scripts
+    assert "0.1.21" in scripts
+    assert "npm install -D --no-fund --no-audit @playwright/cli@0.1.21" in scripts
     assert "missing from PATH" not in scripts
     assert "node_modules/.bin" not in scripts
 

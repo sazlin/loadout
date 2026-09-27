@@ -22,17 +22,17 @@ cli_tools:
   - name: rtk
     command: |
       set -euo pipefail
-      if rtk --version 2>/dev/null | grep -q 0.48.0 && rtk gain >/dev/null 2>&1; then exit 0; fi
+      if rtk --version 2>/dev/null | grep -q 0.50.0 && rtk gain >/dev/null 2>&1; then exit 0; fi
       os="$(uname -s)"; arch="$(uname -m)"
       case "$os-$arch" in
-        Linux-x86_64) asset=rtk-x86_64-unknown-linux-musl.tar.gz; sum=e4e650fa1677c0de2f6839a6040d7b17f312d32f163c402b75af70e9e5af1a91 ;;
-        Linux-aarch64) asset=rtk-aarch64-unknown-linux-gnu.tar.gz; sum=5ed65486a96077bd6bba7c87fdc9d0e4a1918d19619be3c87380888389a30c7c ;;
-        Darwin-x86_64) asset=rtk-x86_64-apple-darwin.tar.gz; sum=a95f2c23e08572dcc84ddff5fbe432e41e7f94369622eb086cca49ae0b6f61e8 ;;
-        Darwin-arm64) asset=rtk-aarch64-apple-darwin.tar.gz; sum=4fa025cc93a744b6963f4e53a008e5ba3f74b6a38061f4a47c639e1c3023e0db ;;
+        Linux-x86_64) asset=rtk-x86_64-unknown-linux-musl.tar.gz; sum=bc2b8902b0d9c796c82ef45f16ae2307e17757afeca5ee156235a3dc7bda5f89 ;;
+        Linux-aarch64) asset=rtk-aarch64-unknown-linux-gnu.tar.gz; sum=d1cc49dfa2cd443fc32625444b59fe616b6c80478cca210985118347174dd758 ;;
+        Darwin-x86_64) asset=rtk-x86_64-apple-darwin.tar.gz; sum=ac23e20024ab3c71e7f50069f8b34190aec1b2d8f0c2cc19834039b3dac73373 ;;
+        Darwin-arm64) asset=rtk-aarch64-apple-darwin.tar.gz; sum=fe54761a9950266e3a78ddb66a8af5e067251169da306a288e0751de63d836fe ;;
         *) echo "rtk: unsupported platform $os $arch" >&2; exit 1 ;;
       esac
       tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-      curl -fsSL -o "$tmp/$asset" "https://github.com/rtk-ai/rtk/releases/download/v0.48.0/$asset"
+      curl -fsSL -o "$tmp/$asset" "https://github.com/rtk-ai/rtk/releases/download/v0.50.0/$asset"
       if command -v sha256sum >/dev/null 2>&1; then actual="$(sha256sum "$tmp/$asset" | awk '{print $1}')"; else actual="$(shasum -a 256 "$tmp/$asset" | awk '{print $1}')"; fi
       test "$actual" = "$sum"
       tar -xzf "$tmp/$asset" -C "$tmp"

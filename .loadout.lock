@@ -90,12 +90,12 @@
     {
       "dest": ".claude/skills/brainstorming/SKILL.md",
       "src": "skills/brainstorming/SKILL.md",
-      "sha256": "830004eee4b3b2234d21016825cf38dd27bd243124a9dba84b21a2f9133292b4"
+      "sha256": "b1c526646120b2dca68750f56dda5318db462b40a616fcca132adadc3dde3b8c"
     },
     {
       "dest": ".claude/skills/brainstorming/SOURCE.md",
       "src": "skills/brainstorming/SOURCE.md",
-      "sha256": "f986e1284f28144fe6281d2df40c53855d5161b9990310d919fb2d20fa90a911"
+      "sha256": "aa476c09b08edc9900860887e86bb502f1af6b04474e7366feebb91b2e1f7d93"
     },
     {
       "dest": ".claude/skills/brainstorming/scripts/frame-template.html",
@@ -112,7 +112,7 @@
     {
       "dest": ".claude/skills/brainstorming/scripts/server.cjs",
       "src": "skills/brainstorming/scripts/server.cjs",
-      "sha256": "938f46b39a637edcf21cdcf63ed8f7999834be512515f12eda504d086ccd2fa0",
+      "sha256": "10d306721d7551640ea715a12c267ae08e9888473f5f2a06f114587d8f574eea",
       "mode": "755"
     },
     {
@@ -135,7 +135,7 @@
     {
       "dest": ".claude/skills/brainstorming/visual-companion.md",
       "src": "skills/brainstorming/visual-companion.md",
-      "sha256": "60cbad29b9dd7eaf08da020e301c498a72230b2e13c1813fa967a135ffcc1d71"
+      "sha256": "6ffcb038b53254bd31debaa15e12dcd4ff24bd63d690e0b644ac6396701cf2e2"
     },
     {
       "dest": ".claude/skills/decisions/SKILL.md",
@@ -151,6 +151,106 @@
       "dest": ".claude/skills/dedupe-and-write-tasks/references/tasks-to-resolve-template.md",
       "src": "skills/dedupe-and-write-tasks/references/tasks-to-resolve-template.md",
       "sha256": "95b1aa81b9fe2c73a1a48e8737980f687354c7a0c721754f066c43af935280bc"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/SKILL.md",
+      "src": "skills/diagnosing-superpowers/SKILL.md",
+      "sha256": "f80b7715dc5e45c6948ab0c96f3b427d25e0ac5bd3a22b8b92a83a3431e36efe"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/analyst-common.md",
+      "src": "skills/diagnosing-superpowers/prompts/analyst-common.md",
+      "sha256": "88801c36070be2a54a8a9a29632b01ab21db053e2e76ee49b5252a9b74ca4090"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/cost-and-time.md",
+      "src": "skills/diagnosing-superpowers/prompts/cost-and-time.md",
+      "sha256": "fe97a66d4db3b436816ef82694bda413b522b3a862dd41978da01e358fffecc4"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/plan-adherence.md",
+      "src": "skills/diagnosing-superpowers/prompts/plan-adherence.md",
+      "sha256": "1dcbab82033598a2e9c9ee42e950d4b1822d2c871c02cef9e102cdd5cbbda113"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/quality-evidence.md",
+      "src": "skills/diagnosing-superpowers/prompts/quality-evidence.md",
+      "sha256": "749d11cf678f379ed77a29274cad456634e0284aa523639a1a214a9f2b986eb1"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/repeated-work.md",
+      "src": "skills/diagnosing-superpowers/prompts/repeated-work.md",
+      "sha256": "895027f2dfa4b1b8bcdb7ac9aec8d45a80bff212fad6ec6cad5ab38fa68322f5"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/request-conflicts.md",
+      "src": "skills/diagnosing-superpowers/prompts/request-conflicts.md",
+      "sha256": "e800e38d8b7752c212c76c5c3ed75cd78b749684263ea0c313586f26af6f4b5c"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/scrub-audit.md",
+      "src": "skills/diagnosing-superpowers/prompts/scrub-audit.md",
+      "sha256": "5cc48f05a7f81f5f7e05e0c7ceafc0fb8774bcaf75fe88dcb5c7e408026c70ad"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/scrub.md",
+      "src": "skills/diagnosing-superpowers/prompts/scrub.md",
+      "sha256": "854cb3320cc5377b493cea2f72519d67983464882db68a0f408a7d0a0f040b8c"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/similar-session.md",
+      "src": "skills/diagnosing-superpowers/prompts/similar-session.md",
+      "sha256": "b190f713b463df2bb5ec3914647e204074d1bd50643a53159db6d13cace916c1"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/skill-timeline.md",
+      "src": "skills/diagnosing-superpowers/prompts/skill-timeline.md",
+      "sha256": "45d604d583b57a77b9033eced8eb875ef342af70fcd66cf7d15c6dc89964890f"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/prompts/stumbles.md",
+      "src": "skills/diagnosing-superpowers/prompts/stumbles.md",
+      "sha256": "1f2d1f048aff7b8b400006301f1ce8c232ecc7e9d5f705af27a849b2c03ea2e7"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/references/context-safety.md",
+      "src": "skills/diagnosing-superpowers/references/context-safety.md",
+      "sha256": "e6be2bd3495f454d4bedee9484d728d245d1fa656e11fc4ceec5693c16e4730a"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/references/github-issues.md",
+      "src": "skills/diagnosing-superpowers/references/github-issues.md",
+      "sha256": "a656f5e15b21c7a200c39c038f5ede74b9d6ea3ceeb90f39af7e930c8d8424d6"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/references/redaction-policy.md",
+      "src": "skills/diagnosing-superpowers/references/redaction-policy.md",
+      "sha256": "96b16f47074838fe2d7e609577d6f8b0ad460f8378b281a3f96ee23cb5a08bde"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/references/session-discovery.md",
+      "src": "skills/diagnosing-superpowers/references/session-discovery.md",
+      "sha256": "6d1dced083e5d978448a78df298cf515531b0eb39b2854a4a2afbffeb69a7435"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/templates/bundle-README.md",
+      "src": "skills/diagnosing-superpowers/templates/bundle-README.md",
+      "sha256": "2e6ddc6b106028d5ebd00a50ad93a77111d675c219ee1273cd0857869e8d51ec"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/templates/case.md",
+      "src": "skills/diagnosing-superpowers/templates/case.md",
+      "sha256": "597892462be83bc478536ec91f7c285f6dd25d119c560734a3a180fe8471301d"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/templates/issue.md",
+      "src": "skills/diagnosing-superpowers/templates/issue.md",
+      "sha256": "8f28dbfe60602f77dda76d81815cb4e2dce7d3e2a93348890e1581be8310ac1f"
+    },
+    {
+      "dest": ".claude/skills/diagnosing-superpowers/templates/report.md",
+      "src": "skills/diagnosing-superpowers/templates/report.md",
+      "sha256": "38295d0fd785e8608f330815c59ebd7047942002ec7085aecbed54681f56b0c1"
     },
     {
       "dest": ".claude/skills/dispatch-panel-review/SKILL.md",
@@ -187,12 +287,24 @@
     {
       "dest": ".claude/skills/executing-plans/SKILL.md",
       "src": "skills/executing-plans/SKILL.md",
-      "sha256": "7619bba4cd5e7d5e29ccbb4eb3f566bdf390f044fee0aa942452963079acfc9f"
+      "sha256": "67d30b3c0f9ada478fb766d61c92e959a67724ab0f23de95ccbbea95dc4414b0"
+    },
+    {
+      "dest": ".claude/skills/executing-plans/scripts/task-done",
+      "src": "skills/executing-plans/scripts/task-done",
+      "sha256": "f704dc216e0602f95c601b9ee1113c9a55cc1c5f6e4d149dddfba0fd3ad1c314",
+      "mode": "755"
+    },
+    {
+      "dest": ".claude/skills/executing-plans/scripts/task-start",
+      "src": "skills/executing-plans/scripts/task-start",
+      "sha256": "f833693c8fce3700fc9f841562d80f8015cd40f652c168a3405ac3e46947a1fe",
+      "mode": "755"
     },
     {
       "dest": ".claude/skills/finishing-a-development-branch/SKILL.md",
       "src": "skills/finishing-a-development-branch/SKILL.md",
-      "sha256": "3744c04bb023c7557f91c214b993603bfbe11a390503ac6643ec2fac07249d8e"
+      "sha256": "7344bc41dd015fbc72937023afae6a90749100ab45445c76aca2a9a201f99c4e"
     },
     {
       "dest": ".claude/skills/herdr/SKILL.md",
@@ -233,7 +345,7 @@
     {
       "dest": ".claude/skills/playwright-agents/SKILL.md",
       "src": "skills/playwright-agents/SKILL.md",
-      "sha256": "a1652d0803e8409350cf20bf256bd941c9df1d38c513d9830ef3eee68cc00a2d"
+      "sha256": "0eba7709401694c143be9ade353ec58057af3e242db7cdca0a4efe3afd31b80f"
     },
     {
       "dest": ".claude/skills/playwright-agents/references/ci.md",
@@ -243,12 +355,12 @@
     {
       "dest": ".claude/skills/playwright-agents/references/cursor-cloud.md",
       "src": "skills/playwright-agents/references/cursor-cloud.md",
-      "sha256": "a9c5e415d1d2b57524cc1bf3741f55c9be44abd309748acd049e82dbfdff34ff"
+      "sha256": "b7353d8c8e3ac274830ba6035f616f0c6013dcff4f21675ddf1c83efe842071e"
     },
     {
       "dest": ".claude/skills/playwright-agents/references/package-scripts.md",
       "src": "skills/playwright-agents/references/package-scripts.md",
-      "sha256": "d61f5ab5be7d62919aed0ae8be3659c39dc85e4f092764e5301d9f45e3adb71c"
+      "sha256": "7ef0c79361670b586b173a87cb23c8a78ae5f4797e4d43df5f04dbb5bba6c634"
     },
     {
       "dest": ".claude/skills/playwright-agents/references/prompts.md",
@@ -268,7 +380,7 @@
     {
       "dest": ".claude/skills/ponytail-audit/SOURCE.md",
       "src": "skills/ponytail-audit/SOURCE.md",
-      "sha256": "3e9735f475fd502b7e0fbb9636794b145081ea4234f11c1fac3c3940373b9737"
+      "sha256": "3cb46d0b3cb97db8f97a93ac60fdd93da609dec1a4fbb16ea9b6c6da6bf2c524"
     },
     {
       "dest": ".claude/skills/ponytail-debt/SKILL.md",
@@ -278,7 +390,7 @@
     {
       "dest": ".claude/skills/ponytail-debt/SOURCE.md",
       "src": "skills/ponytail-debt/SOURCE.md",
-      "sha256": "268164091f8559fed97fdf35a2f1986183e52182ce6ce49ed423619fa3b6ae92"
+      "sha256": "0544eac46c9b64a6577c06ae7f1bc55e4a79608d8101a614770b874658f12daf"
     },
     {
       "dest": ".claude/skills/ponytail-gain/SKILL.md",
@@ -288,7 +400,7 @@
     {
       "dest": ".claude/skills/ponytail-gain/SOURCE.md",
       "src": "skills/ponytail-gain/SOURCE.md",
-      "sha256": "cbb548b1084a500f8bebe13510c19533e2f669141bd6f3141bf86a5feb5a55b5"
+      "sha256": "f72997e001b15d06ca14dacef5df8433e6386cf0bccee35a88ddcf1ac88541be"
     },
     {
       "dest": ".claude/skills/ponytail-help/SKILL.md",
@@ -298,7 +410,7 @@
     {
       "dest": ".claude/skills/ponytail-help/SOURCE.md",
       "src": "skills/ponytail-help/SOURCE.md",
-      "sha256": "8526add99f8e896d5f5ae05879a9eec5d3ab14b33d94bd03dec978b7cde1f5aa"
+      "sha256": "fa378eb16a3b5748a1ba9a2e4c1eea53f3522717bb71f0eb71557b06a001cb04"
     },
     {
       "dest": ".claude/skills/ponytail-review/SKILL.md",
@@ -308,7 +420,7 @@
     {
       "dest": ".claude/skills/ponytail-review/SOURCE.md",
       "src": "skills/ponytail-review/SOURCE.md",
-      "sha256": "a13c17ba910712ba753cf8cad56976055da36adeba057f8464a1c51fe03c312e"
+      "sha256": "d7babd69579435aacd6a55274f264fc10e98d5ac6eec709700d51c27933d9c98"
     },
     {
       "dest": ".claude/skills/ponytail/SKILL.md",
@@ -318,7 +430,7 @@
     {
       "dest": ".claude/skills/ponytail/SOURCE.md",
       "src": "skills/ponytail/SOURCE.md",
-      "sha256": "6875ad5089eac24517c184194796f9156f4e58cc0e627d0f7519c8a6a8832e01"
+      "sha256": "b6d3d58b443595486553a6b8286ae5bb582d47d0372ddee44f2b7a7952b83257"
     },
     {
       "dest": ".claude/skills/receiving-code-review/SKILL.md",
@@ -339,12 +451,12 @@
     {
       "dest": ".claude/skills/requesting-code-review/SKILL.md",
       "src": "skills/requesting-code-review/SKILL.md",
-      "sha256": "1b7ee9568aa3a8fff4be48507b467e88c8c8079a5a16314009211f613c5c12e4"
+      "sha256": "def7ea3354ad998bb2e5b1a2c5540681d157d429aeb154479068f0734b31ccaa"
     },
     {
       "dest": ".claude/skills/requesting-code-review/code-reviewer.md",
       "src": "skills/requesting-code-review/code-reviewer.md",
-      "sha256": "b2f2ec7596925fe52dac158fdfbca19b3a7d779d619c481e6706a6c0001662d3"
+      "sha256": "82e370be6b3447523816286195571e4216ba56ba1ad6ad0e87862294c4c78dcb"
     },
     {
       "dest": ".claude/skills/resolve-next-task/SKILL.md",
@@ -359,45 +471,45 @@
     {
       "dest": ".claude/skills/rtk/SOURCE.md",
       "src": "skills/rtk/SOURCE.md",
-      "sha256": "598344ae13f24b72c1f954df0649bdd80400c80a202f2383c86f9d0d75b1c86e"
+      "sha256": "53b6559a2b8277c45c7e8f9e2fdc077b4be6bd62a27d8f0c28af2d5f755e6c56"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/SKILL.md",
       "src": "skills/subagent-driven-development/SKILL.md",
-      "sha256": "8b565561d42a5a575f33369f1b2e7ff613148cd8beac57b63be4dcecfdf5de94"
+      "sha256": "4001c9d812841ff1a12a962c7f0842def4c42b39672fb1751b6eb5f173551571"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/implementer-prompt.md",
       "src": "skills/subagent-driven-development/implementer-prompt.md",
-      "sha256": "946601616a6f76ab3f165ef98377390968f1ec124ecef87422bc3553404e0332"
+      "sha256": "81dd9d5a3fb0b09b96b5829f03b9796842f3199ef7591d1ba1c2db2a515f64d0"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/re-review-prompt.md",
       "src": "skills/subagent-driven-development/re-review-prompt.md",
-      "sha256": "e1d8e0e65e58ccde6dc920843da9148d23e65aeb0f8932bcc30be1341a703c4c"
+      "sha256": "0828a5e9cbb12ba49f14621dd8c3953c48c0fc383e75bb5494f055ed0d6d824f"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/scripts/review-package",
       "src": "skills/subagent-driven-development/scripts/review-package",
-      "sha256": "fac3d4bd7f94369e8037b9ead2a8a502dca6ab333902b560b9455dbb3c450ebe",
+      "sha256": "f9275175b2276b1d5fdb1bae0bedaadd2a950659b7c6f311ea37ff85e1861b1f",
       "mode": "755"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/scripts/sdd-workspace",
       "src": "skills/subagent-driven-development/scripts/sdd-workspace",
-      "sha256": "95a09d9d3983ad1aafd093ca72b4587946dea885c6e302caa02a779a2f911c31",
+      "sha256": "75ca46c756ba4209ca36e0d3d65567257ceb33bc7a6775b9dad946707cb3bd7b",
       "mode": "755"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/scripts/task-brief",
       "src": "skills/subagent-driven-development/scripts/task-brief",
-      "sha256": "d6954ef7841c7da3d77373e6ff5118b3f2f2e998606fd95d33e6527851bce044",
+      "sha256": "cc563538e09abf719b34ddf4b2fa7a65cf3b301729039dbfa923cb060f729146",
       "mode": "755"
     },
     {
       "dest": ".claude/skills/subagent-driven-development/task-reviewer-prompt.md",
       "src": "skills/subagent-driven-development/task-reviewer-prompt.md",
-      "sha256": "e3b4a1bfe7cd55ed0459e5ca9cdddb6ff086c345b99e9097036db6a18545729e"
+      "sha256": "bfed55c8f19d0ff6ed57b0fe09127c92890e9311c6c73917129598826bf9ebe8"
     },
     {
       "dest": ".claude/skills/systematic-debugging/CREATION-LOG.md",
@@ -433,7 +545,7 @@
     {
       "dest": ".claude/skills/systematic-debugging/root-cause-tracing.md",
       "src": "skills/systematic-debugging/root-cause-tracing.md",
-      "sha256": "6b0622269e098ca1399e123e553fd385f0b6412d88ef0e9c4f5a8ea9cf1cec7b"
+      "sha256": "75b933b6a8c40bdb2031b10f21654395b56ec6ab6bc7b018c18d3fe57aeb7fb8"
     },
     {
       "dest": ".claude/skills/systematic-debugging/test-academic.md",
@@ -458,7 +570,7 @@
     {
       "dest": ".claude/skills/test-driven-development/SKILL.md",
       "src": "skills/test-driven-development/SKILL.md",
-      "sha256": "075070d9c60e65a41594027066c5e4e1680a297edf5d0c6ce0178eea68d15db9"
+      "sha256": "01577368be4d846af0f332d64cc656ff49c5e26dac60f6fe3b91585ac82a7e80"
     },
     {
       "dest": ".claude/skills/test-driven-development/writing-good-tests.md",
@@ -468,12 +580,12 @@
     {
       "dest": ".claude/skills/unslop/SKILL.md",
       "src": "skills/unslop/SKILL.md",
-      "sha256": "e4b97f41d934f9248d5f79bde5320cfc3650e1eaadcaf8f50eb204aff2e4f261"
+      "sha256": "d5ebf90120faa98e8f4287e98075c430a709b3327bc9f3bac1d11858c1701b36"
     },
     {
       "dest": ".claude/skills/unslop/SOURCE.md",
       "src": "skills/unslop/SOURCE.md",
-      "sha256": "a2fa47162fa725d03006de18274d2a585d88a75dc85670a968310b4eeafbf10c"
+      "sha256": "f3dc4b868c27ffdeda5847583d8b02576407fb038cf31ae16a9324fe9b3b912c"
     },
     {
       "dest": ".claude/skills/using-git-worktrees/SKILL.md",
@@ -483,7 +595,7 @@
     {
       "dest": ".claude/skills/using-superpowers/SKILL.md",
       "src": "skills/using-superpowers/SKILL.md",
-      "sha256": "68e65acfeecb844e6a0bc726bfc94f155b01372cef6930982f62384f5d053529"
+      "sha256": "ed4d4f2707d74b41f423b3e5031c37b95dcdf95645b1ae8c053cd76a3dffeaf4"
     },
     {
       "dest": ".claude/skills/using-superpowers/references/antigravity-tools.md",
@@ -491,14 +603,29 @@
       "sha256": "4880f6de3da4e32f9659ebe7a72b9e0ebfff04e028c2ed96173f86d0387a04c0"
     },
     {
+      "dest": ".claude/skills/using-superpowers/references/claude-code-tools.md",
+      "src": "skills/using-superpowers/references/claude-code-tools.md",
+      "sha256": "21479a3fee27448cab8748a3b5687e53bb257883bda9c070426f9a1ab5cebf1b"
+    },
+    {
       "dest": ".claude/skills/using-superpowers/references/codex-tools.md",
       "src": "skills/using-superpowers/references/codex-tools.md",
-      "sha256": "d3f113a8ebbd748e8ba847b09b57b7685442775ca4ee194d693ce3663f8fac68"
+      "sha256": "1a38ad9b188c393052f58d95657a1c35ea6aafc8b5a27f198f3922912f70bbe7"
     },
     {
       "dest": ".claude/skills/using-superpowers/references/gemini-tools.md",
       "src": "skills/using-superpowers/references/gemini-tools.md",
       "sha256": "62b9157bcb0ee3c6784e3d0da0798ddfa5872f9e0c34bea48f3079dabea71965"
+    },
+    {
+      "dest": ".claude/skills/using-superpowers/references/hermes-tools.md",
+      "src": "skills/using-superpowers/references/hermes-tools.md",
+      "sha256": "e2185c976a3c87503910e05e2aea58cc89bc8e569bb624b93df9958ac47a9190"
+    },
+    {
+      "dest": ".claude/skills/using-superpowers/references/muse-tools.md",
+      "src": "skills/using-superpowers/references/muse-tools.md",
+      "sha256": "5a1da5c575fe18456ca71cd47ebfd8a38c745f8d82a67fe64d5b83080000eeb3"
     },
     {
       "dest": ".claude/skills/using-superpowers/references/pi-tools.md",
@@ -513,17 +640,12 @@
     {
       "dest": ".claude/skills/writing-plans/SKILL.md",
       "src": "skills/writing-plans/SKILL.md",
-      "sha256": "9686859921fa673bc545e64fd267a4a88850b613368bf199c66e9da9cad7d900"
-    },
-    {
-      "dest": ".claude/skills/writing-plans/plan-document-reviewer-prompt.md",
-      "src": "skills/writing-plans/plan-document-reviewer-prompt.md",
-      "sha256": "aa728b96aad603c8be28875a4305637f6c984aa81ffcadcb13e743202fa2a0c7"
+      "sha256": "f99b143e0d096ac599a924d37d494ad9d63f82883b8a8271b8c0695862aaa24b"
     },
     {
       "dest": ".claude/skills/writing-skills/SKILL.md",
       "src": "skills/writing-skills/SKILL.md",
-      "sha256": "34b8c56698803cd673793058c0ec726b1b2a63a98b141a3c05dd1510fc89d013"
+      "sha256": "b612847ab71fe1535aa02b03c5919804dfb8c6a0fb36a2a1641c0500f52dcf41"
     },
     {
       "dest": ".claude/skills/writing-skills/anthropic-best-practices.md",
@@ -548,7 +670,7 @@
     {
       "dest": ".claude/skills/writing-skills/render-graphs.js",
       "src": "skills/writing-skills/render-graphs.js",
-      "sha256": "ccda971a87bb185f8febf81c56b556a20d026fa980c17b35fa3e8824fbb37852",
+      "sha256": "c7f412cc629461c4d10287e668731874c0497707023e3e3f74a5355eb2cee196",
       "mode": "755"
     },
     {
@@ -581,7 +703,7 @@
     {
       "dest": ".cursor/hooks/ponytail-activate/SOURCE.md",
       "src": "hooks/ponytail-activate/SOURCE.md",
-      "sha256": "6743eb0730b645a1911951c473cfa77c91cb3c016c5fda026a4904f0fdcfd208"
+      "sha256": "65ea61e3e4df854e6e924083c6e6c7ab1fab673261c9ad9e05fbac844357330d"
     },
     {
       "dest": ".cursor/hooks/ponytail-activate/ponytail-activate",
@@ -592,7 +714,7 @@
     {
       "dest": ".cursor/hooks/rtk-rewrite/SOURCE.md",
       "src": "hooks/rtk-rewrite/SOURCE.md",
-      "sha256": "0e66a740fc41b657111043aeace3da495d1feb34018dc2331c02db6d3965875b"
+      "sha256": "cc2be88b02eb5ba835dae24df61df76cd306da2ac8ba793e8c875260c3a5e547"
     },
     {
       "dest": ".cursor/hooks/rtk-rewrite/rtk-rewrite.sh",
@@ -603,12 +725,12 @@
     {
       "dest": ".cursor/hooks/session-start/SOURCE.md",
       "src": "hooks/session-start/SOURCE.md",
-      "sha256": "eb474ad01d2e01597d221feb6efa1efc11d1239b9ffeba13087f60cc132960f3"
+      "sha256": "f3dce5565254dacdac9f17c25030f905a2c75f68db07b0323c4f7329d453b604"
     },
     {
       "dest": ".cursor/hooks/session-start/session-start",
       "src": "hooks/session-start/session-start",
-      "sha256": "ab8d53121b4d97346c6e6dc2c8f359d7666e23ba14c1488f96e5fa2aa6699933",
+      "sha256": "7af6845efc20f584ef8aeb11c5f36b3d38e74ab65898dc8bb30e8a2a6250f62b",
       "mode": "755"
     },
     {

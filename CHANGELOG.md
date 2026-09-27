@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Bump vendored third-party pins: obra/superpowers `v6.2.0` to `v6.4.2`
+  (including `diagnosing-superpowers`), Stripe skills from
+  docs.stripe.com (CLI auto-install and the unpinned Metronome skill
+  fetch stay refused), cursor/plugins `unslop`, rtk-ai/rtk `v0.48.0` to
+  `v0.50.0`, and `@playwright/cli` `0.1.18` to `0.1.21`. Ponytail skills
+  were already current at `v4.10.0`; the pin commit moved and the Cursor
+  rule short-circuit was not ported because the loadout rule is globbed.
+  Herdr `v0.9.1`, SkillUI `1.3.4`, and supabase postgres-best-practices
+  were already current.
+
 - `risk_classifier` keeps a Jev `low` or `not_low` choice only when
   `confidence` is >= 0.8. A lower or missing confidence uses the local
   rubric, and the PR comment says so.

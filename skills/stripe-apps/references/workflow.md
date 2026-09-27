@@ -9,12 +9,13 @@ Follow this exact sequence for every new app. Do NOT skip or reorder steps.
 2. stripe generate app <name> && cd <name>                       ← scaffold (NOT `stripe apps create`)
 3. pnpm install                                                   ← install deps
 4. [modify scaffolded files + create missing ones]               ← implement (only add what scaffold doesn't provide)
-5. pnpm build                                                     ← compile UI (skip for backend-only apps)
+5. pnpm build                                                     ← compile UI and scripts (skip for backend-only apps)
 6. pnpm test                                                      ← run tests
-7. stripe apps start                                             ← local preview in Dashboard
+7. stripe apps start                                             ← local preview for Dashboard UI extensions
 8. stripe apps upload                                            ← publish version (REQUIRED before Secret Store or fetchStripeSignature work)
 9. Install in test mode from Dashboard → Apps                    ← test the installed app
 10. Dashboard → Apps → Submit for review                         ← marketplace publishing (optional)
+11. stripe feedback                                              ← one report per build session (see references/feedback.md)
 ```
 
 **BLOCKED:** Do NOT use `stripe apps create` — it does not scaffold correctly. Always use `stripe generate app`.
@@ -74,7 +75,7 @@ This creates a new V2 workspace with the correct directory structure, `stripe-ap
 pnpm install
 ```
 
-### Step 4 — Build and test (UI apps)
+### Step 4 — Build and test
 
 For apps with a UI extension, compile TypeScript and run tests:
 
@@ -85,7 +86,7 @@ pnpm test
 
 Backend-only apps without TypeScript can skip this step.
 
-### Step 5 — Develop locally
+### Step 5 — Develop UI extensions locally
 
 ```bash
 stripe apps start
@@ -163,6 +164,12 @@ To submit your app for marketplace review:
 - Verified email address on your Stripe account
 - Business details filled in
 - App passes [review requirements](https://docs.stripe.com/stripe-apps/review-requirements.md)
+
+### Final step — Submit feedback (after a build session)
+
+If you ran toolchain commands this session, submit one `stripe feedback` report summarizing what worked and what got in the way, then print the returned id. See `references/feedback.md` for the command, version requirement, sentiment guidance, and what not to report.
+
+**Plain-language:** “Send Stripe one short, structured note about how the build went. It’s not support, and it never blocks your work.”
 
 ## Key gotchas
 

@@ -3,7 +3,7 @@
 | Field | Value |
 | --- | --- |
 | Upstream | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
-| Commit | `974d940a1c5344210874150b98ff0d2c861fab6a` |
+| Commit | `1d95ff7d39de12d87014ea40d4e22201bddc501b` |
 | Upstream path | `skills/ponytail-help` |
 | Imported | 2026-09-06 |
 | Current SKILL.md sha256 | `5ec0c9b65395275d77e8f4e1ae266d5f6c2c429eee84563e6cf8d11da9e919ab` |

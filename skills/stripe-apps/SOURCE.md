@@ -5,7 +5,7 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/stripe-apps` |
 | Imported | 2026-08-25 |
-| Imported SKILL.md sha256 | `c617c1daa621d7350de3ac3b85d31ad0bb6f34b4f1ae773a7b79d94fba82655c` |
+| Imported SKILL.md sha256 | `39d5134075434824d8fd7d18c912a0491961bd525a1b23a925fc46769c843ecb` |
 
 Imported with `just add_skill https://docs.stripe.com`. Current SKILL.md is
 adapted and will not match this hash. On a bump, re-copy SKILL.md and

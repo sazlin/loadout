@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Upstream | [rtk-ai/rtk](https://github.com/rtk-ai/rtk) |
-| Release | `v0.48.0` |
-| Commit | `fde0a8f185945556f51718de0f4c430bb62b3df6` |
+| Release | `v0.50.0` |
+| Commit | `1d87b8e719ce0a50c223cd93ca64dd16921f9aec` |
 | Upstream commands | `rtk hook cursor`, `rtk hook claude` |
 | Imported | 2026-09-06 |
 

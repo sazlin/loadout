@@ -33,4 +33,4 @@ def test_unslop_body_covers_ai_patterns() -> None:
     text = SKILL_MD.read_text().lower()
     assert "ai vocabulary" in text
     assert "em dash" in text
-    assert "adding soul" in text
+    assert "mannered prose" in text

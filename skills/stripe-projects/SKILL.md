@@ -16,6 +16,7 @@ description: >
 allowed-tools:
   - Bash(stripe *)
   - Bash(which stripe)
+  - Skill
   - Read
 compatibility: >-
   Do not brew/npm/npx-install the Stripe CLI or invoke a skill written by

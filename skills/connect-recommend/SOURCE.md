@@ -5,7 +5,7 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/connect-recommend` |
 | Imported | 2026-08-25 |
-| SKILL.md sha256 | `84dc5a2622ca88cf80de8e5975d0e08112e596e97d7d6f453fbbfae9b76b1e1b` |
+| SKILL.md sha256 | `6c240a3ea8075da1817f3020b8f289267af47f32e6cd2fe72215e6143ec6939c` |
 
 Imported with `just add_skill https://docs.stripe.com`.
 

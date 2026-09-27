@@ -5,7 +5,7 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/connect-required-verification-information` |
 | Imported | 2026-08-25 |
-| SKILL.md sha256 | `a9c30050a332f34096905103990c6ee7decd4039809f9db10a5cbc26d9e3ea88` |
+| SKILL.md sha256 | `9945d4ad0c46fbe4efba309c6c0c2f626ff2ee43fb03dbc3a6a0d3e6e5933299` |
 
 Imported with `just add_skill https://docs.stripe.com`.
 

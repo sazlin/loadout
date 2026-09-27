@@ -3,8 +3,8 @@
 | Field | Value |
 | --- | --- |
 | Upstream | [obra/superpowers](https://github.com/obra/superpowers) |
-| Tag | `v6.2.0` |
-| Commit | `3dcbd5c4b48e02263fbf4a3c01e3fe4f81d584d9` |
+| Tag | `v6.4.2` |
+| Commit | `8ca22dba9a94f28898bbce59f2537ff4d87c747d` |
 | Upstream path | `hooks/session-start` |
 | Imported | 2026-08-08 |
 
@@ -22,7 +22,9 @@ install). Compared to the upstream script:
 3. **JSON escape + wrapper** — same escape helpers and
    `<EXTREMELY_IMPORTANT>` bootstrap wrapper as upstream.
 4. **Harness detection** — do not use `CURSOR_PLUGIN_ROOT` /
-   `CLAUDE_PLUGIN_ROOT` / `COPILOT_CLI`. If the first argument is `cursor`
+   `CLAUDE_PLUGIN_ROOT` / `COPILOT_CLI` / `MUSE_PLUGIN_ROOT`. Upstream v6.4.2
+   adds a Muse plugin-root branch; loadout still keys off the first argument.
+   If the first argument is `cursor`
    (from `hook.yaml` `cursor.args`), emit Cursor
    `{ "additional_context": "…" }`; otherwise emit Claude Code
    `hookSpecificOutput.additionalContext`.
