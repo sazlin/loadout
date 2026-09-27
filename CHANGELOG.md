@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `risk_classifier` calls Jev only when the JSON body is less than 148_000
+  characters. A larger body uses the local rubric and does not open the
+  request.
+
 - Bump vendored third-party pins: obra/superpowers `v6.2.0` to `v6.4.2`
   (including `diagnosing-superpowers`), Stripe skills from
   docs.stripe.com (CLI auto-install and the unpinned Metronome skill

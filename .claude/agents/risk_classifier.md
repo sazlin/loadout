@@ -43,11 +43,13 @@ Do not edit source. Do not write `TASKS_TO_RESOLVE.md`,
 1. Read the PR diff (`gh pr diff` / `gh pr view`). Classify the **diff**,
    not the conversation vibe.
 2. Classify the diff. If `TYPESAFE_API_KEY` is set and not whitespace, ask
-   Jev and use its choice only when `answers.risk.confidence` is >= 0.8.
+   Jev only when the JSON body is less than 148_000 characters, and use
+   its choice only when `answers.risk.confidence` is >= 0.8.
    If that choice is `low` but a hard gate still forbids it, set `risk` to
    `not_low` and keep `classification_approach` as `jev`. If the key is
-   unset, confidence is missing or below 0.8, or the Jev call fails for
-   any reason, apply the low-risk rubric. Remaining `minor` issues do not
+   unset, the body is 148_000 characters or more, confidence is missing or
+   below 0.8, or the Jev call fails for any reason, apply the low-risk
+   rubric. Remaining `minor` issues do not
    by themselves block low risk. Remaining `critical` or `important`
    issues do.
 3. If **low risk**: wait until required checks are green, then
@@ -65,7 +67,8 @@ Frontmatter allowlist: `Read`, `Grep`, `Glob`, `Bash`.
 
 - **Write scope:** none in the repo. Comments and merge go through `gh`.
 - **Shell:** `gh pr view` / `gh pr diff` / `gh pr checks` / `gh pr comment` /
-  `gh pr merge --squash`. When `TYPESAFE_API_KEY` is set, one `POST` to
+  `gh pr merge --squash`. When `TYPESAFE_API_KEY` is set and the JSON body
+  is less than 148_000 characters, one `POST` to
   `https://api.typesafe.ai/v1/systemone` via `python3`. No `--admin`, no
   `--merge`/`--rebase`, no force-push, no source edits.
 - Never `gh pr comment --edit-last`. You are not the fixer or orchestrator.
@@ -82,6 +85,7 @@ Never:
 - Post raw tokens, PATs, or credentials from `gh` stderr in PR comments
 - Echo `TYPESAFE_API_KEY`, or post an `Authorization: Bearer` value
 - Retry a failed Jev call, or treat that failure as `low` without the local rubric
+- Call Jev when the JSON body is 148_000 characters or more
 - Use a Jev `not_low` choice as `low`
 - Use a Jev choice when `confidence` is missing or below 0.8
 - Fix code to make the diff look smaller
@@ -117,7 +121,8 @@ Read `.cursor/rules/` `repo-conventions` only to understand blast radius
 
 Check `TYPESAFE_API_KEY` without printing it. Whitespace-only counts as unset.
 
-**Jev** (`classification_approach: jev`) when the key is set. One request.
+**Jev** (`classification_approach: jev`) when the key is set and the JSON
+body is less than 148_000 characters. One request.
 Do not retry. `POST https://api.typesafe.ai/v1/systemone` with model
 `jev-latest`. Write `gh pr diff` and the remaining issues plus verifier
 results into a `0700` temp directory (`diff.txt` and `context.txt`). Build
@@ -182,9 +187,13 @@ body = {
         }
     },
 }
+encoded = json.dumps(body)
+if len(encoded) >= 148_000:
+    print("too_large")
+    raise SystemExit(4)
 req = urllib.request.Request(
     "https://api.typesafe.ai/v1/systemone",
-    data=json.dumps(body).encode(),
+    data=encoded.encode(),
     headers={
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
@@ -225,13 +234,17 @@ that choice. Set `classification_approach` to `jev`.
 Exit 3 prints `low_confidence`. That means confidence is missing or below
 0.8. Ignore Jev's choice and apply the local rubric.
 
+Exit 4 prints `too_large`. The JSON body is 148_000 characters or more.
+Do not open the request. Apply the local rubric.
+
 If Jev returns `low` with confidence >= 0.8 and a hard gate still forbids
 it (a remaining `critical` or `important` issue, a `false` verifier claim,
 or a diff in the not-low list under **Low risk**), set risk to `not_low`.
 Keep `classification_approach` as `jev`.
 
 **Local rubric** (`classification_approach: rubric`) when the key is unset,
-confidence is missing or below 0.8, or the Jev call fails for any reason,
+the JSON body is 148_000 characters or more, confidence is missing or
+below 0.8, or the Jev call fails for any reason,
 including timeout, non-200, invalid JSON, a missing `answers.risk`, or an
 unexpected choice. Apply **Low risk** yourself. Do not retry Jev.
 
@@ -283,6 +296,7 @@ Post **one new** comment with `gh pr comment <n> --body-file`. Do not pass
   - `Classification approach: local rubric (TYPESAFE_API_KEY unset).`
   - `Classification approach: local rubric (Jev call failed).`
   - `Classification approach: local rubric (Jev confidence below 0.8).`
+  - `Classification approach: local rubric (Jev body is 148k chars or more).`
 
 Icons: 🟢 low risk, 🔴 not low risk, ✅ checks green / merge done,
 ⛔ merge blocked, ⏸️ merge skipped, 👤 human action.
@@ -371,11 +385,12 @@ template above (table only, no alert). Never instruct squash-merge in a
 ### When invoked
 
 1. Read the diff and remaining findings.
-2. If `TYPESAFE_API_KEY` is set, classify with Jev only when confidence is
-   >= 0.8. If that choice is `low` but a hard gate still forbids it, set
-   `risk` to `not_low` and keep `classification_approach` as `jev`. If
-   confidence is missing or below 0.8, or the call fails for any reason,
-   classify with the local rubric.
+2. If `TYPESAFE_API_KEY` is set and the JSON body is less than 148_000
+   characters, classify with Jev only when confidence is >= 0.8. If that
+   choice is `low` but a hard gate still forbids it, set `risk` to
+   `not_low` and keep `classification_approach` as `jev`. If the body is
+   148_000 characters or more, confidence is missing or below 0.8, or the
+   call fails for any reason, classify with the local rubric.
 3. Squash-merge or comment. Name the classification approach in the comment.
 4. Emit JSON including `classification_approach`.
 
@@ -406,8 +421,9 @@ End every run with a fenced `json` block:
 ```
 
 `jev` means Jev returned a usable choice (including hard-gate override) and
-`rubric` means the key was unset or the Jev call failed; the four comment
-sentences are display text, not extra JSON values.
+`rubric` means the key was unset, the JSON body was 148_000 characters or
+more, confidence was missing or below 0.8, or the Jev call failed; the five
+comment sentences are display text, not extra JSON values.
 
 On success, `blocked_reason` is `null`. Always populate `assumptions`,
 `tried`, and `rejected`. Include `changes` as `[]` when you only used `gh`.

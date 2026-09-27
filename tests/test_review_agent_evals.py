@@ -336,6 +336,7 @@ def _assert_risk_classifier_github_comment_spec(text: str) -> None:
     assert "typesafe_api_key unset" in lowered
     assert "jev call failed" in lowered
     assert "jev confidence below 0.8" in lowered
+    assert "jev body is 148k chars or more" in lowered
 
 
 def test_every_agent_file_is_classified() -> None:
@@ -1206,6 +1207,8 @@ def _assert_risk_classifier_jev_contract(text: str) -> None:
     assert "authorization" in lowered and "bearer" in lowered
     assert ">= 0.8" in text
     assert "jev confidence below 0.8" in lowered
+    assert "148_000" in text
+    assert "too_large" in text
 
 
 def _jev_python_script(text: str) -> str:
@@ -1360,3 +1363,22 @@ def test_embedded_jev_script_exits_when_the_call_fails(
     failure_out = capsys.readouterr().out
     assert "failed HTTPError 503" in failure_out
     assert secret not in failure_out
+
+
+def test_embedded_jev_script_does_not_call_jev_when_body_is_148k_chars_or_more(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = _jev_script_ready(tmp_path, monkeypatch)
+    (tmp_path / "diff.txt").write_text("x" * 148_000)
+
+    def _urlopen(req: urllib.request.Request, timeout: int = 0) -> _JevResponse:
+        del req, timeout
+        raise AssertionError("Jev was called")
+
+    monkeypatch.setenv("TYPESAFE_API_KEY", "ts_live_test_key")
+    monkeypatch.setattr(urllib.request, "urlopen", _urlopen)
+    skipped = _exec_jev(script)
+    assert skipped is not None and skipped.code == 4
+    output = capsys.readouterr().out
+    assert "too_large" in output
+    assert "ts_live_test_key" not in output
