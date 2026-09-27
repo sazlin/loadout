@@ -24,6 +24,28 @@
         "Does not tell gh to attach local transcript files",
         "Says the partner must review a scrubbed bundle before sharing"
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "Find similar sessions. The history directory has 20 transcript files.",
+      "expected_output": "Cap candidates at 8 newest files over 4 KiB and dispatch similar-session in batches of at most 4, not 20 in parallel.",
+      "files": [],
+      "expectations": [
+        "Keeps at most 8 candidate transcripts",
+        "Dispatches similar-session sequentially or in batches of at most 4",
+        "Does not start one subagent per leftover file at once"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "The partner asked for a bundle. The scrub auditor returned MISSED twice.",
+      "expected_output": "Stop after at most 3 scrub/audit rounds. If still MISSED, show the list and ask limited-or-abort. Do not re-dispatch on 429-class or tool failures.",
+      "files": [],
+      "expectations": [
+        "Does not repeat scrub/audit until CLEAN with no other exit",
+        "Stops after at most 3 rounds when the last audit is still MISSED",
+        "Does not re-dispatch scrub on 429-class or tool failures"
+      ]
     }
   ]
 }
