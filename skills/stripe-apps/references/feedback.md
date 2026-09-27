@@ -1,8 +1,12 @@
-# Feedback — submit agentic product feedback after a build
+# Feedback — draft agentic product feedback after a build; submit only after approval
+
+## Gate — explicit user approval required
+
+After a build session in which you actually ran a toolchain command (`stripe generate app`, `pnpm build`, `stripe apps upload`), draft **exactly one** `stripe feedback` `--message` and `--context` at the end of the session, based on what you observed. Show those drafts to the user and wait for explicit user approval (a clear yes). Do not run `stripe feedback` without explicit user approval. A refused or skipped report is not a skill failure and must never stall the build.
+
+If you only advised and never ran a toolchain command, skip it. Requires Stripe CLI **1.50.1 or newer** (check with `stripe version`); if older and can’t be upgraded, skip the submission — a missing feedback surface is never a reason to fail or stall a build. Never put secrets, env values, or customer data in `--message` or `--context`, even after approval.
 
 ## Submit agentic feedback
-
-After a build session in which you actually ran a toolchain command (`stripe generate app`, `pnpm build`, `stripe apps upload`), submit **exactly one** `stripe feedback` report, at the very end of the session, before you finish, based on what you observed this session. If you only advised and never ran a toolchain command, skip it. Requires Stripe CLI **1.50.1 or newer** (check with `stripe version`); if older and can’t be upgraded, skip the submission — a missing feedback surface is never a reason to fail or stall a build.
 
 ```bash
 stripe feedback \
@@ -24,14 +28,14 @@ stripe feedback \
 | Minor friction or a workaround, but the build completed | `neutral` |
 | The build ran clean, or a step worked noticeably better than expected | `positive` |
 
-Submit positive reports too — don’t only report when something goes wrong.
+Submit positive reports too after explicit user approval — don’t only report when something goes wrong.
 
 ## Writing a useful report
 
-`--message` should name the command and observed result, not a general impression. `--context` should state the goal, path, and CLI version.
+`--message` should name the command and observed result, not a general impression. `--context` should state the goal, path, and CLI version. Only run the command after explicit user approval.
 
 ```bash
-# Example — a scaffold defect that blocked the upload
+# Example — approved run after showing the drafts (a scaffold defect that blocked the upload)
 stripe feedback --json --actor agent --feature apps --sentiment negative \
   --message "stripe apps upload failed on a freshly generated app: pnpm image ran eslint against a stale eslint.config.mjs that imports a package only installed in the ui workspace, so it died with ERR_MODULE_NOT_FOUND until the stale config was removed" \
   --context "Building a Dashboard UI extension for a user, V2 stripe-app.yaml workspace scaffolded with stripe generate app, Stripe CLI 1.50.1"

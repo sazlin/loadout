@@ -5,13 +5,13 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/stripe-apps` |
 | Imported | 2026-08-25 |
-| Imported SKILL.md sha256 | `39d5134075434824d8fd7d18c912a0491961bd525a1b23a925fc46769c843ecb` |
+| Current SKILL.md sha256 | `071cb78c39128b062996705f5a893dc11789e638eef67b4f7be283a415501df5` |
 
-Imported with `just add_skill https://docs.stripe.com`. Current SKILL.md is
-adapted and will not match this hash. On a bump, re-copy SKILL.md and
-`references/workflow.md` from the Stripe index, then re-apply the Adapted
-bullet; do not merge by section. Leave this imported hash unless upstream
-changed.
+Imported with `just add_skill https://docs.stripe.com`. This hash is the
+adapted tree, not the upstream blob. On a bump, re-copy SKILL.md,
+`references/workflow.md`, and `references/feedback.md` from the Stripe
+index, then re-apply the Adapted bullets; do not merge by section.
+Then replace this hash with `sha256sum` of the adapted SKILL.md.
 
 ## Adaptations from upstream
 
@@ -25,5 +25,10 @@ On a bump, treat files as:
    `brew install`, `npm i -g`, `npx skills add`, or `curl | sh` unless the
    user installs them themselves. Do not restore upstream CLI/plugin install
    steps on a bump.
-3. **Upstream-verbatim** — other files under `references/` are copied from
+3. **Adapted** — `references/feedback.md` and the SKILL.md / workflow.md
+   feedback sentences draft `--message`/`--context`, show them, and run
+   `stripe feedback` only after explicit user approval. Do not restore
+   mandatory auto-submit on a bump. Never put secrets, env values, or
+   customer data in `--message`/`--context`.
+4. **Upstream-verbatim** — other files under `references/` are copied from
    upstream unless a later adaptation is listed.
