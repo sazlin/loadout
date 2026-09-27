@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.49.0
+
 - `risk_classifier` calls Jev only when the JSON body is less than 148_000
   characters. A larger body uses the local rubric and does not open the
   request.
