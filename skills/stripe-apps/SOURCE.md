@@ -5,7 +5,7 @@
 | Upstream | [Stripe skills index](https://docs.stripe.com/.well-known/skills/index.json) |
 | Upstream path | `.well-known/skills/stripe-apps` |
 | Imported | 2026-08-25 |
-| Current SKILL.md sha256 | `071cb78c39128b062996705f5a893dc11789e638eef67b4f7be283a415501df5` |
+| Current SKILL.md sha256 | `bcb5eac22b72f85bcb423b80750222e7799099e634be7c02c8918b4e013699f2` |
 
 Imported with `just add_skill https://docs.stripe.com`. This hash is the
 adapted tree, not the upstream blob. On a bump, re-copy SKILL.md,
