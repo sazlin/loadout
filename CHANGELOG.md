@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.50.0
+
 ## 0.49.0
 
 - `risk_classifier` calls Jev only when the JSON body is less than 148_000
