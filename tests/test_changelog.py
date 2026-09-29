@@ -23,3 +23,12 @@ def test_v0_17_0_slice_from_v0_16_0_includes_release_notes() -> None:
     assert "pr_review_harness" in notes
     assert "playwright-e2e" in notes
     assert "## 0.16.0" not in notes
+
+
+def test_slice_from_v0_50_0_to_v0_51_0_is_only_0_51_0() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.50.0", "v0.51.0")
+
+    assert notes.strip() == "## 0.51.0"
+    assert "## 0.49.0" not in notes
+    assert "## 0.50.0" not in notes

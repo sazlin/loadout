@@ -22,6 +22,11 @@ def test_changelog_has_0_51_0_heading():
     assert f"## {RELEASE}" in headings
 
 
+def test_changelog_keeps_0_50_0_heading():
+    headings = [line for line in (REPO / "CHANGELOG.md").read_text().splitlines() if line.startswith("## ")]
+    assert headings.index("## 0.51.0") < headings.index("## 0.50.0") < headings.index("## 0.49.0")
+
+
 # One-off for the empty 0.51.0 cut; delete this test on the next release that has notes instead of renaming it with RELEASE.
 def test_0_51_0_changelog_section_is_empty():
     changelog = (REPO / "CHANGELOG.md").read_text().splitlines()
