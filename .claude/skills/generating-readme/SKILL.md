@@ -47,7 +47,9 @@ uv run python .claude/skills/generating-readme/scripts/generate_readme.py \
 4. After the script, only edit **non-generated** prose (gist, warnings,
    local-dev commands). Do not edit between
    `<!-- generated:loadouts-catalog:start -->` and
-   `<!-- generated:loadouts-catalog:end -->`.
+   `<!-- generated:loadouts-catalog:end -->`. That block starts with
+   `### Loadout files`, a list of names linked to `loadouts/<name>.yaml`,
+   then the catalog table.
 5. Run `uv run pytest tests/test_readme_loadouts.py tests/test_generating_readme.py`.
 
 ## Other public repos (skill test)

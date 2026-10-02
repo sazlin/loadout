@@ -24,6 +24,7 @@ TABLE_HEADER = (
     "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |\n"
     "| --- | --- | --- | --- | --- | --- | --- | --- |"
 )
+INDEX_HEADING = "### Loadout files"
 PYPROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"')
 FALLBACK_TAG = "v0.0.0"
 
@@ -48,13 +49,19 @@ def latest_tag(repo_root: Path) -> str:
 
 
 def catalog_markdown(repo_root: Path) -> str:
-    """Return the Available loadouts markdown table for repo_root."""
+    """Return the loadout-file index and the Available loadouts table."""
     loadouts = _load_all(repo_root)
     names = sorted(loadouts, key=lambda name: (_depth(name, loadouts), name))
     rows = [TABLE_HEADER]
     for name in names:
         rows.append(_row(loadouts[name], repo_root))
-    return "\n".join(rows)
+    return _loadout_index(names) + "\n\n" + "\n".join(rows)
+
+
+def _loadout_index(names: list[str]) -> str:
+    lines = [INDEX_HEADING, ""]
+    lines.extend(f"- [{name}](loadouts/{name}.yaml)" for name in names)
+    return "\n".join(lines)
 
 
 def fill_template(

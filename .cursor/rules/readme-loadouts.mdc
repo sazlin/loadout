@@ -18,6 +18,9 @@ In a consumer project without that directory, ignore it.
 When a loadout is added, removed, renamed, or its distinctive contents
 change, update `README.md` **Available loadouts** in the same change.
 
+Before the table, under `### Loadout files`, list every loadout name as a
+markdown link to `loadouts/<name>.yaml`, in the same order as the table.
+
 The table must list every top-level `loadouts/*.yaml` file:
 
 | Column | Content |

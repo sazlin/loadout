@@ -20,6 +20,8 @@ FIXTURES = Path(__file__).parent / "fixtures" / "readme_loadouts"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
 CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
+INDEX_HEADING = "### Loadout files"
+_INDEX_LINK_RE = re.compile(r"^- \[([^\]]+)\]\(loadouts/([^)]+)\)$")
 CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "hooks", "cli_tools")
 CATALOG_CELL_COUNT = 1 + len(CATALOG_COLUMNS)
 _NAME_RE = re.compile(r"`([^`]+)`")
@@ -194,6 +196,34 @@ def test_readme_loadouts_rule_requires_same_change_catalog_update() -> None:
     assert "etc" not in text
     assert "what you get" not in text
     assert any(word in text for word in ("later", "follow-up", "follow up"))
+    assert "before the table" in text
+    assert "loadouts/<name>.yaml" in text
+
+
+def _index_links_before_table(readme: str) -> list[tuple[str, str]]:
+    start = readme.find(HEADING)
+    assert start != -1, f"README.md is missing {HEADING}"
+    table_at = readme.find(CATALOG_HEADER, start)
+    assert table_at != -1, "README.md catalog table is missing"
+    before = readme[start:table_at]
+    assert INDEX_HEADING in before
+    links: list[tuple[str, str]] = []
+    for line in before.splitlines():
+        match = _INDEX_LINK_RE.match(line)
+        if match is not None:
+            links.append((match.group(1), match.group(2)))
+    return links
+
+
+def test_readme_lists_loadout_yaml_links_before_the_table() -> None:
+    text = README.read_text()
+    links = _index_links_before_table(text)
+    rows = _available_loadout_rows(text)
+    assert [name for name, _filename in links] == list(rows)
+    assert {name for name, _filename in links} == _loadout_names()
+    for name, filename in links:
+        assert filename == f"{name}.yaml"
+        assert (LOADOUTS_DIR / filename).is_file()
 
 
 def test_readme_available_loadouts_lists_every_loadout() -> None:

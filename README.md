@@ -141,6 +141,28 @@ Example GitHub Actions step:
 ## Available loadouts
 
 <!-- generated:loadouts-catalog:start -->
+### Loadout files
+
+- [base](loadouts/base.yaml)
+- [coding](loadouts/coding.yaml)
+- [implementation_harness](loadouts/implementation_harness.yaml)
+- [orca](loadouts/orca.yaml)
+- [pr_review_harness](loadouts/pr_review_harness.yaml)
+- [stripe](loadouts/stripe.yaml)
+- [superpowers](loadouts/superpowers.yaml)
+- [telemetry](loadouts/telemetry.yaml)
+- [uidesign](loadouts/uidesign.yaml)
+- [agents](loadouts/agents.yaml)
+- [aws](loadouts/aws.yaml)
+- [db](loadouts/db.yaml)
+- [github](loadouts/github.yaml)
+- [playwright](loadouts/playwright.yaml)
+- [python](loadouts/python.yaml)
+- [terraform](loadouts/terraform.yaml)
+- [typescript](loadouts/typescript.yaml)
+- [python-monorepo](loadouts/python-monorepo.yaml)
+- [supabase](loadouts/supabase.yaml)
+
 | Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/unslop/SKILL.md"><code>unslop</code></a></li><li><a href="skills/herdr/SKILL.md"><code>herdr</code></a></li><li><a href="skills/tailscale/SKILL.md"><code>tailscale</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/no-autonomous-external-comms.mdc"><code>no-autonomous-external-comms</code></a></li><li><a href="rules/core/no-auto-merge.mdc"><code>no-auto-merge</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> | — |

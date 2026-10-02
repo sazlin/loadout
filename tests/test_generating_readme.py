@@ -24,6 +24,8 @@ BANNER = "docs/assets/loadout-banner.jpg"
 HEADING = "## Available loadouts"
 EM_DASH = "\u2014"
 CATALOG_HEADER = "| Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |"
+INDEX_HEADING = "### Loadout files"
+_INDEX_LINK_RE = re.compile(r"^- \[([^\]]+)\]\(loadouts/([^)]+)\)$")
 CATALOG_COLUMNS = ("extends", "agents", "skills", "rules", "mcps", "hooks", "cli_tools")
 CATALOG_CELL_COUNT = 1 + len(CATALOG_COLUMNS)
 _NAME_RE = re.compile(r"`([^`]+)`")
@@ -182,6 +184,30 @@ def test_evals_json_lists_fixture_files() -> None:
     payload = EVALS.read_text()
     assert "evals" in payload
     assert (SKILL_ROOT / "evals" / "files" / "tiny-readme.template.md").is_file()
+
+
+def _index_links_before_table(markdown: str) -> list[tuple[str, str]]:
+    header_at = markdown.find(CATALOG_HEADER)
+    assert header_at != -1, markdown
+    before = markdown[:header_at]
+    assert INDEX_HEADING in before
+    links: list[tuple[str, str]] = []
+    for line in before.splitlines():
+        match = _INDEX_LINK_RE.match(line)
+        if match is not None:
+            links.append((match.group(1), match.group(2)))
+    return links
+
+
+def test_catalog_lists_yaml_links_before_the_table() -> None:
+    markdown = _generator().catalog_markdown(MINI)
+    links = _index_links_before_table(markdown)
+    rows = _catalog_rows(f"{HEADING}\n\n{markdown}")
+    assert [name for name, _filename in links] == list(rows)
+    assert {name for name, _filename in links} == _loadout_names(MINI)
+    for name, filename in links:
+        assert filename == f"{name}.yaml"
+        assert (MINI / "loadouts" / filename).is_file()
 
 
 def test_mini_catalog_lists_every_loadout() -> None:

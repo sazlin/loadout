@@ -77,7 +77,9 @@ get" to one line that names distinctive artifacts.
 
 - Keep `docs/assets/loadout-banner.jpg` as the opening visual. Do not swap
   it for a badge wall or a generic logo.
-- The **Available loadouts** table is generated. Never hand-maintain it.
+- The **Available loadouts** index and table are generated. The index is
+  `### Loadout files`, each name linked to `loadouts/<name>.yaml`, and it
+  sits before the table. Never hand-maintain either.
 - Quick start must use `uvx --from git+https://github.com/sazlin/loadout@…`
   so a stranger can run it without cloning this repo first.
 - Opinionated voice ("The Gist") is allowed. Do not flatten it into
