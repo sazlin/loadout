@@ -1,19 +1,6 @@
 ---
 name: tailscale
-description: >-
-  Guide for installing, configuring, and managing Tailscale, headscale, and the
-  Tailscale product family. Covers core mesh VPN (exit nodes, subnet routers,
-  access controls, SSH, MagicDNS), Docker and Kubernetes integration, CI/CD
-  pipelines, ephemeral nodes, infrastructure access, site-to-site networking,
-  app connectors, Aperture (AI/LLM gateway for governance, cost control, usage
-  visibility), device posture, MDM, SCIM provisioning, SSH and kubectl session
-  recording, tsrecorder, Taildrop, Tailscale Serve, Funnel, and building Go
-  applications that embed Tailscale via the tsnet library. Use when someone
-  asks about Tailscale networking, mesh VPN, VPN replacement, containers,
-  Kubernetes operator, CI/CD runners, device management, session recording,
-  audit logging, LLM API access, AI cost control, file sharing, exposing
-  internal services, or writing a Go program that joins a tailnet as its own
-  device — even when they describe the scenario without naming the product.
+description: Use whenever installing, configuring, managing, answering questions about, thinking about, or talking about Tailscale or anything relating to Tailscale.
 ---
 
 # Tailscale
