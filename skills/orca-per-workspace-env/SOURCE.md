@@ -7,7 +7,7 @@
 | Upstream path | `skills/orca-per-workspace-env` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `c005d126a13d2913351472f07690f1c1a660d4f286e2a5f21864aee294f436ce` |
-| Current SKILL.md sha256 | `bf9769035ce8f0c8ae3160ce98f6d8056663105c6dadc089cc036c3e45515c88` |
+| Current SKILL.md sha256 | `0f7169661476e177a461806a76b02ed84d27e3973f061d1ac759494b227e34cf` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-per-workspace-env`.
 MIT license on the upstream repository.

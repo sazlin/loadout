@@ -7,7 +7,7 @@
 | Upstream path | `skills/computer-use` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `2839933fd35216845461466403e6061488005f6df57126d0cd0f769ea45753f3` |
-| Current SKILL.md sha256 | `e7cf079acaba977c471af92f6af3a91996e50da86a269d0c954e6c6ddcce6bb1` |
+| Current SKILL.md sha256 | `3aeede1a72ea6ee3279a4f89dc23747dca73be7d765740ecf0e2a331bd2433ae` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill computer-use`.
 MIT license on the upstream repository.

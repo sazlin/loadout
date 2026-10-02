@@ -94,6 +94,7 @@ def test_orca_skills_do_not_treat_env_or_skills_get_as_policy() -> None:
         assert "shell metacharacters" in compact
         assert "untrusted" in compact
         assert "binding operational policy" in compact
+        assert "Load the version-matched guide before running Orca commands" not in text
         source = (REPO / "skills" / name / "SOURCE.md").read_text()
         assert "ORCA_CLI_COMMAND" in source
         assert "skills get" in source
