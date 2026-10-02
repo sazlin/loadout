@@ -60,7 +60,7 @@ Read the current schema and the recent migration files before writing SQL.
 
 Make the migration safe for data already deployed, and compatible with the application version still running during a rolling deploy.
 
-Backfill in the migration in bounded batches (`UPDATE ... WHERE id IN (SELECT ... LIMIT n)` in a loop, or a follow-up job the repo already has). Set `statement_timeout` and `lock_timeout` in the migration or session so a huge backfill aborts instead of holding the table. Put a destructive step, such as dropping a column or table, in a later migration, after the old application version is gone.
+Backfill remaining rows (`WHERE <new_col> IS NULL`) in bounded keyset batches (`AND id > :last_id ORDER BY id LIMIT n`). COMMIT after each batch so row locks are not held for the full table, or use a follow-up job the repo already has. `statement_timeout` and `lock_timeout` abort a stuck statement; they do not replace per-batch commits. If the runner cannot COMMIT mid-file, do not backfill in that migration; use the job. Stop when a batch updates zero rows. Do not loop `UPDATE ... WHERE id IN (SELECT ... LIMIT n)` without a remaining-row predicate. Put a destructive step, such as dropping a column or table, in a later migration, after the old application version is gone.
 
 Set `lock_timeout` and `statement_timeout` before DDL so a blocked lock fails the migration instead of queueing forever. Use `CREATE INDEX CONCURRENTLY` (or the runner's equivalent) on existing live tables. Do not `ADD COLUMN` with a rewriting default on a live table. Add the column nullable, backfill in batches, then constrain. Follow `skills/supabase-postgres-best-practices/references/lock-short-transactions.md`. Do not invent a retry framework.
 

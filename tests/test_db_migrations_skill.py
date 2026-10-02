@@ -36,11 +36,25 @@ _REQUIRED = (
     "revoke",
     "connection string",
     "batch",
+    "commit after each batch",
+    "follow-up job",
+    "is null",
+    "order by id",
+    "zero rows",
     "statement_timeout",
     "lock_timeout",
     "concurrently",
     "one apply",
     "if the runner fails, stop",
+)
+# IN-subquery LIMIT batches with no remaining-row predicate can re-select the same ids.
+_LIMIT_N_IN_SUBQUERY = re.compile(
+    r"where\s+id\s+in\s*\(\s*select\b(?![^)]*\bis\s+null\b)[^)]*\blimit\b",
+    re.IGNORECASE | re.DOTALL,
+)
+_PER_BATCH_COMMIT = re.compile(
+    r"commit after (?:each|every) batch",
+    re.IGNORECASE,
 )
 
 # Refusal imperatives ("do not use the SQL editor", "never use the SQL editor") must not match.
@@ -89,6 +103,27 @@ def _recommends_sql_editor(text: str) -> bool:
     return False
 
 
+def _teaches_limit_n_in_subquery_without_remaining_rows(text: str) -> bool:
+    """True when LIMIT-n IN-subquery backfill is taught without a remaining-row filter."""
+    for match in _LIMIT_N_IN_SUBQUERY.finditer(text):
+        prefix = text[max(0, match.start() - 80) : match.start()].lower()
+        if re.search(r"\b(?:do not|must not|never)\b", prefix):
+            continue
+        return True
+    return False
+
+
+def _backfill_commits_or_uses_follow_up_job(text: str) -> bool:
+    return _PER_BATCH_COMMIT.search(text) is not None or "follow-up job" in text.lower()
+
+
+def _backfill_paginates_remaining_rows(text: str) -> bool:
+    lowered = text.lower()
+    remaining = "is null" in lowered
+    keyset = "id >" in lowered or "last_id" in lowered or "order by id" in lowered
+    return remaining and keyset and "zero rows" in lowered
+
+
 def _skill_requires_runner_and_refuses_editor(text: str) -> bool:
     """True when required phrases are present and the text does not recommend a UI editor."""
     if _missing_required_phrases(text):
@@ -102,6 +137,12 @@ def _skill_requires_runner_and_refuses_editor(text: str) -> bool:
     if _RETRY_FAILED_APPLY.search(text) is not None:
         return False
     if _DUAL_AGENT_CI_APPLY.search(text) is not None:
+        return False
+    if not _backfill_commits_or_uses_follow_up_job(text):
+        return False
+    if not _backfill_paginates_remaining_rows(text):
+        return False
+    if _teaches_limit_n_in_subquery_without_remaining_rows(text):
         return False
     return not _recommends_dashboard_then_pull(text)
 
@@ -136,6 +177,14 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert "read-only queries may use" not in lowered
     assert "lock-short-transactions.md" in lowered
     assert "create index concurrently" in lowered
+    assert "commit after each batch" in lowered
+    assert "follow-up job" in lowered
+    assert "is null" in lowered
+    assert "zero rows" in lowered
+    assert "do not replace" in lowered
+    assert not _teaches_limit_n_in_subquery_without_remaining_rows(text)
+    assert _backfill_commits_or_uses_follow_up_job(text)
+    assert _backfill_paginates_remaining_rows(text)
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -168,6 +217,33 @@ def test_dashboard_advice_fails_the_contract() -> None:
     skill = SKILL_PATH.read_text()
     assert _missing_required_phrases(skill) == []
     assert _skill_requires_runner_and_refuses_editor(skill)
+
+
+def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
+    """LIMIT n in a loop is not enough; batches must commit and skip done rows."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
+    bounded_no_commit = "Backfill in the migration in bounded batches. Refuse nothing. batch"
+    assert "commit after each batch" in _missing_required_phrases(bounded_no_commit)
+    assert "follow-up job" in _missing_required_phrases(bounded_no_commit)
+    assert not _backfill_commits_or_uses_follow_up_job(bounded_no_commit)
+    assert not _skill_requires_runner_and_refuses_editor(bounded_no_commit)
+    limit_in_loop = (
+        "Backfill in the migration in bounded batches "
+        "(UPDATE ... WHERE id IN (SELECT ... LIMIT n) in a loop). " + tokens
+    )
+    assert _missing_required_phrases(limit_in_loop) == []
+    assert _teaches_limit_n_in_subquery_without_remaining_rows(limit_in_loop)
+    assert not _skill_requires_runner_and_refuses_editor(limit_in_loop)
+    keyset = (
+        "COMMIT after each batch or a follow-up job. "
+        "UPDATE t SET new_col = src WHERE new_col IS NULL AND id > :last_id "
+        "ORDER BY id LIMIT n. Stop when a batch updates zero rows. " + tokens
+    )
+    assert _missing_required_phrases(keyset) == []
+    assert not _teaches_limit_n_in_subquery_without_remaining_rows(keyset)
+    assert _backfill_commits_or_uses_follow_up_job(keyset)
+    assert _backfill_paginates_remaining_rows(keyset)
+    assert _skill_requires_runner_and_refuses_editor(keyset)
 
 
 def test_db_sync_vendors_db_migrations_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
