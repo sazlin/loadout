@@ -83,6 +83,28 @@ def test_tailscale_body_refuses_unpinned_install() -> None:
     assert "--version <chart-version>" in containers
 
 
+def test_tailscale_session_recording_pin() -> None:
+    recording = (SKILL_ROOT / "references" / "session-recording.md").read_text()
+    assert "tsrecorder:<version>@sha256:<digest>" in recording
+    assert "AWS_ACCESS_KEY_ID" in recording
+    assert "AWS_SECRET_ACCESS_KEY" in recording
+    assert "-e AWS_ACCESS_KEY_ID" not in recording
+    assert "-e AWS_SECRET_ACCESS_KEY" not in recording
+    assert "do not pass cloud credentials into this container" in recording.lower()
+
+
+def test_tailscale_tsnet_pin() -> None:
+    tsnet = (SKILL_ROOT / "references" / "tsnet.md").read_text()
+    assert "go get tailscale.com/tsnet@<released-version>" in tsnet
+    assert "Do not run `go get tailscale.com/tsnet` without `@<released-version>`." in tsnet
+
+
+def test_tailscale_github_action_pin() -> None:
+    enterprise = (SKILL_ROOT / "references" / "enterprise.md").read_text()
+    assert "tailscale/github-action@<full-commit-sha>" in enterprise
+    assert "Do not use a floating ref such as `@v4`" in enterprise
+
+
 def test_tailscale_serve_identity_headers_require_proxy_trust() -> None:
     sharing = (SKILL_ROOT / "references" / "sharing-and-publishing.md").read_text()
     login = sharing.index("Tailscale-User-Login")
