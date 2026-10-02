@@ -35,6 +35,12 @@ _REQUIRED = (
     "grant",
     "revoke",
     "connection string",
+    "batch",
+    "statement_timeout",
+    "lock_timeout",
+    "concurrently",
+    "one apply",
+    "if the runner fails, stop",
 )
 
 _RECOMMEND_EDITOR = re.compile(r"\b(?:use|prefer|open) the (?:supabase )?sql editor\b", re.IGNORECASE)
@@ -48,6 +54,11 @@ _DASHBOARD_THEN_PULL = re.compile(
     r".{0,120}\b(?:db pull|migration repair)\b",
     re.IGNORECASE | re.DOTALL,
 )
+_RETRY_FAILED_APPLY = re.compile(
+    r"\b(?:db push|alembic upgrade head)\b.{0,40}\bagain\b.{0,40}\buntil it works\b",
+    re.IGNORECASE | re.DOTALL,
+)
+_DUAL_AGENT_CI_APPLY = re.compile(r"\bfrom the agent while (?:ci|the project's ci)\b", re.IGNORECASE)
 
 
 def _recommends_dashboard_then_pull(text: str) -> bool:
@@ -70,6 +81,10 @@ def _holds_migration_line(text: str) -> bool:
     if _RECOMMEND_EDITOR.search(text) is not None:
         return False
     if _UNRESTRICTED_ADHOC_READS.search(text) is not None:
+        return False
+    if _RETRY_FAILED_APPLY.search(text) is not None:
+        return False
+    if _DUAL_AGENT_CI_APPLY.search(text) is not None:
         return False
     return not _recommends_dashboard_then_pull(text)
 
@@ -100,6 +115,8 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert "if more than one" in lowered
     assert "ci or the docs already use" in lowered
     assert "read-only queries may use" not in lowered
+    assert "lock-short-transactions.md" in lowered
+    assert "create index concurrently" in lowered
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -121,6 +138,14 @@ def test_dashboard_advice_fails_the_contract() -> None:
     assert not _holds_migration_line(dashboard_then_pull)
     unrestricted_reads = "Read-only queries may use execute_sql. " + " ".join(_REQUIRED) + ". Refuse nothing."
     assert not _holds_migration_line(unrestricted_reads)
+    unbounded_backfill = "Backfill in the migration. Refuse nothing."
+    assert not _holds_migration_line(unbounded_backfill)
+    retry_until_works = (
+        "db push again until it works. Apply remotes from the agent while CI also applies. "
+        + " ".join(_REQUIRED)
+        + ". Refuse nothing."
+    )
+    assert not _holds_migration_line(retry_until_works)
     assert _holds_migration_line(SKILL_PATH.read_text())
 
 

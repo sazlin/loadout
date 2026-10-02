@@ -60,7 +60,9 @@ Read the current schema and the recent migration files before writing SQL.
 
 Make the migration safe for data already deployed, and compatible with the application version still running during a rolling deploy.
 
-Backfill in the migration. Put a destructive step, such as dropping a column or table, in a later migration, after the old application version is gone.
+Backfill in the migration in bounded batches (`UPDATE ... WHERE id IN (SELECT ... LIMIT n)` in a loop, or a follow-up job the repo already has). Set `statement_timeout` and `lock_timeout` in the migration or session so a huge backfill aborts instead of holding the table. Put a destructive step, such as dropping a column or table, in a later migration, after the old application version is gone.
+
+Set `lock_timeout` and `statement_timeout` before DDL so a blocked lock fails the migration instead of queueing forever. Use `CREATE INDEX CONCURRENTLY` (or the runner's equivalent) on existing live tables. Do not `ADD COLUMN` with a rewriting default on a live table. Add the column nullable, backfill in batches, then constrain. Follow `skills/supabase-postgres-best-practices/references/lock-short-transactions.md`. Do not invent a retry framework.
 
 Avoid a lock that blocks writes for the whole table when a narrower statement exists. Add a test or a validation query for the new shape.
 
@@ -70,7 +72,9 @@ Follow the [Supabase migration guide](https://supabase.com/docs/guides/deploymen
 
 1. Create the file with [`supabase migration new`](https://supabase.com/docs/reference/cli/supabase-migration-new) and a short name. Write the SQL only in that file.
 2. Apply it locally with the command the repo already uses. If the repo does not document one, run [`supabase migration up`](https://supabase.com/docs/reference/cli/supabase-migration-up) against the local database. Run [`supabase db reset`](https://supabase.com/docs/reference/cli/supabase-db-reset) only when the repo already uses it, or when the local database must be rebuilt.
-3. Apply it to a linked or remote database only with [`supabase db push`](https://supabase.com/docs/reference/cli/supabase-db-push), or the project's CI, from the migration file in the repo.
+3. Apply it to a linked or remote database only with [`supabase db push`](https://supabase.com/docs/reference/cli/supabase-db-push), or the project's CI, from the migration file in the repo. Shared and remote databases get one apply. If CI or the repo's documented pipeline applies remotes, do not also `db push` from the agent session.
+
+If the runner fails, stop. Inspect `supabase_migrations.schema_migrations`. Do not re-run the migration SQL via `psql` or `execute_sql`. Do not `supabase migration repair` to skip a version that did not apply. Do not loop `db push` on failure.
 
 The history table is `supabase_migrations.schema_migrations`.
 
@@ -84,7 +88,9 @@ Follow the [Alembic tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.
 
 1. Create a revision with `alembic revision`. Add `--autogenerate` only when this repo already does. Write the upgrade in that revision file.
 2. Apply it locally with `alembic upgrade head`.
-3. Apply it to any shared database with the project's documented Alembic command, from that revision file.
+3. Apply it to any shared database with the project's documented Alembic command, from that revision file. Shared databases get one apply. If CI or the repo's documented pipeline applies remotes, do not also `alembic upgrade head` from the agent session.
+
+If the runner fails, stop. Inspect `alembic_version`. Do not re-run the revision SQL by hand. Do not loop `alembic upgrade head` on failure.
 
 The history table is `alembic_version`. The same refusals apply. Do not run the revision's SQL by hand.
 
@@ -116,3 +122,5 @@ Stop if you are about to:
 - Apply SQL to a remote database that is not in a migration file
 - Use `supabase migration repair` to skip a migration that has not run
 - Invent a migrate script the repo does not have
+- Apply remotes from the agent and from CI against the same database
+- Loop a failed `db push` or `alembic upgrade head`
