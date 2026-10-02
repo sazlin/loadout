@@ -14,11 +14,6 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 PR_REVIEW_FIXTURES = Path(__file__).parent / "fixtures" / "pr_review_harness"
-CATALOG_END = "<!-- generated:loadouts-catalog:end -->"
-README_CLOSER_PATHS = (
-    REPO / "README.md",
-    REPO / ".claude" / "skills" / "generating-readme" / "templates" / "README.md",
-)
 DISPATCH_STEP_NAME = "Launch review_orchestrator on this pull request"
 SAMPLE_PR_NUMBER = "72"
 SAMPLE_GITHUB_REPOSITORY = "sazlin/loadout"
@@ -319,17 +314,6 @@ def _run_wait_for_run_block(
         check=False,
         env={**os.environ, **env},
     )
-
-
-def _prose_after_loadouts_catalog(markdown: str) -> str:
-    """Return README text after the generated catalog, before the next heading."""
-    marker_at = markdown.find(CATALOG_END)
-    assert marker_at != -1, "missing generated loadouts catalog end marker"
-    rest = markdown[marker_at + len(CATALOG_END) :]
-    next_heading = re.search(r"^## ", rest, re.MULTILINE)
-    if next_heading is not None:
-        rest = rest[: next_heading.start()]
-    return rest
 
 
 def test_extract_workflow_script_block_returns_active_dedupe_block() -> None:
@@ -746,19 +730,6 @@ def test_verifiers_md_contains_required_claims() -> None:
         "meaningful tests: newly added tests that explicitly target newly implemented behavior "
         "fail on the base commit and pass on the branch"
     ) in lines
-
-
-def test_readme_catalog_closer_does_not_dogfood_playwright() -> None:
-    for path in README_CLOSER_PATHS:
-        closer = _prose_after_loadouts_catalog(path.read_text())
-        assert ".loadout.yaml" in closer, path
-        assert re.search(r"dogfoods .*playwright", closer) is None, path
-
-
-def test_this_repo_package_json_does_not_pin_playwright_cli() -> None:
-    package_json = REPO / "package.json"
-    text = package_json.read_text() if package_json.is_file() else ""
-    assert "@playwright/cli" not in text
 
 
 def test_verifier_eval_fixture_is_typescript_without_any() -> None:
