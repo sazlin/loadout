@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rewrite [`db-migrations`](skills/db-migrations/SKILL.md) so a schema change
+  is a migration file applied by the repo's runner. The skill refuses the
+  Supabase SQL editor, the table editor, and DDL run outside that runner.
 - Move [`agent-authoring`](rules/agents/agent-authoring.mdc) from the
   [`base`](loadouts/base.yaml) loadout to [`agents`](loadouts/agents.yaml).
 - Add [`hyperlink-everything`](rules/core/hyperlink-everything.mdc) to `base`
