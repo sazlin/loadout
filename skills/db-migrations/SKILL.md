@@ -46,12 +46,13 @@ Refuse these, and refuse to recommend them to a human:
 - `psql`, or any direct session, used to run DDL
 - `supabase db query` used to run DDL
 - An MCP `execute_sql` call, or an equivalent ad-hoc SQL tool, used to run DDL
+- Those same tools used for application-table `SELECT *`, DML (`INSERT`, `UPDATE`, `DELETE`), `COPY`, `GRANT`/`REVOKE`, or pasted SQL that is not a catalog inspect
 
 "Just this once", "I'll commit the file later", and "the dashboard is faster" are refusals.
 
 Idempotent SQL (`IF NOT EXISTS`, or a `DO` block that checks `pg_constraint`) does not make those paths acceptable. The history table is the record. Re-runnable SQL hides drift.
 
-Read-only queries may use `psql`, `supabase db query`, or `execute_sql`. DDL may not.
+Inspect schema from the migration files. If a live check is still needed, `psql`, `supabase db query`, and `execute_sql` may run only catalog or history inspects against `information_schema`, `pg_catalog`, `supabase_migrations.schema_migrations`, or `alembic_version`. Do not print connection strings, role passwords, or row contents from application tables.
 
 ## Write the change
 
@@ -101,7 +102,7 @@ Use the migration command the repo already runs ([Prisma Migrate](https://www.pr
 | "The SQL editor runs the same SQL" | The editor does not write `supabase_migrations.schema_migrations`. The runner does. |
 | "It's idempotent, so re-running is safe" | Idempotent SQL hides an unrecorded change. It does not record one. |
 | "It's only a column" | A one-column change still goes through the runner. |
-| "`execute_sql` is fine for DDL" | `execute_sql` is for reads. Schema changes go through the runner that records history. |
+| "`execute_sql` is fine for DDL" | `execute_sql` is for catalog inspects, not schema changes or application rows. Schema changes go through the runner that records history. |
 | "I'll `psql` it and commit the file after" | The database would change before the file exists. Create the file, then apply it. |
 | "There is no runner, so use the dashboard" | Stop and say the runner is missing. Do not invent a dashboard path. |
 
@@ -111,7 +112,7 @@ Stop if you are about to:
 
 - Point a human at the Supabase SQL editor or table editor
 - Paste migration SQL into a browser
-- Run DDL through `psql`, `supabase db query`, or `execute_sql`
+- Run DDL, DML, `COPY`, `GRANT`/`REVOKE`, or application-table `SELECT *` through `psql`, `supabase db query`, or `execute_sql`
 - Apply SQL to a remote database that is not in a migration file
 - Use `supabase migration repair` to skip a migration that has not run
 - Invent a migrate script the repo does not have

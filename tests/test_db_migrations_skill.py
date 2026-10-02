@@ -29,9 +29,19 @@ _REQUIRED = (
     "supabase_migrations.schema_migrations",
     "do not invent a runner",
     "do not use repair to skip a migration",
+    "information_schema",
+    "pg_catalog",
+    "copy",
+    "grant",
+    "revoke",
+    "connection string",
 )
 
 _RECOMMEND_EDITOR = re.compile(r"\b(?:use|prefer|open) the (?:supabase )?sql editor\b", re.IGNORECASE)
+_UNRESTRICTED_ADHOC_READS = re.compile(
+    r"read-only queries may use.{0,80}(?:execute_sql|psql|supabase db query)",
+    re.IGNORECASE | re.DOTALL,
+)
 _DASHBOARD_THEN_PULL = re.compile(
     r"(?:add|create|ship|apply)\b.{0,80}\b(?:column|schema|ddl|change)\b"
     r".{0,80}\b(?:dashboard|table editor|sql editor)\b"
@@ -58,6 +68,8 @@ def _holds_migration_line(text: str) -> bool:
     if "refuse" not in lowered:
         return False
     if _RECOMMEND_EDITOR.search(text) is not None:
+        return False
+    if _UNRESTRICTED_ADHOC_READS.search(text) is not None:
         return False
     return not _recommends_dashboard_then_pull(text)
 
@@ -87,6 +99,7 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert "stop at the first match" not in lowered
     assert "if more than one" in lowered
     assert "ci or the docs already use" in lowered
+    assert "read-only queries may use" not in lowered
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -106,6 +119,8 @@ def test_dashboard_advice_fails_the_contract() -> None:
         "and migration repair. " + " ".join(_REQUIRED) + ". Refuse nothing."
     )
     assert not _holds_migration_line(dashboard_then_pull)
+    unrestricted_reads = "Read-only queries may use execute_sql. " + " ".join(_REQUIRED) + ". Refuse nothing."
+    assert not _holds_migration_line(unrestricted_reads)
     assert _holds_migration_line(SKILL_PATH.read_text())
 
 
