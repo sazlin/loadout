@@ -43,7 +43,10 @@ _REQUIRED = (
     "zero rows",
     "statement_timeout",
     "lock_timeout",
-    "concurrently",
+    "autocommit",
+    "cannot run inside a transaction",
+    "invalid index",
+    "drop index concurrently",
     "one apply",
     "if the runner fails, stop",
 )
@@ -55,6 +58,15 @@ _LIMIT_N_IN_SUBQUERY = re.compile(
 _PER_BATCH_COMMIT = re.compile(
     r"commit after (?:each|every) batch",
     re.IGNORECASE,
+)
+# Short DDL timeouts cancel CREATE INDEX CONCURRENTLY and leave INVALID indexes.
+_SHORT_TIMEOUT_THEN_CONCURRENT = re.compile(
+    r"set\s+local\s+statement_timeout\s*=\s*'?5s'?.{0,80}create\s+index\s+concurrently",
+    re.IGNORECASE | re.DOTALL,
+)
+_CONCURRENT_IN_TRANSACTION = re.compile(
+    r"create\s+index\s+concurrently.{0,120}transactional\s+migration",
+    re.IGNORECASE | re.DOTALL,
 )
 
 # Refusal imperatives ("do not use the SQL editor", "never use the SQL editor") must not match.
@@ -124,6 +136,28 @@ def _backfill_paginates_remaining_rows(text: str) -> bool:
     return remaining and keyset and "zero rows" in lowered
 
 
+def _teaches_concurrent_index_under_short_timeout(text: str) -> bool:
+    """True when CONCURRENTLY is taught with SET LOCAL statement_timeout = 5s."""
+    return _SHORT_TIMEOUT_THEN_CONCURRENT.search(text) is not None
+
+
+def _teaches_concurrent_index_in_transaction(text: str) -> bool:
+    """True when CREATE INDEX CONCURRENTLY is taught inside a transactional migration."""
+    for match in _CONCURRENT_IN_TRANSACTION.finditer(text):
+        window = text[max(0, match.start() - 80) : match.end()].lower()
+        if re.search(r"\b(?:do not|must not|never|cannot)\b", window):
+            continue
+        return True
+    return False
+
+
+def _concurrent_index_uses_autocommit_and_drop_invalid(text: str) -> bool:
+    lowered = text.lower()
+    autocommit = "autocommit" in lowered and "cannot run inside a transaction" in lowered
+    drop = "drop index concurrently" in lowered and "invalid index" in lowered
+    return autocommit and drop
+
+
 def _skill_requires_runner_and_refuses_editor(text: str) -> bool:
     """True when required phrases are present and the text does not recommend a UI editor."""
     if _missing_required_phrases(text):
@@ -143,6 +177,12 @@ def _skill_requires_runner_and_refuses_editor(text: str) -> bool:
     if not _backfill_paginates_remaining_rows(text):
         return False
     if _teaches_limit_n_in_subquery_without_remaining_rows(text):
+        return False
+    if _teaches_concurrent_index_under_short_timeout(text):
+        return False
+    if _teaches_concurrent_index_in_transaction(text):
+        return False
+    if not _concurrent_index_uses_autocommit_and_drop_invalid(text):
         return False
     return not _recommends_dashboard_then_pull(text)
 
@@ -177,6 +217,13 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert "read-only queries may use" not in lowered
     assert "lock-short-transactions.md" in lowered
     assert "create index concurrently" in lowered
+    assert "autocommit" in lowered
+    assert "cannot run inside a transaction" in lowered
+    assert "invalid index" in lowered
+    assert "drop index concurrently" in lowered
+    assert not _teaches_concurrent_index_under_short_timeout(text)
+    assert not _teaches_concurrent_index_in_transaction(text)
+    assert _concurrent_index_uses_autocommit_and_drop_invalid(text)
     assert "commit after each batch" in lowered
     assert "follow-up job" in lowered
     assert "is null" in lowered
@@ -244,6 +291,41 @@ def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
     assert _backfill_commits_or_uses_follow_up_job(keyset)
     assert _backfill_paginates_remaining_rows(keyset)
     assert _skill_requires_runner_and_refuses_editor(keyset)
+
+
+def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
+    """Bare CONCURRENTLY is not enough; short timeouts and transactions fail."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
+    short_timeout = "SET LOCAL statement_timeout = '5s'; CREATE INDEX CONCURRENTLY. " + tokens
+    assert _missing_required_phrases(short_timeout) == []
+    assert _teaches_concurrent_index_under_short_timeout(short_timeout)
+    assert not _skill_requires_runner_and_refuses_editor(short_timeout)
+    in_txn = "CREATE INDEX CONCURRENTLY in a transactional migration. " + tokens
+    assert _missing_required_phrases(in_txn) == []
+    assert _teaches_concurrent_index_in_transaction(in_txn)
+    assert not _skill_requires_runner_and_refuses_editor(in_txn)
+    caveat = {
+        "autocommit",
+        "cannot run inside a transaction",
+        "invalid index",
+        "drop index concurrently",
+    }
+    bare = "CREATE INDEX CONCURRENTLY. " + " ".join(p for p in _REQUIRED if p not in caveat)
+    bare += ". Refuse nothing. concurrently"
+    assert "autocommit" in _missing_required_phrases(bare)
+    assert "cannot run inside a transaction" in _missing_required_phrases(bare)
+    assert "invalid index" in _missing_required_phrases(bare)
+    assert not _skill_requires_runner_and_refuses_editor(bare)
+    ok = (
+        "Own autocommit migration; CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
+        "If cancelled, DROP INDEX CONCURRENTLY on the INVALID index through the runner "
+        "in a follow-up migration. Do not repair or skip. " + tokens
+    )
+    assert _missing_required_phrases(ok) == []
+    assert not _teaches_concurrent_index_under_short_timeout(ok)
+    assert not _teaches_concurrent_index_in_transaction(ok)
+    assert _concurrent_index_uses_autocommit_and_drop_invalid(ok)
+    assert _skill_requires_runner_and_refuses_editor(ok)
 
 
 def test_db_sync_vendors_db_migrations_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
