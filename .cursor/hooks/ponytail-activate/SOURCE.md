@@ -10,6 +10,8 @@
 See also [`skills/ponytail/SOURCE.md`](../../skills/ponytail/SOURCE.md) for the
 vendored skill pin and rule-sync contract.
 
+This hook pin stays on 974d940 because the upstream Cursor alwaysApply/short-circuit was not ported (loadout rule is globbed).
+
 ## Adaptations from upstream
 
 Vendored for loadout sync (skills + hooks land under the project tree; no plugin

@@ -8,6 +8,13 @@
   so canonical identifiers, locations, commands, and sources are linked on
   first mention without inventing URLs.
 
+- Update this repository's [manifest](.loadout.yaml) to replace
+  [`playwright`](loadouts/playwright.yaml) with
+  [`implementation_harness`](loadouts/implementation_harness.yaml),
+  [`github`](loadouts/github.yaml), and [`orca`](loadouts/orca.yaml).
+  Refresh managed artifacts from `main` and remove obsolete Playwright
+  agents, skills, and rules.
+
 ## 0.54.0
 
 - Vendor `tailscale` from

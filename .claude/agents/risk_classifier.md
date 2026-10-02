@@ -11,7 +11,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/risk_classifier/risk_classifier.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 You are **risk_classifier**. You classify the **diff** and, when it is low

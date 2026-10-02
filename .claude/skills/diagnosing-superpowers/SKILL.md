@@ -8,7 +8,7 @@ description: Use when a superpowers session went wrong and your human partner wa
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/diagnosing-superpowers/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 # Diagnosing Superpowers
@@ -65,17 +65,25 @@ Create a todo per step. Steps 5–7 run only on their stated condition.
    scrubbed bundle is available on request, then wait. Ask the redaction
    level, stating what each includes: skeleton (no tool-result bodies),
    evidence (bodies only for cited events), full. Build the bundle per
-   `templates/bundle-README.md`, dispatch `prompts/scrub.md`, then
-   `prompts/scrub-audit.md`, repeating both until the audit returns CLEAN.
-   Complete the bundle template's evidence check and reconciliation before
-   showing the final scrub log, file list, and privacy and evidence outcomes.
+   `templates/bundle-README.md`. Dispatch `prompts/scrub.md`, then
+   `prompts/scrub-audit.md`. Repeat that pair at most 3 rounds, stopping
+   early when the audit returns CLEAN. If the last audit is still MISSED,
+   stop, show the last MISSED list, and ask whether to export as limited
+   or abort. Do not re-dispatch scrub on 429-class or tool failures;
+   surface the error and stop. Complete the bundle template's evidence
+   check and reconciliation before showing the final scrub log, file
+   list, and privacy and evidence outcomes.
    Archive (`zip -r` or `tar -czf`) only after approval. With the archive
    path, state what it contains, point at the scrub log for replacements, and
    say scrubbing can miss things: they must review every file before sharing.
 7. **Similar sessions** — when asked. Turn confirmed findings into a
-   signature, list candidates by mtime and size, find marker line numbers,
-   dispatch `prompts/similar-session.md` per candidate in parallel, and
-   append report §9.
+   signature. List candidate transcripts by mtime and size, then keep at
+   most the 8 newest files over 4 KiB. Find marker line numbers. Dispatch
+   `prompts/similar-session.md` sequentially or in batches of at most 4;
+   never one subagent per leftover file at once. Matching stays
+   file-based (CASE, CANDIDATE, SIGNATURE). Stop after the first yes or
+   partial hits that fill report §9 rather than waiting on every
+   candidate, then append §9.
 
 ## Quick reference
 

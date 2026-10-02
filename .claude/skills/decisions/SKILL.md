@@ -5,7 +5,7 @@ description: Use when the user says /decisions, asks to list, enumerate, or reca
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/decisions/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 # Decisions

@@ -14,7 +14,7 @@ tools:
 metadata:
   loadout.managed: 'true'
   loadout.source: agents/review_correctness/review_correctness.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 You are **review_correctness**, a read-only reviewer for correctness and data integrity.

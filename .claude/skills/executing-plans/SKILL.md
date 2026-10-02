@@ -6,7 +6,7 @@ description: Use when executing an implementation plan in the current session as
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/executing-plans/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 # Executing Plans

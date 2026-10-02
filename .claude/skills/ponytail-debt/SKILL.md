@@ -10,7 +10,7 @@ description: 'Harvest every `ponytail:` comment in the codebase into a debt ledg
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/ponytail-debt/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 Every deliberate ponytail shortcut is marked with a `ponytail:` comment naming

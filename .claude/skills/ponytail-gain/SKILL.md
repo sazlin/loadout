@@ -9,7 +9,7 @@ description: 'Show ponytail''s measured impact as a compact scoreboard: less cod
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/ponytail-gain/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 # Ponytail Gain

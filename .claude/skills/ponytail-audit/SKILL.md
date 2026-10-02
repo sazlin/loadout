@@ -10,7 +10,7 @@ description: 'Whole-repo audit for over-engineering. Like ponytail-review, but s
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/ponytail-audit/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 ponytail-review, repo-wide. Scan the whole tree instead of a diff. Rank

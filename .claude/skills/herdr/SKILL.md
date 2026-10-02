@@ -7,7 +7,7 @@ description: Control Herdr, a terminal multiplexer for coding agents. Use only w
 metadata:
   loadout.managed: 'true'
   loadout.source: skills/herdr/SKILL.md
-  loadout.sha: 874bde3
+  loadout.sha: 49eb9bd
 ---
 
 # Herdr

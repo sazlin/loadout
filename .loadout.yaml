@@ -5,5 +5,7 @@ loadouts:
 - superpowers
 - python
 - pr_review_harness
-- playwright
 - telemetry
+- implementation_harness
+- github
+- orca
