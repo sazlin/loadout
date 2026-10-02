@@ -43,7 +43,11 @@ _REQUIRED = (
     "if the runner fails, stop",
 )
 
-_RECOMMEND_EDITOR = re.compile(r"\b(?:use|prefer|open) the (?:supabase )?sql editor\b", re.IGNORECASE)
+# Refusal imperatives ("do not use the SQL editor", "never use the SQL editor") must not match.
+_RECOMMEND_EDITOR = re.compile(
+    r"(?<!not )(?<!ver )(?<!n't )\b(?:use|prefer|open) the (?:supabase )?sql editor\b",
+    re.IGNORECASE,
+)
 _UNRESTRICTED_ADHOC_READS = re.compile(
     r"read-only queries may use.{0,80}(?:execute_sql|psql|supabase db query)",
     re.IGNORECASE | re.DOTALL,
@@ -71,14 +75,27 @@ def _recommends_dashboard_then_pull(text: str) -> bool:
     return False
 
 
-def _holds_migration_line(text: str) -> bool:
-    """True when the text requires the runner and does not send DDL to a UI."""
+def _missing_required_phrases(text: str) -> list[str]:
     lowered = text.lower()
-    if any(phrase not in lowered for phrase in _REQUIRED):
+    return [phrase for phrase in _REQUIRED if phrase not in lowered]
+
+
+def _recommends_sql_editor(text: str) -> bool:
+    for match in _RECOMMEND_EDITOR.finditer(text):
+        prefix = text[max(0, match.start() - 80) : match.start()].lower()
+        if "refuse" in prefix:
+            continue
+        return True
+    return False
+
+
+def _skill_requires_runner_and_refuses_editor(text: str) -> bool:
+    """True when required phrases are present and the text does not recommend a UI editor."""
+    if _missing_required_phrases(text):
         return False
-    if "refuse" not in lowered:
+    if "refuse" not in text.lower():
         return False
-    if _RECOMMEND_EDITOR.search(text) is not None:
+    if _recommends_sql_editor(text):
         return False
     if _UNRESTRICTED_ADHOC_READS.search(text) is not None:
         return False
@@ -104,7 +121,9 @@ def test_skill_description_triggers_without_teaching_the_procedure() -> None:
 
 def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     text = SKILL_PATH.read_text()
-    assert _holds_migration_line(text)
+    assert _missing_required_phrases(text) == []
+    assert not _recommends_sql_editor(text)
+    assert _skill_requires_runner_and_refuses_editor(text)
     _frontmatter, body, _ = split_frontmatter(text)
     lowered = body.lower()
     assert "just this once" in lowered
@@ -121,39 +140,42 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
 
 def test_dashboard_advice_fails_the_contract() -> None:
     """Tokens from the skill are not enough when the text sends the human to the editor."""
-    bad = (
-        "Use the SQL editor for this ALTER. Mention supabase migration new, "
-        "supabase migration up, supabase db push, supabase db pull, "
-        "supabase migration repair, alembic upgrade head, alembic_version, "
-        "supabase_migrations.schema_migrations, supabase db query, execute_sql, "
-        "and the table editor. Urgency does not create an exception is optional. "
-        "Do not invent a runner. Do not use repair to skip a migration. Refuse nothing."
-    )
+    recommend = "Use the SQL editor for this ALTER."
+    bad = recommend + " " + " ".join(_REQUIRED) + " Refuse nothing."
     assert "sql editor" in bad.lower()
-    assert not _holds_migration_line(bad)
+    assert _missing_required_phrases(bad) == []
+    assert _RECOMMEND_EDITOR.search("Do not use the SQL editor") is None
+    assert _RECOMMEND_EDITOR.search("never use the SQL editor") is None
+    assert _RECOMMEND_EDITOR.search(recommend) is not None
+    assert _recommends_sql_editor(bad)
+    assert not _skill_requires_runner_and_refuses_editor(bad)
     dashboard_then_pull = (
         "Add a column in the dashboard/table editor then supabase db pull "
         "and migration repair. " + " ".join(_REQUIRED) + ". Refuse nothing."
     )
-    assert not _holds_migration_line(dashboard_then_pull)
+    assert not _skill_requires_runner_and_refuses_editor(dashboard_then_pull)
     unrestricted_reads = "Read-only queries may use execute_sql. " + " ".join(_REQUIRED) + ". Refuse nothing."
-    assert not _holds_migration_line(unrestricted_reads)
+    assert not _skill_requires_runner_and_refuses_editor(unrestricted_reads)
     unbounded_backfill = "Backfill in the migration. Refuse nothing."
-    assert not _holds_migration_line(unbounded_backfill)
+    assert _missing_required_phrases(unbounded_backfill)
+    assert not _skill_requires_runner_and_refuses_editor(unbounded_backfill)
     retry_until_works = (
         "db push again until it works. Apply remotes from the agent while CI also applies. "
         + " ".join(_REQUIRED)
         + ". Refuse nothing."
     )
-    assert not _holds_migration_line(retry_until_works)
-    assert _holds_migration_line(SKILL_PATH.read_text())
+    assert not _skill_requires_runner_and_refuses_editor(retry_until_works)
+    skill = SKILL_PATH.read_text()
+    assert _missing_required_phrases(skill) == []
+    assert _skill_requires_runner_and_refuses_editor(skill)
 
 
-def test_db_sync_vendors_the_migration_line(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_db_sync_vendors_db_migrations_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
     project.mkdir()
     (project / ".loadout.yaml").write_text("source: https://github.com/sazlin/loadout\nref: main\nloadouts: [db]\n")
     sync(project)
     vendored = (project / ".claude/skills/db-migrations/SKILL.md").read_text()
-    assert _holds_migration_line(vendored)
+    assert _missing_required_phrases(vendored) == []
+    assert _skill_requires_runner_and_refuses_editor(vendored)
