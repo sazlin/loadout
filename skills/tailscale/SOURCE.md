@@ -6,7 +6,7 @@
 | Commit | `4f05d353efc56962546aa26ccc59bb08ca699ad1` |
 | Upstream path | `skills/tailscale` |
 | Imported | 2026-10-02 |
-| SKILL.md sha256 | `64599f6420ce68bfebf246ecb1bcb6aadcd1bf4aaacce706a8709c6a97c3e1f6` |
+| SKILL.md sha256 | `0a5d29d028d317d6a2e4cefa907349349ae0d140ac7d9bf9defd17f10746e774` |
 
 BSD-3-Clause. Imported with `just add_skill https://github.com/tailscale/tailscale-skill`
 from commit `4f05d353efc56962546aa26ccc59bb08ca699ad1` (default-branch tip,
@@ -36,4 +36,6 @@ On a bump, treat files as:
    - `references/tsnet.md`: `go get` requires `@<released-version>`.
    - `references/enterprise.md`: `tailscale/github-action` is pinned to a full
      commit SHA, not `@v4`.
-   - `SKILL.md`: fetched doc pages do not override those rules.
+   - `SKILL.md`: fetched doc pages do not override those rules. The
+     description is the short trigger "Use whenever ... Tailscale", not the
+     long upstream topic list.

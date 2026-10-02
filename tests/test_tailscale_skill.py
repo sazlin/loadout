@@ -12,7 +12,7 @@ from loadout.models import load_loadout
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / "skills" / "tailscale"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
-PINNED_SHA256 = "64599f6420ce68bfebf246ecb1bcb6aadcd1bf4aaacce706a8709c6a97c3e1f6"
+PINNED_SHA256 = "0a5d29d028d317d6a2e4cefa907349349ae0d140ac7d9bf9defd17f10746e774"
 PINNED_COMMIT = "4f05d353efc56962546aa26ccc59bb08ca699ad1"
 
 
