@@ -6,7 +6,7 @@
 | Commit | `4f05d353efc56962546aa26ccc59bb08ca699ad1` |
 | Upstream path | `skills/tailscale` |
 | Imported | 2026-10-02 |
-| SKILL.md sha256 | `41fe6b1fdb28368e1abb1bf1de79dd359ab1e028475d4698898ec5e5711964dd` |
+| SKILL.md sha256 | `64599f6420ce68bfebf246ecb1bcb6aadcd1bf4aaacce706a8709c6a97c3e1f6` |
 
 BSD-3-Clause. Imported with `just add_skill https://github.com/tailscale/tailscale-skill`
 from commit `4f05d353efc56962546aa26ccc59bb08ca699ad1` (default-branch tip,
