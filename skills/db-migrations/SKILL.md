@@ -24,7 +24,7 @@ Also use it when someone asks to:
 
 ## Find the runner
 
-Look in the repo before writing SQL. Stop at the first match:
+Look in the repo before writing SQL. Collect every matching signal:
 
 | Signal in the repo | Runner |
 | --- | --- |
@@ -32,6 +32,8 @@ Look in the repo before writing SQL. Stop at the first match:
 | `alembic.ini` | Alembic |
 | `prisma/migrations/` or a Prisma schema | Prisma |
 | `drizzle.config.ts` or `drizzle.config.js` | Drizzle |
+
+Use the table only when exactly one signal matches. If more than one runner is present, use the migrate command and history table CI or the docs already use, including `alembic upgrade head` and `alembic_version` when that is what CI runs.
 
 If none of these exist, search the repo for the command CI or the docs already use. If you still cannot find a runner, stop. Say what you looked for. Do not invent a runner. Do not fall back to a dashboard, a SQL editor, or a one-off database session.
 
@@ -71,7 +73,9 @@ Follow the [Supabase migration guide](https://supabase.com/docs/guides/deploymen
 
 The history table is `supabase_migrations.schema_migrations`.
 
-If the remote database already has schema changes that are not in `supabase/migrations/`, capture them with [`supabase db pull`](https://supabase.com/docs/reference/cli/supabase-db-pull) into a new migration file. Use [`supabase migration repair`](https://supabase.com/docs/reference/cli/supabase-migration-repair) only to mark that already-applied version in the history table. Do not use repair to skip a migration that has not been applied. After the file is in the repo, stop using the dashboard for schema changes.
+Use [`supabase db pull`](https://supabase.com/docs/reference/cli/supabase-db-pull) and [`supabase migration repair`](https://supabase.com/docs/reference/cli/supabase-migration-repair) only for schema that already existed before this task. That is discovered drift, not a way to ship a new change. If the remote database already has that pre-existing schema and it is not in `supabase/migrations/`, capture it with `supabase db pull` into a new migration file. Repair only the already-applied version on the database you pulled from. Do not `db push` that pulled version onto that same database. Do not use repair to skip a migration that has not been applied.
+
+Do not add schema in the SQL editor, table editor, or dashboard in order to pull it. New DDL still goes through `supabase migration new`, then `supabase migration up` / `supabase db push`, or CI.
 
 ## Alembic
 
