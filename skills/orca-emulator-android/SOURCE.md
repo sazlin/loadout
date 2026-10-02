@@ -10,7 +10,8 @@
 | Current SKILL.md sha256 | `1184c09497a0b10a227679c41cc9ed5f8c4b806cc1b83027c857fb39558e9645` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-emulator-android`.
-MIT license on the upstream repository.
+Upstream repository LICENSE is MIT. SKILL.md frontmatter declares Apache-2.0.
+Keep the frontmatter license on a bump unless upstream changes it.
 
 This hash is the adapted tree, not the upstream blob. On a bump, re-copy SKILL.md
 from upstream, then re-apply the Adapted bullets; do not merge by section.
