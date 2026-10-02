@@ -32,6 +32,22 @@ _REQUIRED = (
 )
 
 _RECOMMEND_EDITOR = re.compile(r"\b(?:use|prefer|open) the (?:supabase )?sql editor\b", re.IGNORECASE)
+_DASHBOARD_THEN_PULL = re.compile(
+    r"(?:add|create|ship|apply)\b.{0,80}\b(?:column|schema|ddl|change)\b"
+    r".{0,80}\b(?:dashboard|table editor|sql editor)\b"
+    r".{0,120}\b(?:db pull|migration repair)\b",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _recommends_dashboard_then_pull(text: str) -> bool:
+    """True when the text ships new schema via a UI and then pull/repair."""
+    for match in _DASHBOARD_THEN_PULL.finditer(text):
+        prefix = text[max(0, match.start() - 24) : match.start()].lower()
+        if re.search(r"\b(?:do not|must not|never|not)\s+$", prefix):
+            continue
+        return True
+    return False
 
 
 def _holds_migration_line(text: str) -> bool:
@@ -41,7 +57,9 @@ def _holds_migration_line(text: str) -> bool:
         return False
     if "refuse" not in lowered:
         return False
-    return _RECOMMEND_EDITOR.search(text) is None
+    if _RECOMMEND_EDITOR.search(text) is not None:
+        return False
+    return not _recommends_dashboard_then_pull(text)
 
 
 def test_skill_description_triggers_without_teaching_the_procedure() -> None:
@@ -66,6 +84,9 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert "i'll commit the file later" in lowered
     assert "the dashboard is faster" in lowered
     assert "if not exists" in lowered
+    assert "stop at the first match" not in lowered
+    assert "if more than one" in lowered
+    assert "ci or the docs already use" in lowered
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -80,6 +101,11 @@ def test_dashboard_advice_fails_the_contract() -> None:
     )
     assert "sql editor" in bad.lower()
     assert not _holds_migration_line(bad)
+    dashboard_then_pull = (
+        "Add a column in the dashboard/table editor then supabase db pull "
+        "and migration repair. " + " ".join(_REQUIRED) + ". Refuse nothing."
+    )
+    assert not _holds_migration_line(dashboard_then_pull)
     assert _holds_migration_line(SKILL_PATH.read_text())
 
 
