@@ -6,7 +6,7 @@
 | Commit | `4f05d353efc56962546aa26ccc59bb08ca699ad1` |
 | Upstream path | `skills/tailscale` |
 | Imported | 2026-10-02 |
-| SKILL.md sha256 | `1ca85dedaaf2501b57ed4a17fe4dbb57008ff5b8242a0945a2ebec17802de236` |
+| SKILL.md sha256 | `41fe6b1fdb28368e1abb1bf1de79dd359ab1e028475d4698898ec5e5711964dd` |
 
 BSD-3-Clause. Imported with `just add_skill https://github.com/tailscale/tailscale-skill`
 from commit `4f05d353efc56962546aa26ccc59bb08ca699ad1` (default-branch tip,
@@ -22,8 +22,12 @@ On a bump, treat files as:
 3. **Adapted** — install and supply-chain lines, so an agent does not run
    unpinned code:
    - `SKILL.md` and `references/installation.md`: no `curl | sh` and no
-     `install.sh`. Linux install is the distro package or the download page.
-     Static binaries are not fetched or executed by the agent.
+     `install.sh`. Arch/NixOS use distro packages. Ubuntu/Debian/RHEL and
+     similar use https://tailscale.com/download, a user-chosen version under
+     https://pkgs.tailscale.com/stable/, or Tailscale's signed repo (pinned
+     key plus list/repo file) then apt/dnf/yum — never a bare distro
+     `apt install tailscale`. Download URLs are HTTPS. Static binaries are
+     not fetched or executed by the agent.
    - `references/containers.md`: Tailscale image is `<version>@sha256:<digest>`.
      Helm install requires `--version`.
    - `references/session-recording.md`: `tsrecorder` image is pinned the same

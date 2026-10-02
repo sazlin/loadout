@@ -55,7 +55,7 @@ For macOS/Windows, download Tailscale from https://tailscale.com/download.
 
 For iOS, iPadOS, tvOS, Android devices, Roku devices, and Fire TV, install Tailscale through the platform's app store.
 
-Install Tailscale on Linux from the distro package (`apt`, `dnf`, or `yum`) or from https://tailscale.com/download. Do not pipe a remote script into a shell, and do not download or run `https://tailscale.com/install.sh`.
+On Arch Linux or NixOS, install the distro `tailscale` package (`pacman` or NixOS). On Ubuntu, Debian, RHEL, Fedora, and similar, Tailscale is not in the default repos: send the user to https://tailscale.com/download or a chosen version under https://pkgs.tailscale.com/stable/, or add Tailscale's signed repo (pinned key plus list/repo file from pkgs.tailscale.com) before `apt`/`dnf`/`yum`. Do not pipe a remote script into a shell, and do not download or run `https://tailscale.com/install.sh`.
 
 ```bash
 sudo tailscale up   # Connect, after the package is installed
