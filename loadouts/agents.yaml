@@ -3,9 +3,10 @@ extends:
   - base
 description: >-
   Agent frameworks and tooling — LangChain docs MCP for live documentation
-  lookup, the refining-evals skill, and the agent-descriptions rule.
+  lookup, the refining-evals skill, and the agent authoring and description rules.
 rules:
   - src: rules/agents/agent-descriptions.mdc
+  - src: rules/agents/agent-authoring.mdc
 skills:
   - src: skills/refining-evals
 mcps:

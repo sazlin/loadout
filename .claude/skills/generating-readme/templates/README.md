@@ -158,7 +158,7 @@ not vendored.
 **Authoring.** Copy [`agents/_agent_template.md`](agents/_agent_template.md) to
 `agents/<name>/<name>.md` (no leading underscore) and fill every section. The
 Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
-(globs `agents/*/*.md`, shipped on `base`) requires that template for new
+(globs `agents/*/*.md`, shipped on `agents`) requires that template for new
 agents and for imported ones. [`rules/agents/agent-descriptions.mdc`](rules/agents/agent-descriptions.mdc)
 (shipped on `agents`) limits the YAML `description` to when-to-use and
 when-not-to-use signals for other agents. Underscore-prefixed files are templates or notes,
@@ -187,9 +187,10 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP, the vendored `refining-evals` skill, and
-`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
-agent `description` fields):
+the LangChain docs MCP, the vendored `refining-evals` skill,
+[`agent-authoring`](rules/agents/agent-authoring.mdc) for template-based authoring,
+and [`agent-descriptions`](rules/agents/agent-descriptions.mdc) for when/when-not
+dispatch copy in agent `description` fields:
 
 ```yaml
 loadouts: [agents]

@@ -165,7 +165,7 @@ Example GitHub Actions step:
 
 | Loadout | Extends | Agents | Skills | Rules | MCPs | Hooks | CLI Tools |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/unslop/SKILL.md"><code>unslop</code></a></li><li><a href="skills/herdr/SKILL.md"><code>herdr</code></a></li><li><a href="skills/tailscale/SKILL.md"><code>tailscale</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/no-autonomous-external-comms.mdc"><code>no-autonomous-external-comms</code></a></li><li><a href="rules/core/no-auto-merge.mdc"><code>no-auto-merge</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> | — |
+| `base` | — | <ul><li><a href="agents/davinci/davinci.md"><code>davinci</code></a></li></ul> | <ul><li><a href="skills/anti-sleep/SKILL.md"><code>anti-sleep</code></a></li><li><a href="skills/decisions/SKILL.md"><code>decisions</code></a></li><li><a href="skills/next-decision/SKILL.md"><code>next-decision</code></a></li><li><a href="skills/learn/SKILL.md"><code>learn</code></a></li><li><a href="skills/unslop/SKILL.md"><code>unslop</code></a></li><li><a href="skills/herdr/SKILL.md"><code>herdr</code></a></li><li><a href="skills/tailscale/SKILL.md"><code>tailscale</code></a></li></ul> | <ul><li><a href="rules/core/commit-style.mdc"><code>commit-style</code></a></li><li><a href="rules/core/repo-conventions.mdc"><code>repo-conventions</code></a></li><li><a href="rules/core/colocated-evals.mdc"><code>colocated-evals</code></a></li><li><a href="rules/core/no-cursor-coauthor.mdc"><code>no-cursor-coauthor</code></a></li><li><a href="rules/core/pr-ready-for-review.mdc"><code>pr-ready-for-review</code></a></li><li><a href="rules/core/no-autonomous-external-comms.mdc"><code>no-autonomous-external-comms</code></a></li><li><a href="rules/core/no-auto-merge.mdc"><code>no-auto-merge</code></a></li><li><a href="rules/core/hyperlink-everything.mdc"><code>hyperlink-everything</code></a></li></ul> | <ul><li><a href="mcps/context7/mcp.yaml"><code>context7</code></a></li><li><a href="mcps/linear/mcp.yaml"><code>linear</code></a></li></ul> | <ul><li><a href="hooks/deny-dangerous/hook.yaml"><code>deny-dangerous</code></a></li></ul> | — |
 | `coding` | — | — | <ul><li><a href="skills/ponytail/SKILL.md"><code>ponytail</code></a></li><li><a href="skills/ponytail-review/SKILL.md"><code>ponytail-review</code></a></li><li><a href="skills/ponytail-audit/SKILL.md"><code>ponytail-audit</code></a></li><li><a href="skills/ponytail-debt/SKILL.md"><code>ponytail-debt</code></a></li><li><a href="skills/ponytail-gain/SKILL.md"><code>ponytail-gain</code></a></li><li><a href="skills/ponytail-help/SKILL.md"><code>ponytail-help</code></a></li><li><a href="skills/rtk/SKILL.md"><code>rtk</code></a></li><li><a href="skills/herdr/SKILL.md"><code>herdr</code></a></li></ul> | <ul><li><a href="rules/coding/ponytail.mdc"><code>ponytail</code></a></li></ul> | — | <ul><li><a href="hooks/ponytail-activate/SOURCE.md"><code>ponytail-activate</code></a></li><li><a href="hooks/rtk-rewrite/SOURCE.md"><code>rtk-rewrite</code></a></li></ul> | <ul><li><code>rtk</code></li></ul> |
 | `implementation_harness` | — | <ul><li><a href="agents/implementation_orchestrator/implementation_orchestrator.md"><code>implementation_orchestrator</code></a></li><li><a href="agents/implementation_planner/implementation_planner.md"><code>implementation_planner</code></a></li><li><a href="agents/implementation_plan_reviewer/implementation_plan_reviewer.md"><code>implementation_plan_reviewer</code></a></li><li><a href="agents/implementation_builder/implementation_builder.md"><code>implementation_builder</code></a></li><li><a href="agents/implementation_build_reviewer/implementation_build_reviewer.md"><code>implementation_build_reviewer</code></a></li></ul> | <ul><li><a href="skills/create-implementation-plan/SKILL.md"><code>create-implementation-plan</code></a></li><li><a href="skills/review-implementation-plan/SKILL.md"><code>review-implementation-plan</code></a></li><li><a href="skills/build-implementation-plan/SKILL.md"><code>build-implementation-plan</code></a></li><li><a href="skills/review-implementation-build/SKILL.md"><code>review-implementation-build</code></a></li></ul> | — | — | — | — |
 | `orca` | — | — | <ul><li><a href="skills/orca-cli/SKILL.md"><code>orca-cli</code></a></li><li><a href="skills/orchestration/SKILL.md"><code>orchestration</code></a></li><li><a href="skills/computer-use/SKILL.md"><code>computer-use</code></a></li><li><a href="skills/orca-linear/SKILL.md"><code>orca-linear</code></a></li><li><a href="skills/orca-emulator/SKILL.md"><code>orca-emulator</code></a></li><li><a href="skills/orca-emulator-android/SKILL.md"><code>orca-emulator-android</code></a></li><li><a href="skills/orca-per-workspace-env/SKILL.md"><code>orca-per-workspace-env</code></a></li></ul> | — | — | — | — |
@@ -174,7 +174,7 @@ Example GitHub Actions step:
 | `superpowers` | — | — | <ul><li><a href="skills/brainstorming/SKILL.md"><code>brainstorming</code></a></li><li><a href="skills/diagnosing-superpowers/SKILL.md"><code>diagnosing-superpowers</code></a></li><li><a href="skills/dispatching-parallel-agents/SKILL.md"><code>dispatching-parallel-agents</code></a></li><li><a href="skills/executing-plans/SKILL.md"><code>executing-plans</code></a></li><li><a href="skills/finishing-a-development-branch/SKILL.md"><code>finishing-a-development-branch</code></a></li><li><a href="skills/receiving-code-review/SKILL.md"><code>receiving-code-review</code></a></li><li><a href="skills/requesting-code-review/SKILL.md"><code>requesting-code-review</code></a></li><li><a href="skills/subagent-driven-development/SKILL.md"><code>subagent-driven-development</code></a></li><li><a href="skills/systematic-debugging/SKILL.md"><code>systematic-debugging</code></a></li><li><a href="skills/test-driven-development/SKILL.md"><code>test-driven-development</code></a></li><li><a href="skills/using-git-worktrees/SKILL.md"><code>using-git-worktrees</code></a></li><li><a href="skills/using-superpowers/SKILL.md"><code>using-superpowers</code></a></li><li><a href="skills/verification-before-completion/SKILL.md"><code>verification-before-completion</code></a></li><li><a href="skills/writing-plans/SKILL.md"><code>writing-plans</code></a></li><li><a href="skills/writing-skills/SKILL.md"><code>writing-skills</code></a></li></ul> | — | — | <ul><li><a href="hooks/session-start/SOURCE.md"><code>session-start</code></a></li></ul> | — |
 | `telemetry` | — | — | — | — | — | <ul><li><a href="hooks/skill-telemetry/SOURCE.md"><code>skill-telemetry</code></a></li></ul> | — |
 | `uidesign` | — | — | <ul><li><a href="skills/skillui/SKILL.md"><code>skillui</code></a></li></ul> | — | — | — | <ul><li><code>skillui</code></li></ul> |
-| `agents` | `base` | — | <ul><li><a href="skills/refining-evals/SKILL.md"><code>refining-evals</code></a></li></ul> | <ul><li><a href="rules/agents/agent-descriptions.mdc"><code>agent-descriptions</code></a></li></ul> | <ul><li><a href="mcps/langchain-docs/mcp.yaml"><code>langchain-docs</code></a></li></ul> | — | — |
+| `agents` | `base` | — | <ul><li><a href="skills/refining-evals/SKILL.md"><code>refining-evals</code></a></li></ul> | <ul><li><a href="rules/agents/agent-descriptions.mdc"><code>agent-descriptions</code></a></li><li><a href="rules/agents/agent-authoring.mdc"><code>agent-authoring</code></a></li></ul> | <ul><li><a href="mcps/langchain-docs/mcp.yaml"><code>langchain-docs</code></a></li></ul> | — | — |
 | `aws` | `base` | — | — | — | <ul><li><a href="mcps/aws-knowledge/mcp.yaml"><code>aws-knowledge</code></a></li></ul> | — | — |
 | `db` | `base` | — | <ul><li><a href="skills/db-migrations/SKILL.md"><code>db-migrations</code></a></li></ul> | — | — | — | — |
 | `github` | `base` | — | <ul><li><a href="skills/github-upload-media-to-pr/SKILL.md"><code>github-upload-media-to-pr</code></a></li><li><a href="skills/make-readme/SKILL.md"><code>make-readme</code></a></li><li><a href="skills/release-checklist/SKILL.md"><code>release-checklist</code></a></li></ul> | — | — | — | — |
@@ -201,7 +201,7 @@ not vendored.
 **Authoring.** Copy [`agents/_agent_template.md`](agents/_agent_template.md) to
 `agents/<name>/<name>.md` (no leading underscore) and fill every section. The
 Cursor rule [`rules/agents/agent-authoring.mdc`](rules/agents/agent-authoring.mdc)
-(globs `agents/*/*.md`, shipped on `base`) requires that template for new
+(globs `agents/*/*.md`, shipped on `agents`) requires that template for new
 agents and for imported ones. [`rules/agents/agent-descriptions.mdc`](rules/agents/agent-descriptions.mdc)
 (shipped on `agents`) limits the YAML `description` to when-to-use and
 when-not-to-use signals for other agents. Underscore-prefixed files are templates or notes,
@@ -230,9 +230,10 @@ Use the `refining-evals` skill when tightening keyword splits. The
 
 **The `agents` loadout** is a named composition, not the `agents/` directory.
 It extends `base` (so you already get davinci) and adds
-the LangChain docs MCP, the vendored `refining-evals` skill, and
-`rules/agents/agent-descriptions.mdc` (when/when-not dispatch copy for
-agent `description` fields):
+the LangChain docs MCP, the vendored `refining-evals` skill,
+[`agent-authoring`](rules/agents/agent-authoring.mdc) for template-based authoring,
+and [`agent-descriptions`](rules/agents/agent-descriptions.mdc) for when/when-not
+dispatch copy in agent `description` fields:
 
 ```yaml
 loadouts: [agents]
@@ -243,7 +244,7 @@ loadouts: [agents]
 | Field | Required | Purpose |
 | --- | --- | --- |
 | `source` | yes | Loadout git URL (default: this repo) |
-| `ref` | yes | Release tag or branch to resolve on every remote sync (`v0.53.0`, `main`, …) |
+| `ref` | yes | Release tag or branch to resolve on every remote sync (`v0.54.0`, `main`, …) |
 | `loadouts` | yes | Named loadouts to compose |
 | `include` / `exclude` | no | Extra / removed paths after composition |
 | `skills_dir` / `hooks_dir` / `agents_dir` | no | Override sync destinations |
@@ -357,7 +358,7 @@ uv sync --all-extras
 just lint     # validate rules, skills, hooks, agents, mcps, loadouts
 just typecheck  # pyrefly static type check
 just test     # pytest
-just release 0.53.0   # on release/v0.53.0: validate, push, open PR; CI tags on merge
+just release 0.54.0   # on release/v0.54.0: validate, push, open PR; CI tags on merge
 
 # Import a third-party skill into skills/ (then wire it into a loadout YAML)
 just add_skill mattpocock/skills --skill grill-me

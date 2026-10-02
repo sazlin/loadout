@@ -8,7 +8,7 @@ rules:
   - src: rules/core/pr-ready-for-review.mdc
   - src: rules/core/no-autonomous-external-comms.mdc
   - src: rules/core/no-auto-merge.mdc
-  - src: rules/agents/agent-authoring.mdc
+  - src: rules/core/hyperlink-everything.mdc
 skills:
   - src: skills/anti-sleep
   - src: skills/decisions

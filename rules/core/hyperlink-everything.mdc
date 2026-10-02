@@ -1,0 +1,14 @@
+---
+description: Make canonical identifiers and locations clickable on first mention.
+alwaysApply: true
+---
+
+# Hyperlink everything
+
+When you mention anything that has a canonical URL or location, make it a clickable link instead of plain text. This covers PRs, issues, commits, branches, files and line ranges, CLI commands and tools, docs, and any sources you cite.
+
+- Use the identifier itself as link text: [#123](url), [ENG-456](url), [`src/auth.ts:42`](url).
+- For code, prefer permalinks pinned to a commit SHA, or a local file path with line number when working locally.
+- Link CLI commands and tools to their official docs on first mention.
+- Link each identifier on first mention only; repeat mentions can stay plain.
+- Never guess or fabricate URLs. If you can't resolve the real link, leave it unlinked.

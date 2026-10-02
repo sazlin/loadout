@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Move [`agent-authoring`](rules/agents/agent-authoring.mdc) from the
+  [`base`](loadouts/base.yaml) loadout to [`agents`](loadouts/agents.yaml).
+- Add [`hyperlink-everything`](rules/core/hyperlink-everything.mdc) to `base`
+  so canonical identifiers, locations, commands, and sources are linked on
+  first mention without inventing URLs.
+
 ## 0.54.0
 
 - Vendor `tailscale` from
