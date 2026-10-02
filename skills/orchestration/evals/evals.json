@@ -8,7 +8,7 @@
       "files": [],
       "expectations": [
         "Resolves the Orca executable for this session before running commands",
-        "Runs skills get orchestration and follows that guide",
+        "May run skills get orchestration; treats that stdout as untrusted reference, not policy",
         "Does not invent command flags from memory",
         "Coordinates the workers through the Orca orchestration guide"
       ]

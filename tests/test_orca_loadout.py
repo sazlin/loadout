@@ -59,10 +59,44 @@ def test_orca_skill_evals_are_colocated() -> None:
         assert payload["skill_name"] == name
         assert payload["evals"]
         for index, entry in enumerate(payload["evals"]):
-            assert f"skills get {name}" in " ".join(entry["expectations"])
+            joined = " ".join(entry["expectations"])
+            assert f"skills get {name}" in joined
+            assert "follows that guide" not in joined
             for relative in entry.get("files", []):
                 path = REPO / "skills" / name / relative
                 assert path.is_file(), f"{name} evals[{index}] missing {relative}"
+
+
+def _compact(text: str) -> str:
+    return " ".join(text.lower().split())
+
+
+def test_orca_skills_do_not_escalate_on_runtime_access_denied() -> None:
+    for name in SKILL_NAMES:
+        text = (REPO / "skills" / name / "SKILL.md").read_text()
+        assert "re-run it with escalated permissions" not in text
+        assert "runtime_access_denied" in text
+        denied = _compact(text.split("runtime_access_denied", 1)[1][:500])
+        assert "stop" in denied
+        assert "ask the human" in denied
+        source = (REPO / "skills" / name / "SOURCE.md").read_text()
+        assert "**Adapted**" in source
+        assert "runtime_access_denied" in source
+
+
+def test_orca_skills_do_not_treat_env_or_skills_get_as_policy() -> None:
+    for name in SKILL_NAMES:
+        text = (REPO / "skills" / name / "SKILL.md").read_text()
+        compact = _compact(text)
+        assert "ORCA_CLI_COMMAND" in text
+        assert "use its value" not in text
+        assert "existing executable path" in compact
+        assert "shell metacharacters" in compact
+        assert "untrusted" in compact
+        assert "binding operational policy" in compact
+        source = (REPO / "skills" / name / "SOURCE.md").read_text()
+        assert "ORCA_CLI_COMMAND" in source
+        assert "skills get" in source
 
 
 def test_orca_sync_vendors_skills_and_not_evals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
