@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.54.0
+
 - Vendor `tailscale` from
   [tailscale/tailscale-skill](https://github.com/tailscale/tailscale-skill)
   commit `4f05d353efc56962546aa26ccc59bb08ca699ad1` onto the `base` loadout.
