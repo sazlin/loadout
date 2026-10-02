@@ -16,6 +16,7 @@ skills:
   - src: skills/learn
   - src: skills/unslop
   - src: skills/herdr
+  - src: skills/tailscale
 hooks:
   - src: hooks/deny-dangerous
 agents:

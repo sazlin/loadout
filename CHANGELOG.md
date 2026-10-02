@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Vendor `tailscale` from
+  [tailscale/tailscale-skill](https://github.com/tailscale/tailscale-skill)
+  commit `4f05d353efc56962546aa26ccc59bb08ca699ad1` onto the `base` loadout.
+  The agent installs Tailscale from the distro package or the download page.
+  It does not pipe a remote script into a shell. Container, Helm, Go module,
+  and GitHub Action examples stay pinned to a version or digest the user
+  chooses.
+
 ## 0.53.0
 
 ## 0.52.0
