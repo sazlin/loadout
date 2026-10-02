@@ -83,6 +83,22 @@ def test_tailscale_body_refuses_unpinned_install() -> None:
     assert "--version <chart-version>" in containers
 
 
+def test_tailscale_serve_identity_headers_require_proxy_trust() -> None:
+    sharing = (SKILL_ROOT / "references" / "sharing-and-publishing.md").read_text()
+    login = sharing.index("Tailscale-User-Login")
+    header_note = sharing[max(0, login - 400) : login + 700]
+    assert "without any extra setup" not in header_note
+    assert "loopback" in header_note
+    assert "Funnel" in header_note
+    assert "do not use these headers as authentication" in header_note.lower()
+    tsnet = (SKILL_ROOT / "references" / "tsnet.md").read_text()
+    assert (
+        "trust them only when the immediate `RemoteAddr` is loopback, "
+        "and still look up capabilities via `WhoIs`"
+        in tsnet
+    )
+
+
 def test_tailscale_evals_are_colocated() -> None:
     evals = SKILL_ROOT / "evals" / "evals.json"
     payload = json.loads(evals.read_text())

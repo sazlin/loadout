@@ -118,7 +118,7 @@ This creates `https://<machine-name>.<tailnet>.ts.net` accessible to tailnet dev
 - HTTPS must be enabled in your tailnet (the CLI will prompt you to enable it if needed)
 
 ### Features
-- **Identity headers**: Serve automatically adds headers to requests: `Tailscale-User-Login`, `Tailscale-User-Name`, `Tailscale-User-Profile-Pic` — your backend can use these for authentication without any extra setup
+- **Identity headers.** Serve injects `Tailscale-User-Login`, `Tailscale-User-Name`, and `Tailscale-User-Profile-Pic` on requests it proxies. Trust those headers only when the connection comes from the Tailscale proxy (typically loopback). Still authorize with WhoIs or tailnet policy. Funnel is public and does not provide Tailscale identity. Do not use these headers as authentication on a Funnel-exposed handler.
 - Respects tailnet access control rules
 
 ### Limitations
