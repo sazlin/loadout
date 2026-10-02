@@ -1,0 +1,13 @@
+name: orca
+description: >-
+  Orca agent skills from stablyai/orca. Covers the CLI, orchestration,
+  computer use, Linear, iOS and Android emulators, and per-workspace
+  environment recipes.
+skills:
+  - src: skills/orca-cli
+  - src: skills/orchestration
+  - src: skills/computer-use
+  - src: skills/orca-linear
+  - src: skills/orca-emulator
+  - src: skills/orca-emulator-android
+  - src: skills/orca-per-workspace-env

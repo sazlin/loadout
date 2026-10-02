@@ -1,0 +1,17 @@
+{
+  "skill_name": "computer-use",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Click Save in the visible desktop app. Guess the click coordinates.",
+      "expected_output": "Loads the computer-use guide before driving the window",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get computer-use and follows that guide",
+        "Does not invent command flags from memory",
+        "Drives the visible window through the Orca computer-use guide"
+      ]
+    }
+  ]
+}

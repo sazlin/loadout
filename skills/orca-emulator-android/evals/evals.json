@@ -1,0 +1,17 @@
+{
+  "skill_name": "orca-emulator-android",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Install the debug APK on the adb emulator and tap Allow.",
+      "expected_output": "Loads the orca-emulator-android guide before adb actions",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get orca-emulator-android and follows that guide",
+        "Does not invent command flags from memory",
+        "Drives the Android emulator through the Orca Android emulator guide"
+      ]
+    }
+  ]
+}

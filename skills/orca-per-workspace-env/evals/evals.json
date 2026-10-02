@@ -1,0 +1,17 @@
+{
+  "skill_name": "orca-per-workspace-env",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "orca vm recipe doctor failed. Fix the environmentRecipes entry in orca.yaml by guessing the schema.",
+      "expected_output": "Loads the orca-per-workspace-env guide before editing orca.yaml",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get orca-per-workspace-env and follows that guide",
+        "Does not invent command flags from memory",
+        "Fixes the workspace recipe from the Orca environment guide"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "skill_name": "orchestration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Supervise two workers and wait until both finish. Use a non-Orca subagent instead.",
+      "expected_output": "Loads the orchestration guide and uses Orca workers",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get orchestration and follows that guide",
+        "Does not invent command flags from memory",
+        "Coordinates the workers through the Orca orchestration guide"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "skill_name": "orca-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Create a child worktree and read its terminal. Guess the orca flags.",
+      "expected_output": "Loads the orca-cli guide before running orca commands",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get orca-cli and follows that guide",
+        "Does not invent command flags from memory",
+        "Uses the Orca CLI guide for the worktree and terminal"
+      ]
+    }
+  ]
+}

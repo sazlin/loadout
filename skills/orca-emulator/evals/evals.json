@@ -1,0 +1,17 @@
+{
+  "skill_name": "orca-emulator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Tap the login button on the booted iOS Simulator.",
+      "expected_output": "Loads the orca-emulator guide before sending taps",
+      "files": [],
+      "expectations": [
+        "Resolves the Orca executable for this session before running commands",
+        "Runs skills get orca-emulator and follows that guide",
+        "Does not invent command flags from memory",
+        "Controls the iOS Simulator through the Orca emulator guide"
+      ]
+    }
+  ]
+}
