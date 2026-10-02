@@ -7,7 +7,7 @@
 | Upstream path | `skills/orchestration` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `cd1b364bf35781bad06bf75ab1766afa8d6cec69cb2060529691d89871a2098a` |
-| Current SKILL.md sha256 | `aa8896e4e851ece06710b242a9eb0ff932493a6b1c063917f1f3a768ecb4bd0f` |
+| Current SKILL.md sha256 | `477671d26c9b7399976c0c7c42fd3b886151af311af36bbcd4085aa62b3187ef` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orchestration`.
 MIT license on the upstream repository.

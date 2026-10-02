@@ -7,7 +7,7 @@
 | Upstream path | `skills/orca-emulator-android` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `3ade4e6f8f2717ca899fd841e61f116963a406e9527015b803854c16d012e278` |
-| Current SKILL.md sha256 | `1184c09497a0b10a227679c41cc9ed5f8c4b806cc1b83027c857fb39558e9645` |
+| Current SKILL.md sha256 | `cdb96523ce55ffa35a7efd26b14ee7999561a09c8d2004420038acfbc18a0c04` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-emulator-android`.
 Upstream repository LICENSE is MIT. SKILL.md frontmatter declares Apache-2.0.

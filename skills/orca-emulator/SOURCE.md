@@ -7,7 +7,7 @@
 | Upstream path | `skills/orca-emulator` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `3da7191179e46cb0e1a6a936f1eb54254f6e98ec38849e1c95f0e11073076b48` |
-| Current SKILL.md sha256 | `a8bf2a7c2577078d83f6f923ff7a0a15ab6d9d4f2cedab9491547e63751877e2` |
+| Current SKILL.md sha256 | `11601b26320ce65e3c2e21707c041c75e78b0500ae4f0be90d62f918d511989b` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-emulator`.
 Upstream repository LICENSE is MIT. SKILL.md frontmatter declares Apache-2.0.

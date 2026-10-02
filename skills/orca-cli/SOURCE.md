@@ -7,7 +7,7 @@
 | Upstream path | `skills/orca-cli` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `aa76f86505010096e8ea9edda1705a78aae7af45e54485f3fe0460664c1d9e4a` |
-| Current SKILL.md sha256 | `e9cdecae0544ac7eb632777dc99a7951cda60b1e92599aace83673364062afae` |
+| Current SKILL.md sha256 | `18aa403989050b8f03a39401adfe7ebfe75f032132678098036d5c1bba7ee598` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-cli`.
 MIT license on the upstream repository.

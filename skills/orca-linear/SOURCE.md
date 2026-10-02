@@ -7,7 +7,7 @@
 | Upstream path | `skills/orca-linear` |
 | Imported | 2026-10-01 |
 | Imported SKILL.md sha256 | `8da23ef96470906315cace8ff84f8056255ee37d1b2d5db84d8b7b3270a0ba0f` |
-| Current SKILL.md sha256 | `c66da0d69d832169eef26249423cecc371d831e3a1f01a5dbbadfe3da577e5cb` |
+| Current SKILL.md sha256 | `03c64f5b0e0fd0ea224ed1443af344398abd2654e3e69204e0a5b09aafecf3c5` |
 
 Imported with `just add_skill https://github.com/stablyai/orca --skill orca-linear`.
 MIT license on the upstream repository.
