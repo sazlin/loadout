@@ -1,12 +1,12 @@
 # Installation
 
-## Linux (mainstream distributions)
+## Linux (Ubuntu, Debian, RHEL, and similar)
 
-Works on Ubuntu, Debian, RHEL, CentOS, Fedora, Raspberry Pi OS, Amazon Linux, openSUSE, Oracle Linux, and VMware Photon OS.
+Works on Ubuntu, Debian, RHEL, CentOS, Fedora, Raspberry Pi OS, Amazon Linux, openSUSE, Oracle Linux, and VMware Photon OS. Those distros do not ship `tailscale` in default repos.
 
-Do not pipe a remote script into a shell. Do not download or run `https://tailscale.com/install.sh`.
+Do not pipe a remote script into a shell. Do not download or run `https://tailscale.com/install.sh`. Do not run a bare `apt`/`dnf`/`yum` install of `tailscale` from the distro repos.
 
-Install the `tailscale` package with the distro package manager, or have the user install from https://tailscale.com/download. After that package is installed:
+Have the user install from https://tailscale.com/download, or pick a versioned package under https://pkgs.tailscale.com/stable/. To use the package manager, add Tailscale's signed repo first (pinned key plus list/repo file from https://pkgs.tailscale.com/stable/), then install the `tailscale` package with `apt`, `dnf`, or `yum`. After that package is installed:
 
 ```bash
 sudo tailscale up
@@ -34,7 +34,7 @@ Do not download an unpinned tarball, and do not start `tailscaled` from an archi
 Three variants are available:
 
 1. **Mac App Store** — GUI app, sandboxed, most common for personal use
-2. **Standalone (GUI)** — Downloaded from http://tailscale.com/download, same GUI but not sandboxed
+2. **Standalone (GUI)** — Downloaded from https://tailscale.com/download, same GUI but not sandboxed
 3. **Open source CLI (`tailscaled`)** — Command-line only, required for Tailscale SSH server
 
 Download from https://tailscale.com/download/mac or the Mac App Store.

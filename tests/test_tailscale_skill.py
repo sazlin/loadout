@@ -12,7 +12,7 @@ from loadout.models import load_loadout
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / "skills" / "tailscale"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
-PINNED_SHA256 = "1ca85dedaaf2501b57ed4a17fe4dbb57008ff5b8242a0945a2ebec17802de236"
+PINNED_SHA256 = "41fe6b1fdb28368e1abb1bf1de79dd359ab1e028475d4698898ec5e5711964dd"
 PINNED_COMMIT = "4f05d353efc56962546aa26ccc59bb08ca699ad1"
 
 
@@ -57,8 +57,27 @@ def test_tailscale_body_refuses_unpinned_install() -> None:
     text = SKILL_MD.read_text()
     assert "curl -fsSL https://tailscale.com/install.sh | sh" not in text
     assert "do not pipe a remote script into a shell" in text.lower()
+    assert "http://tailscale.com" not in text
+    assert "https://tailscale.com/download" in text
     install = (SKILL_ROOT / "references" / "installation.md").read_text()
     assert "curl -fsSL https://tailscale.com/install.sh | sh" not in install
+    assert "http://tailscale.com" not in install
+    assert "http://" not in install
+    linux, _, rest = install.partition("## macOS")
+    arch_at = linux.index("### Arch Linux")
+    mainstream = linux[:arch_at]
+    arch = linux[arch_at:]
+    assert "Ubuntu" in mainstream and "Debian" in mainstream and "RHEL" in mainstream
+    assert "apt install tailscale" not in mainstream
+    assert "dnf install tailscale" not in mainstream
+    assert "yum install tailscale" not in mainstream
+    assert "https://tailscale.com/download" in mainstream
+    assert "https://pkgs.tailscale.com/stable/" in mainstream
+    assert "pacman" in arch
+    assert "NixOS" in arch
+    quick_start = text.split("## Quick start", 1)[1].split("## Find your task", 1)[0]
+    assert "from the distro package (`apt`, `dnf`, or `yum`)" not in quick_start
+    assert "https://tailscale.com/download" in rest
     containers = (SKILL_ROOT / "references" / "containers.md").read_text()
     assert "tailscale/tailscale:latest" not in containers
     assert "--version <chart-version>" in containers
