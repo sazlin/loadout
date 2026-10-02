@@ -143,7 +143,7 @@ Example GitHub Actions step:
 <!-- generated:loadouts-catalog:start -->
 <!-- generated:loadouts-catalog:end -->
 
-Compose freely — for example `python-monorepo,terraform` or `typescript,playwright`. Language loadouts (`python`, `typescript`, `python-monorepo`) already extend `base` and `coding`; listing `base` again is redundant. This repository dogfoods `base`, `pr_review_harness`, and `playwright` (see `.loadout.yaml`).
+Compose freely — for example `python-monorepo,terraform` or `typescript,playwright`. Language loadouts (`python`, `typescript`, `python-monorepo`) already extend `base` and `coding`; listing `base` again is redundant. This repository dogfoods `base`, `superpowers`, `python`, `pr_review_harness`, `telemetry`, `implementation_harness`, `github`, and `orca` (see `.loadout.yaml`).
 <!-- generated:optional:loadouts-section:end -->
 
 ## Agents
