@@ -12,7 +12,7 @@ from loadout.models import load_loadout
 REPO = Path(__file__).resolve().parent.parent
 SKILL_ROOT = REPO / "skills" / "tailscale"
 SKILL_MD = SKILL_ROOT / "SKILL.md"
-PINNED_SHA256 = "4d9ed74813e586ae608cab4cec5ecc57f18c0e2d5a4ee18b3a56521b11d050ed"
+PINNED_SHA256 = "1ca85dedaaf2501b57ed4a17fe4dbb57008ff5b8242a0945a2ebec17802de236"
 PINNED_COMMIT = "4f05d353efc56962546aa26ccc59bb08ca699ad1"
 
 
@@ -37,6 +37,20 @@ def test_tailscale_source_pin_matches_skill_bytes() -> None:
     assert PINNED_COMMIT in source
     assert "tailscale/tailscale-skill" in source
     assert "curl | sh" in source
+
+
+def test_tailscale_how_references_names_each_file_once() -> None:
+    skill = SKILL_MD.read_text()
+    start = skill.index("## How references work")
+    end = skill.index("## Core concepts")
+    section = skill[start:end]
+    remaining = next(line for line in section.splitlines() if "self-contained" in line)
+    names = sorted(path.name for path in (SKILL_ROOT / "references").glob("*.md"))
+    for name in names:
+        assert section.count(f"`{name}`") == 1, name
+        text = (SKILL_ROOT / "references" / name).read_text()
+        if "WebFetch" in text:
+            assert name not in remaining, name
 
 
 def test_tailscale_body_refuses_unpinned_install() -> None:
