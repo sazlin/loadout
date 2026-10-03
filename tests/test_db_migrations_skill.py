@@ -61,7 +61,12 @@ _PER_BATCH_COMMIT = re.compile(
 )
 # Short DDL timeouts cancel CREATE INDEX CONCURRENTLY and leave INVALID indexes.
 _SHORT_TIMEOUT_THEN_CONCURRENT = re.compile(
-    r"set\s+local\s+statement_timeout\s*=\s*'?5s'?.{0,80}create\s+index\s+concurrently",
+    r"set(?:\s+local)?\s+(?:statement_timeout|lock_timeout)\s*=\s*'?5s'?"
+    r".{0,80}create\s+index\s+concurrently",
+    re.IGNORECASE | re.DOTALL,
+)
+_DROP_IF_EXISTS_THEN_CREATE = re.compile(
+    r"drop\s+index\s+concurrently\s+if\s+exists.{0,200}create\s+index\s+concurrently",
     re.IGNORECASE | re.DOTALL,
 )
 _CONCURRENT_IN_TRANSACTION = re.compile(
@@ -166,7 +171,7 @@ def _backfill_sets_session_timeouts(text: str) -> bool:
 
 
 def _teaches_concurrent_index_under_short_timeout(text: str) -> bool:
-    """True when CONCURRENTLY is taught with SET LOCAL statement_timeout = 5s."""
+    """True when CONCURRENTLY is taught with a 5s lock_timeout or statement_timeout."""
     return _SHORT_TIMEOUT_THEN_CONCURRENT.search(text) is not None
 
 
@@ -180,11 +185,23 @@ def _teaches_concurrent_index_in_transaction(text: str) -> bool:
     return False
 
 
+def _concurrent_index_raises_lock_and_statement_timeouts(text: str) -> bool:
+    """True when the concurrent build raises or disables both session timeouts."""
+    for match in re.finditer(r"create\s+index\s+concurrently", text, re.IGNORECASE):
+        window = text[max(0, match.start() - 400) : match.end() + 400].lower()
+        if "raise" not in window and "disable" not in window:
+            continue
+        if "lock_timeout" in window and "statement_timeout" in window:
+            return True
+    return False
+
+
 def _concurrent_index_uses_autocommit_and_drop_invalid(text: str) -> bool:
     lowered = text.lower()
     autocommit = "autocommit" in lowered and "cannot run inside a transaction" in lowered
     drop = "drop index concurrently" in lowered and "invalid index" in lowered
-    return autocommit and drop
+    same_file = _DROP_IF_EXISTS_THEN_CREATE.search(text) is not None
+    return autocommit and drop and same_file
 
 
 def _skill_holds_db_migrations_contract(text: str) -> bool:
@@ -195,7 +212,9 @@ def _skill_holds_db_migrations_contract(text: str) -> bool:
     no dashboard-then-pull; batched backfill commits or uses a follow-up job
     and paginates remaining rows (not LIMIT-n IN-subquery); SET lock_timeout
     and statement_timeout on backfill DML; concurrent indexes use autocommit
-    and DROP of INVALID indexes (not short timeout, not inside a transaction).
+    and same-file DROP IF EXISTS then CREATE of INVALID indexes (not short
+    timeout, not inside a transaction); raise or disable lock_timeout and
+    statement_timeout on the concurrent build.
     """
     if _missing_required_phrases(text):
         return False
@@ -222,6 +241,8 @@ def _skill_holds_db_migrations_contract(text: str) -> bool:
     if _teaches_concurrent_index_in_transaction(text):
         return False
     if not _concurrent_index_uses_autocommit_and_drop_invalid(text):
+        return False
+    if not _concurrent_index_raises_lock_and_statement_timeouts(text):
         return False
     return not _recommends_dashboard_then_pull(text)
 
@@ -273,6 +294,12 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert _backfill_paginates_remaining_rows(text)
     assert _backfill_sets_session_timeouts(text)
     assert "set `lock_timeout` and `statement_timeout` before ddl" in lowered
+    assert _concurrent_index_raises_lock_and_statement_timeouts(text)
+    assert _DROP_IF_EXISTS_THEN_CREATE.search(text) is not None
+    for para in body.split("\n\n"):
+        lowered_para = para.lower()
+        packed = "create index concurrently" in lowered_para and "add column" in lowered_para
+        assert not packed
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -361,7 +388,11 @@ def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
         "SET lock_timeout and statement_timeout for each backfill UPDATE, then "
         "COMMIT after each batch or a follow-up job. "
         "UPDATE t SET new_col = src WHERE new_col IS NULL AND id > :last_id "
-        "ORDER BY id LIMIT n. Stop when a batch updates zero rows. " + tokens
+        "ORDER BY id LIMIT n. Stop when a batch updates zero rows. "
+        "Own autocommit migration; DROP INDEX CONCURRENTLY IF EXISTS then "
+        "CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
+        "Raise or disable lock_timeout and statement_timeout for that statement. "
+        "INVALID index. " + tokens
     )
     assert _missing_required_phrases(keyset) == []
     assert not _teaches_limit_n_in_subquery_without_remaining_rows(keyset)
@@ -393,6 +424,10 @@ def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
     assert _missing_required_phrases(short_timeout) == []
     assert _teaches_concurrent_index_under_short_timeout(short_timeout)
     assert not _skill_holds_db_migrations_contract(short_timeout)
+    short_lock = "SET LOCAL lock_timeout = '5s'; CREATE INDEX CONCURRENTLY. " + tokens
+    assert _missing_required_phrases(short_lock) == []
+    assert _teaches_concurrent_index_under_short_timeout(short_lock)
+    assert not _skill_holds_db_migrations_contract(short_lock)
     in_txn = "CREATE INDEX CONCURRENTLY in a transactional migration. " + tokens
     assert _missing_required_phrases(in_txn) == []
     assert _teaches_concurrent_index_in_transaction(in_txn)
@@ -409,16 +444,28 @@ def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
     assert "cannot run inside a transaction" in _missing_required_phrases(bare)
     assert "invalid index" in _missing_required_phrases(bare)
     assert not _skill_holds_db_migrations_contract(bare)
-    ok = (
+    follow_up_only = (
         "SET lock_timeout and statement_timeout for each backfill UPDATE, then COMMIT. "
         "Own autocommit migration; CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
+        "Raise or disable lock_timeout and statement_timeout for that statement. "
         "If cancelled, DROP INDEX CONCURRENTLY on the INVALID index through the runner "
         "in a follow-up migration. Do not repair or skip. " + tokens
+    )
+    assert _missing_required_phrases(follow_up_only) == []
+    assert not _concurrent_index_uses_autocommit_and_drop_invalid(follow_up_only)
+    assert not _skill_holds_db_migrations_contract(follow_up_only)
+    ok = (
+        "SET lock_timeout and statement_timeout for each backfill UPDATE, then COMMIT. "
+        "Own autocommit migration; DROP INDEX CONCURRENTLY IF EXISTS then "
+        "CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
+        "Raise or disable lock_timeout and statement_timeout for that statement. "
+        "If cancelled, stop. Do not repair or skip. INVALID index. " + tokens
     )
     assert _missing_required_phrases(ok) == []
     assert not _teaches_concurrent_index_under_short_timeout(ok)
     assert not _teaches_concurrent_index_in_transaction(ok)
     assert _concurrent_index_uses_autocommit_and_drop_invalid(ok)
+    assert _concurrent_index_raises_lock_and_statement_timeouts(ok)
     assert _skill_holds_db_migrations_contract(ok)
 
 
