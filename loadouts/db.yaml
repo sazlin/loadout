@@ -4,5 +4,7 @@ description: >-
   projects.
 extends:
   - base
+rules:
+  - src: rules/core/migration-runner.mdc
 skills:
   - src: skills/db-migrations

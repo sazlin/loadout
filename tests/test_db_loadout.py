@@ -24,7 +24,7 @@ def test_db_loadout_ships_db_migrations_skill() -> None:
     assert loadout.name == "db"
     assert loadout.extends == ["base"]
     assert {entry["src"] for entry in loadout.skills} == {SKILL_SRC}
-    assert loadout.rules == []
+    assert {entry["src"] for entry in loadout.rules} == {"rules/core/migration-runner.mdc"}
     assert loadout.agents == []
     assert loadout.mcps == []
 

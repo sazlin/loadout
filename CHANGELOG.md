@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add [`migration-runner`](rules/core/migration-runner.mdc) to the
+  [`db`](loadouts/db.yaml) loadout. Schema changes go through the repo's
+  migration runner. The SQL editor, table editor, and ad-hoc DDL stay refused,
+  including when the change is urgent. [`supabase`](loadouts/supabase.yaml)
+  inherits the rule. [`base`](loadouts/base.yaml) does not.
 - Rewrite [`db-migrations`](skills/db-migrations/SKILL.md) so a schema change
   is a migration file applied by the repo's runner. The skill refuses the
   Supabase SQL editor, the table editor, and DDL run outside that runner.

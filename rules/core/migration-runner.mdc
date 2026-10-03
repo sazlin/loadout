@@ -1,0 +1,23 @@
+---
+description: >-
+  Apply schema changes only through the repo's migration runner. Refuse the
+  SQL editor, table editor, dashboard, and ad-hoc DDL, including when the
+  change is urgent.
+alwaysApply: true
+---
+
+# Migration runner
+
+A schema change exists only as a migration file in the repo, applied by the project's migration runner, so the runner's history table records it. Read the `db-migrations` skill before writing or applying one. That skill names the runner commands.
+
+Urgency does not create an exception. "Just this once", "I'll commit the file later", and "the dashboard is faster" are refusals.
+
+Refuse these, and refuse to recommend them to a human:
+
+- Supabase SQL editor
+- Supabase table editor, or any dashboard control that changes schema
+- [`psql`](https://www.postgresql.org/docs/current/app-psql.html), or any direct session, used to run DDL
+- [`supabase db query`](https://supabase.com/docs/reference/cli/supabase-db-query) used to run DDL
+- An MCP `execute_sql` call, or an equivalent ad-hoc SQL tool, used to run DDL
+
+Catalog and history inspects may use those tools. DDL may not. If the repo has no runner, stop. Do not invent one, and do not fall back to a dashboard.
