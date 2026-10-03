@@ -25,7 +25,11 @@ _REQUIRED = (
     "db-migrations",
 )
 
-_RECOMMEND_EDITOR = re.compile(r"\b(?:use|prefer|open) the (?:supabase )?sql editor\b", re.IGNORECASE)
+# Refusal imperatives ("do not use the SQL editor", "never use the SQL editor") must not match.
+_RECOMMEND_EDITOR = re.compile(
+    r"(?<!not )(?<!ver )(?<!n't )\b(?:use|prefer|open) the (?:supabase )?sql editor\b",
+    re.IGNORECASE,
+)
 
 
 def _holds_migration_line(text: str) -> bool:
@@ -69,6 +73,16 @@ def test_dashboard_advice_fails_the_migration_runner_contract() -> None:
     )
     assert not _holds_migration_line(bad)
     assert _holds_migration_line((REPO / RULE_SRC).read_text())
+
+
+def test_refusal_imperative_does_not_fail_the_migration_runner_contract() -> None:
+    """``never use`` / ``do not use`` the SQL editor is a refusal, not a recommendation."""
+    ok = (
+        "Never use the SQL editor. Mention the table editor, "
+        "supabase db query, execute_sql, and db-migrations. "
+        "Urgency does not create an exception. Do not invent one. Refuse."
+    )
+    assert _holds_migration_line(ok)
 
 
 def _sync_loadout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str) -> Path:
