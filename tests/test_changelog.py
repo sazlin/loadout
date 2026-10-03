@@ -51,3 +51,12 @@ def test_slice_from_v0_53_0_to_v0_54_0_includes_tailscale() -> None:
 
     assert "tailscale" in notes
     assert "## 0.53.0" not in notes
+
+
+def test_slice_from_v0_54_0_to_v0_55_0_includes_migration_runner() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.54.0", "v0.55.0")
+
+    assert "migration-runner" in notes
+    assert "db-migrations" in notes
+    assert "## 0.54.0" not in notes

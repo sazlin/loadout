@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.55.0
+
 - Add [`migration-runner`](rules/core/migration-runner.mdc) to the
   [`db`](loadouts/db.yaml) loadout. Schema changes go through the repo's
   migration runner. The SQL editor, table editor, and ad-hoc DDL stay refused,
