@@ -30,6 +30,9 @@ def test_supabase_loadout_ships_vendored_postgres_skill() -> None:
     loadout = load_loadout(REPO / "loadouts" / "supabase.yaml")
     assert loadout.name == "supabase"
     assert loadout.extends == ["db"]
+    lowered = loadout.description.lower()
+    assert "runner" in lowered
+    assert "inherits alembic" not in lowered
     assert {entry["src"] for entry in loadout.skills} == {SKILL_SRC}
     assert loadout.rules == []
     assert loadout.agents == []

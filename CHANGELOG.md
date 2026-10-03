@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Correct the [`db`](loadouts/db.yaml) and [`supabase`](loadouts/supabase.yaml)
+  descriptions. `db-migrations` detects the repo's runner. It is not an
+  Alembic skill, and `python` does not install it unless the manifest lists
+  `db`.
 - Rewrite [`db-migrations`](skills/db-migrations/SKILL.md) so a schema change
   is a migration file applied by the repo's runner. The skill refuses the
   Supabase SQL editor, the table editor, and DDL run outside that runner.

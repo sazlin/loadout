@@ -1,8 +1,8 @@
 name: supabase
 description: >-
-  Supabase and Postgres authoring — vendored postgres-best-practices skill
-  from supabase/agent-skills (query, connections, RLS, schema).
-  Inherits Alembic db-migrations from `db`.
+  Supabase and Postgres authoring. Vendored postgres-best-practices skill
+  from supabase/agent-skills (query, connections, RLS, schema). Extends db
+  so schema changes use the detected migration runner. Does not assume Alembic.
 extends:
   - db
 skills:
