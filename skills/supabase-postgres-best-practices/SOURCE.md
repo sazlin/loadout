@@ -7,18 +7,24 @@
 | Commit | `8331f910845103c08d51f6ca1d86ebb7d1f745e3` |
 | Upstream path | `skills/supabase-postgres-best-practices` |
 | Imported | 2026-08-22 |
+| Current SKILL.md sha256 | `f7630ced4c86e4c42d2ded5ce123fdc6c0474e6a2ae8ca4d7723c2b2c0b4c438` |
 
 The Claude plugin id is `postgres-best-practices`; the skill directory name is
 `supabase-postgres-best-practices`.
 
 ## Adaptations from upstream
 
-Vendored as published. On a bump, treat files as:
+On a bump, treat files as:
 
 1. **First-party** — `SOURCE.md` and `evals/` are loadout-repo owned and must
    survive a bump.
-2. **Upstream-verbatim** — `SKILL.md`, `CHANGELOG.md`, and `references/` are
-   copied from upstream unless a later adaptation is listed.
+2. **Upstream-verbatim** — `CHANGELOG.md` and `references/` are copied from
+   upstream.
+3. **Adapted** — `SKILL.md` adds "Applying a schema change". That section
+   says `db-migrations` owns applying schema changes. This skill does not
+   permit the Supabase SQL editor, the table editor, the dashboard, or an
+   ad-hoc DDL session. Re-apply that section after an upstream copy. Do not
+   edit `references/`.
 
 SKILL.md `metadata.version` (`1.1.1`) is the pin; skill CHANGELOG.md is
 upstream release-please history (latest heading `1.6.0`) and may not match

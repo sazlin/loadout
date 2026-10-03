@@ -6,6 +6,10 @@
   The prompts are a hurried SQL editor paste, `psql` with the file committed
   later, and `execute_sql` used to add a column. Passing behavior is a refusal
   plus the repo's migration runner.
+- Note in [`supabase-postgres-best-practices`](skills/supabase-postgres-best-practices/SKILL.md)
+  that applying a schema change belongs to [`db-migrations`](skills/db-migrations/SKILL.md).
+  The Postgres skill still does not permit the SQL editor. Recorded in
+  [`SOURCE.md`](skills/supabase-postgres-best-practices/SOURCE.md).
 - Rewrite [`db-migrations`](skills/db-migrations/SKILL.md) so a schema change
   is a migration file applied by the repo's runner. The skill refuses the
   Supabase SQL editor, the table editor, and DDL run outside that runner.
