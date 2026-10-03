@@ -37,6 +37,13 @@ def test_supabase_loadout_ships_vendored_postgres_skill() -> None:
     assert loadout.mcps == []
 
 
+def test_supabase_loadout_description_names_runner_not_alembic() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "supabase.yaml")
+    lowered = loadout.description.lower()
+    assert "runner" in lowered
+    assert "alembic" not in lowered
+
+
 def test_supabase_sync_vendors_skill_and_base(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LOADOUT_PATH", str(REPO))
     project = tmp_path / "project"
