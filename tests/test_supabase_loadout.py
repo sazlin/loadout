@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -78,6 +79,22 @@ loadouts: [base]
     sync(project)
 
     assert not (project / ".claude" / "skills" / SKILL_NAME).exists()
+
+
+def test_supabase_skill_source_hash_matches_body() -> None:
+    digest = hashlib.sha256((REPO / SKILL_SRC / "SKILL.md").read_bytes()).hexdigest()
+    source = (REPO / SKILL_SRC / "SOURCE.md").read_text()
+    assert f"Current SKILL.md sha256 | `{digest}`" in source
+
+
+def test_supabase_skill_defers_apply_to_db_migrations() -> None:
+    text = (REPO / SKILL_SRC / "SKILL.md").read_text().lower()
+    source = (REPO / SKILL_SRC / "SOURCE.md").read_text().lower()
+    assert "db-migrations" in text
+    assert "sql editor" in text
+    assert "applying a schema change" in text
+    assert "db-migrations" in source
+    assert "references/" in source
 
 
 def test_supabase_skill_encodes_postgres_categories() -> None:
