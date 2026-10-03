@@ -23,14 +23,18 @@ def test_db_loadout_ships_db_migrations_skill() -> None:
     loadout = load_loadout(REPO / "loadouts" / "db.yaml")
     assert loadout.name == "db"
     assert loadout.extends == ["base"]
-    lowered = loadout.description.lower()
-    assert "runner" in lowered
-    assert "alembic" not in lowered
-    assert "python-monorepo" in lowered
     assert {entry["src"] for entry in loadout.skills} == {SKILL_SRC}
     assert loadout.rules == []
     assert loadout.agents == []
     assert loadout.mcps == []
+
+
+def test_db_loadout_description_names_runner_not_alembic() -> None:
+    loadout = load_loadout(REPO / "loadouts" / "db.yaml")
+    lowered = loadout.description.lower()
+    assert "runner" in lowered
+    assert "alembic" not in lowered
+    assert "python-monorepo" in lowered
 
 
 def test_python_monorepo_does_not_list_db_migrations() -> None:

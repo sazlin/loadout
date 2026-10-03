@@ -2,7 +2,7 @@ name: supabase
 description: >-
   Supabase and Postgres authoring. Vendored postgres-best-practices skill
   from supabase/agent-skills (query, connections, RLS, schema). Extends db
-  so schema changes use the detected migration runner. Does not assume Alembic.
+  so schema changes use the detected migration runner.
 extends:
   - db
 skills:
