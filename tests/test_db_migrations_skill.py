@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from loadout.sync import sync
 
 REPO = Path(__file__).resolve().parent.parent
 SKILL_PATH = REPO / "skills" / "db-migrations" / "SKILL.md"
+EVALS = SKILL_PATH.parent / "evals" / "evals.json"
 
 _REQUIRED = (
     "urgency does not create an exception",
@@ -511,3 +513,20 @@ def test_db_sync_vendors_db_migrations_skill(tmp_path: Path, monkeypatch: pytest
     vendored = (project / ".claude/skills/db-migrations/SKILL.md").read_text()
     assert _missing_required_phrases(vendored) == []
     assert _skill_holds_db_migrations_contract(vendored)
+
+
+def test_db_migrations_pressure_evals_refuse_out_of_band_ddl() -> None:
+    payload = json.loads(EVALS.read_text())
+    assert payload["skill_name"] == "db-migrations"
+    evals = payload["evals"]
+    assert [entry["id"] for entry in evals] == [1, 2, 3]
+    prompts = [entry["prompt"].lower() for entry in evals]
+    assert "sql editor" in prompts[0]
+    assert "psql" in prompts[1]
+    assert "commit the migration file later" in prompts[1]
+    assert "execute_sql" in prompts[2]
+    for entry in evals:
+        expectations = " ".join(entry["expectations"]).lower()
+        assert "refus" in expectations
+        assert "runner" in expectations
+        assert entry["files"] == []

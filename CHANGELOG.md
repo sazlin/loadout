@@ -7,6 +7,10 @@
   migration runner. The SQL editor, table editor, and ad-hoc DDL stay refused,
   including when the change is urgent. [`supabase`](loadouts/supabase.yaml)
   inherits the rule. [`base`](loadouts/base.yaml) does not.
+- Add pressure evals for [`db-migrations`](skills/db-migrations/evals/evals.json).
+  The prompts are a hurried SQL editor paste, `psql` with the file committed
+  later, and `execute_sql` used to add a column. Passing behavior is a refusal
+  plus the repo's migration runner.
 - Correct the [`db`](loadouts/db.yaml) and [`supabase`](loadouts/supabase.yaml)
   descriptions. `db-migrations` detects the repo's runner. It is not an
   Alembic skill, and `python` does not install it unless the manifest lists
