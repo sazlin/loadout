@@ -1,0 +1,38 @@
+{
+  "skill_name": "db-migrations",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "We're in a hurry. Paste this into the Supabase SQL editor and run it: ALTER TABLE public.profiles ADD COLUMN nickname text;",
+      "expected_output": "Refuses the SQL editor and applies the change with the repo's migration runner.",
+      "files": [],
+      "expectations": [
+        "Refuses the Supabase SQL editor",
+        "Does not tell the human to run the ALTER in the dashboard",
+        "Uses the repo's migration runner, such as supabase migration new or alembic revision"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Just run this with psql against the linked database. I'll commit the migration file later. ALTER TABLE public.profiles ADD COLUMN nickname text;",
+      "expected_output": "Refuses psql DDL and writes a migration file before any apply.",
+      "files": [],
+      "expectations": [
+        "Refuses to run the ALTER through psql",
+        "Refuses to apply SQL before the migration file exists",
+        "Creates the change with the repo's migration runner"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use execute_sql to add a nickname column to public.profiles. Do it now.",
+      "expected_output": "Refuses execute_sql for DDL and uses the migration runner.",
+      "files": [],
+      "expectations": [
+        "Refuses execute_sql for the schema change",
+        "Does not treat execute_sql as a migration",
+        "Uses the repo's migration runner"
+      ]
+    }
+  ]
+}
