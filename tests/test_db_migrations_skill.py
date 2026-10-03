@@ -369,14 +369,18 @@ def test_retry_or_dual_apply_fails_the_contract() -> None:
     assert not _skill_holds_db_migrations_contract(retry_until_works)
 
 
-def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
-    """LIMIT n in a loop is not enough; batches must commit and skip done rows."""
-    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
+def test_backfill_without_commit_or_follow_up_job_fails_the_contract() -> None:
+    """Bounded backfill without per-batch COMMIT or a follow-up job fails."""
     bounded_no_commit = "Backfill in the migration in bounded batches. Refuse nothing. batch"
     assert "commit after each batch" in _missing_required_phrases(bounded_no_commit)
     assert "follow-up job" in _missing_required_phrases(bounded_no_commit)
     assert not _backfill_commits_or_uses_follow_up_job(bounded_no_commit)
     assert not _skill_holds_db_migrations_contract(bounded_no_commit)
+
+
+def test_limit_n_in_subquery_backfill_fails_the_contract() -> None:
+    """LIMIT-n IN-subquery backfill fails even with required tokens."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     limit_in_loop = (
         "Backfill in the migration in bounded batches "
         "(UPDATE ... WHERE id IN (SELECT ... LIMIT n) in a loop). " + tokens
@@ -384,6 +388,11 @@ def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
     assert _missing_required_phrases(limit_in_loop) == []
     assert _teaches_limit_n_in_subquery_without_remaining_rows(limit_in_loop)
     assert not _skill_holds_db_migrations_contract(limit_in_loop)
+
+
+def test_keyset_backfill_with_commit_holds_the_contract() -> None:
+    """Keyset pagination plus COMMIT, timeouts, and concurrent-index phrases pass."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     keyset = (
         "SET lock_timeout and statement_timeout for each backfill UPDATE, then "
         "COMMIT after each batch or a follow-up job. "
@@ -417,21 +426,35 @@ def test_keyset_backfill_without_session_timeouts_fails_the_contract() -> None:
     assert not _skill_holds_db_migrations_contract(keyset_no_timeouts)
 
 
-def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
-    """Bare CONCURRENTLY is not enough; short timeouts and transactions fail."""
+def test_short_timeout_then_concurrent_index_fails_the_contract() -> None:
+    """A 5s statement_timeout next to CREATE INDEX CONCURRENTLY fails."""
     tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     short_timeout = "SET LOCAL statement_timeout = '5s'; CREATE INDEX CONCURRENTLY. " + tokens
     assert _missing_required_phrases(short_timeout) == []
     assert _teaches_concurrent_index_under_short_timeout(short_timeout)
     assert not _skill_holds_db_migrations_contract(short_timeout)
+
+
+def test_short_lock_timeout_then_concurrent_index_fails_the_contract() -> None:
+    """A 5s lock_timeout next to CREATE INDEX CONCURRENTLY fails."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     short_lock = "SET LOCAL lock_timeout = '5s'; CREATE INDEX CONCURRENTLY. " + tokens
     assert _missing_required_phrases(short_lock) == []
     assert _teaches_concurrent_index_under_short_timeout(short_lock)
     assert not _skill_holds_db_migrations_contract(short_lock)
+
+
+def test_transactional_concurrent_index_fails_the_contract() -> None:
+    """CREATE INDEX CONCURRENTLY in a transactional migration fails."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     in_txn = "CREATE INDEX CONCURRENTLY in a transactional migration. " + tokens
     assert _missing_required_phrases(in_txn) == []
     assert _teaches_concurrent_index_in_transaction(in_txn)
     assert not _skill_holds_db_migrations_contract(in_txn)
+
+
+def test_bare_concurrent_index_fails_the_contract() -> None:
+    """Bare CONCURRENTLY without autocommit/INVALID-index phrases fails."""
     caveat = {
         "autocommit",
         "cannot run inside a transaction",
@@ -444,6 +467,11 @@ def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
     assert "cannot run inside a transaction" in _missing_required_phrases(bare)
     assert "invalid index" in _missing_required_phrases(bare)
     assert not _skill_holds_db_migrations_contract(bare)
+
+
+def test_follow_up_only_invalid_index_drop_fails_the_contract() -> None:
+    """DROP INDEX CONCURRENTLY only in a later migration fails the contract."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     follow_up_only = (
         "SET lock_timeout and statement_timeout for each backfill UPDATE, then COMMIT. "
         "Own autocommit migration; CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
@@ -454,6 +482,11 @@ def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
     assert _missing_required_phrases(follow_up_only) == []
     assert not _concurrent_index_uses_autocommit_and_drop_invalid(follow_up_only)
     assert not _skill_holds_db_migrations_contract(follow_up_only)
+
+
+def test_autocommit_drop_invalid_then_concurrent_index_holds_the_contract() -> None:
+    """Same-file autocommit DROP IF EXISTS then CREATE INDEX CONCURRENTLY passes."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
     ok = (
         "SET lock_timeout and statement_timeout for each backfill UPDATE, then COMMIT. "
         "Own autocommit migration; DROP INDEX CONCURRENTLY IF EXISTS then "
