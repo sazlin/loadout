@@ -7,6 +7,10 @@
   migration runner. The SQL editor, table editor, and ad-hoc DDL stay refused,
   including when the change is urgent. [`supabase`](loadouts/supabase.yaml)
   inherits the rule. [`base`](loadouts/base.yaml) does not.
+- Note in [`supabase-postgres-best-practices`](skills/supabase-postgres-best-practices/SKILL.md)
+  that applying a schema change belongs to [`db-migrations`](skills/db-migrations/SKILL.md).
+  The Postgres skill still does not permit the SQL editor. Recorded in
+  [`SOURCE.md`](skills/supabase-postgres-best-practices/SOURCE.md).
 - Rewrite [`db-migrations`](skills/db-migrations/SKILL.md) so a schema change
   is a migration file applied by the repo's runner. The skill refuses the
   Supabase SQL editor, the table editor, and DDL run outside that runner.

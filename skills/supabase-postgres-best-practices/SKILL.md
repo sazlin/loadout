@@ -14,6 +14,10 @@ metadata:
 
 Comprehensive performance optimization guide for Postgres, maintained by Supabase. Contains rules across 8 categories, prioritized by impact to guide automated query optimization and schema design.
 
+## Applying a schema change
+
+This skill is how to write Postgres SQL. Applying a schema change belongs to the `db-migrations` skill. Do not use this file as permission to run DDL in the Supabase SQL editor, the table editor, the dashboard, or an ad-hoc session.
+
 ## When to Apply
 
 Reference these guidelines when:
