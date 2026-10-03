@@ -68,6 +68,17 @@ _CONCURRENT_IN_TRANSACTION = re.compile(
     r"create\s+index\s+concurrently.{0,120}transactional\s+migration",
     re.IGNORECASE | re.DOTALL,
 )
+# SET lock_timeout / statement_timeout as session commands, not UPDATE SET col.
+_SET_BOTH_TIMEOUTS = re.compile(
+    r"set(?:\s+local)?\s+`?(?:lock_timeout|statement_timeout)`?"
+    r"\s+and\s+`?(?:lock_timeout|statement_timeout)`?",
+    re.IGNORECASE,
+)
+_SET_ONE_TIMEOUT = re.compile(
+    r"set(?:\s+local)?\s+`?(lock_timeout|statement_timeout)`?",
+    re.IGNORECASE,
+)
+_BACKFILL_DML = re.compile(r"\b(?:update|backfill)\b", re.IGNORECASE)
 
 # Refusal imperatives ("do not use the SQL editor", "never use the SQL editor") must not match.
 _RECOMMEND_EDITOR = re.compile(
@@ -136,6 +147,24 @@ def _backfill_paginates_remaining_rows(text: str) -> bool:
     return remaining and keyset and "zero rows" in lowered
 
 
+def _window_sets_lock_and_statement_timeouts(window: str) -> bool:
+    """True when the window SETs both lock_timeout and statement_timeout."""
+    stripped = window.replace("`", "")
+    if _SET_BOTH_TIMEOUTS.search(stripped) is not None:
+        return True
+    names = {match.group(1).lower() for match in _SET_ONE_TIMEOUT.finditer(stripped)}
+    return "lock_timeout" in names and "statement_timeout" in names
+
+
+def _backfill_sets_session_timeouts(text: str) -> bool:
+    """True when SET lock_timeout and statement_timeout are tied to backfill DML."""
+    for match in _BACKFILL_DML.finditer(text):
+        window = text[max(0, match.start() - 220) : match.end() + 280]
+        if _window_sets_lock_and_statement_timeouts(window):
+            return True
+    return False
+
+
 def _teaches_concurrent_index_under_short_timeout(text: str) -> bool:
     """True when CONCURRENTLY is taught with SET LOCAL statement_timeout = 5s."""
     return _SHORT_TIMEOUT_THEN_CONCURRENT.search(text) is not None
@@ -164,9 +193,9 @@ def _skill_holds_db_migrations_contract(text: str) -> bool:
     Gates: required phrases; the word refuse; no SQL-editor recommend; no
     unrestricted ad-hoc reads; no retry-until-works; no dual agent/CI apply;
     no dashboard-then-pull; batched backfill commits or uses a follow-up job
-    and paginates remaining rows (not LIMIT-n IN-subquery); concurrent indexes
-    use autocommit and DROP of INVALID indexes (not short timeout, not inside
-    a transaction).
+    and paginates remaining rows (not LIMIT-n IN-subquery); SET lock_timeout
+    and statement_timeout on backfill DML; concurrent indexes use autocommit
+    and DROP of INVALID indexes (not short timeout, not inside a transaction).
     """
     if _missing_required_phrases(text):
         return False
@@ -183,6 +212,8 @@ def _skill_holds_db_migrations_contract(text: str) -> bool:
     if not _backfill_commits_or_uses_follow_up_job(text):
         return False
     if not _backfill_paginates_remaining_rows(text):
+        return False
+    if not _backfill_sets_session_timeouts(text):
         return False
     if _teaches_limit_n_in_subquery_without_remaining_rows(text):
         return False
@@ -240,6 +271,8 @@ def test_skill_requires_runner_and_refuses_out_of_band_ddl() -> None:
     assert not _teaches_limit_n_in_subquery_without_remaining_rows(text)
     assert _backfill_commits_or_uses_follow_up_job(text)
     assert _backfill_paginates_remaining_rows(text)
+    assert _backfill_sets_session_timeouts(text)
+    assert "set `lock_timeout` and `statement_timeout` before ddl" in lowered
 
 
 def test_dashboard_advice_fails_the_contract() -> None:
@@ -325,6 +358,7 @@ def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
     assert _teaches_limit_n_in_subquery_without_remaining_rows(limit_in_loop)
     assert not _skill_holds_db_migrations_contract(limit_in_loop)
     keyset = (
+        "SET lock_timeout and statement_timeout for each backfill UPDATE, then "
         "COMMIT after each batch or a follow-up job. "
         "UPDATE t SET new_col = src WHERE new_col IS NULL AND id > :last_id "
         "ORDER BY id LIMIT n. Stop when a batch updates zero rows. " + tokens
@@ -333,7 +367,23 @@ def test_limit_in_subquery_backfill_fails_without_commit_or_keyset() -> None:
     assert not _teaches_limit_n_in_subquery_without_remaining_rows(keyset)
     assert _backfill_commits_or_uses_follow_up_job(keyset)
     assert _backfill_paginates_remaining_rows(keyset)
+    assert _backfill_sets_session_timeouts(keyset)
     assert _skill_holds_db_migrations_contract(keyset)
+
+
+def test_keyset_backfill_without_session_timeouts_fails_the_contract() -> None:
+    """Keyset plus COMMIT is not enough without SET lock_timeout/statement_timeout on UPDATE."""
+    tokens = " ".join(_REQUIRED) + ". Refuse nothing."
+    keyset_no_timeouts = (
+        "COMMIT after each batch or a follow-up job. "
+        "UPDATE t SET new_col = src WHERE new_col IS NULL AND id > :last_id "
+        "ORDER BY id LIMIT n. Stop when a batch updates zero rows. " + tokens
+    )
+    assert _missing_required_phrases(keyset_no_timeouts) == []
+    assert _backfill_commits_or_uses_follow_up_job(keyset_no_timeouts)
+    assert _backfill_paginates_remaining_rows(keyset_no_timeouts)
+    assert not _backfill_sets_session_timeouts(keyset_no_timeouts)
+    assert not _skill_holds_db_migrations_contract(keyset_no_timeouts)
 
 
 def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
@@ -360,6 +410,7 @@ def test_concurrent_index_requires_autocommit_not_short_timeout() -> None:
     assert "invalid index" in _missing_required_phrases(bare)
     assert not _skill_holds_db_migrations_contract(bare)
     ok = (
+        "SET lock_timeout and statement_timeout for each backfill UPDATE, then COMMIT. "
         "Own autocommit migration; CREATE INDEX CONCURRENTLY cannot run inside a transaction. "
         "If cancelled, DROP INDEX CONCURRENTLY on the INVALID index through the runner "
         "in a follow-up migration. Do not repair or skip. " + tokens
