@@ -60,3 +60,12 @@ def test_slice_from_v0_54_0_to_v0_55_0_includes_migration_runner() -> None:
     assert "migration-runner" in notes
     assert "db-migrations" in notes
     assert "## 0.54.0" not in notes
+
+
+def test_slice_from_v0_55_0_to_v0_56_0_is_only_0_56_0() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.55.0", "v0.56.0")
+
+    assert notes.strip() == "## 0.56.0"
+    assert "## 0.54.0" not in notes
+    assert "## 0.55.0" not in notes

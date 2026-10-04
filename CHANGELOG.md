@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.56.0
+
 ## 0.55.0
 
 - Add [`migration-runner`](rules/core/migration-runner.mdc) to the
