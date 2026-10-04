@@ -27,16 +27,22 @@ _REQUIRED = (
     "do not invent flags",
 )
 
-# An unnegated instruction to create the checkout with git.
-_UNNEGATED_ADD = re.compile(r"(?<!do not )run `git worktree add`", re.IGNORECASE)
+# Unnegated `run `git worktree add`` or `run [`git worktree add`]` (optional link).
+_UNNEGATED_ADD = re.compile(r"(?<!do not )run \[?`git worktree add`", re.IGNORECASE)
+_FALSE_BRANCH_FORCES_1B = re.compile(
+    r"either condition is false.{0,240}(?:skip step 1a|run step 1b|including step 1b)",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _holds_orca_worktree_line(text: str) -> bool:
-    """True when an Orca session must use the Orca CLI and git add stays the fallback."""
+    """True when an Orca session must use the Orca CLI and git worktree add stays the fallback."""
     lowered = text.lower()
     if any(phrase not in lowered for phrase in _REQUIRED):
         return False
     if "either condition is false" not in lowered:
+        return False
+    if _FALSE_BRANCH_FORCES_1B.search(text):
         return False
     return _UNNEGATED_ADD.search(text) is None
 
@@ -60,6 +66,22 @@ def test_orca_native_worktree_rule_is_always_on() -> None:
     assert _holds_orca_worktree_line(text)
 
 
+_CONTRACT_PHRASES = (
+    "When .claude/skills/orca-cli/SKILL.md exists and ORCA_CLI_COMMAND "
+    "or ORCA_DEV_REPO_ROOT is set, or the terminal is Orca-managed, "
+    "Skip Step 1b is optional. using-git-worktrees. "
+    "Do not run [`git worktree add`]. Do not run `ORCA open`. Do not invent flags. "
+    "Either condition is false. "
+)
+
+
+def test_unnegated_add_matches_linked_and_unlinked_spellings() -> None:
+    linked = "run [`git worktree add`](https://git-scm.com/docs/git-worktree)"
+    assert _UNNEGATED_ADD.search(linked)
+    assert _UNNEGATED_ADD.search("run `git worktree add`")
+    assert _UNNEGATED_ADD.search("Do not run [`git worktree add`](https://git-scm.com/docs/git-worktree)") is None
+
+
 def test_git_worktree_add_advice_fails_the_orca_worktree_contract() -> None:
     """Naming the Orca CLI is not enough when the text still runs git worktree add."""
     bad = (
@@ -69,8 +91,17 @@ def test_git_worktree_add_advice_fails_the_orca_worktree_contract() -> None:
         "using-git-worktrees. Do not run `ORCA open`. Do not invent flags. "
         "Either condition is false."
     )
+    linked_bad = _CONTRACT_PHRASES + "Also run [`git worktree add`](https://git-scm.com/docs/git-worktree)."
+    false_branch_bad = _CONTRACT_PHRASES + "If either condition is false, skip Step 1a and run Step 1b."
+    rule = (REPO / RULE_SRC).read_text()
     assert not _holds_orca_worktree_line(bad)
-    assert _holds_orca_worktree_line((REPO / RULE_SRC).read_text())
+    assert not _holds_orca_worktree_line(linked_bad)
+    assert not _holds_orca_worktree_line(false_branch_bad)
+    assert _holds_orca_worktree_line(rule)
+    false_branch = rule.lower().split("either condition is false", 1)[1]
+    assert "step 1a" in false_branch or "as written" in rule.lower()
+    assert "including step 1b" not in false_branch
+    assert "run step 1b" not in false_branch
 
 
 def _sync_loadout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str) -> Path:
