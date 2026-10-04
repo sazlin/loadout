@@ -64,6 +64,11 @@ def test_orca_native_worktree_rule_is_always_on() -> None:
     meta = parse_rule(path, text)
     assert meta.always_apply is True
     assert _holds_orca_worktree_line(text)
+    false_branch = text.lower().split("either condition is false", 1)[1]
+    assert "step 1a" in false_branch
+    assert "as written" in false_branch
+    assert "including step 1b" not in false_branch
+    assert "run step 1b" not in false_branch
 
 
 _CONTRACT_PHRASES = (
@@ -92,16 +97,14 @@ def test_git_worktree_add_advice_fails_the_orca_worktree_contract() -> None:
         "Either condition is false."
     )
     linked_bad = _CONTRACT_PHRASES + "Also run [`git worktree add`](https://git-scm.com/docs/git-worktree)."
-    false_branch_bad = _CONTRACT_PHRASES + "If either condition is false, skip Step 1a and run Step 1b."
-    rule = (REPO / RULE_SRC).read_text()
     assert not _holds_orca_worktree_line(bad)
     assert not _holds_orca_worktree_line(linked_bad)
+
+
+def test_false_branch_that_forces_step_1b_fails_the_orca_worktree_contract() -> None:
+    """A false branch that skips Step 1a or runs Step 1b fails the contract."""
+    false_branch_bad = _CONTRACT_PHRASES + "If either condition is false, skip Step 1a and run Step 1b."
     assert not _holds_orca_worktree_line(false_branch_bad)
-    assert _holds_orca_worktree_line(rule)
-    false_branch = rule.lower().split("either condition is false", 1)[1]
-    assert "step 1a" in false_branch or "as written" in rule.lower()
-    assert "including step 1b" not in false_branch
-    assert "run step 1b" not in false_branch
 
 
 def _sync_loadout(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, name: str) -> Path:
