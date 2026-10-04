@@ -27,15 +27,6 @@ def test_changelog_keeps_0_55_0_heading():
     assert headings.index("## 0.56.0") < headings.index("## 0.55.0") < headings.index("## 0.54.0")
 
 
-# One-off for the empty 0.56.0 cut; delete this test on the next release that has notes instead of renaming it with RELEASE.
-def test_0_56_0_changelog_section_is_empty():
-    changelog = (REPO / "CHANGELOG.md").read_text().splitlines()
-    start = changelog.index("## 0.56.0")
-    end = next(i for i, line in enumerate(changelog[start + 1 :], start + 1) if line.startswith("## "))
-    section = [line for line in changelog[start + 1 : end] if line.strip()]
-    assert section == []
-
-
 def test_pyproject_version_is_0_56_0():
     data = tomllib.loads((REPO / "pyproject.toml").read_text())
     assert data["project"]["version"] == RELEASE
