@@ -14,4 +14,4 @@ alwaysApply: true
 
 Resolve the executable and the flags by following the `orca-cli` skill. Do not invent flags. Do not run `ORCA open` to make this rule apply.
 
-If either condition is false, follow `using-git-worktrees` as written, including Step 1b.
+If either condition is false, this rule's skip-Step-1b instruction does not apply. Follow `using-git-worktrees` as written: Step 1a native tools first, then the skill's fallback only when no native tool exists.
