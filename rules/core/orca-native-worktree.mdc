@@ -1,0 +1,17 @@
+---
+description: >-
+  In an Orca session with the orca-cli skill installed, create worktrees
+  with the Orca CLI. Do not run git worktree add.
+alwaysApply: true
+---
+
+# Orca native worktree
+
+`using-git-worktrees` Step 1a prefers a native worktree tool. When both of the following are true, the Orca CLI is that tool. Create the worktree with it. Skip Step 1b. Do not run [`git worktree add`](https://git-scm.com/docs/git-worktree).
+
+- `.claude/skills/orca-cli/SKILL.md` exists.
+- This session is an Orca session: `ORCA_CLI_COMMAND` is set, `ORCA_DEV_REPO_ROOT` is set, or the terminal is Orca-managed.
+
+Resolve the executable and the flags by following the `orca-cli` skill. Do not invent flags. Do not run `ORCA open` to make this rule apply.
+
+If either condition is false, follow `using-git-worktrees` as written, including Step 1b.

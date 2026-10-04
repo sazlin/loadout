@@ -3,6 +3,8 @@ description: >-
   Opt-in Superpowers workflow skills and SessionStart bootstrap
   (vendored from obra/superpowers@v6.4.2). Do not combine with the
   Superpowers plugin for the same harness.
+rules:
+  - src: rules/core/orca-native-worktree.mdc
 skills:
   - src: skills/brainstorming
   - src: skills/diagnosing-superpowers

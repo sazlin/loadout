@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add [`orca-native-worktree`](rules/core/orca-native-worktree.mdc) to
+  [`superpowers`](loadouts/superpowers.yaml). In an Orca session with the
+  `orca-cli` skill installed, that CLI is the native worktree tool from
+  `using-git-worktrees`. [`git worktree add`](https://git-scm.com/docs/git-worktree)
+  stays the fallback otherwise. [`base`](loadouts/base.yaml) does not
+  include the rule.
+
 ## 0.56.0
 
 ## 0.55.0
