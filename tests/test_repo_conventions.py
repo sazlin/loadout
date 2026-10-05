@@ -17,8 +17,9 @@ def test_base_loadout_includes_repo_conventions() -> None:
     assert SRC in {entry["src"] for entry in loadout.rules}
 
 
-def test_github_loadout_extends_base() -> None:
+def test_github_inherits_repo_conventions_by_extending_base() -> None:
     loadout = load_loadout(REPO / "loadouts" / "github.yaml")
+    # github.yaml lists no rules; consumers get rules/core/repo-conventions.mdc only because it extends base (load_loadout does not merge parent rules).
     assert loadout.extends == ["base"]
 
 
