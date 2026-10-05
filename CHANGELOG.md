@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.57.0
+
 - [`repo-conventions`](rules/core/repo-conventions.mdc) requires configured
   linters and type checkers before a commit. Lint and type failures block
   the commit until they are fixed. [`base`](loadouts/base.yaml) and
