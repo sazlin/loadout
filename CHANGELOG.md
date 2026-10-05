@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- [`repo-conventions`](rules/core/repo-conventions.mdc) requires configured
+  linters and type checkers before a commit. Lint and type failures block
+  the commit until they are fixed. [`base`](loadouts/base.yaml) and
+  [`github`](loadouts/github.yaml) both ship the rule.
 - Add [`orca-native-worktree`](rules/core/orca-native-worktree.mdc) to
   [`superpowers`](loadouts/superpowers.yaml). In an Orca session with the
   `orca-cli` skill installed, that CLI is the native worktree tool from

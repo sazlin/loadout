@@ -9,5 +9,6 @@ alwaysApply: true
 - Prefer the repository's existing patterns over introducing a new abstraction or dependency.
 - Keep changes scoped to the requested outcome; do not perform unrelated cleanup.
 - Add or update tests when behavior changes, then run the narrowest relevant checks.
+- Always run any configured linters and type checkers before committing any changes. Treat any linting or type failures as commit blockers and resolve immediately.
 - Never commit credentials, tokens, machine-specific paths, or generated local state.
 - Always create new branches from `main` (or `master`) unless the user explicitly requested otherwise.
