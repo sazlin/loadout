@@ -78,3 +78,13 @@ def test_slice_from_v0_56_0_to_v0_57_0_includes_release_notes() -> None:
     assert "repo-conventions" in notes
     assert "orca-native-worktree" in notes
     assert "## 0.56.0" not in notes
+
+
+def test_slice_from_v0_57_0_to_v0_58_0_is_only_0_58_0() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.57.0", "v0.58.0")
+
+    assert notes.strip() == "## 0.58.0"
+    assert "## 0.55.0" not in notes
+    assert "## 0.56.0" not in notes
+    assert "## 0.57.0" not in notes

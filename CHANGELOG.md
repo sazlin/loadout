@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.58.0
+
 ## 0.57.0
 
 - [`repo-conventions`](rules/core/repo-conventions.mdc) requires configured
