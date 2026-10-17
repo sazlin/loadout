@@ -233,3 +233,23 @@ def test_slice_from_v0_67_0_to_v0_68_0_is_only_0_68_0() -> None:
     assert "## 0.65.0" not in notes
     assert "## 0.66.0" not in notes
     assert "## 0.67.0" not in notes
+
+
+def test_slice_from_v0_68_0_to_v0_69_0_is_only_0_69_0() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.68.0", "v0.69.0")
+
+    assert notes.strip() == "## 0.69.0"
+    assert "## 0.56.0" not in notes
+    assert "## 0.57.0" not in notes
+    assert "## 0.58.0" not in notes
+    assert "## 0.59.0" not in notes
+    assert "## 0.60.0" not in notes
+    assert "## 0.61.0" not in notes
+    assert "## 0.62.0" not in notes
+    assert "## 0.63.0" not in notes
+    assert "## 0.64.0" not in notes
+    assert "## 0.65.0" not in notes
+    assert "## 0.66.0" not in notes
+    assert "## 0.67.0" not in notes
+    assert "## 0.68.0" not in notes
