@@ -281,18 +281,3 @@ def test_slice_from_v0_70_0_to_v0_71_0_is_only_0_71_0() -> None:
     notes = _slice_sections(changelog, "v0.70.0", "v0.71.0")
 
     assert notes.strip() == "## 0.71.0"
-    assert "## 0.56.0" not in notes
-    assert "## 0.57.0" not in notes
-    assert "## 0.58.0" not in notes
-    assert "## 0.59.0" not in notes
-    assert "## 0.60.0" not in notes
-    assert "## 0.61.0" not in notes
-    assert "## 0.62.0" not in notes
-    assert "## 0.63.0" not in notes
-    assert "## 0.64.0" not in notes
-    assert "## 0.65.0" not in notes
-    assert "## 0.66.0" not in notes
-    assert "## 0.67.0" not in notes
-    assert "## 0.68.0" not in notes
-    assert "## 0.69.0" not in notes
-    assert "## 0.70.0" not in notes
