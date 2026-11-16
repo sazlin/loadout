@@ -392,6 +392,90 @@ def test_start_recovers_stale_lockdir(tmp_path: Path, stale_kind: str) -> None:
         _run(tmp_path, "stop", extra_path=bindir)
 
 
+def _hold_lock_with_live_keeper(
+    tmp_path: Path, bindir: Path
+) -> tuple[subprocess.Popen[bytes], subprocess.Popen[bytes]]:
+    keeper = subprocess.Popen(
+        [str(bindir / "caffeinate"), "-i", "-t", "120"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    holder = subprocess.Popen(["sleep", "60"])
+    lockdir = _lockdir(tmp_path)
+    _prepare_pidfile(tmp_path, f"{keeper.pid}\n")
+    lockdir.mkdir(parents=True)
+    (lockdir / "pid").write_text(f"{holder.pid}\n")
+    return keeper, holder
+
+
+def test_start_already_running_when_foreign_lock_holds_valid_keeper(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    lockdir = _lockdir(tmp_path)
+    keeper, holder = _hold_lock_with_live_keeper(tmp_path, bindir)
+    try:
+        started = time.monotonic()
+        completed = subprocess.run(
+            [str(SCRIPT), "start", "120"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=_env(tmp_path, extra_path=bindir),
+            timeout=10,
+        )
+        elapsed = time.monotonic() - started
+        assert completed.returncode == 0
+        assert "already running" in completed.stdout
+        assert elapsed >= 4.0
+        assert set(_keeper_pids(bindir)) == {keeper.pid}
+        assert lockdir.is_dir()
+        assert (lockdir / "pid").read_text().strip() == str(holder.pid)
+        assert _pidfile(tmp_path).read_text().strip() == str(keeper.pid)
+    finally:
+        holder.kill()
+        holder.wait()
+        keeper.kill()
+        keeper.wait()
+        pid_path = lockdir / "pid"
+        if pid_path.exists():
+            pid_path.unlink()
+        if lockdir.exists():
+            lockdir.rmdir()
+
+
+def test_renew_times_out_when_foreign_lock_holds_valid_keeper(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    lockdir = _lockdir(tmp_path)
+    keeper, holder = _hold_lock_with_live_keeper(tmp_path, bindir)
+    try:
+        started = time.monotonic()
+        completed = subprocess.run(
+            [str(SCRIPT), "renew", "90"],
+            check=False,
+            capture_output=True,
+            text=True,
+            env=_env(tmp_path, extra_path=bindir),
+            timeout=10,
+        )
+        elapsed = time.monotonic() - started
+        assert completed.returncode == 1
+        assert "timed out" in completed.stderr
+        assert elapsed >= 4.0
+        assert set(_keeper_pids(bindir)) == {keeper.pid}
+        assert lockdir.is_dir()
+        assert (lockdir / "pid").read_text().strip() == str(holder.pid)
+        assert _pidfile(tmp_path).read_text().strip() == str(keeper.pid)
+    finally:
+        holder.kill()
+        holder.wait()
+        keeper.kill()
+        keeper.wait()
+        pid_path = lockdir / "pid"
+        if pid_path.exists():
+            pid_path.unlink()
+        if lockdir.exists():
+            lockdir.rmdir()
+
+
 def test_start_does_not_steal_live_lock(tmp_path: Path) -> None:
     bindir = _darwin_bin(tmp_path)
     holder = subprocess.Popen(["sleep", "60"])
