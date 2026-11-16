@@ -4,6 +4,7 @@
 set -euo pipefail
 
 DEFAULT_TIMEOUT=28800
+LOCK_BUSY=2
 umask 077
 STATE_DIR="${HOME}/Library/Caches/loadout-anti-sleep"
 PIDFILE="${STATE_DIR}/keep-awake.pid"
@@ -126,6 +127,10 @@ reclaim_stale_lock() {
 }
 
 acquire_lock() {
+  # 0: this process owns LOCKDIR and the EXIT trap.
+  # 2 (LOCK_BUSY): timed out, keeper live, lock not held; do not release_lock.
+  # exit 1: timed out, no keeper (stderr already printed).
+  # Callers must invoke this inside `if` so `set -e` does not abort on 2.
   local n=0
   ensure_state_dir
   while ! mkdir "$LOCKDIR" 2>/dev/null; do
@@ -133,7 +138,7 @@ acquire_lock() {
     if lock_holder_alive; then
       if [[ "$n" -ge 100 ]]; then
         if running_pid >/dev/null; then
-          return 2
+          return "$LOCK_BUSY"
         fi
         echo "anti-sleep: timed out waiting for lock" >&2
         exit 1
@@ -150,7 +155,7 @@ acquire_lock() {
         break
       fi
       if running_pid >/dev/null; then
-        return 2
+        return "$LOCK_BUSY"
       fi
       echo "anti-sleep: timed out waiting for lock" >&2
       exit 1
@@ -196,6 +201,7 @@ cmd_start() {
   local timeout="${1:-$DEFAULT_TIMEOUT}"
   local pid
   if ! acquire_lock; then
+    # 2: try running_pid for already-running; print timeout only if the keeper vanished.
     if pid="$(running_pid)"; then
       echo "anti-sleep: already running pid=$pid"
       return 0
