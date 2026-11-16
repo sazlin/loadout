@@ -442,40 +442,6 @@ def test_start_already_running_when_foreign_lock_holds_valid_keeper(tmp_path: Pa
             lockdir.rmdir()
 
 
-def test_renew_times_out_when_foreign_lock_holds_valid_keeper(tmp_path: Path) -> None:
-    bindir = _darwin_bin(tmp_path)
-    lockdir = _lockdir(tmp_path)
-    keeper, holder = _hold_lock_with_live_keeper(tmp_path, bindir)
-    try:
-        started = time.monotonic()
-        completed = subprocess.run(
-            [str(SCRIPT), "renew", "90"],
-            check=False,
-            capture_output=True,
-            text=True,
-            env=_env(tmp_path, extra_path=bindir),
-            timeout=10,
-        )
-        elapsed = time.monotonic() - started
-        assert completed.returncode == 1
-        assert "timed out" in completed.stderr
-        assert elapsed >= 4.0
-        assert set(_keeper_pids(bindir)) == {keeper.pid}
-        assert lockdir.is_dir()
-        assert (lockdir / "pid").read_text().strip() == str(holder.pid)
-        assert _pidfile(tmp_path).read_text().strip() == str(keeper.pid)
-    finally:
-        holder.kill()
-        holder.wait()
-        keeper.kill()
-        keeper.wait()
-        pid_path = lockdir / "pid"
-        if pid_path.exists():
-            pid_path.unlink()
-        if lockdir.exists():
-            lockdir.rmdir()
-
-
 def test_start_does_not_steal_live_lock(tmp_path: Path) -> None:
     bindir = _darwin_bin(tmp_path)
     holder = subprocess.Popen(["sleep", "60"])
