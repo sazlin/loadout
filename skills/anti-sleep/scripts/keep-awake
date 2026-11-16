@@ -132,6 +132,9 @@ acquire_lock() {
     n=$((n + 1))
     if lock_holder_alive; then
       if [[ "$n" -ge 100 ]]; then
+        if running_pid >/dev/null; then
+          return 0
+        fi
         echo "anti-sleep: timed out waiting for lock" >&2
         exit 1
       fi
@@ -145,6 +148,9 @@ acquire_lock() {
     if [[ "$n" -ge 100 ]]; then
       if mkdir "$LOCKDIR" 2>/dev/null; then
         break
+      fi
+      if running_pid >/dev/null; then
+        return 0
       fi
       echo "anti-sleep: timed out waiting for lock" >&2
       exit 1
