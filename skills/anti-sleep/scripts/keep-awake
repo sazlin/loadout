@@ -330,6 +330,14 @@ cmd_start() {
     finish_already_running "$pid"
     return 0
   fi
+  # A peer launched after this wait may not show caffeinate on one ps
+  # sample. Retry before treating a live pid as leftover to steal.
+  if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null; then
+    if peer_pid_shows_caffeinate "$pid"; then
+      finish_already_running "$pid"
+      return 0
+    fi
+  fi
   # After the peer wait the pidfile never became a keeper. Replace it
   # (dead/empty/sleep/other leftovers). Do not kill the leftover process.
   rm -f "$PIDFILE"
