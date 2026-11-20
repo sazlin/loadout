@@ -186,11 +186,39 @@ launch() {
   printf '%s\n' "$pid"
 }
 
+peer_pidfile_live() {
+  local pid
+  [[ -f "$PIDFILE" ]] || return 1
+  pid="$(tr -d '[:space:]' <"$PIDFILE")"
+  is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null
+}
+
+wait_for_running_or_peer() {
+  local pid attempt
+  for attempt in $(seq 1 50); do
+    if pid="$(running_pid)"; then
+      printf '%s\n' "$pid"
+      return 0
+    fi
+    if peer_pidfile_live; then
+      sleep 0.02
+      continue
+    fi
+    return 1
+  done
+  if peer_pidfile_live; then
+    pid="$(tr -d '[:space:]' <"$PIDFILE")"
+    printf '%s\n' "$pid"
+    return 0
+  fi
+  return 1
+}
+
 cmd_start() {
   local timeout="${1:-$DEFAULT_TIMEOUT}"
   local pid
   acquire_lock
-  if pid="$(running_pid)"; then
+  if pid="$(wait_for_running_or_peer)"; then
     echo "anti-sleep: already running pid=$pid"
     return 0
   fi
