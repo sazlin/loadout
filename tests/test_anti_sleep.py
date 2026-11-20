@@ -577,7 +577,11 @@ def test_overlapping_starts_do_not_steal_after_peer_wait_budget(tmp_path: Path) 
         )
         for _ in range(3)
     ]
+<<<<<<< HEAD
     results = [proc.communicate(timeout=40) for proc in procs]
+=======
+    results = [proc.communicate(timeout=45) for proc in procs]
+>>>>>>> 5d6e627 (test: widen overlapping keep-awake start timeout on slow CI)
     try:
         assert [proc.returncode for proc in procs] == [0, 0, 0]
         texts = [stdout for stdout, _stderr in results]
