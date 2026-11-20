@@ -254,7 +254,7 @@ report_running_or_launch() {
 
 # Brief ps retry: a just-forked keeper may not look like caffeinate yet.
 # Same bound as cmd_stop's in-progress path (5 × 0.02s).
-peer_classify_live_pid() {
+peer_pid_shows_caffeinate() {
   local pid="$1"
   local n=0
   while [[ "$n" -lt 5 ]]; do
@@ -276,7 +276,7 @@ cmd_start() {
   local peer_wait_sleep=0.02
   # Classify-retry at most once per start; leftover steal must not wait 5s,
   # but repeating 5 × 0.02s on every loop iteration inflates the budget.
-  local classified_live=0
+  local classify_retry_spent=0
 
   for attempt in $(seq 1 "$peer_wait_attempts"); do
     acquire_lock
@@ -292,14 +292,13 @@ cmd_start() {
     fi
     pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
     if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null && ! is_keeper_pid "$pid"; then
-      if [[ "$classified_live" -eq 0 ]]; then
-        classified_live=1
-        if peer_classify_live_pid "$pid" && ! is_keeper_pid "$pid"; then
-          finish_lock
-          sleep "$peer_wait_sleep"
-          continue
-        fi
-      else
+      if [[ "$classify_retry_spent" -eq 1 ]]; then
+        finish_lock
+        sleep "$peer_wait_sleep"
+        continue
+      fi
+      classify_retry_spent=1
+      if peer_pid_shows_caffeinate "$pid" && ! is_keeper_pid "$pid"; then
         finish_lock
         sleep "$peer_wait_sleep"
         continue
