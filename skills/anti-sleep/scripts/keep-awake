@@ -168,6 +168,11 @@ release_lock() {
   rmdir "$LOCKDIR" 2>/dev/null || true
 }
 
+finish_lock() {
+  release_lock
+  trap - EXIT INT TERM HUP
+}
+
 launch() {
   local timeout="$1"
   local pid
@@ -197,48 +202,53 @@ peer_pidfile_live() {
   is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null
 }
 
-# Retry until is_keeper_pid. Sleep only while peer_pidfile_live. After the
-# budget, unlink a still-live non-keeper pidfile as stale so start may launch.
-wait_for_running_or_peer() {
+cmd_start() {
+  local timeout="${1:-$DEFAULT_TIMEOUT}"
   local pid attempt
+
   for attempt in $(seq 1 250); do
+    acquire_lock
     if [[ -L "$PIDFILE" ]]; then
       rm -f "$PIDFILE"
-      return 1
+      finish_lock
+      continue
     fi
     pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
     if is_keeper_pid "$pid"; then
-      printf '%s\n' "$pid"
+      echo "anti-sleep: already running pid=$pid"
+      finish_lock
       return 0
     fi
     if peer_pidfile_live; then
+      finish_lock
       sleep 0.02
       continue
     fi
-    return 1
+    if ! pid="$(launch "$timeout")"; then
+      finish_lock
+      return 1
+    fi
+    echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
+    echo "anti-sleep: verify with: pmset -g assertions"
+    finish_lock
+    return 0
   done
+
+  acquire_lock
   pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
   if is_keeper_pid "$pid"; then
-    printf '%s\n' "$pid"
+    echo "anti-sleep: already running pid=$pid"
+    finish_lock
     return 0
   fi
   rm -f "$PIDFILE"
-  return 1
-}
-
-cmd_start() {
-  local timeout="${1:-$DEFAULT_TIMEOUT}"
-  local pid
-  acquire_lock
-  if pid="$(wait_for_running_or_peer)"; then
-    echo "anti-sleep: already running pid=$pid"
-    return 0
-  fi
   if ! pid="$(launch "$timeout")"; then
+    finish_lock
     return 1
   fi
   echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
   echo "anti-sleep: verify with: pmset -g assertions"
+  finish_lock
 }
 
 cmd_status() {
