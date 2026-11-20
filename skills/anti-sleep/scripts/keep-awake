@@ -39,31 +39,45 @@ is_positive_pid() {
   [[ "$1" =~ ^[1-9][0-9]*$ ]]
 }
 
-is_keeper_pid() {
-  # Live PID plus " -i " in args so unrelated caffeinate -w/-d is rejected.
-  # comm==caffeinate matches macOS; args *caffeinate* is for PATH stubs whose
-  # comm is the interpreter (python3 shebang in Linux CI). comm= is space-padded
-  # on some ps; args= is empty on some BSD ps, so fall back to command=.
+pid_ps_args() {
   local pid="$1"
-  local comm args padded
-  is_positive_pid "$pid" || return 1
-  kill -0 -- "$pid" 2>/dev/null || return 1
-  comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
-  comm="${comm//[$' \t']/}"
+  local args
   args="$(ps -ww -p "$pid" -o args= 2>/dev/null || true)"
   if [[ -z "$args" ]]; then
     args="$(ps -ww -p "$pid" -o command= 2>/dev/null || true)"
   fi
-  padded=" ${args} "
-  case "$padded" in
-    *" -i "*) ;;
-    *) return 1 ;;
-  esac
+  printf '%s' "$args"
+}
+
+# Live PID whose comm or args look like caffeinate, even before ps shows -i.
+is_caffeinate_pid() {
+  local pid="$1"
+  local comm args
+  is_positive_pid "$pid" || return 1
+  kill -0 -- "$pid" 2>/dev/null || return 1
+  comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+  comm="${comm//[$' \t']/}"
+  args="$(pid_ps_args "$pid")"
   if [[ "$comm" == "caffeinate" ]]; then
     return 0
   fi
   case "$args" in
     *caffeinate*) return 0 ;;
+  esac
+  return 1
+}
+
+is_keeper_pid() {
+  # Live caffeinate plus " -i " in args so unrelated caffeinate -w/-d is rejected.
+  # comm==caffeinate matches macOS; args *caffeinate* is for PATH stubs whose
+  # comm is the interpreter (python3 shebang in Linux CI). comm= is space-padded
+  # on some ps; args= is empty on some BSD ps, so fall back to command=.
+  local pid="$1"
+  local padded
+  is_caffeinate_pid "$pid" || return 1
+  padded=" $(pid_ps_args "$pid") "
+  case "$padded" in
+    *" -i "*) return 0 ;;
   esac
   return 1
 }
@@ -81,6 +95,11 @@ running_pid() {
   if is_keeper_pid "$pid"; then
     printf '%s\n' "$pid"
     return 0
+  fi
+  # Live peer (keeper whose -i is not visible yet, or leftover process): do
+  # not unlink. Same rule as peer_pidfile_live.
+  if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null; then
+    return 1
   fi
   rm -f "$PIDFILE"
   return 1
@@ -202,46 +221,28 @@ peer_pidfile_live() {
   is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null
 }
 
-cmd_start() {
-  local timeout="${1:-$DEFAULT_TIMEOUT}"
-  local pid attempt
+peer_is_in_progress_keeper() {
+  local pid
+  peer_pidfile_live || return 1
+  pid="$(tr -d '[:space:]' <"$PIDFILE")"
+  is_keeper_pid "$pid" && return 1
+  is_caffeinate_pid "$pid"
+}
 
-  for attempt in $(seq 1 250); do
-    acquire_lock
-    if [[ -L "$PIDFILE" ]]; then
-      rm -f "$PIDFILE"
-      finish_lock
-      continue
-    fi
-    pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
-    if is_keeper_pid "$pid"; then
-      echo "anti-sleep: already running pid=$pid"
-      finish_lock
-      return 0
-    fi
-    if peer_pidfile_live; then
-      finish_lock
-      sleep 0.02
-      continue
-    fi
-    if ! pid="$(launch "$timeout")"; then
-      finish_lock
-      return 1
-    fi
-    echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
-    echo "anti-sleep: verify with: pmset -g assertions"
-    finish_lock
-    return 0
-  done
+finish_already_running() {
+  echo "anti-sleep: already running pid=$1"
+  finish_lock
+}
 
-  acquire_lock
+# Caller holds the lock. If a keeper is visible, report it; otherwise launch.
+start_while_locked() {
+  local timeout="$1"
+  local pid
   pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
   if is_keeper_pid "$pid"; then
-    echo "anti-sleep: already running pid=$pid"
-    finish_lock
+    finish_already_running "$pid"
     return 0
   fi
-  rm -f "$PIDFILE"
   if ! pid="$(launch "$timeout")"; then
     finish_lock
     return 1
@@ -249,6 +250,50 @@ cmd_start() {
   echo "anti-sleep: started pid=$pid timeout=${timeout}s (PreventUserIdleSystemSleep)"
   echo "anti-sleep: verify with: pmset -g assertions"
   finish_lock
+}
+
+cmd_start() {
+  local timeout="${1:-$DEFAULT_TIMEOUT}"
+  local pid attempt
+  # Wait for ps to show -i on a just-launched peer, not lock timeout
+  # (acquire_lock is 100 × 0.05s ≈ 5s). 250 × 0.02s ≈ 5s.
+  local peer_wait_attempts=250
+  local peer_wait_sleep=0.02
+
+  for attempt in $(seq 1 "$peer_wait_attempts"); do
+    acquire_lock
+    if [[ -L "$PIDFILE" ]]; then
+      rm -f "$PIDFILE"
+      finish_lock
+      continue
+    fi
+    if peer_is_in_progress_keeper; then
+      finish_lock
+      sleep "$peer_wait_sleep"
+      continue
+    fi
+    start_while_locked "$timeout"
+    return $?
+  done
+
+  acquire_lock
+  if [[ -L "$PIDFILE" ]]; then
+    rm -f "$PIDFILE"
+  fi
+  pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
+  if is_keeper_pid "$pid"; then
+    start_while_locked "$timeout"
+    return $?
+  fi
+  if peer_is_in_progress_keeper; then
+    finish_already_running "$pid"
+    return 0
+  fi
+  # After the peer wait the pidfile is stuck (never became a keeper) and may
+  # be replaced. Steal-after-wait for dead/empty/non-caffeinate leftovers, not
+  # running_pid stale cleanup.
+  rm -f "$PIDFILE"
+  start_while_locked "$timeout"
 }
 
 cmd_status() {
@@ -269,13 +314,32 @@ cmd_status() {
 }
 
 cmd_stop() {
-  local pid
+  local pid n
   acquire_lock
   if pid="$(running_pid)"; then
     kill -- "$pid" 2>/dev/null || true
     rm -f "$PIDFILE"
     echo "anti-sleep: stopped pid=$pid"
     return 0
+  fi
+  if [[ -f "$PIDFILE" ]] && [[ ! -L "$PIDFILE" ]]; then
+    pid="$(tr -d '[:space:]' <"$PIDFILE")"
+    if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null; then
+      n=0
+      while [[ "$n" -lt 5 ]]; do
+        if is_keeper_pid "$pid" || is_caffeinate_pid "$pid"; then
+          kill -- "$pid" 2>/dev/null || true
+          rm -f "$PIDFILE"
+          echo "anti-sleep: stopped pid=$pid"
+          return 0
+        fi
+        n=$((n + 1))
+        sleep 0.02
+      done
+      # Live non-caffeinate leftover: leave the pidfile for start to replace.
+      echo "anti-sleep: not running"
+      return 0
+    fi
   fi
   rm -f "$PIDFILE"
   echo "anti-sleep: not running"
