@@ -340,12 +340,26 @@ def test_status_treats_live_non_caffeinate_pidfile_as_not_running(tmp_path: Path
 def test_start_replaces_live_non_caffeinate_non_sleep_pidfile(tmp_path: Path) -> None:
     bindir = _darwin_bin(tmp_path)
     leftover = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"])
+    start: subprocess.Popen[str] | None = None
     try:
         _prepare_pidfile(tmp_path, f"{leftover.pid}\n")
-        code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
-        assert code == 0
+        started = time.monotonic()
+        start = subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=_env(tmp_path, extra_path=bindir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        time.sleep(0.3)
+        assert start.poll() is None
+        assert _pidfile(tmp_path).read_text().strip() == str(leftover.pid)
+        stdout, _stderr = start.communicate(timeout=45)
+        elapsed = time.monotonic() - started
+        assert start.returncode == 0
         assert "started" in stdout
         assert "already running" not in stdout
+        assert elapsed >= 4.0
         keeper = int(_pidfile(tmp_path).read_text().strip())
         assert keeper != leftover.pid
         os.kill(keeper, 0)
@@ -354,6 +368,9 @@ def test_start_replaces_live_non_caffeinate_non_sleep_pidfile(tmp_path: Path) ->
     finally:
         leftover.kill()
         leftover.wait()
+        if start is not None and start.poll() is None:
+            start.kill()
+            start.wait()
         _run(tmp_path, "stop", extra_path=bindir)
 
 
@@ -586,7 +603,8 @@ def test_status_during_peer_wait_does_not_unlink_live_pidfile(tmp_path: Path) ->
 def test_overlapping_starts_do_not_steal_live_python_leftover_after_peer_wait(
     tmp_path: Path,
 ) -> None:
-    bindir = _darwin_bin(tmp_path)
+    gate = tmp_path / "show-i"
+    bindir = _darwin_bin(tmp_path, show_i_gate=gate)
     env = _env(tmp_path, extra_path=bindir)
     leftover = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"])
     procs: list[subprocess.Popen[str]] = []
@@ -612,6 +630,11 @@ def test_overlapping_starts_do_not_steal_live_python_leftover_after_peer_wait(
         assert keeper != leftover.pid
         assert leftover.poll() is None
         os.kill(leftover.pid, 0)
+        assert set(_stub_pids(bindir, require_i=False)) == {keeper}
+        gate.write_text("1\n")
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline and set(_keeper_pids(bindir)) != {keeper}:
+            time.sleep(0.02)
         assert set(_keeper_pids(bindir)) == {keeper}
     finally:
         leftover.kill()
@@ -620,6 +643,7 @@ def test_overlapping_starts_do_not_steal_live_python_leftover_after_peer_wait(
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
+        gate.write_text("1\n")
         _run(tmp_path, "stop", extra_path=bindir)
 
 
