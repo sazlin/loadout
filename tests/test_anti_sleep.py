@@ -52,14 +52,32 @@ def _uname_bin(tmp_path: Path, *, system: str) -> Path:
     return bindir
 
 
-def _darwin_bin(tmp_path: Path) -> Path:
+def _darwin_bin(tmp_path: Path, *, show_i_gate: Path | None = None) -> Path:
     bindir = _uname_bin(tmp_path, system="Darwin")
     args_file = tmp_path / "caffeinate.args"
     # Stay in-process so ps args still name this stub and include -i.
+    # Optional gate: drop -i until the file exists, then exec with -i (same pid).
+    delay_block = ""
+    if show_i_gate is not None:
+        delay_block = (
+            "import os\n"
+            f"gate = {str(show_i_gate)!r}\n"
+            "phase = os.environ.get('_KEEP_AWAKE_I', '')\n"
+            "if '-i' in sys.argv[1:] and phase != 'show':\n"
+            "    os.environ['_KEEP_AWAKE_I'] = 'wait'\n"
+            "    os.execv(sys.executable, [sys.executable, sys.argv[0],"
+            " *[a for a in sys.argv[1:] if a != '-i']])\n"
+            "if phase == 'wait':\n"
+            "    while not os.path.isfile(gate):\n"
+            "        time.sleep(0.01)\n"
+            "    os.environ['_KEEP_AWAKE_I'] = 'show'\n"
+            "    os.execv(sys.executable, [sys.executable, sys.argv[0], '-i', *sys.argv[1:]])\n"
+        )
     (bindir / "caffeinate").write_text(
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "import time\n"
+        f"{delay_block}"
         f"open({str(args_file)!r}, 'w', encoding='utf-8').write(' '.join(sys.argv[1:]) + '\\n')\n"
         "time.sleep(999)\n"
     )
@@ -339,6 +357,63 @@ def test_start_does_not_follow_pidfile_symlink(tmp_path: Path) -> None:
         assert not pidfile.is_symlink()
         int(pidfile.read_text().strip())
     finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_start_waits_when_peer_pidfile_pid_lacks_i_flag(tmp_path: Path) -> None:
+    gate = tmp_path / "show-i"
+    bindir = _darwin_bin(tmp_path, show_i_gate=gate)
+    env = _env(tmp_path, extra_path=bindir)
+    first_code, first_out, _first_err = _run(tmp_path, "start", "120", extra_path=bindir)
+    first_pid = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+    second: subprocess.Popen[str] | None = None
+    try:
+        assert first_code == 0
+        assert "started" in first_out
+        deadline = time.monotonic() + 5.0
+        listed = ""
+        while time.monotonic() < deadline:
+            listed = subprocess.run(
+                ["ps", "-ww", "-p", str(first_pid), "-o", "args="],
+                check=False,
+                capture_output=True,
+                text=True,
+            ).stdout
+            if listed and " -i " not in f" {listed.strip()} ":
+                break
+            time.sleep(0.02)
+        else:
+            raise AssertionError(f"timed out waiting for pid {first_pid} args without -i: {listed!r}")
+        os.kill(first_pid, 0)
+        second = subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            second_out, _second_err = second.communicate(timeout=0.3)
+        except subprocess.TimeoutExpired:
+            assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+            gate.write_text("1\n")
+            second_out, _second_err = second.communicate(timeout=10)
+        assert second.returncode == 0
+        assert "already running" in second_out
+        assert "started" not in second_out
+        assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline and set(_keeper_pids(bindir)) != {first_pid}:
+            time.sleep(0.02)
+        assert set(_keeper_pids(bindir)) == {first_pid}
+    finally:
+        try:
+            os.kill(first_pid, 9)
+        except OSError:
+            pass
+        if second is not None and second.poll() is None:
+            second.kill()
+            second.wait()
         _run(tmp_path, "stop", extra_path=bindir)
 
 
