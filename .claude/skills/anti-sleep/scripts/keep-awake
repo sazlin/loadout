@@ -67,6 +67,23 @@ is_caffeinate_pid() {
   return 1
 }
 
+# Obvious stale pidfile target (e.g. test sleep helper), not a launching keeper.
+is_sleep_leftover_pid() {
+  local pid="$1"
+  local args comm
+  is_positive_pid "$pid" || return 1
+  comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+  comm="${comm//[$' \t']/}"
+  case "$comm" in
+    sleep) return 0 ;;
+  esac
+  args="$(pid_ps_args "$pid")"
+  case "$args" in
+    sleep\ * | *sleep\ * | */sleep\ *) return 0 ;;
+  esac
+  return 1
+}
+
 is_keeper_pid() {
   # Live caffeinate plus " -i " in args so unrelated caffeinate -w/-d is rejected.
   # comm==caffeinate matches macOS; args *caffeinate* is for PATH stubs whose
@@ -274,9 +291,6 @@ cmd_start() {
   # (acquire_lock is 100 × 0.05s ≈ 5s). 250 × 0.02s ≈ 5s.
   local peer_wait_attempts=250
   local peer_wait_sleep=0.02
-  # Classify-retry at most once per start; leftover steal must not wait 5s,
-  # but repeating 5 × 0.02s on every loop iteration inflates the budget.
-  local classify_retry_spent=0
 
   for attempt in $(seq 1 "$peer_wait_attempts"); do
     acquire_lock
@@ -291,14 +305,14 @@ cmd_start() {
       continue
     fi
     pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
-    if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null && ! is_keeper_pid "$pid"; then
-      if [[ "$classify_retry_spent" -eq 1 ]]; then
-        finish_lock
-        sleep "$peer_wait_sleep"
-        continue
+    if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null; then
+      if is_keeper_pid "$pid"; then
+        finish_already_running "$pid"
+        return 0
       fi
-      classify_retry_spent=1
-      if peer_pid_shows_caffeinate "$pid" && ! is_keeper_pid "$pid"; then
+      if is_sleep_leftover_pid "$pid"; then
+        : # steal below
+      else
         finish_lock
         sleep "$peer_wait_sleep"
         continue
@@ -317,9 +331,12 @@ cmd_start() {
     finish_already_running "$pid"
     return 0
   fi
+  if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null && ! is_sleep_leftover_pid "$pid"; then
+    finish_already_running "$pid"
+    return 0
+  fi
   # After the peer wait the pidfile is stuck (never became a keeper) and may
-  # be replaced. Steal-after-wait for dead/empty/non-caffeinate leftovers, not
-  # running_pid stale cleanup.
+  # be replaced. Steal-after-wait for dead/empty/sleep leftovers, not live peers.
   rm -f "$PIDFILE"
   report_running_or_launch "$timeout"
 }
