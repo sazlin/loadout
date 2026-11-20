@@ -583,6 +583,46 @@ def test_status_during_peer_wait_does_not_unlink_live_pidfile(tmp_path: Path) ->
         _run(tmp_path, "stop", extra_path=bindir)
 
 
+def test_overlapping_starts_do_not_steal_live_python_leftover_after_peer_wait(
+    tmp_path: Path,
+) -> None:
+    bindir = _darwin_bin(tmp_path)
+    env = _env(tmp_path, extra_path=bindir)
+    leftover = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"])
+    procs: list[subprocess.Popen[str]] = []
+    try:
+        _prepare_pidfile(tmp_path, f"{leftover.pid}\n")
+        procs = [
+            subprocess.Popen(
+                [str(SCRIPT), "start", "120"],
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            for _ in range(3)
+        ]
+        results = [proc.communicate(timeout=45) for proc in procs]
+        assert [proc.returncode for proc in procs] == [0, 0, 0]
+        texts = [stdout for stdout, _stderr in results]
+        assert sum("started" in text for text in texts) == 1
+        assert sum("already running" in text for text in texts) == 2
+        keeper = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+        os.kill(keeper, 0)
+        assert keeper != leftover.pid
+        assert leftover.poll() is None
+        os.kill(leftover.pid, 0)
+        assert set(_keeper_pids(bindir)) == {keeper}
+    finally:
+        leftover.kill()
+        leftover.wait()
+        for proc in procs:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
 def test_overlapping_starts_do_not_steal_after_peer_wait_budget(tmp_path: Path) -> None:
     gate = tmp_path / "show-i"
     bindir = _darwin_bin(tmp_path, show_i_gate=gate)
