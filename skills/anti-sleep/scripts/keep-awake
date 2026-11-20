@@ -235,7 +235,7 @@ finish_already_running() {
 }
 
 # Caller holds the lock. If a keeper is visible, report it; otherwise launch.
-start_while_locked() {
+report_running_or_launch() {
   local timeout="$1"
   local pid
   pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
@@ -252,6 +252,21 @@ start_while_locked() {
   finish_lock
 }
 
+# Brief ps retry: a just-forked keeper may not look like caffeinate yet.
+# Same bound as cmd_stop's in-progress path (5 × 0.02s).
+peer_classify_live_pid() {
+  local pid="$1"
+  local n=0
+  while [[ "$n" -lt 5 ]]; do
+    if is_keeper_pid "$pid" || is_caffeinate_pid "$pid"; then
+      return 0
+    fi
+    n=$((n + 1))
+    sleep 0.02
+  done
+  return 1
+}
+
 cmd_start() {
   local timeout="${1:-$DEFAULT_TIMEOUT}"
   local pid attempt
@@ -259,6 +274,9 @@ cmd_start() {
   # (acquire_lock is 100 × 0.05s ≈ 5s). 250 × 0.02s ≈ 5s.
   local peer_wait_attempts=250
   local peer_wait_sleep=0.02
+  # Classify-retry at most once per start; leftover steal must not wait 5s,
+  # but repeating 5 × 0.02s on every loop iteration inflates the budget.
+  local classified_live=0
 
   for attempt in $(seq 1 "$peer_wait_attempts"); do
     acquire_lock
@@ -272,7 +290,22 @@ cmd_start() {
       sleep "$peer_wait_sleep"
       continue
     fi
-    start_while_locked "$timeout"
+    pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
+    if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null && ! is_keeper_pid "$pid"; then
+      if [[ "$classified_live" -eq 0 ]]; then
+        classified_live=1
+        if peer_classify_live_pid "$pid" && ! is_keeper_pid "$pid"; then
+          finish_lock
+          sleep "$peer_wait_sleep"
+          continue
+        fi
+      else
+        finish_lock
+        sleep "$peer_wait_sleep"
+        continue
+      fi
+    fi
+    report_running_or_launch "$timeout"
     return $?
   done
 
@@ -281,11 +314,7 @@ cmd_start() {
     rm -f "$PIDFILE"
   fi
   pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
-  if is_keeper_pid "$pid"; then
-    start_while_locked "$timeout"
-    return $?
-  fi
-  if peer_is_in_progress_keeper; then
+  if is_keeper_pid "$pid" || peer_is_in_progress_keeper; then
     finish_already_running "$pid"
     return 0
   fi
@@ -293,7 +322,7 @@ cmd_start() {
   # be replaced. Steal-after-wait for dead/empty/non-caffeinate leftovers, not
   # running_pid stale cleanup.
   rm -f "$PIDFILE"
-  start_while_locked "$timeout"
+  report_running_or_launch "$timeout"
 }
 
 cmd_status() {
