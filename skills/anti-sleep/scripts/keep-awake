@@ -201,7 +201,7 @@ peer_pidfile_live() {
 # budget, unlink a still-live non-keeper pidfile as stale so start may launch.
 wait_for_running_or_peer() {
   local pid attempt
-  for attempt in $(seq 1 50); do
+  for attempt in $(seq 1 250); do
     if [[ -L "$PIDFILE" ]]; then
       rm -f "$PIDFILE"
       return 1

@@ -139,10 +139,10 @@ acquire_lock() {
       continue
     fi
     # Dead holder, empty lockdir older than the 5s wait, or last attempt.
-    if [[ -f "$LOCKDIR/pid" ]] || [[ "$(lockdir_age_seconds)" -ge 5 ]] || [[ "$n" -ge 100 ]]; then
+    if [[ -f "$LOCKDIR/pid" ]] || [[ "$(lockdir_age_seconds)" -ge 5 ]] || [[ "$n" -ge 300 ]]; then
       reclaim_stale_lock
     fi
-    if [[ "$n" -ge 100 ]]; then
+    if [[ "$n" -ge 300 ]]; then
       if mkdir "$LOCKDIR" 2>/dev/null; then
         break
       fi
@@ -186,17 +186,28 @@ launch() {
   printf '%s\n' "$pid"
 }
 
+# Weaker than is_keeper_pid: positive pid + kill -0 only. A just-launched
+# keeper may have a pidfile before ps shows -i / caffeinate. Do not require
+# those matches here, and do not unlink a still-live pidfile.
 peer_pidfile_live() {
   local pid
+  [[ -L "$PIDFILE" ]] && return 1
   [[ -f "$PIDFILE" ]] || return 1
   pid="$(tr -d '[:space:]' <"$PIDFILE")"
   is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null
 }
 
+# Retry until is_keeper_pid. Sleep only while peer_pidfile_live. After the
+# budget, unlink a still-live non-keeper pidfile as stale so start may launch.
 wait_for_running_or_peer() {
   local pid attempt
-  for attempt in $(seq 1 50); do
-    if pid="$(running_pid)"; then
+  for attempt in $(seq 1 250); do
+    if [[ -L "$PIDFILE" ]]; then
+      rm -f "$PIDFILE"
+      return 1
+    fi
+    pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
+    if is_keeper_pid "$pid"; then
       printf '%s\n' "$pid"
       return 0
     fi
@@ -206,11 +217,12 @@ wait_for_running_or_peer() {
     fi
     return 1
   done
-  if peer_pidfile_live; then
-    pid="$(tr -d '[:space:]' <"$PIDFILE")"
+  pid="$(tr -d '[:space:]' <"$PIDFILE" 2>/dev/null || true)"
+  if is_keeper_pid "$pid"; then
     printf '%s\n' "$pid"
     return 0
   fi
+  rm -f "$PIDFILE"
   return 1
 }
 
