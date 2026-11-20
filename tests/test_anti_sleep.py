@@ -137,7 +137,7 @@ def test_wait_until_dead_returns_when_process_already_dead() -> None:
     _wait_until_dead(proc.pid)
 
 
-def _keeper_pids(bindir: Path) -> list[int]:
+def _stub_pids(bindir: Path, *, require_i: bool) -> list[int]:
     needle = str(bindir / "caffeinate")
     listed = subprocess.run(
         ["ps", "-ww", "-eo", "pid=,args="],
@@ -151,10 +151,30 @@ def _keeper_pids(bindir: Path) -> list[int]:
         if needle not in stripped:
             continue
         pid_str, _, args = stripped.partition(" ")
-        if " -i " not in f" {args} ":
+        if require_i and " -i " not in f" {args} ":
             continue
         pids.append(int(pid_str))
     return pids
+
+
+def _keeper_pids(bindir: Path) -> list[int]:
+    return _stub_pids(bindir, require_i=True)
+
+
+def _wait_args_without_i(pid: int, *, timeout: float = 5.0) -> str:
+    deadline = time.monotonic() + timeout
+    listed = ""
+    while time.monotonic() < deadline:
+        listed = subprocess.run(
+            ["ps", "-ww", "-p", str(pid), "-o", "args="],
+            check=False,
+            capture_output=True,
+            text=True,
+        ).stdout
+        if listed and " -i " not in f" {listed.strip()} ":
+            return listed
+        time.sleep(0.02)
+    raise AssertionError(f"timed out waiting for pid {pid} args without -i: {listed!r}")
 
 
 def test_keep_awake_script_is_executable() -> None:
@@ -267,7 +287,7 @@ def test_status_treats_live_non_caffeinate_pidfile_as_not_running(tmp_path: Path
         assert code == 1
         assert "not running" in stderr
         assert sleeper.poll() is None
-        assert not _pidfile(tmp_path).exists()
+        assert _pidfile(tmp_path).read_text().strip() == str(sleeper.pid)
     finally:
         sleeper.kill()
         sleeper.wait()
@@ -301,7 +321,7 @@ def test_stop_does_not_signal_live_non_caffeinate_pid(tmp_path: Path) -> None:
         assert "not running" in stdout
         assert sleeper.poll() is None
         os.kill(sleeper.pid, 0)
-        assert not _pidfile(tmp_path).exists()
+        assert _pidfile(tmp_path).read_text().strip() == str(sleeper.pid)
     finally:
         sleeper.kill()
         sleeper.wait()
@@ -370,20 +390,7 @@ def test_start_waits_when_peer_pidfile_pid_lacks_i_flag(tmp_path: Path) -> None:
     try:
         assert first_code == 0
         assert "started" in first_out
-        deadline = time.monotonic() + 5.0
-        listed = ""
-        while time.monotonic() < deadline:
-            listed = subprocess.run(
-                ["ps", "-ww", "-p", str(first_pid), "-o", "args="],
-                check=False,
-                capture_output=True,
-                text=True,
-            ).stdout
-            if listed and " -i " not in f" {listed.strip()} ":
-                break
-            time.sleep(0.02)
-        else:
-            raise AssertionError(f"timed out waiting for pid {first_pid} args without -i: {listed!r}")
+        _wait_args_without_i(first_pid)
         os.kill(first_pid, 0)
         second = subprocess.Popen(
             [str(SCRIPT), "start", "120"],
@@ -414,6 +421,90 @@ def test_start_waits_when_peer_pidfile_pid_lacks_i_flag(tmp_path: Path) -> None:
         if second is not None and second.poll() is None:
             second.kill()
             second.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_status_during_peer_wait_does_not_unlink_live_pidfile(tmp_path: Path) -> None:
+    gate = tmp_path / "show-i"
+    bindir = _darwin_bin(tmp_path, show_i_gate=gate)
+    env = _env(tmp_path, extra_path=bindir)
+    first_code, first_out, _first_err = _run(tmp_path, "start", "120", extra_path=bindir)
+    first_pid = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+    second: subprocess.Popen[str] | None = None
+    try:
+        assert first_code == 0
+        assert "started" in first_out
+        _wait_args_without_i(first_pid)
+        status_code, _status_out, status_err = _run(tmp_path, "status", extra_path=bindir)
+        assert status_code == 1
+        assert "not running" in status_err
+        assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+        os.kill(first_pid, 0)
+        second = subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            second_out, _second_err = second.communicate(timeout=0.3)
+        except subprocess.TimeoutExpired:
+            assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+            gate.write_text("1\n")
+            second_out, _second_err = second.communicate(timeout=10)
+        assert second.returncode == 0
+        assert "already running" in second_out
+        assert "started" not in second_out
+        assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline and set(_keeper_pids(bindir)) != {first_pid}:
+            time.sleep(0.02)
+        assert set(_keeper_pids(bindir)) == {first_pid}
+    finally:
+        try:
+            os.kill(first_pid, 9)
+        except OSError:
+            pass
+        if second is not None and second.poll() is None:
+            second.kill()
+            second.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_overlapping_starts_do_not_steal_after_peer_wait_budget(tmp_path: Path) -> None:
+    gate = tmp_path / "show-i"
+    bindir = _darwin_bin(tmp_path, show_i_gate=gate)
+    env = _env(tmp_path, extra_path=bindir)
+    procs = [
+        subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        for _ in range(3)
+    ]
+    results = [proc.communicate(timeout=20) for proc in procs]
+    try:
+        assert [proc.returncode for proc in procs] == [0, 0, 0]
+        texts = [stdout for stdout, _stderr in results]
+        assert sum("started" in text for text in texts) == 1
+        assert sum("already running" in text for text in texts) == 2
+        keeper = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+        os.kill(keeper, 0)
+        assert set(_stub_pids(bindir, require_i=False)) == {keeper}
+        gate.write_text("1\n")
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline and set(_keeper_pids(bindir)) != {keeper}:
+            time.sleep(0.02)
+        assert set(_keeper_pids(bindir)) == {keeper}
+    finally:
+        try:
+            os.kill(int(_pidfile(tmp_path).read_text().strip()), 9)
+        except (OSError, ValueError):
+            pass
         _run(tmp_path, "stop", extra_path=bindir)
 
 
