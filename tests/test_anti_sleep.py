@@ -52,12 +52,39 @@ def _uname_bin(tmp_path: Path, *, system: str) -> Path:
     return bindir
 
 
-def _darwin_bin(tmp_path: Path, *, show_i_gate: Path | None = None) -> Path:
+def _darwin_bin(
+    tmp_path: Path,
+    *,
+    show_i_gate: Path | None = None,
+    hide_caffeinate_gate: Path | None = None,
+) -> Path:
     bindir = _uname_bin(tmp_path, system="Darwin")
     args_file = tmp_path / "caffeinate.args"
     # Stay in-process so ps args still name this stub and include -i.
     # Optional gate: drop -i until the file exists, then exec with -i (same pid).
+    hide_block = ""
     delay_block = ""
+    if hide_caffeinate_gate is not None:
+        decoy = bindir / "idle-hold"
+        decoy.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os\n"
+            "import sys\n"
+            "import time\n"
+            f"gate = {str(hide_caffeinate_gate)!r}\n"
+            f"target = {str(bindir / 'caffeinate')!r}\n"
+            "while not os.path.isfile(gate):\n"
+            "    time.sleep(0.01)\n"
+            "os.execv(sys.executable, [sys.executable, target, *sys.argv[1:]])\n"
+        )
+        decoy.chmod(0o755)
+        hide_block = (
+            "import os\n"
+            f"decoy = {str(decoy)!r}\n"
+            "if os.environ.get('_KEEP_AWAKE_HIDE') != 'shown':\n"
+            "    os.environ['_KEEP_AWAKE_HIDE'] = 'shown'\n"
+            "    os.execv(sys.executable, [sys.executable, decoy, *sys.argv[1:]])\n"
+        )
     if show_i_gate is not None:
         delay_block = (
             "import os\n"
@@ -77,6 +104,7 @@ def _darwin_bin(tmp_path: Path, *, show_i_gate: Path | None = None) -> Path:
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "import time\n"
+        f"{hide_block}"
         f"{delay_block}"
         f"open({str(args_file)!r}, 'w', encoding='utf-8').write(' '.join(sys.argv[1:]) + '\\n')\n"
         "time.sleep(999)\n"
@@ -175,6 +203,22 @@ def _wait_args_without_i(pid: int, *, timeout: float = 5.0) -> str:
             return listed
         time.sleep(0.02)
     raise AssertionError(f"timed out waiting for pid {pid} args without -i: {listed!r}")
+
+
+def _wait_args_without_caffeinate(pid: int, *, timeout: float = 5.0) -> str:
+    deadline = time.monotonic() + timeout
+    listed = ""
+    while time.monotonic() < deadline:
+        listed = subprocess.run(
+            ["ps", "-ww", "-p", str(pid), "-o", "args="],
+            check=False,
+            capture_output=True,
+            text=True,
+        ).stdout
+        if listed and "caffeinate" not in listed:
+            return listed
+        time.sleep(0.02)
+    raise AssertionError(f"timed out waiting for pid {pid} args without caffeinate: {listed!r}")
 
 
 def test_keep_awake_script_is_executable() -> None:
@@ -298,9 +342,12 @@ def test_start_launches_when_pidfile_points_at_live_sleep(tmp_path: Path) -> Non
     sleeper = subprocess.Popen(["sleep", "60"])
     try:
         _prepare_pidfile(tmp_path, f"{sleeper.pid}\n")
+        started = time.monotonic()
         code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+        elapsed = time.monotonic() - started
         assert code == 0
         assert "started" in stdout
+        assert elapsed < 2.0
         keeper = int(_pidfile(tmp_path).read_text().strip())
         assert keeper != sleeper.pid
         os.kill(keeper, 0)
@@ -377,6 +424,50 @@ def test_start_does_not_follow_pidfile_symlink(tmp_path: Path) -> None:
         assert not pidfile.is_symlink()
         int(pidfile.read_text().strip())
     finally:
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
+def test_start_waits_when_peer_pidfile_pid_not_yet_caffeinate(tmp_path: Path) -> None:
+    hide_gate = tmp_path / "show-caffeinate"
+    bindir = _darwin_bin(tmp_path, hide_caffeinate_gate=hide_gate)
+    env = _env(tmp_path, extra_path=bindir)
+    first_code, first_out, _first_err = _run(tmp_path, "start", "120", extra_path=bindir)
+    first_pid = int(_wait_file(_pidfile(tmp_path)).read_text().strip())
+    second: subprocess.Popen[str] | None = None
+    try:
+        assert first_code == 0
+        assert "started" in first_out
+        listed = _wait_args_without_caffeinate(first_pid)
+        assert "caffeinate" not in listed
+        os.kill(first_pid, 0)
+        second = subprocess.Popen(
+            [str(SCRIPT), "start", "120"],
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        time.sleep(0.03)
+        hide_gate.write_text("1\n")
+        second_out, _second_err = second.communicate(timeout=10)
+        assert second.returncode == 0
+        assert "already running" in second_out
+        assert "started" not in second_out
+        assert _pidfile(tmp_path).read_text().strip() == str(first_pid)
+        os.kill(first_pid, 0)
+        deadline = time.monotonic() + 1.0
+        while time.monotonic() < deadline and set(_keeper_pids(bindir)) != {first_pid}:
+            time.sleep(0.02)
+        assert set(_keeper_pids(bindir)) == {first_pid}
+    finally:
+        try:
+            os.kill(first_pid, 9)
+        except OSError:
+            pass
+        if second is not None and second.poll() is None:
+            second.kill()
+            second.wait()
+        hide_gate.write_text("1\n")
         _run(tmp_path, "stop", extra_path=bindir)
 
 
@@ -486,7 +577,7 @@ def test_overlapping_starts_do_not_steal_after_peer_wait_budget(tmp_path: Path) 
         )
         for _ in range(3)
     ]
-    results = [proc.communicate(timeout=20) for proc in procs]
+    results = [proc.communicate(timeout=40) for proc in procs]
     try:
         assert [proc.returncode for proc in procs] == [0, 0, 0]
         texts = [stdout for stdout, _stderr in results]
