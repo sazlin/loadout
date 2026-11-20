@@ -337,6 +337,26 @@ def test_status_treats_live_non_caffeinate_pidfile_as_not_running(tmp_path: Path
         sleeper.wait()
 
 
+def test_start_replaces_live_non_caffeinate_non_sleep_pidfile(tmp_path: Path) -> None:
+    bindir = _darwin_bin(tmp_path)
+    leftover = subprocess.Popen(["python3", "-c", "import time; time.sleep(60)"])
+    try:
+        _prepare_pidfile(tmp_path, f"{leftover.pid}\n")
+        code, stdout, _stderr = _run(tmp_path, "start", "120", extra_path=bindir)
+        assert code == 0
+        assert "started" in stdout
+        assert "already running" not in stdout
+        keeper = int(_pidfile(tmp_path).read_text().strip())
+        assert keeper != leftover.pid
+        os.kill(keeper, 0)
+        assert leftover.poll() is None
+        os.kill(leftover.pid, 0)
+    finally:
+        leftover.kill()
+        leftover.wait()
+        _run(tmp_path, "stop", extra_path=bindir)
+
+
 def test_start_launches_when_pidfile_points_at_live_sleep(tmp_path: Path) -> None:
     bindir = _darwin_bin(tmp_path)
     sleeper = subprocess.Popen(["sleep", "60"])

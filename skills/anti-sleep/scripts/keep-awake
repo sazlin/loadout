@@ -275,7 +275,7 @@ peer_pid_shows_caffeinate() {
   local pid="$1"
   local n=0
   while [[ "$n" -lt 5 ]]; do
-    if is_keeper_pid "$pid" || is_caffeinate_pid "$pid"; then
+    if is_caffeinate_pid "$pid"; then
       return 0
     fi
     n=$((n + 1))
@@ -310,13 +310,12 @@ cmd_start() {
         finish_already_running "$pid"
         return 0
       fi
-      if is_sleep_leftover_pid "$pid"; then
-        : # steal below
-      else
+      if ! is_sleep_leftover_pid "$pid"; then
         finish_lock
         sleep "$peer_wait_sleep"
         continue
       fi
+      # Sleep leftover: write_pidfile replaces the pidfile; do not kill it.
     fi
     report_running_or_launch "$timeout"
     return $?
@@ -331,12 +330,8 @@ cmd_start() {
     finish_already_running "$pid"
     return 0
   fi
-  if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null && ! is_sleep_leftover_pid "$pid"; then
-    finish_already_running "$pid"
-    return 0
-  fi
-  # After the peer wait the pidfile is stuck (never became a keeper) and may
-  # be replaced. Steal-after-wait for dead/empty/sleep leftovers, not live peers.
+  # After the peer wait the pidfile never became a keeper. Replace it
+  # (dead/empty/sleep/other leftovers). Do not kill the leftover process.
   rm -f "$PIDFILE"
   report_running_or_launch "$timeout"
 }
@@ -370,17 +365,12 @@ cmd_stop() {
   if [[ -f "$PIDFILE" ]] && [[ ! -L "$PIDFILE" ]]; then
     pid="$(tr -d '[:space:]' <"$PIDFILE")"
     if is_positive_pid "$pid" && kill -0 -- "$pid" 2>/dev/null; then
-      n=0
-      while [[ "$n" -lt 5 ]]; do
-        if is_keeper_pid "$pid" || is_caffeinate_pid "$pid"; then
-          kill -- "$pid" 2>/dev/null || true
-          rm -f "$PIDFILE"
-          echo "anti-sleep: stopped pid=$pid"
-          return 0
-        fi
-        n=$((n + 1))
-        sleep 0.02
-      done
+      if peer_pid_shows_caffeinate "$pid"; then
+        kill -- "$pid" 2>/dev/null || true
+        rm -f "$PIDFILE"
+        echo "anti-sleep: stopped pid=$pid"
+        return 0
+      fi
       # Live non-caffeinate leftover: leave the pidfile for start to replace.
       echo "anti-sleep: not running"
       return 0
