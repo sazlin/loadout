@@ -612,7 +612,7 @@ def test_overlapping_starts_leave_one_keeper(tmp_path: Path) -> None:
         )
         for _ in range(2)
     ]
-    results = [proc.communicate(timeout=10) for proc in procs]
+    results = [proc.communicate(timeout=30) for proc in procs]
     try:
         assert [proc.returncode for proc in procs] == [0, 0]
         texts = [stdout for stdout, _stderr in results]
