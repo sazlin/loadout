@@ -498,3 +498,10 @@ def test_slice_from_v0_101_0_to_v0_102_0_is_only_0_102_0() -> None:
     notes = _slice_sections(changelog, "v0.101.0", "v0.102.0")
 
     assert notes.strip() == "## 0.102.0"
+
+
+def test_slice_from_v0_102_0_to_v0_103_0_is_only_0_103_0() -> None:
+    changelog = (REPO / "CHANGELOG.md").read_text()
+    notes = _slice_sections(changelog, "v0.102.0", "v0.103.0")
+
+    assert notes.strip() == "## 0.103.0"
